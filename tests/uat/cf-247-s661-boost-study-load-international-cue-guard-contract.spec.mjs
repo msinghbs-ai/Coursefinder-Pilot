@@ -20,10 +20,10 @@ const DARWIN_LIST = 'You may be interested in Bachelor of Education Full-time No
 const DARWIN_TABLE = 'International 1.5 years full-time'
 
 test('versions: the reader is v6 by selector; the prompt and the route are unchanged', () => {
-  expect(B.BOOST_SELECTOR).toBe('study-load-windows-v5')
-  expect(B.BOOST_SELECTOR_INTERNATIONAL).toBe('study-load-international-v2')
+  expect(B.BOOST_SELECTOR).toBe('study-load-windows-v6')  // v6 (s666)
+  expect(B.BOOST_SELECTOR_INTERNATIONAL).toBe('study-load-international-v3')  // v3 (s666)
   expect(B.BOOST_STUDY_LOAD_PROMPT_VERSION).toBe('boost-study-load-v5')  // the route qualification is tied to the prompt version (a migration), so the prompt text stays
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.23"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.24"')
   expect(BX).toMatch(/const INTL_NEAR = 80;\s+\/\/ fixed: /)
   expect(BX).toMatch(/const INTL_LABEL_NEAR = 160;\s+\/\/ fixed: /)
   expect(BX).toMatch(/const LOAD_SUBJECT_GAP = 40;\s+\/\/ fixed: /)
@@ -38,7 +38,7 @@ test('a course closed to international students is not a study load rule, and no
   expect(V('full_time', GRIFFITH_CLOSED).basis).not.toBe('international')
   expect(V('full_time', GRIFFITH_CLOSED).ok).toBe(false)
   // and a page holding only such a sentence is asked about as any other page (no international selector)
-  expect(B.studyLoadSections(`Bachelor of Arts. ${GRIFFITH_CLOSED}.`, 6000).selector).not.toBe('study-load-international-v2')
+  expect(B.studyLoadSections(`Bachelor of Arts. ${GRIFFITH_CLOSED}.`, 6000).selector).not.toBe('study-load-international-v3')
   expect(B.boostSentenceInspection(`Bachelor of Arts. ${TRI3}`).international_total).toBe(0)
 })
 
@@ -98,7 +98,7 @@ test('the sentence inspection (s660) reports the same cue the reader and the pag
   const r = B.boostSentenceInspection(`Overview. ${GRIFFITH_CLOSED}. Student Visa holders must study internally full time.`)
   expect(r.international_sentences.map((x) => x.text)).toEqual(['Student Visa holders must study internally full time.'])
   expect(r.required_load).toBe('full_time')
-  expect(r.selector).toBe('study-load-international-v2')
+  expect(r.selector).toBe('study-load-international-v3')
 })
 
 test('no migration: the lane writes no database object, and the model prompt text is untouched', () => {

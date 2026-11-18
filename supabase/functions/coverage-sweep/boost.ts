@@ -9,8 +9,8 @@
 
 export const BOOST_STUDY_LOAD_PROMPT_ID = "boost-study-load";
 export const BOOST_STUDY_LOAD_PROMPT_VERSION = "boost-study-load-v5";  // v5 (18 Nov 2026, Platform Admin 14:29): a fee note (EFTSL, CSP, a fee calculated on a standard full-time load) is never the study load. v4: v2 (18 Nov 2026, Platform Admin decision 1): the study load for international students when the page states one; otherwise the course's general study load
-export const BOOST_SELECTOR = "study-load-windows-v5";  // v5 (18 Nov 2026 22:00, s661): the international cue needs its words close together and never reads a course closed to international students as a load rule. v4 (18 Nov 2026 14:29): fee-note sentences are no longer sent. v3: v3 (18 Nov 2026): sentences about international students and visas are sent again: they are the preferred basis (decision 1)
-export const BOOST_SELECTOR_INTERNATIONAL = "study-load-international-v2";  // only the sentences that state a study load for international students (v2, s661: close together, never a closure). v1: any sentence holding the three signals
+export const BOOST_SELECTOR = "study-load-windows-v6";  // v6 (19 Nov 2026, s666): a block holding both a Domestic and an International label is read line by line. v5 (18 Nov 2026 22:00, s661): the international cue needs its words close together and never reads a course closed to international students as a load rule. v4 (18 Nov 2026 14:29): fee-note sentences are no longer sent. v3: v3 (18 Nov 2026): sentences about international students and visas are sent again: they are the preferred basis (decision 1)
+export const BOOST_SELECTOR_INTERNATIONAL = "study-load-international-v3";  // v3 (s666): split at Domestic and International labels first; only the sentences that state a study load for international students (v2, s661: close together, never a closure). v1: any sentence holding the three signals
 export const BOOST_ANSWER_KEY = "reading.answer_tokens.boost_extract";
 export const BOOST_ANSWER_DEFAULT = 300;   // used only when the setting cannot be read
 export const BOOST_SECTION_KEY = "reading.boost_extract_section_chars";
@@ -60,7 +60,22 @@ const DEFINITION_WORDS = /\b(full|part)[\s-]?time (study|load|enrolment|enrollme
 export const FEE_NOTE = /\bEFTSL\b|\bequivalent full[\s-]?time student load\b|\bCommonwealth[\s-]supported\b|\bCSPs?\b|\bstudent contributions?\b|\b(fees?|tuition)\b[^.]{0,120}\b(calculated|based) on\b|\b(calculated|based) on (a |the )?(standard |normal |typical )?(full|part)[\s-]?time (study |course )?load\b/i;
 export const isFeeNote = (sentence: string) => FEE_NOTE.test(String(sentence || ""));
 const FULL = /full[\s-]?time/i, PART = /part[\s-]?time/i;
-const sentencesOf = (text: string) => String(text || "").split(/(?<=[.!?])\s+|\n+/).map((x) => x.trim()).filter(Boolean);
+//  - v1.0.24 (19 Nov 2026, Platform Admin S1-Courses directive 05:22, s666; from the S2-Courses live inspection of 18 Nov 2026 22:40): stored page text
+//    often has no punctuation, so one block can hold a Domestic line and an International line ("Domestic 1.5 years full-time or equivalent
+//    part-time International 1.5 years full-time", Charles Darwin University, La Trobe handbook, VIT). The page check then required the load of the
+//    whole block ("both") rather than the International line. Such a block is split at its student labels, and only when it holds both a
+//    Domestic label and an International label, so each line is read for its own students; prose that only mentions international students
+//    ("Part-time study is not available for international students") is never split.
+const STUDENT_LABEL_TAIL = String.raw`(?:\s+(?:students?|applicants?|onshore|offshore|visa holders?))?\s*(?:[:|\u2013\u2014-]|\(|\d|(?:full|part)[\s-]?time\b)`;
+const DOMESTIC_LABEL = new RegExp(String.raw`(?:^|\s)domestic` + STUDENT_LABEL_TAIL, "i");
+const INTERNATIONAL_LABEL = new RegExp(String.raw`(?:^|\s)international` + STUDENT_LABEL_TAIL, "i");
+const STUDENT_LABEL_SPLIT = new RegExp(String.raw`\s+(?=(?:domestic|international)` + STUDENT_LABEL_TAIL + ")", "gi");
+export function splitAtStudentLabels(block: string): string[] {
+  const s = String(block || "");
+  if (!(DOMESTIC_LABEL.test(s) && INTERNATIONAL_LABEL.test(s))) return [s];
+  return s.split(STUDENT_LABEL_SPLIT).map((x) => x.trim()).filter(Boolean);
+}
+const sentencesOf = (text: string) => String(text || "").split(/(?<=[.!?])\s+|\n+/).map((x) => x.trim()).filter(Boolean).flatMap(splitAtStudentLabels);
 //  - v1.0.20 (18 Nov 2026 22:00, Platform Admin S2-Courses directive, s661; from the 41 pages settled "Not stated" that the page check had matched, 35 of
 //    them false): the cue is no longer "the three signals anywhere in a block" (stored page text often has no punctuation, so a block runs to
 //    600 characters or more: an IELTS admission procedure, a navigation panel, a list of other courses). (1) An international word and a study
@@ -97,7 +112,12 @@ export function internationalClosure(sentence: string): boolean {
   return ms.every((m) => !loads.some((h) => { const gap = s.slice(h.end, m.index || 0); return h.end <= (m.index || 0) && gap.length <= LOAD_SUBJECT_GAP && !LOAD_LINK_BREAK.test(gap) && LOAD_COPULA.test(gap) }));
 }
 // the sentences of the page that state a study load for international students
-export const internationalStudySentences = (page: string) => sentencesOf(page).filter((x) => INTL_WORDS.test(x) && (FULL.test(x) || PART.test(x)) && internationalNear(x) && !internationalClosure(x) && INTL_RULE.test(x) && !NOT_A_LOAD_RULE.test(x) && !DEFINITION_WORDS.test(x) && !isFeeNote(x));
+// s666: after the split, a line that starts with the International label states the load for international students ("International 1.5 years
+// full-time", "International: Full-time on campus"); a line that starts with the Domestic label never does, whatever it says about visas
+// ("Domestic: Full-time or Part-time (only available for non-Visa students)")
+const INTL_LINE_LABEL = new RegExp(String.raw`^\s*international` + STUDENT_LABEL_TAIL, "i");
+const DOMESTIC_LINE_LABEL = new RegExp(String.raw`^\s*domestic` + STUDENT_LABEL_TAIL, "i");
+export const internationalStudySentences = (page: string) => sentencesOf(page).filter((x) => INTL_WORDS.test(x) && (FULL.test(x) || PART.test(x)) && !DOMESTIC_LINE_LABEL.test(x) && internationalNear(x) && !internationalClosure(x) && (INTL_RULE.test(x) || INTL_LINE_LABEL.test(x)) && !NOT_A_LOAD_RULE.test(x) && !DEFINITION_WORDS.test(x) && !isFeeNote(x));
 // Which loads a sentence offers. A load named only to say it is not offered, or offered only to others ("part-time study (only available
 // for non-visa students)", "Part-time equivalent study options are not available for international students"), does not count. When a
 // sentence about international students only rules a load out, it states the other one.
