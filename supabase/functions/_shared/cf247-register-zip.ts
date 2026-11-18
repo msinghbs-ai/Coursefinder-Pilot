@@ -4,6 +4,7 @@
 // verbatim copy of what Layer 1 does today (layer1-au-depth v1.7.0 courseFingerprints and scanCourses/scanInstitutions,
 // layer1-au-cricos-facts v1.2.0 scanCsv), so a replay can compare the two row by row before anything is switched.
 import { unzipSync } from "npm:fflate@0.8.2";
+import { normaliseCricosProviderWebsite } from "./cf247-cricos-provider-website.mjs";
 
 const clean = (v: unknown) => String(v ?? "").trim();
 const nk = (v: unknown) => clean(v).replace(/^﻿/, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -73,7 +74,10 @@ function evalRule(rule: FieldRule, get: (n: string) => string, joinedGet: (from:
 }
 function evalFields(fields: Record<string, FieldRule>, get: (n: string) => string, joinedGet: (from: string) => ((n: string) => string) | null, fallback?: (name: string) => string) {
   const x: Record<string, string> = {};
-  for (const [name, rule] of Object.entries(fields)) x[name] = evalRule(rule, get, joinedGet, fallback);
+  for (const [name, rule] of Object.entries(fields)) {
+    const value = evalRule(rule, get, joinedGet, fallback);
+    x[name] = name === "provider_website" ? (normaliseCricosProviderWebsite(value) ?? "") : value;
+  }
   return x;
 }
 
@@ -244,7 +248,7 @@ export async function referenceRecords(zipBytes: Uint8Array, from = 0, to = Infi
   scanRows(dec(parts.courses.bytes), (get, raw) => { const ex = get("Expired"); if (ex && !/^(no|false|n|0)$/i.test(ex)) return; const cc = get("CRICOS Course Code"); if (!cc) return; rows.push([cc, [J(raw), inst.get(get("CRICOS Provider Code")) || "", ...(cl.get(cc) || []).sort()].join("\u001d")]) });
   // layer1-au-depth scanCourses + scanInstitutions, layer1-au-cricos-facts scanCsv (the fields they send to the apply functions)
   const prov = new Map<string, any>();
-  scanRows(dec(parts.institutions.bytes), (get) => { const pc = get("CRICOS Provider Code"); if (!pc) return; let website = get("Website"); if (website && !/^https?:\/\//i.test(website)) website = "https://" + website; prov.set(pc, { provider_name: get("Trading Name") || get("Institution Name"), provider_website: website || "",
+  scanRows(dec(parts.institutions.bytes), (get) => { const pc = get("CRICOS Provider Code"); if (!pc) return; const website = normaliseCricosProviderWebsite(get("Website")); prov.set(pc, { provider_name: get("Trading Name") || get("Institution Name"), provider_website: website || "",
     // v2: the address fields exactly as layer1-au-depth v1.7.0 scanInstitutions reads them (null shown as empty)
     provider_city: get("Postal Address City") || get("Postal City") || null, provider_state: get("Postal Address State") || get("Postal State") || get("State") || null,
     provider_address_line1: get("Postal Address Line 1") || get("Postal Address 1") || null,

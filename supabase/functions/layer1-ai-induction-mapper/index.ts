@@ -73,7 +73,7 @@ type Proposal = { model: string; suggestions: unknown[]; parser_spec: Spec | nul
 
 // one proposal: the worker's answer, kept to the allowed names, the spec's fixed parts from the platform, then the strict check and a trial
 async function propose(service: any, url: string, key: string, p: {
-  recordType: string; connector: string; country: string; columns: string[]; rows: string[][];
+  recordType: string; connector: string; country: string; scheme: string; columns: string[]; rows: string[][];
   targetFields: { field: string; label: string; category_key: string }[]; categories: { key: string; label: string; description: string }[];
   attribution: string; previousSpec?: unknown; source?: Record<string, unknown>;
 }): Promise<Proposal> {
@@ -121,7 +121,7 @@ async function propose(service: any, url: string, key: string, p: {
   const errors: string[] = Array.isArray(check?.errors) ? check.errors : [];
   if (!p.attribution) errors.push("Add the source's attribution text in step 2; the spec carries it beside every value.");
   const objects = p.rows.map((r) => Object.fromEntries(p.columns.map((c, i) => [c, r[i] ?? null])));
-  const trial = errors.length ? { records: [], errors: [] as string[] } : applySpec(parser_spec, objects, 10);
+  const trial = errors.length ? { records: [], errors: [] as string[] } : applySpec(parser_spec, objects, 10, p.scheme);
   return { model, suggestions, parser_spec, validation: { ok: errors.length === 0 && trial.errors.length === 0, errors: [...new Set([...errors, ...trial.errors])] } };
 }
 
@@ -157,8 +157,13 @@ async function reinfer(service: any, url: string, key: string, limit: number) {
       const table = readTable(bytes, format, (prev.source || {}) as Record<string, unknown>, sampleRows);
       const columns = table.headers.map((h) => clean(h, 200)).filter(Boolean).slice(0, 300); // fixed: input-safety bound
       if (!columns.length) throw new Error("no header row was found in the fresh sample");
+      const recordType = it.target_record_type || prev.record_type;
+      // The queue carries the induction ID. Reuse the read RPC for its scheme on provider profiles only.
+      const draft = recordType === "provider_register" && isUuid(ind.id)
+        ? await rpc(service, "svc_layer1_induction_read", { p_id: ind.id, p_source_id: null })
+        : null;
       const proposal = await propose(service, url, key, {
-        recordType: it.target_record_type || prev.record_type, connector: clean(ind.connector_type, 40), country: clean(ind.country_code, 2),
+        recordType, scheme: clean(draft?.payload?.scheme, 40), connector: clean(ind.connector_type, 40), country: clean(ind.country_code, 2),
         columns, rows: table.arrays.map((r) => r.slice(0, columns.length).map((v) => clean(v, 300))), ...lists,
         attribution: clean(prev.attribution_text || ind.attribution_text, 1000), previousSpec: prev, source: (prev.source || undefined) as Record<string, unknown> | undefined,
       });
@@ -229,7 +234,7 @@ Deno.serve(async (req) => {
     const ti = Math.floor(Number(body.source?.table_index)), hr = Math.floor(Number(body.source?.header_row));
     if (connector === "html_pages" && ti >= 0 && ti <= 50) src.table_index = ti; // fixed: input-safety bound (as the spec check)
     if (connector === "html_pages" && hr >= 1 && hr <= 200) src.header_row = hr; // fixed: input-safety bound (as the spec check)
-    const pr = await propose(service, url, key, { recordType, connector, country, columns, rows, targetFields, categories, attribution, ...(Object.keys(src).length ? { source: src } : {}) });
+    const pr = await propose(service, url, key, { recordType, scheme: clean(induction?.payload?.scheme, 40), connector, country, columns, rows, targetFields, categories, attribution, ...(Object.keys(src).length ? { source: src } : {}) });
     return json({ ok: true, version: VERSION, model: pr.model, suggestions: pr.suggestions, parser_spec: pr.parser_spec, validation: pr.validation });
   } catch (e) {
     return fail(e instanceof Error ? e.message : String(e));

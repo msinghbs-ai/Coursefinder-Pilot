@@ -119,7 +119,7 @@ async function dryRun(service: any, inductionId: string) {
       await record("failed", { rows_read: table.rows.length }, msg);
       return json({ ok: true, run_id: run, status: "failed", message: msg });
     }
-    const { records, errors } = applySpec(spec, table.rows);
+    const { records, errors } = applySpec(spec, table.rows, undefined, clean(p.scheme, 40));
     const country = clean(ind.country_code || ctx?.source?.country_code, 2).toUpperCase();
     const { rows, duplicates, applied } = await toRows(service, spec, recordType, country, records, ctx);
     let inserts = 0, updates = 0, unchanged = 0;
@@ -195,7 +195,7 @@ async function applyRun(service: any, body: any) {
       return json({ ok: false, run_id: run, status: "halted_drift", error: m });
     }
     const slice = table.rows.slice(offset, offset + cfg.batch);
-    const { records, errors } = applySpec(spec, slice);
+    const { records, errors } = applySpec(spec, slice, undefined, scheme);
     const { rows, duplicates } = await toRows(service, spec, recordType, country, records, ctx);
     const c = { inserts: 0, updates: 0, unchanged: 0, applied: 0, provider_created: 0, course_created: 0, baseline_written: 0, conflicts: 0 };
     const evidence = evidenceId || body.evidence_id || null;
