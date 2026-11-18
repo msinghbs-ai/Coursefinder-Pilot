@@ -108,3 +108,9 @@
 /* v2.16.40: Grouped decisions on the grid */
 .l4g-groups{display:grid;gap:10px;padding:12px;border:1px solid var(--m-border);border-radius:var(--cf-radius-lg);background:var(--cf-slate-25)}
 .l4g-groups q{color:var(--cf-slate-700)}
+/* v2.16.43: Layer 4 › Inbox › Grid › Clusters */
+.l4c .l4c-items{margin:0;padding-left:18px;columns:2;font-size:var(--cf-fs-sm)}
+.l4c q{font-size:var(--cf-fs-sm);color:var(--cf-text-2)}
+.l4c .l4g-confirm{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
+.l4c .l4g-confirm p{margin:0;flex-basis:100%}
+@media (max-width:760px){.l4c .l4c-items{columns:1}}

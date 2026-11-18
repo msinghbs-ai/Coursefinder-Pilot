@@ -13,6 +13,7 @@ import{DataTable}from'./DataTable'
 import{Button,EmptyInline,Pager,StatusChip,fmtDate,fmtNumber}from'./ui-kit'
 import{DEFAULT_COLS,GRID_COLUMNS,quoteValuePairs,toCsv,urlOf}from'./lib/layer4-grid'
 import Layer4GroupDecide from'./Layer4GroupDecide'
+import Layer4Clusters from'./Layer4Clusters' // v2.16.43: clusters by kind, university, reason and quote
 
 const call=async(fn,args)=>{const{data,error}=await supabase.rpc(fn,args);if(error)throw new Error(error.message);return data}
 function Drawer({target,kinds,targetDays,renderItem,onClose,onDecided}){
@@ -46,11 +47,12 @@ function Drawer({target,kinds,targetDays,renderItem,onClose,onDecided}){
     </div>
   </aside></>}
 
-export default function Layer4Grid({kinds={},targetDays=0,renderItem,onDecided,onError}){
+export default function Layer4Grid({kinds={},targetDays=0,rank,renderItem,onDecided,onError}){
   const[vs,setVs]=useState(null),[viewId,setViewId]=useState(''),[kind,setKind]=useState(''),[why,setWhy]=useState(''),[q,setQ]=useState(''),[sort,setSort]=useState('oldest')
   const[cols,setCols]=useState(DEFAULT_COLS),[offset,setOffset]=useState(0),[data,setData]=useState(null),[loading,setLoading]=useState(false),[err,setErr]=useState('')
   const[picker,setPicker]=useState(false),[open,setOpen]=useState(null),[saving,setSaving]=useState(''),[name,setName]=useState(''),[note,setNote]=useState('')
   const[grouped,setGrouped]=useState(false) // v2.16.40: Grouped decisions (Platform Admin 18 Nov 2026 13:02)
+  const[clustered,setClustered]=useState(false) // v2.16.43: Clusters (Platform Admin 18 Nov 2026 19:20)
   const view=vs?.views?.find(v=>v.id===viewId)||null,vkinds=view?.definition?.kinds||null
   const loadViews=pick=>call('admin_saved_views_read_v1',{p_screen:'layer4_inbox'}).then(d=>{setVs(d);const v=(pick&&d.views.find(x=>x.id===pick))||d.views[0];if(v)apply(v)}).catch(e=>setErr(e.message))
   const apply=v=>{const d=v.definition||{};setViewId(v.id);setKind((d.kinds||[])[0]||'');setWhy(d.why_contains||'');setQ(d.q||'');setSort(d.sort||'oldest');setCols(Array.isArray(d.columns)&&d.columns.length?d.columns:DEFAULT_COLS);setOffset(0);setNote('')}
@@ -72,10 +74,12 @@ export default function Layer4Grid({kinds={},targetDays=0,renderItem,onDecided,o
     <p className="l4g-help">The grid shows one kind of item at a time, paged on the server. A view chooses the kind, the reason filter, the order and the columns; it never changes a rule (the AER audit sample and the course-address rules are unchanged). Open a row to see the quote on the saved page beside the value it produced, the evidence and the decision history, and to decide it as on the other views.</p>
     <div className="l4g-views" role="toolbar" aria-label="Saved views">
       {(vs?.views||[]).map(v=><button key={v.id} type="button" className={v.id===viewId?'on':''} data-l4g-view={v.code||'personal'} title={v.description||''} onClick={()=>apply(v)}>{v.name}{v.scope==='personal'&&<small> · mine</small>}</button>)}
-      <button type="button" className={!viewId?'on':''} data-l4g-view="custom" onClick={()=>{setViewId('');setWhy('');setQ('');setGrouped(false)}}>Custom</button>
-      <button type="button" className={grouped?'on':''} aria-pressed={grouped} data-l4g-view="grouped" onClick={()=>setGrouped(x=>!x)}>Grouped decisions</button>
+      <button type="button" className={!viewId?'on':''} data-l4g-view="custom" onClick={()=>{setViewId('');setWhy('');setQ('');setGrouped(false);setClustered(false)}}>Custom</button>
+      <button type="button" className={grouped?'on':''} aria-pressed={grouped} data-l4g-view="grouped" onClick={()=>{setGrouped(x=>!x);setClustered(false)}}>Grouped decisions</button>
+      <button type="button" className={clustered?'on':''} aria-pressed={clustered} data-l4g-view="clusters" onClick={()=>{setClustered(x=>!x);setGrouped(false)}}>Clusters</button>
     </div>
     {grouped&&<Layer4GroupDecide onDecided={()=>{onDecided?.();load(offset)}}/>}
+    {clustered&&<Layer4Clusters kinds={kinds} rank={rank??data?.rank} onDecided={()=>{onDecided?.();load(offset)}}/>}
     <div className="l4g-bar">
       <label>Kind<select value={kind} onChange={e=>setKind(e.target.value)} data-l4g-kind><option value="">Choose a kind</option>{kindList.map(k=><option key={k} value={k}>{kinds[k]?.label||k}</option>)}</select></label>
       <label>Reason contains<input value={why} onChange={e=>setWhy(e.target.value)} maxLength={80} placeholder="e.g. audit_sample" data-l4g-why/></label>

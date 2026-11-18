@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.465 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.43** (Platform Admin 18 Nov 2026 19:20). No migration (no schema change in S1-RM-Design). New `src/lib/layer4-clusters.js` (normalise reason and quote, cluster by kind, university, reason and quote, settleable choices) and `src/Layer4Clusters.jsx` on Layer 4 › Inbox › Grid › Clusters: reads `admin_layer4_inbox` items and detail page by page, decides each item through `admin_layer4_inbox` 'decide'. `src/DestinationData.jsx`: the measure cell wraps. Spec s693.
+
 ## 0.1.464 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.42** (Platform Admin 18 Nov 2026 12:19 and 14:23). No migration (no schema change in this lane from 14:23). New `src/CoverageTelemetry.jsx`: reads `admin_coverage_telemetry_v1` when live, otherwise `admin_completeness_report` (every recorded field by country, grouped into five domains); the 7-attribute score bands, the portal rows and the read-only Stalled fields counters removed. New `src/lib/climate-icons.js` (lucide, ISC) on Destination data › City metrics & costs. New `src/guide/entityModel.js` and Platform guide › How the data connects. Specs s650 and s651; `cf-247-course-links-contract`, `cf-247-ss020-step4`, `cf-247-course-coverage-contract` and `cf-247-s82` follow the retired screens.

@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.27; reviewed-release=2.16.42; source-commit=705d59b4c395+local; content-sha256=91fcb4e201f5bfca2bb7ffb8ae56b06cae5a755dad1bcd8d19088393694dda74 -->
+<!-- sop-export: id=operator-sop; version=2.28; reviewed-release=2.16.43; source-commit=74614397f4b5+local; content-sha256=b210df82ffef9b5ff4faf42c294c72faf83865689a5016524eddbf57f43a2c32 -->
 # StudySearch – Operator SOP
 
-**Version:** 2.27 (reviewed for platform release v2.16.42)  
+**Version:** 2.28 (reviewed for platform release v2.16.43)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -116,6 +116,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.28 | 18 Nov 2026 | v2.16.43 | Layer 4 › Inbox › Grid › Clusters shows items that share a university, a reason and a quote. Settle a cluster only when every item in it truly takes the same decision; open it first. |
 | 2.27 | 18 Nov 2026 | v2.16.42 | Coverage & completeness › Courses › Coverage now: read Readiness by country and the fields with the lowest share; Enrich fields keeps the stalled-field controls. |
 | 2.26 | 18 Nov 2026 | v2.16.41 | Scheduled jobs › Automations: the Dispatchers panel at the top shows whether the three dispatchers and their lanes are running; a failure there is the first thing to report. Retired legacy jobs are hidden unless you tick Show retired legacy jobs. Evidence: Where evidence comes from filters by what wrote the page, and opens the Audit trail. Open issues links now say Queues & yield. |
 | 2.25 | 18 Nov 2026 | v2.16.35 | Dashboard is drawn for your role: Curators see Waiting for you without failed jobs and automations; Continue where you left off resumes your last searches and review queues. Guides › Role guides has your role's guide. |

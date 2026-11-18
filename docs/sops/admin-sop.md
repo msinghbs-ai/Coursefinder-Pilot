@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.67; reviewed-release=2.16.42; source-commit=705d59b4c395+local; content-sha256=4e8d11abdc87b26572d9b0fbeaecec486881161f420560a79573f975dd5f6191 -->
+<!-- sop-export: id=admin-sop; version=2.68; reviewed-release=2.16.43; source-commit=74614397f4b5+local; content-sha256=2aa18938532a97c47364b045527a672adb2f862e7efb1f84d2d6ca97115b1c31 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.67 (reviewed for platform release v2.16.42)  
+**Version:** 2.68 (reviewed for platform release v2.16.43)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.68 | 18 Nov 2026 | v2.16.43 | Layer 4 › Inbox › Grid › Clusters: when the same refusal on the same words appears for many items of one university, settle the cluster here with one reason, then export it and ask for the rule to be written into the Boost worker or the reader (with a test), so it stops coming back. |
 | 2.67 | 18 Nov 2026 | v2.16.42 | Coverage & completeness › Courses: start from Readiness by country and Every field. A field marked Not labelled is newly recorded; ask for its label and domain. Guides › Platform guide › How the data connects is the model to give the website and Zoho developers when they ask how records join. |
 | 2.66 | 18 Nov 2026 | v2.16.41 | Scheduled jobs › Automations: read the Dispatchers panel first (all lanes Running, no failures in 24 hours). Retired legacy jobs are hidden; tick Show retired legacy jobs to see them before their removal date. Platform health › Storage & retention: Storage now shows staging growth and whether staging retention prunes or only reports; switch it on in Settings with a reason once a dry run has shown what would go. |
 | 2.65 | 18 Nov 2026 | v2.16.40 | Layer 4 › Inbox › Grid › Grouped decisions: decide a whole group of entry requirement items held only for a shared stored page (per university and page), or of refused study loads with the same quote, with one choice and one reason and the typed confirmation. Open one item of each group in the drawer first; audit samples and identity or page problems stay one at a time. |
