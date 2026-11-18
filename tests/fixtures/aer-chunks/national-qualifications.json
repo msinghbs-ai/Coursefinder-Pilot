@@ -1,0 +1,12 @@
+[{"code":"AU_ATAR","country":"AU","aliases":["atar","australian tertiary admission rank","selection rank"]},
+ {"code":"CN_GAOKAO","country":"CN","aliases":["gaokao","gao kao","national college entrance examination","ncee"]},
+ {"code":"CN_GAOSAN","country":"CN","aliases":["gao san","senior middle 3"]},
+ {"code":"CN_GAOER","country":"CN","aliases":["gao er","senior middle 2"]},
+ {"code":"IN_CBSE","country":"IN","aliases":["cbse","central board of secondary education","all india senior school certificate","aissc"]},
+ {"code":"IN_ISC","country":"IN","aliases":["isc","indian school certificate","cisce"]},
+ {"code":"MY_STPM","country":"MY","aliases":["stpm","sijil tinggi persekolahan malaysia"]},
+ {"code":"MY_UEC","country":"MY","aliases":["uec","unified examination certificate"]},
+ {"code":"HK_HKDSE","country":"HK","aliases":["hkdse","hong kong diploma of secondary education"]},
+ {"code":"NZ_NCEA","country":"NZ","aliases":["ncea","national certificate of educational achievement"]},
+ {"code":"BD_HSC","country":"BD","aliases":["higher secondary certificate","hsc"]},
+ {"code":"BD_SSC","country":"BD","aliases":["secondary school certificate","ssc"]}]
