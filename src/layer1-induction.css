@@ -31,3 +31,7 @@
 .l1i .l1i-spec h4{margin:0}
 .l1i .l1i-routing{margin:0;padding-left:18px}
 .l1i .l1i-json{margin:0;max-height:280px;overflow:auto;padding:10px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);font-size:var(--cf-fs-sm);white-space:pre-wrap;overflow-wrap:anywhere}
+/* 29-destination readiness (18 Nov 2026): register a new country's scheme as data from step 1 */
+.l1i .l1i-link{justify-self:start;border:0;background:none;padding:0;color:var(--cf-indigo-600);font-weight:700;cursor:pointer}
+.l1i .l1i-scheme-register{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);padding:10px 12px}
+.l1i .l1i-scheme-register .wide{grid-column:1/-1}
