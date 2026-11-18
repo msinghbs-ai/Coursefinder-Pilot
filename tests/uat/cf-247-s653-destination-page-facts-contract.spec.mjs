@@ -88,7 +88,7 @@ test('the loader: mode facts reads the pages and the workbook through the shared
   expect(E).toMatch(/const VERSION = "layer1-destination-geo-loader-v1\.([2-9]|[1-9][0-9])\.[0-9]+";/)
   expect(E).toMatch(/import \{ anchorWindows, extractFact, [^}]*htmlToText, linkWords, parseOccupationGrid, xlsxLinks \} from "\.\.\/_shared\/cf247-page-facts\.js";/)
   expect(E).toContain('const link = links.find((l) => re.test(linkWords(l)));')
-  expect(E).toContain('if (clean(body.mode) === "facts") return await facts(service, runId, trigger, started);')
+  expect(E).toMatch(/if \(clean\(body\.mode\) === "facts"\) return await facts\(service, runId, trigger, started[^)]*\);/)  // v1.4.0 adds the scope
   expect(E).toContain('await rpc(service, "svc_destination_page_facts_load_v1", { p_payload: { run_id: runId, trigger, pages, jsa } });')
   expect(E).toMatch(/const path = `destination\/page-facts\/\$\{host\}\/\$\{hash\}[^`]*\.html`;/)  // v1.3.0 marks a rendered copy
 })
