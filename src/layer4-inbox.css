@@ -104,3 +104,7 @@
 .l4g-qv q{font-style:italic}
 .l4g-history{margin:0;padding-left:18px;font-size:var(--cf-fs-xs);display:grid;gap:6px}
 @media (max-width:640px){.l4g-bar select,.l4g-bar input,.l4g-save input{min-width:0;width:100%}.l4g-bar label{flex:1 1 100%}}
+
+/* v2.16.40: Grouped decisions on the grid */
+.l4g-groups{display:grid;gap:10px;padding:12px;border:1px solid var(--m-border);border-radius:var(--cf-radius-lg);background:var(--cf-slate-25)}
+.l4g-groups q{color:var(--cf-slate-700)}

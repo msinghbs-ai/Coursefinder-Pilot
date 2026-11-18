@@ -9,7 +9,7 @@
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 // Check the admin copy with `node scripts/export-sops.mjs --check-mirror <coursefinder-admin/docs/sops>` (SS-016 UR-03): it exits 1 on drift.
 
-export const SOP_REVIEWED_FOR = '2.16.39'
+export const SOP_REVIEWED_FOR = '2.16.40'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -45,7 +45,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.64', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.65', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -127,7 +127,8 @@ export const SOPS = [
       'Scholarships withdrawn by the nightly review: a jump means a rule changed or a site moved its pages.',
     ],
     escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
-    changes: [{ version: '2.64', date: '18 Nov 2026', release: '2.16.39', change: 'Platform health › Health checks: read the four new checks (Dispatchers, Boost, Layer 4 backlog, Guardrails G1 and G3) each morning; a queue that reads Paused names the person\'s recorded reason and needs no action until that pause is lifted on Automations. Evidence › Audit trail lists dispatcher runs, Boost qualifications and Layer 4 decisions. Storage & retention › Staging tables shows what the nightly staging retention would remove before you switch it on.' },
+    changes: [{ version: '2.65', date: '18 Nov 2026', release: '2.16.40', change: 'Layer 4 › Inbox › Grid › Grouped decisions: decide a whole group of entry requirement items held only for a shared stored page (per university and page), or of refused study loads with the same quote, with one choice and one reason and the typed confirmation. Open one item of each group in the drawer first; audit samples and identity or page problems stay one at a time.' },
+      { version: '2.64', date: '18 Nov 2026', release: '2.16.39', change: 'Platform health › Health checks: read the four new checks (Dispatchers, Boost, Layer 4 backlog, Guardrails G1 and G3) each morning; a queue that reads Paused names the person\'s recorded reason and needs no action until that pause is lifted on Automations. Evidence › Audit trail lists dispatcher runs, Boost qualifications and Layer 4 decisions. Storage & retention › Staging tables shows what the nightly staging retention would remove before you switch it on.' },
       { version: '2.63', date: '18 Nov 2026', release: '2.16.38', change: 'Layer 1 › Register › + Add source, step 1: after you choose the target record type, What this source will create lists the baseline records the first apply run makes for the country, the rule each follows (only where none is held; staged for review where a person must approve) and the API v3 fields it fills. Check it before you activate.' },
       { version: '2.62', date: '18 Nov 2026', release: '2.16.36', change: 'Onboarding a new country: Layer 1 › Register › + Add source, step 1, + Register a scheme adds the country\'s registration scheme as planned (with a reason); no database change is needed. Subdivisions are loaded as data (public.admin_subdivisions_register_v1).' },
       { version: '2.61', date: '18 Nov 2026', release: '2.16.35', change: 'Dashboard › Waiting for your approval: start the day here (an edition ready to publish, Layer 1 drafts, the email route). Users & roles › Create user is a guided flow with the role\'s permissions shown. Links & Email Templates: the body is formatted text; Save Provider Settings, Send Test Email, Save Template.' },

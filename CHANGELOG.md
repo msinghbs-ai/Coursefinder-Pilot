@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.462 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.40** (Platform Admin 18 Nov 2026 13:02). Migration `20261118162000` (s639): Layer 4 › Inbox › Grid › Grouped decisions (`security.layer4_decision_groups_v1`, `public.admin_layer4_group_decide_read_v1`, `public.admin_layer4_group_decide_v1`, `src/Layer4GroupDecide.jsx`): AER items held only for a shared stored page (237 live, 125 in 60 groups) and refused study loads with the same quote (252 in 48 groups); each item through `admin_layer4_inbox` at the single item's rank; audit samples never grouped. Decision A2 amended for shared-page groups only.
+
 ## 0.1.461 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.39** (Platform Admin 18 Nov 2026 12:49). Migration `20261118160000` (s638): Task manager reads within the statement time-out (index-backed task runner lookup); 254 entry requirement tasks stranded on the switched-off route closed with their reason and the scheduled entry reading held while the route is off; health stall check, work-queue watchdog and Find course pages block reason follow the dispatchers and recorded pauses; new Platform health checks Dispatchers, Boost, Layer 4 backlog and Guardrails (rollup-scheduler target `platform-health-consolidated`); Storage & retention staging figures (`security.retention_storage_v1`); Evidence audit trail (`public.admin_ops_audit_v1`, `src/EvidenceAuditTrail.jsx`).
