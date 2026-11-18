@@ -3,6 +3,7 @@
 // G2, G3 and housekeeping are guarded centrally by s32, s57 and s42.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { execFileSync } from 'node:child_process'
 
 const M = fs.readFileSync('supabase/migrations/20261118239000_cf247_s672_aer_v3_replay_r4.sql', 'utf8')
 const S = fs.readFileSync('scripts/aer-v3-replay.mjs', 'utf8')
@@ -30,7 +31,8 @@ test('the workflow runs only on dispatch for the Pilot, with no admission, and t
   expect(W).not.toMatch(/^\s*(schedule|push|pull_request):/m)
   expect(W).toContain('Refused: the typed project ref does not match the Pilot')
   expect(W).toContain('node scripts/aer-v3-replay.mjs "$ROUND" "$MAXMIN"')
-  expect(S).toContain("start.length !== 3 || !start.some((r) => r.state === 'queued' || r.state === 'answering')")  // s674: a stopped attempt of the round is continued
+  expect(S).toContain("start.length !== 3 || !start.some((r) => r.state === 'queued' || r.state === 'answering')) { await summary(")
+  expect(() => execFileSync('node', ['--check', 'scripts/aer-v3-replay.mjs'])).not.toThrow()  // the script parses (a comment once swallowed the refusal, 18 Nov 22:30)  // s674: a stopped attempt of the round is continued
   expect(S).toContain("body: JSON.stringify({ mode: 'aer_v3_eval', stream: true })")  // s674: straight to the worker with a one-time nonce
   expect(S).not.toMatch(/'qualified'|ai_service_routes|aer\.v2_shadow_on|route_activate|ai_route_qualify/)
 })

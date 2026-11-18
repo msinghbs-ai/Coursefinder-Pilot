@@ -3,6 +3,7 @@
 // scripts/aer-validation-renew.mjs and workflow aer-validation-renew.yml. G2, G3 and housekeeping are guarded centrally by s32, s57 and s42.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { execFileSync } from 'node:child_process'
 
 const M = fs.readFileSync('supabase/migrations/20261118243000_cf247_s674_aer_prompt_v3_1_round5.sql', 'utf8')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
@@ -83,5 +84,6 @@ test('the standing renewal runs only on the named thresholds and validators, rep
   expect(V).not.toMatch(/update pipeline\.platform_toolset_settings|machine_mode['"]?\s*=|set value/i)
   expect(V).toContain("'Platform Admin standing rule 18 Nov 2026 20:53 AEDT (S1-AER s674): automatic 7-day renewal on unchanged thresholds'")
   expect(W).toContain("- cron: '17 7 * * *'")
+  for (const f of ['scripts/aer-validation-renew.mjs', 'scripts/aer-v3-replay.mjs']) expect(() => execFileSync('node', ['--check', f]), f).not.toThrow()
   expect(W).toContain("MODE: ${{ github.event_name == 'schedule' && 'renew' || inputs.mode }}")
 })
