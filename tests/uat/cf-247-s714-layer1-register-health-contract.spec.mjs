@@ -1,9 +1,9 @@
 // Guards: Layer 1 Register health (Platform Admin 19 Nov 2026 06:45 and 06:50): ABS and BOM get a real first run through the standard Layer 1 scheduler (no value overwritten, next run one cadence later); the ten stale August 2026 Canadian college readers are retired with the gap on record (supersedes the 18 Nov hold of s624 by Platform Admin decision); Ontario APS is paused with its reason; LIN 19/198 is made due after its loader is deployed.
-// CF-247 S714. supabase/migrations/20261119080000_cf247_layer1_register_health_ca_cleanup.sql.
+// CF-247 S714. supabase/migrations/20261119083200_cf247_layer1_register_health_ca_cleanup.sql.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261119080000_cf247_layer1_register_health_ca_cleanup.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261119083200_cf247_layer1_register_health_ca_cleanup.sql', 'utf8')
 const code = M.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
 
 test('ABS and BOM are made due for the standard scheduler, not stamped as run', () => {

@@ -19,7 +19,7 @@
 --   2. The ten college readers are retired (source status retired, paused, automatic loading off; kept, not deleted, so any one can be restored):
 --      the retired reason records that nothing replaces them yet (0 course pages, 0 active courses), so the gap stays on record.
 --   3. Ontario APS is paused with its reason (the scoped apply times out; repair: batch the apply), until the apply is batched.
---   4. LIN 19/198 (registered in 20261119075000) is due now, so its first read (with the Home Affairs pages, loader v1.5.0) runs through the
+--   4. LIN 19/198 (registered in 20261119083100) is due now, so its first read (with the Home Affairs pages, loader v1.5.0) runs through the
 --      standard Layer 1 scheduler.
 -- Nothing is dropped or deleted. Each retire, pause and due is written to pipeline.admin_control_events.
 -- Replaces: nothing.
@@ -28,7 +28,7 @@
 -- 1. ABS and BOM due now
 update pipeline.layer1_source_operations o
    set next_verification_at = now(), updated_at = now(),
-       change_reason = 'Due 19 Nov 2026 (20261119080000, s714): first run through the standard Layer 1 scheduler; editions loaded before registration'
+       change_reason = 'Due 19 Nov 2026 (20261119083200, s714): first run through the standard Layer 1 scheduler; editions loaded before registration'
   from pipeline.sources s
  where s.id = o.source_id and s.metadata->>'source_system' = 'DESTINATION'
    and s.label in ('ABS Regional Population', 'BOM Climate Statistics (IDCJCM0037)') and o.active and not o.paused and o.last_verified_at is null;
@@ -76,10 +76,10 @@ insert into pipeline.admin_control_events(area, action, target, detail, actor)
 select 'layer1', 'source_pause', s.id::text, jsonb_build_object('label', s.label, 'reason', 'scoped apply timed out 8 Nov 2026; batch the apply, then resume'), null
   from pipeline.sources s where s.label = 'Ontario public college programmes / APS';
 
--- 4. LIN 19/198 due now (registered in 20261119075000; loader v1.5.0 deployed with it)
+-- 4. LIN 19/198 due now (registered in 20261119083100; loader v1.5.0 deployed with it)
 update pipeline.layer1_source_operations o
    set next_verification_at = now(), updated_at = now(),
-       change_reason = 'Due 19 Nov 2026 (20261119080000, s714): first read through the standard Layer 1 scheduler'
+       change_reason = 'Due 19 Nov 2026 (20261119083200, s714): first read through the standard Layer 1 scheduler'
   from pipeline.sources s
  where s.id = o.source_id and s.label = 'LIN 19/198 Evidence of Financial Capacity (Subclass 500 and 590)' and o.last_verified_at is null;
 
