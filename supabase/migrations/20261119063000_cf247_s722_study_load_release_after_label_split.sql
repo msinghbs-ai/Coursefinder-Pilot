@@ -15,6 +15,7 @@
 -- Retires: nothing
 
 set local lock_timeout = '5s';
+set local statement_timeout = '120s';  -- fixed: one data update over about 5,500 items
 
 do $g$
 begin
@@ -23,7 +24,11 @@ begin
   end if;
 end $g$;
 
-with i as (
+with shared as (  -- the claim's own set: page text stored for more than one course (computed once)
+  select e.content_hash from pipeline.evidence_artifacts e
+   where e.evidence_type = 'provider_course_page_text' and e.storage_path is not null and e.content_hash is not null
+   group by e.content_hash having count(distinct e.entity_id) > 1),
+i as (
   select x.item_key, x.entity_id, x.evidence_id, x.state,
          (select e.id from pipeline.evidence_artifacts e where e.entity_id = x.entity_id and e.evidence_type = 'provider_course_page_text' and e.storage_path is not null
            order by e.captured_at desc nulls last limit 1) as latest_ev,
@@ -35,7 +40,7 @@ r as (
   select i.item_key from i join pipeline.evidence_artifacts a on a.id = i.latest_ev
    where i.latest_ev = i.evidence_id
      and (i.state in ('rejected', 'failed') or (i.state = 'verified' and i.last_promo = 'refused'))
-     and not exists (select 1 from pipeline.evidence_artifacts e2 where e2.content_hash = a.content_hash and e2.evidence_type = 'provider_course_page_text' and e2.entity_id <> i.entity_id))
+     and not exists (select 1 from shared h where h.content_hash = a.content_hash))
 update pipeline.boost_extract_items x
    set state = 'released', note = left('s722 (19 Nov 2026): released for one re-read by worker v1.0.24 after the Domestic/International label split (s721); was ' || x.state || coalesce(': ' || x.note, ''), 500)
   from r where x.item_key = r.item_key;

@@ -10,7 +10,8 @@ test('releases only items the claim will read again for a course with no study l
   expect(M).toContain("l.field in ('study_load', 'study_load_source', 'study_load_evidence_id')")
   expect(M).toContain('where i.latest_ev = i.evidence_id')
   expect(M).toContain("(i.state in ('rejected', 'failed') or (i.state = 'verified' and i.last_promo = 'refused'))")
-  expect(M).toContain("e2.content_hash = a.content_hash and e2.evidence_type = 'provider_course_page_text' and e2.entity_id <> i.entity_id")
+  expect(M).toContain('group by e.content_hash having count(distinct e.entity_id) > 1)')  // the claim's own shared-page set
+  expect(M).toContain('and not exists (select 1 from shared h where h.content_hash = a.content_hash))')
   expect(M).toContain("set state = 'released', note = left('s722 (19 Nov 2026)")
 })
 
