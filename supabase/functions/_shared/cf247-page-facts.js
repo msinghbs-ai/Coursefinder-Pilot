@@ -9,7 +9,13 @@ const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', 
 export function htmlToText(html) {
   let s = String(html ?? '')
   s = s.replace(/<!--[\s\S]*?-->/g, ' ')
-  s = s.replace(/<(script|style|noscript|template|svg|head)\b[\s\S]*?<\/\1>/gi, ' ')
+  // 18 Nov 2026 (first live run): a self-closing <svg/>, <script/> or <template/> made the paired removal run on to the next closing tag far
+  // down the page and swallow the content. Self-closing tags go first; only script and style (whose closing tag HTML requires) and the head
+  // are removed with their content; every other tag is stripped and its text kept.
+  s = s.replace(/<(script|style|noscript|template|svg)\b[^>]*\/>/gi, ' ')
+  s = s.replace(/<head\b[^>]*>[\s\S]*?<\/head\s*>/i, ' ')
+  s = s.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, ' ')
+  s = s.replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, ' ')
   s = s.replace(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr|\/td|\/th|\/section|\/article)\b[^>]*>/gi, ' . ')
   s = s.replace(/<[^>]+>/g, ' ')
   s = s.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
@@ -72,14 +78,15 @@ export function anchorWindows(text, anchor, max = 3) {
 // JSA: the download links on a data page (href and link text), so the workbook is found by its name, not by a fixed address
 export function xlsxLinks(html, base) {
   const out = []
-  const re = /<a\b[^>]*href\s*=\s*"([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
+  // href in double, single or no quotes; a file ending .xlsx or a download route ending /xlsx (jobsandskills.gov.au/download/<id>/<name>/<id>/<name>/xlsx)
+  const re = /<a\b[^>]*?href\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))[^>]*>([\s\S]*?)<\/a>/gi
   let m
   while ((m = re.exec(String(html ?? '')))) {
-    const href = m[1]
-    if (!/\.xlsx(\?|$)/i.test(href)) continue
+    const href = (m[1] ?? m[2] ?? m[3] ?? '').replace(/&amp;/g, '&')
+    if (!/(\.xlsx|\/xlsx)(\?|#|$)/i.test(href)) continue
     let abs = href
     try { abs = new URL(href, base).href } catch { /* keep as is */ }
-    out.push({ href: abs, text: htmlToText(m[2]) })
+    out.push({ href: abs, text: htmlToText(m[4]) })
   }
   return out
 }
@@ -125,4 +132,11 @@ export function parseOccupationGrid(grid) {
   }
   return { header: { row: h.row, code: h.header[h.code], title: h.header[h.title], earnings: h.earnings >= 0 ? h.header[h.earnings] : null,
     employed: h.employed >= 0 ? h.header[h.employed] : null, thousands }, rows }
+}
+
+// the words of a link: its text and its address with separators read as spaces, so "osca-occupation-data" matches /OSCA\s+Occupation\s+data/
+export function linkWords(link) {
+  let h = String(link?.href ?? '')
+  try { h = decodeURIComponent(h) } catch { /* keep as is */ }
+  return `${link?.text ?? ''} ${h.replace(/[-_/.]+/g, ' ')}`
 }

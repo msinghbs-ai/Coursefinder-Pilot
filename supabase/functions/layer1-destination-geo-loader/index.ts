@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import * as XLSX from "npm:xlsx@0.18.5";
 import { parseBomClimate } from "../_shared/cf247-bom-climate.js";
-import { anchorWindows, extractFact, htmlToText, parseOccupationGrid, xlsxLinks } from "../_shared/cf247-page-facts.js";
+import { anchorWindows, extractFact, htmlToText, linkWords, parseOccupationGrid, xlsxLinks } from "../_shared/cf247-page-facts.js";
 
 // CF-247 RM1B (Platform Admin 17 Nov 2026 13:12; approvals A-1 to A-4 of 07:29 and 07:35): ABS population loader for Australian
 // destination localities. Reads ABS Regional population 2024-25, Table 2 (estimated resident population by Significant Urban Area),
@@ -19,7 +19,7 @@ import { anchorWindows, extractFact, htmlToText, parseOccupationGrid, xlsxLinks 
 // the value with a verbatim quote (or, on a miss, what the page says around the fact's anchor word); then finds the JSA OSCA occupation
 // workbook by its link text, stores it and returns the occupation rows its header names. public.svc_destination_page_facts_load_v1 writes
 // draft rules and figures with the evidence, the quote and the time read; editions whose terms are restricted are not read at all.
-const VERSION = "layer1-destination-geo-loader-v1.2.0";
+const VERSION = "layer1-destination-geo-loader-v1.2.1";
 const FUNCTION_NAME = "layer1-destination-geo-loader";
 const EDITION = {
   source_url: "https://www.abs.gov.au/statistics/people/population/regional-population/2024-25/32180DS0004_2001-25.xlsx",
@@ -152,7 +152,7 @@ async function facts(service: any, runId: string | null, trigger: string, starte
         const host = new URL(pageUrl).host;
         const path = `destination/page-facts/${host}/${hash}.html`;
         const up = await service.storage.from("evidence").upload(path, bytes, { contentType: "text/html", upsert: true });
-        pages.push({ page_url: pageUrl, sha256: hash, storage_path: up.error ? null : path, read_at: new Date().toISOString(), text_length: text.length,
+        pages.push({ page_url: pageUrl, sha256: hash, storage_path: up.error ? null : path, read_at: new Date().toISOString(), bytes: bytes.length, text_length: text.length,
           facts: list.map((f) => {
             const r = extractFact(text, f);
             return r.found ? { id: f.id, ...r } : { id: f.id, found: false, reason: r.reason, windows: anchorWindows(text, f.anchor) };
@@ -166,8 +166,12 @@ async function facts(service: any, runId: string | null, trigger: string, starte
       try {
         const html = new TextDecoder("utf-8").decode(await download(cfg.jsa.page_url));
         const re = new RegExp(cfg.jsa.link_pattern, "i");
-        const link = xlsxLinks(html, cfg.jsa.page_url).find((l) => re.test(l.text) || re.test(decodeURIComponent(l.href)));
-        if (!link) throw new Error(`no workbook link matching /${cfg.jsa.link_pattern}/ on ${cfg.jsa.page_url}`);
+        const links = xlsxLinks(html, cfg.jsa.page_url);
+        const link = links.find((l) => re.test(linkWords(l)));
+        if (!link) {
+          throw new Error(`no workbook link matching /${cfg.jsa.link_pattern}/ on ${cfg.jsa.page_url} (${links.length} workbook links: ${
+            links.slice(0, 8).map((l) => l.text || l.href).join(" | ")})`);
+        }
         const bytes = await download(link.href);
         const hash = await sha256(bytes);
         const path = `destination/jsa/osca-occupations/${hash}.xlsx`;
