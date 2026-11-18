@@ -1,10 +1,10 @@
 // Guards: S672 AER v2 offline model qualification replay (Platform Admin standing mandate 18 Nov 2026 19:28 AEDT, session S1-AER step 3): only the three pinned candidate versions (Qwen3 30B, Mistral Small 3.2, MiMo v2.6 Flash; no fallback across models) on the frozen set 5 and prompt aer-v2-course-v3; the gate unchanged (source integrity 100%, error at most 10 points, no false positives); run switches on for the run only and always restored, on-demand window opened and closed; nothing qualified or switched on by a result.
-// CF-247 S672. Migration 20261118236000_cf247_s672_aer_v3_replay_r4; workflow aer-v3-replay.yml; script scripts/aer-v3-replay.mjs.
+// CF-247 S672. Migration 20261118239000_cf247_s672_aer_v3_replay_r4; workflow aer-v3-replay.yml; script scripts/aer-v3-replay.mjs.
 // G2, G3 and housekeeping are guarded centrally by s32, s57 and s42.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118236000_cf247_s672_aer_v3_replay_r4.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261118239000_cf247_s672_aer_v3_replay_r4.sql', 'utf8')
 const S = fs.readFileSync('scripts/aer-v3-replay.mjs', 'utf8')
 const W = fs.readFileSync('.github/workflows/aer-v3-replay.yml', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')

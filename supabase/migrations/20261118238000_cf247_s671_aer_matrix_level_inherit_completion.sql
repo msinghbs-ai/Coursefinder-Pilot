@@ -230,7 +230,7 @@ begin
   insert into pipeline.admin_control_events(area, action, target, detail)
   values ('aer', 'matrix_machine_validate', 'aer.matrix_machine_mode', (v - 'history') || jsonb_build_object('validation_id', vid,
           'history', (v->'history') - 'disagreements', 'secs', round(extract(epoch from clock_timestamp() - t)::numeric, 1),
-          'authority', 'Platform Admin standing mandate 18 Nov 2026 19:28 AEDT (S1-AER step 2)', 'by', 'Integration Controller (migration 20261118235000)'));
+          'authority', 'Platform Admin standing mandate 18 Nov 2026 19:28 AEDT (S1-AER step 2)', 'by', 'Integration Controller (migration 20261118238000)'));
   raise notice 'S671: matrix validation % passed=%', vid, v->>'passed';
 end $val$;
 

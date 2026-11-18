@@ -52,7 +52,7 @@ select v.version || '-r4', 'entry_requirements', 'prompt', 'release', 'AER v2 co
                           'calls', jsonb_build_object('proposed', 50, 'max', 100, 'retry', 'one retry of a call that returned no answer'),
                           'gate', 'Unchanged from round 3 (no loosening, Platform Admin standing mandate 18 Nov 2026 19:28)',
                           'note', 'Passing is evidence only: the Platform Admin qualifies a model; nothing switches on by itself'),
-       'proposed', md5('aer-v2-course-v3-r4|' || v.version || '|' || coalesce(v.spec->>'system_sha256', '')), 'migration 20261118236000'
+       'proposed', md5('aer-v2-course-v3-r4|' || v.version || '|' || coalesce(v.spec->>'system_sha256', '')), 'migration 20261118239000'
   from pipeline.ai_instruction_versions v
  where v.code = 'aer-v2-course' and v.status = 'candidate'
    and v.version in ('aer-v2-course-v3-qwen3-30b', 'aer-v2-course-v3-mistral-small-3.2', 'aer-v2-course-v3-mimo-v2.6-flash')

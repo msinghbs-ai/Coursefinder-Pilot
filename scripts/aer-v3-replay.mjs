@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // CF-247 S672 (session S1-AER, Platform Admin standing mandate 18 Nov 2026 19:28 AEDT, step 3): the AER v2 offline model qualification replay through the
-// on-demand open/close route, run by GitHub Actions with no person and no prompt. It answers the queued round runs that migration 20261118236000 opened
+// on-demand open/close route, run by GitHub Actions with no person and no prompt. It answers the queued round runs that migration 20261118239000 opened
 // (proposals aer-v2-course-v3-*-<round>) and nothing else:
 //   1. opens an on-demand window (security.on_demand_open_v1, OpenRouter only, the frozen set's providers) and reports the estimate and the credit left;
 //   2. turns reading.aer_v2_long_page_sections_on, ai_eval.offline_runs_on and ai_eval.aer_v3_runs_on to 1 for the run only (reason and control event each);

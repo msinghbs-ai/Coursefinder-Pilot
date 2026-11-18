@@ -1,10 +1,10 @@
 // Guards: S671 provider matrix rows (Platform Admin standing mandate 18 Nov 2026 19:28 AEDT, session S1-AER step 2): a row with no level read takes the one level named in the stored page heading or file title only when no row of the read names a level and the level is in aer.matrix_level_inherit_codes; "Year N equivalent" is never a study level; a completion requirement with no score is not a missing minimum; nothing is written into a minimum; AER v1 thresholds, the D-R3 gate, the completeness guard and the apply are unchanged (Decision 276); CREATE OR REPLACE only, G3 75/48.
-// CF-247 S671. Migration 20261118235000_cf247_s671_aer_matrix_level_inherit_completion (rolled-back live dry run with outcome probe: workflow run 44269575341).
+// CF-247 S671. Migration 20261118238000_cf247_s671_aer_matrix_level_inherit_completion (rolled-back live dry run with outcome probe: workflow run 44269575341).
 // G2, G3 and housekeeping are guarded centrally by s32, s57 and s42.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118235000_cf247_s671_aer_matrix_level_inherit_completion.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261118238000_cf247_s671_aer_matrix_level_inherit_completion.sql', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 const exclusions = M.split('create or replace function security.aer_matrix_machine_exclusions_v1(p_run uuid)')[1].split('$function$;')[0]
 

@@ -1,6 +1,6 @@
 # AER v2 offline model qualification replay (CF-247 S672, session S1-AER; Platform Admin standing mandate 18 Nov 2026 19:28 AEDT, step 3: "Run the offline replay
 # qualification via the on-demand open/close GitHub Actions route using the exact pinned OpenRouter model IDs ... keeping the strict qualification gate intact").
-# Answers only the round runs a migration has opened (migration 20261118236000 for round r4), through the Management API with no confirmation prompt:
+# Answers only the round runs a migration has opened (migration 20261118239000 for round r4), through the Management API with no confirmation prompt:
 # on-demand window open, run switches on for the run only, worker mode aer_v3_eval, scoring, then switches back to 0 and the window closed whatever happened.
 # A run qualifies nothing: its figures are evidence for a separate, recorded decision of the Platform Admin.
 name: AER v3 replay (no admission)
