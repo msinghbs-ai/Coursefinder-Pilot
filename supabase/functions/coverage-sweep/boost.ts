@@ -76,7 +76,9 @@ export function splitLabelBlocks(block: string): string[] {
   return out.map((x) => x.trim()).filter(Boolean);
 }
 // a segment that opens with an International label ("International 1.5 years full-time", "International students: full-time only")
+export const splitAtStudentLabels = splitLabelBlocks;  // the name Pilot #1336 (S1-Courses, s666) gives the same split, so its spec reads this one
 const INTL_LABEL_SEGMENT = /^International(?:\s+students?)?(?:\s*[:\-–|]|\s+(?=\d|(?:full|part)[\s-]?time\b))/;
+const DOMESTIC_LABEL_SEGMENT = /^Domestic(?:\s+students?)?(?:\s*[:\-–|]|\s+(?=\d|(?:full|part)[\s-]?time\b))/;  // a line under the Domestic label never states the international load, whatever it says about visas (VIT: "only available for non-Visa students")
 const sentencesOf = (text: string) => String(text || "").split(/(?<=[.!?])\s+|\n+/).flatMap(splitLabelBlocks).map((x) => x.trim()).filter(Boolean);
 //  - v1.0.20 (18 Nov 2026 22:00, Platform Admin S2-Courses directive, s661; from the 41 pages settled "Not stated" that the page check had matched, 35 of
 //    them false): the cue is no longer "the three signals anywhere in a block" (stored page text often has no punctuation, so a block runs to
@@ -114,7 +116,7 @@ export function internationalClosure(sentence: string): boolean {
   return ms.every((m) => !loads.some((h) => { const gap = s.slice(h.end, m.index || 0); return h.end <= (m.index || 0) && gap.length <= LOAD_SUBJECT_GAP && !LOAD_LINK_BREAK.test(gap) && LOAD_COPULA.test(gap) }));
 }
 // the sentences of the page that state a study load for international students
-export const internationalStudySentences = (page: string) => sentencesOf(page).filter((x) => INTL_WORDS.test(x) && (FULL.test(x) || PART.test(x)) && internationalNear(x) && !internationalClosure(x) && (INTL_RULE.test(x) || INTL_LABEL_SEGMENT.test(x)) && !NOT_A_LOAD_RULE.test(x) && !DEFINITION_WORDS.test(x) && !isFeeNote(x));
+export const internationalStudySentences = (page: string) => sentencesOf(page).filter((x) => INTL_WORDS.test(x) && (FULL.test(x) || PART.test(x)) && internationalNear(x) && !internationalClosure(x) && (INTL_RULE.test(x) || INTL_LABEL_SEGMENT.test(x)) && !DOMESTIC_LABEL_SEGMENT.test(x) && !NOT_A_LOAD_RULE.test(x) && !DEFINITION_WORDS.test(x) && !isFeeNote(x));
 // Which loads a sentence offers. A load named only to say it is not offered, or offered only to others ("part-time study (only available
 // for non-visa students)", "Part-time equivalent study options are not available for international students"), does not count. When a
 // sentence about international students only rules a load out, it states the other one.

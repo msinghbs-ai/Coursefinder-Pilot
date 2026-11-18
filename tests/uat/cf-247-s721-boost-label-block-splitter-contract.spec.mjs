@@ -54,3 +54,10 @@ test('versions: worker v1.0.24, selectors v6 and v3, prompt unchanged', () => {
   expect(B.BOOST_STUDY_LOAD_PROMPT_VERSION).toBe('boost-study-load-v5')
   expect(fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')).toContain('const WORKER = "coverage-sweep-worker-v1.0.24"')
 })
+
+test('a line under the Domestic label is never an international sentence, whatever it says about visas', () => {
+  const VIT2 = 'Study mode Domestic: Full-time or Part-time (only available for non-Visa students) International: Full-time on campus'
+  expect(B.internationalStudySentences(VIT2)).toEqual(['International: Full-time on campus'])
+  expect(B.boostSentenceInspection(VIT2).required_load).toBe('full_time')
+  expect(B.verifyStudyLoad({ study_load: 'both', quote: VIT2, reason: null }, B.boostFlat(VIT2), VIT2).ok).toBe(false)
+})
