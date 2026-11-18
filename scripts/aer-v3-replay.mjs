@@ -28,7 +28,8 @@ const runs = () => read(`select x.id, p.code, x.state, x.leased_until, v.model_i
    join pipeline.ai_instruction_versions v on v.id = x.version_id where p.code like ${lit(CODE)} and x.arm = 'candidate' order by x.id`)
 
 const start = await runs()
-if (start.length !== 3 || !start.some((r) => r.state === 'queued' || r.state === 'answering')) {  // s674: a stopped attempt is continued; runs already recorded stay as they are await summary(`Refused: expected 3 ${ROUND} runs with at least one still open, found ${JSON.stringify(start.map((r) => [r.code, r.state]))}`); process.exit(1) }
+// s674: a stopped attempt is continued; runs already recorded stay as they are
+if (start.length !== 3 || !start.some((r) => r.state === 'queued' || r.state === 'answering')) { await summary(`Refused: expected 3 ${ROUND} runs with at least one still open, found ${JSON.stringify(start.map((r) => [r.code, r.state]))}`); process.exit(1) }
 let od = null, failure = null
 // a stopped earlier attempt of this round: its leases are released (no task can still be running after 400 s) and its open window is closed first
 if (start.some((r) => r.state === 'answering')) await write(`update pipeline.ai_eval_runs x set leased_until = now() from pipeline.ai_improvement_proposals p where p.id = x.proposal_id and p.code like ${lit(CODE)} and x.state = 'answering' and x.leased_until > now() - interval '1 hour'`)
