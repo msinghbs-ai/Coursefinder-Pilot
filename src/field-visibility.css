@@ -1,0 +1,4 @@
+/* CF-247 s697 (Platform Admin 18 Nov 2026 23:02): a block written for Counsellors and Viewers only (data-student-only) is hidden
+   unless the drawer around it shows a student-facing view. Internal markers are hidden by the drawer's own style (studentHideCss). */
+[data-student-only]{display:none}
+[data-view-audience="student"] [data-student-only]{display:block}

@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.29; reviewed-release=2.16.44; source-commit=a4a0ae720073+local; content-sha256=98c45b9aeb5a54f3a4f2561a5cf3c4c44b8b0cbff11383f92eb2a63a43992ea4 -->
+<!-- sop-export: id=operator-sop; version=2.30; reviewed-release=2.16.45; source-commit=099711ee940c+local; content-sha256=408c013422a838e549c0e83d84355c39d3ee2c9a74abb7f39250cb5fb87ef531 -->
 # StudySearch – Operator SOP
 
-**Version:** 2.29 (reviewed for platform release v2.16.44)  
+**Version:** 2.30 (reviewed for platform release v2.16.45)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -116,6 +116,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.30 | 18 Nov 2026 | v2.16.45 | Course detail: Counsellors and Viewers see approved entry requirements only, and scholarship lists show three with Show all (N) scholarships. |
 | 2.29 | 18 Nov 2026 | v2.16.44 | Course and Provider detail show the campus city weather and population, careers, visa and living-cost rules, rankings and scholarships in a read-only block. Use Preview as (Editors and above) to see the Counsellor view. |
 | 2.28 | 18 Nov 2026 | v2.16.43 | Layer 4 › Inbox › Grid › Clusters shows items that share a university, a reason and a quote. Settle a cluster only when every item in it truly takes the same decision; open it first. |
 | 2.27 | 18 Nov 2026 | v2.16.42 | Coverage & completeness › Courses › Coverage now: read Readiness by country and the fields with the lowest share; Enrich fields keeps the stalled-field controls. |
