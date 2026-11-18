@@ -85,12 +85,12 @@ test('the migration: facts as data, terms recorded, restricted editions not read
 })
 
 test('the loader: mode facts reads the pages and the workbook through the shared reader', () => {
-  expect(E).toMatch(/const VERSION = "layer1-destination-geo-loader-v1\.2\.[1-9][0-9]*";/)
-  expect(E).toContain('import { anchorWindows, extractFact, htmlToText, linkWords, parseOccupationGrid, xlsxLinks } from "../_shared/cf247-page-facts.js";')
+  expect(E).toMatch(/const VERSION = "layer1-destination-geo-loader-v1\.([2-9]|[1-9][0-9])\.[0-9]+";/)
+  expect(E).toMatch(/import \{ anchorWindows, extractFact, [^}]*htmlToText, linkWords, parseOccupationGrid, xlsxLinks \} from "\.\.\/_shared\/cf247-page-facts\.js";/)
   expect(E).toContain('const link = links.find((l) => re.test(linkWords(l)));')
   expect(E).toContain('if (clean(body.mode) === "facts") return await facts(service, runId, trigger, started);')
   expect(E).toContain('await rpc(service, "svc_destination_page_facts_load_v1", { p_payload: { run_id: runId, trigger, pages, jsa } });')
-  expect(E).toContain('const path = `destination/page-facts/${host}/${hash}.html`;')
+  expect(E).toMatch(/const path = `destination\/page-facts\/\$\{host\}\/\$\{hash\}[^`]*\.html`;/)  // v1.3.0 marks a rendered copy
 })
 
 test('the first load is asked for only after the loader that knows mode facts is deployed', () => {

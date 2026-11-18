@@ -92,26 +92,42 @@ export function xlsxLinks(html, base) {
 }
 
 // RM1D JSA occupation workbook: the header row is found by its words, not by a fixed position. A sheet loads only when it has an occupation
-// code column, an occupation title column and at least one measure (median weekly earnings or employed persons); anything else is reported
-// with its sheet name and first header cells so the column map can be added, and nothing is guessed.
+// code column, an occupation title column and at least one measure (median earnings or employed persons); anything else is reported with
+// the rows around its code heading so the column map can be added, and nothing is guessed. 18 Nov 2026 (second live run): the OSCA Census 2021
+// workbook's Table 1 heads its measures over two rows and words them in its own way, so a heading is read with the cell above it and the
+// measures are recognised by what they are (a median or average of earnings, income or pay; a count of employed persons or workers), never
+// by a share, rate, change or projection.
 const H = {
-  code: /^(osca|anzsco)?\s*(occupation\s*)?code$|^(osca|anzsco)\s*(unit group\s*)?code|occupation code/i,
+  code: /^(osca|anzsco)?\s*(occupation\s*|unit group\s*)?code$|^(osca|anzsco)\s*(unit group\s*)?code|occupation code/i,
   title: /^(osca|anzsco)?\s*(occupation|unit group)(\s*(title|name))?$|occupation (title|name)/i,
-  earnings: /median.*weekly.*(earn|income|pay)|weekly.*median.*(earn|income)/i,
-  employed: /^(number\s+)?employed(\s*persons)?$|^employment(\s*\(?(persons|number|count)\)?)?$|employed.*\(?(persons|number|'?000)/i,
 }
+const isRatio = (h) => /%|\bshare\b|\brate\b|\bratio\b|\bchange\b|\bgrowth\b|projected|projection|proportion|percent/i.test(h)
+export const isEarnings = (h) => /\b(median|average|mean)\b/i.test(h) && /\b(earn\w*|income|pay|wages?|salary)\b/i.test(h) && !/\bage\b|\bhours?\b/i.test(h) && !isRatio(h)
+export const isEmployed = (h) => /\b(employed|employment|workers?|workforce|persons|people)\b/i.test(h) && !/\b(median|average|mean|age|hours?)\b/i.test(h) && !isRatio(h)
+const period = (h) => (/\bannual|\byear|p\.?a\.?\b/i.test(h) ? 'annual' : /\bhour/i.test(h) ? 'hourly' : 'weekly')
 
-export function findOccupationHeader(grid, scanRows = 40) {
+export function findOccupationHeader(grid, scanRows = 60) {
   for (let i = 0; i < Math.min(grid.length, scanRows); i++) {
-    const cells = (grid[i] || []).map((c) => htmlToText(String(c ?? '')))
-    const col = (re) => cells.findIndex((c) => re.test(c))
-    const code = col(H.code)
-    const title = cells.findIndex((c, j) => j !== code && H.title.test(c))
-    const earnings = col(H.earnings)
-    const employed = col(H.employed)
-    if (code >= 0 && title >= 0 && (earnings >= 0 || employed >= 0)) return { row: i, code, title, earnings, employed, header: cells }
+    const own = (grid[i] || []).map((c) => htmlToText(String(c ?? '')))
+    // a heading cell is read with the heading above it (two-row headings); a blank cell takes the nearest heading to its left on the row above
+    const above = (grid[i - 1] || []).map((c) => htmlToText(String(c ?? '')))
+    let carry = ''
+    const cells = own.map((c, j) => { if (above[j]) carry = above[j]; const top = above[j] || (c ? carry : ''); return top && !H.code.test(c) && !H.title.test(c) ? `${top} ${c}`.trim() : c })
+    const code = own.findIndex((c) => H.code.test(c))
+    const title = own.findIndex((c, j) => j !== code && H.title.test(c))
+    if (code < 0 || title < 0) continue
+    const earnings = cells.findIndex((c, j) => j !== code && j !== title && isEarnings(c))
+    const employed = cells.findIndex((c, j) => j !== code && j !== title && isEmployed(c))
+    if (earnings >= 0 || employed >= 0) return { row: i, code, title, earnings, employed, header: cells }
   }
   return null
+}
+
+// the rows around a sheet's code heading (or its first rows), so a sheet that did not load shows what it holds
+export function headerSample(grid, scanRows = 60, cols = 16) {
+  const at = grid.slice(0, scanRows).findIndex((r) => (r || []).some((c) => H.code.test(htmlToText(String(c ?? '')))))
+  const from = at < 0 ? 0 : Math.max(0, at - 2)
+  return grid.slice(from, from + (at < 0 ? 6 : 4)).map((r) => (r || []).slice(0, cols).map((c) => htmlToText(String(c ?? ''))))
 }
 
 export function parseOccupationGrid(grid) {
@@ -131,7 +147,14 @@ export function parseOccupationGrid(grid) {
     rows.push({ code, title, median_weekly_earnings: earn, employment_count: emp })
   }
   return { header: { row: h.row, code: h.header[h.code], title: h.header[h.title], earnings: h.earnings >= 0 ? h.header[h.earnings] : null,
-    employed: h.employed >= 0 ? h.header[h.employed] : null, thousands }, rows }
+    employed: h.employed >= 0 ? h.header[h.employed] : null, thousands, earnings_period: h.earnings >= 0 ? period(h.header[h.earnings]) : null }, rows }
+}
+
+// RM1C/RM1H/RM1I rendered read (Platform Admin 18 Nov 2026 17:55: "Firecrawl (/v1/scrape with JS rendering, onlyMainContent: true)" for the
+// Home Affairs pages, whose content the browser builds): the request sent for a page whose read mode is rendered. Firecrawl renders the
+// page's script by default; only the page's main content is asked for, as HTML (read with htmlToText, like a direct page) and markdown.
+export function firecrawlScrapeBody(url) {
+  return { url, formats: ['html', 'markdown'], onlyMainContent: true }
 }
 
 // the words of a link: its text and its address with separators read as spaces, so "osca-occupation-data" matches /OSCA\s+Occupation\s+data/

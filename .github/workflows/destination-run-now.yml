@@ -1,0 +1,51 @@
+# Guards: destination page facts (Platform Admin 18 Nov 2026 15:32 and 17:55): Run now of a destination job without a migration, read back.
+# CF-247 RM1: asks for Run now of one destination job (security.destination_job_run_now_v1, the same bounded runner as the screen's Run now,
+# as the Platform Admin who gave the direction) through the Management API, waits for the load to finish and prints its result
+# (pipeline.admin_control_events). It writes nothing itself; the job writes drafts only, and approval and publishing stay with
+# destination-open-licence-publish. Safety: the typed project ref must equal the repository variable SUPABASE_PROJECT_REF (never the demo
+# project); only the destination jobs below can be asked for.
+name: Destination run now
+on:
+  workflow_dispatch:
+    inputs:
+      project_ref:
+        description: "Type the target project ref to confirm"
+        required: true
+      job:
+        description: "Destination job"
+        type: choice
+        options: [destination-page-facts-load, destination-climate-load, destination-abs-load]
+        default: destination-page-facts-load
+      reason:
+        description: "Why it is run now (recorded)"
+        required: true
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ inputs.project_ref }}
+      JOB: ${{ inputs.job }}
+      REASON: ${{ inputs.reason }}
+      ADMIN: 63ba56cb-48d4-4169-98c2-7c4d1f72925b
+    steps:
+      - name: Confirm target
+        run: |
+          if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ] || [ "$REF" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "::error::Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
+          case "$JOB" in destination-page-facts-load|destination-climate-load|destination-abs-load) ;; *) echo "::error::not a destination job"; exit 1;; esac
+      - name: Run now and read back
+        run: |
+          q() { jq -n --arg q "$1" '{query:$q}' > q.json; code=$(curl -sS -o r.json -w '%{http_code}' -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @q.json "https://api.supabase.com/v1/projects/$REF/database/query"); if [ "$code" -ge 300 ]; then echo "::error::Management API $code: $(head -c 600 r.json)"; exit 1; fi; }
+          reason=$(printf '%s' "$REASON" | sed "s/'/''/g")
+          q "select now() as t"; since=$(jq -r '.[0].t' r.json)
+          q "select security.destination_job_run_now_v1('$JOB', '$reason', jsonb_build_object('idempotency_key', 'gh-${{ github.run_id }}'), '$ADMIN'::uuid) as r"
+          echo "asked: $(jq -c '.[0].r' r.json)"
+          for i in $(seq 1 40); do  # fixed: up to 10 minutes of read-back
+            sleep 15
+            q "select action, detail from pipeline.admin_control_events where target = '$JOB' and created_at > '$since'::timestamptz and action not in ('started', 'run_now') order by created_at desc limit 1"
+            if [ "$(jq 'length' r.json)" -gt 0 ]; then jq -c '.[0]' r.json | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          done
+          echo "::warning::no load result within 10 minutes; read pipeline.admin_control_events later" | tee -a "$GITHUB_STEP_SUMMARY"
