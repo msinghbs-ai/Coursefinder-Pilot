@@ -30,8 +30,8 @@ const pages = new Map()
 for (const g of gold) { const p = pages.get(g.course_id) || { ...g, strata: [] }; p.strata.push(g.stratum); pages.set(g.course_id, p) }
 const list = [...pages.values()], results = [], LANES = ['course_description', 'intakes', 'course_fees']
 let cost = 0, worker_name = null, model = null, versions = null
-for (let i = 0; i < list.length; i += 24) {  // the worker's cap of one call
-  const chunk = list.slice(i, i + 24)
+for (let i = 0; i < list.length; i += 12) {  // half the worker's cap of one call, so each answer is back well inside pg_net's 120 s
+  const chunk = list.slice(i, i + 12)
   const items = chunk.map((x) => `jsonb_build_object('ref', ${lit(x.course_id)}, 'storage_path', ${lit(x.storage_path)}, 'title', ${lit(String(x.display_title || '').slice(0, 200))}, 'lanes', '${JSON.stringify(LANES)}'::jsonb)`)
   const res = await worker(`jsonb_build_object('mode', 'boost_fields_replay', 'items', jsonb_build_array(${items.join(', ')}))`)
   if (res.skipped) { await summary(`Replay stopped: ${res.skipped}`); break }
