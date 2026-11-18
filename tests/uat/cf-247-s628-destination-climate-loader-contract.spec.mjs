@@ -54,5 +54,5 @@ test('a catalogued monthly job and Run now reach the loader; nothing is deleted 
   expect(E).toContain('import { parseBomClimate } from "../_shared/cf247-bom-climate.js";')
   expect(E).toContain('if (clean(body.mode) === "climate") return await climate(service, runId, trigger, started);')
   expect(E).toContain('throw new Error(`page is station ${parsed.station}, expected ${st.station_id}`)')
-  expect(E).toContain('const VERSION = "layer1-destination-geo-loader-v1.1.0";')
+  expect(E).toMatch(/const VERSION = "layer1-destination-geo-loader-v1\.([1-9]|[1-9][0-9])\.[0-9]+";/)  // v1.1.0 brought mode climate; later versions keep it
 })
