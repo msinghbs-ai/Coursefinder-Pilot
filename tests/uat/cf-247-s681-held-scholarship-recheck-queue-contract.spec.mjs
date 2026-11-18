@@ -1,4 +1,4 @@
-// Guards: Held scholarship re-check rule l4-held-sch-recheck-v1 (Platform Admin 18 Nov 2026 17:03 item 2): every pending held scholarship page with a stored copy and no re-check is queued for the existing AI re-check by an hourly catalogued job, from settings; the rule itself publishes, rejects and decides nothing and never queues an item twice.
+// Guards: Held scholarship re-check rule l4-held-sch-recheck-v1 (Platform Admin 18 Nov 2026 17:03 item 2): every pending held scholarship page with a stored copy and no re-check is queued for the existing AI re-check by an hourly catalogued job, from settings; the queue step publishes, rejects and decides nothing and never queues an item twice (settlement on a clear re-check is rule l4-held-sch-settle-v1, guarded by s683).
 // CF-247 S681. Migration 20261118203000_cf247_boost_providers_rules. G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
