@@ -9,7 +9,7 @@
 --       so live reading does not ask for deadlines; the offline replay (workflow boost-fields-replay.yml) asks for them. Asking them live
 --       and admitting them is a separate recorded step once the replay shows the qualification bar (s725).
 -- A passing replay never switches anything on by itself. No table, function, job or setting is added (G3 stays at 75 functions, 48 tables).
--- Numbered 20261119091500: above the highest migration on main (20261119084000, Pilot #1344) and clear of the numbers held by open PRs (20261119060000 in #1335,
+-- Numbered 20261119103000: above the highest migration on main (20261119100000, Pilot #1361) and clear of the numbers held by open PRs (20261119060000 in #1335,
 -- 20261119070000 in #1331).
 -- Replaces: the boost_fields_extract qualification record of prompt boost-fields-v1 with boost-fields-v2
 -- Retires: nothing
