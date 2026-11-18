@@ -124,3 +124,62 @@ export function CourseDescriptionsView(){
   </div>
 }
 
+
+// ---- s664 (CF-247 S1-Courses, Platform Admin 18 Nov 2026): "Why this is held & recommended action" on a Layer 4 course description card ----------
+// Every hold reason of the machine rule cdesc-machine-v2 in plain English, with what to do. The raw rule code is never shown; the facts behind it are
+// (how the page was matched and how firmly, whether every quote is on the page, the sentence count against the limit).
+export const CD_HOLD={
+  identity_margin_thin:{title:'The page match is not clear enough',why:'The page was found by an AI match, or another page scored almost as high, and the page itself does not prove the course by its own CRICOS or NZQA code or exact title.',action:'Open the official page. If it is this course\'s own page, approve as read; if it is another course or a shared page, reject (bad page / wrong course).'},
+  binding_ambiguous:{title:'More than one page could be this course',why:'The course has more than one candidate page, so the platform has not settled which page is its own.',action:'Check the page against the course title and code, then approve as read or reject (bad page / wrong course).'},
+  first_provider_sample:{title:'Waiting for the machine check',why:'This description has not been checked by the machine rule yet. It is admitted automatically when its own page proves the course and every sentence matches its quote.',action:'Nothing to do unless it stays here after the next run; then read the reason again.'},
+  sentence_count_over_2:{title:'Longer than 1 to 2 sentences',why:'The description was written by the earlier reader and has more sentences than the limit now allows.',action:'Choose Re-read (1-2 sentences). The stored page is read again; nothing is marked bad.'},
+  length:{title:'Longer than the limit',why:'The description has more characters than the limit now allows.',action:'Choose Re-read (1-2 sentences).'},
+  boilerplate_detected:{title:'Marketing or claim wording',why:'A word the admission policy does not admit on its own (for example "accredited", "innovative" or "leading") is in the description.',action:'Choose Re-read (1-2 sentences); the reader leaves such words out. Approve as read only if the page itself supports the word.'},
+  quote_mismatch:{title:'A sentence is not supported by its quote',why:'At least one sentence does not match the words it quotes from the stored page.',action:'Choose Re-read (1-2 sentences), or reject if the page is not about this course.'},
+  evidence_moved:{title:'The page changed after it was read',why:'A newer copy of the course page was stored after this description was written.',action:'Choose Re-read (1-2 sentences) so the new copy is read.'},
+  wrong_page_kind:{title:'Not a course overview page',why:'The page is an entry, fees, how-to-apply or structure page, or a university-wide page, so it does not describe this course.',action:'Reject (bad page / wrong course), then set the right page on the course record.'},
+  duplicate:{title:'Same wording as another course',why:'Another course already holds, or is waiting with, almost the same words (often shared qualification wording).',action:'Check that the page is this course\'s own; approve as read only if the wording truly belongs to this course.'},
+  rejected_before:{title:'A person refused this before',why:'A person rejected an earlier description for this course, this page or these words.',action:'Decide it yourself; the machine rule never overrides a person.'},
+  other:{title:'Held by a check',why:'The machine rule did not admit it.',action:'Read the reason and the page, then decide.'}
+}
+// the machine rule's code (with the check_ / policy_ prefixes it records) to the explanation key above
+export function cdHoldKey(code,d){
+  const c=String(code||'')
+  if(!c)return 'first_provider_sample'
+  if(c==='identity_margin_thin'||c==='identity_not_allowed')return 'identity_margin_thin'
+  if(c==='binding_ambiguous')return 'binding_ambiguous'
+  if(c==='check_sentence_count')return 'sentence_count_over_2'
+  if(c==='check_length')return 'length'
+  if(c.startsWith('policy_')||c==='check_unsupported_claim'||c==='check_unsupported_marketing')return 'boilerplate_detected'
+  if(/^check_(quote_not_on_page|unsupported_sentence|copied_sentence)$/.test(c)||c==='source_recheck_failed')return 'quote_mismatch'
+  if(c==='evidence_moved'||c==='page_url_changed'||c==='reading_other_evidence')return 'evidence_moved'
+  if(c==='wrong_page_kind')return 'wrong_page_kind'
+  if(c.startsWith('duplicate_')||c==='check_duplicate_other_course')return 'duplicate'
+  if(c.startsWith('rejected_before')||c==='withdrawn_awaiting_person')return 'rejected_before'
+  return 'other'
+}
+const BASIS={cricos_code:'the course\'s own CRICOS code on the page',nzqa_code:'the course\'s own NZQA code on the page',exact_title:'the exact course title',degree_name:'the degree name only',title_level:'the title and level',field_award:'the field and award',adapter_title:'the adapter\'s title'}
+const FOUND={ai_match:'an AI match',cricos_code_on_page:'its CRICOS code on the page'}
+export function CdWhy({d}){
+  const m=d?.machine||null,b=d?.binding||null,lim=d?.limits||{},key=cdHoldKey(m?.reason_code,d),h=CD_HOLD[key]||CD_HOLD.other
+  const n=Array.isArray(d?.proposed?.sentences)?d.proposed.sentences.length:null,max=Number(lim.max_sentences)||2
+  const score=b&&b.score!=null?Number(b.score):null,ru=b&&b.runner_up!=null?Number(b.runner_up):null
+  const quoteOk=key!=='quote_mismatch'
+  return <div className="l4i-cd-why" role="note" data-l4-cd-why={key}>
+    <p><strong>Why this is held: {h.title}.</strong> {h.why}</p>
+    <ul className="l4i-plain">
+      <li data-l4-cd-why-match>Page match: {b?<>found by {FOUND[b.basis]||String(b.basis||'no recorded method').replace(/_/g,' ')}{score!=null?`, score ${score.toFixed(2)}`:''}{ru!=null?` against ${ru.toFixed(2)} for the next page`:''}; proved by {BASIS[b.identity_basis]||'no recorded proof'}.</>:'no bound page recorded.'}</li>
+      <li data-l4-cd-why-quotes>Quote check: {quoteOk?'every sentence is on the stored page in the words it quotes.':'at least one sentence is not supported by its quote.'}</li>
+      {n!=null&&<li data-l4-cd-why-count>Sentence count: {n} of at most {max}{n>max?' (over the limit)':''}.</li>}
+    </ul>
+    <p><strong>Recommended action:</strong> {h.action}</p>
+  </div>
+}
+// the course description card's four decisions: university descriptions keep their two
+export const CD_CHOICE_LABEL={approve:'Approve as read',reread:'Re-read (1-2 sentences)',approve_provider:'Approve all verified for provider',reject:'Reject (bad page / wrong course)'}
+export const CD_CHOICE_ORDER=['approve','reread','approve_provider','reject']
+export function cdChoices(choices,isCourse){
+  const list=choices||[]
+  if(!isCourse)return list.filter(c=>c.key!=='reread'&&c.key!=='approve_provider')
+  return CD_CHOICE_ORDER.map(k=>list.find(c=>c.key===k)).filter(Boolean).map(c=>({...c,label:CD_CHOICE_LABEL[c.key]||c.label}))
+}

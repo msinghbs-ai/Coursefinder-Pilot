@@ -297,8 +297,9 @@ begin
      is distinct from encode(sha256(convert_to((select system_text from pipeline.prompt_templates where service_code = 'course_description' and version = 'cdesc-source-grounded-v4'), 'UTF8')), 'hex') then
     raise exception 'post-check: the v4 prompt text does not have the worker''s sha-256';
   end if;
-  if exists (select 1 from jsonb_array_elements(v_p) x where (x->>'system_text_matches') = 'false' or (x->>'status' = 'shadow' and (x->>'models_match_route') <> 'true')) then
-    raise exception 'post-check: prompt registry parity failed: %', v_p;
+  -- the course description rows only: another service's row is that service's lane (18 Nov 2026 21:25: the provider description row differs since its prompt version 5)
+  if exists (select 1 from jsonb_array_elements(v_p) x where x->>'service' = 'course_description' and ((x->>'system_text_matches') = 'false' or (x->>'status' = 'shadow' and (x->>'models_match_route') <> 'true'))) then
+    raise exception 'post-check: prompt registry parity failed for course_description: %', v_p;
   end if;
   if security.pipeline_num_v1('enrich.course_description_max_sentences', 0) <> 2 or security.pipeline_num_v1('enrich.course_description_max_chars', 0) <> 360
      or security.pipeline_num_v1('enrich.course_description_identity_proof_on', 0) <> 1 or security.pipeline_num_v1('enrich.course_description_first_hold_on', 1) <> 0 then
