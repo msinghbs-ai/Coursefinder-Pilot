@@ -2,9 +2,10 @@
 // CF-247 S653. supabase/migrations/20261118185000_cf247_destination_page_facts.sql and 20261118186000 (first load), supabase/functions/_shared/cf247-page-facts.js, layer1-destination-geo-loader v1.2.0 mode facts.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-import { anchorWindows, extractFact, htmlToText, parseOccupationGrid, quoteAround, xlsxLinks } from '../../supabase/functions/_shared/cf247-page-facts.js'
+import { anchorWindows, extractFact, htmlToText, linkWords, parseOccupationGrid, quoteAround, xlsxLinks } from '../../supabase/functions/_shared/cf247-page-facts.js'
 
 const M = fs.readFileSync('supabase/migrations/20261118185000_cf247_destination_page_facts.sql', 'utf8')
+const R = fs.readFileSync('supabase/migrations/20261118191000_cf247_destination_page_facts_reader_fix.sql', 'utf8')
 const F = fs.readFileSync('supabase/migrations/20261118186000_cf247_destination_page_facts_first_load.sql', 'utf8')
 const E = fs.readFileSync('supabase/functions/layer1-destination-geo-loader/index.ts', 'utf8')
 
@@ -83,8 +84,9 @@ test('the migration: facts as data, terms recorded, restricted editions not read
 })
 
 test('the loader: mode facts reads the pages and the workbook through the shared reader', () => {
-  expect(E).toContain('const VERSION = "layer1-destination-geo-loader-v1.2.0";')
-  expect(E).toContain('import { anchorWindows, extractFact, htmlToText, parseOccupationGrid, xlsxLinks } from "../_shared/cf247-page-facts.js";')
+  expect(E).toMatch(/const VERSION = "layer1-destination-geo-loader-v1\.2\.[1-9][0-9]*";/)
+  expect(E).toContain('import { anchorWindows, extractFact, htmlToText, linkWords, parseOccupationGrid, xlsxLinks } from "../_shared/cf247-page-facts.js";')
+  expect(E).toContain('const link = links.find((l) => re.test(linkWords(l)));')
   expect(E).toContain('if (clean(body.mode) === "facts") return await facts(service, runId, trigger, started);')
   expect(E).toContain('await rpc(service, "svc_destination_page_facts_load_v1", { p_payload: { run_id: runId, trigger, pages, jsa } });')
   expect(E).toContain('const path = `destination/page-facts/${host}/${hash}.html`;')
@@ -94,4 +96,21 @@ test('the first load is asked for only after the loader that knows mode facts is
   expect(F).toContain("raise exception 'the page-facts load (20261118185000) is not applied';")
   expect(F).toContain("v_run := security.destination_job_run_now_v1('destination-page-facts-load',")
   expect(F).not.toMatch(/^\s*(delete from|drop |truncate )/im)
+})
+
+test('regression (first live run, 18 Nov 2026): a self-closing tag never swallows the page, and JSA download routes are found', () => {
+  const page = '<html><head><title>T</title><script src="a.js"/></head><body><svg class="i"/><nav>Menu</nav><template id="t"/>' +
+    '<p>You can work up to 48 hours per fortnight.</p><svg><path d="M0"/></svg><script>var x = "</div>"</script><p>From AUD2,000.</p></body></html>'
+  const t = htmlToText(page)
+  expect(t).toContain('You can work up to 48 hours per fortnight.')
+  expect(t).toContain('From AUD2,000.')
+  expect(t).not.toContain('var x')
+  expect(t).not.toContain('T Menu')
+  const links = xlsxLinks("<a class='d' href='/download/21600/osca-occupation-data-2021-census/4300/osca-occupation-data-2021-census/xlsx'><span>XLSX</span> 2.1 MB</a>" +
+    '<a href=/download/1/report/2/report/pdf>PDF</a>', 'https://www.jobsandskills.gov.au/data/labour-market-insights')
+  expect(links).toHaveLength(1)
+  expect(links[0].href).toBe('https://www.jobsandskills.gov.au/download/21600/osca-occupation-data-2021-census/4300/osca-occupation-data-2021-census/xlsx')
+  expect(new RegExp('OSCA\\s+Occupation\\s+data', 'i').test(linkWords(links[0]))).toBe(true)
+  expect(R).toContain("select pg_temp.cf_edit('security.destination_page_facts_load_v1(jsonb)'::regprocedure, 'f6c8e940310ba8d8f5bef70a3e746348',")
+  expect(R).not.toMatch(/^\s*(delete from|drop |truncate )/im)
 })
