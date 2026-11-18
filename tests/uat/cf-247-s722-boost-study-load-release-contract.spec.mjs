@@ -6,7 +6,7 @@ import fs from 'node:fs'
 const M = fs.readFileSync('supabase/migrations/20261119063000_cf247_s722_study_load_release_after_label_split.sql', 'utf8')
 
 test('releases only items the claim will read again for a course with no study load', () => {
-  expect(M).toContain("where x.lane = 'study_load' and x.entity = 'course' and x.state in ('rejected', 'failed', 'verified')),")
+  expect(M).toContain("where x.lane = 'study_load' and x.entity = 'course' and x.state in ('rejected', 'failed', 'verified')")
   expect(M).toContain("where c.id = x.entity_id and c.study_load is null and c.lifecycle_status = 'active')")
   expect(M).toContain("l.entity_id = x.entity_id and l.field in ('study_load', 'study_load_source', 'study_load_evidence_id')")
   expect(M).toContain('where i.latest_ev = i.evidence_id')
