@@ -1,0 +1,41 @@
+# S3-Boost providers: report-only audit of the immutable CRICOS Institutions edition.
+name: CRICOS provider reconciliation (read-only)
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths: ['scripts/boost-cricos-provider-audit.mjs', '.github/workflows/boost-cricos-provider-audit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: boost-cricos-provider-audit
+  cancel-in-progress: false
+jobs:
+  audit:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the pinned CRICOS Institutions file
+        run: |
+          set -euo pipefail
+          root=https://data.gov.au/data/dataset/e5ae7059-bfa8-4fa4-a5c0-c13cf3520193/resource
+          csv="$RUNNER_TEMP/cricos-institutions.csv"
+          sha=d62824262a8184ebb16a9caa13d7dc5d438fbce348556febf6a37e2b9481a11f
+          if ! curl --fail --silent --show-error --location --max-time 45 "$root/7f6941f3-5327-4db7-b556-5f16d77f63c1/download/cricos-institutions.csv" --output "$csv" ||
+             ! printf '%s  %s\n' "$sha" "$csv" | sha256sum --check; then
+            curl --fail --silent --show-error --location --max-time 60 "$root/11f8b01e-5a52-4e19-a3b8-7fea8a0430bf/download/cricos-providers-courses-and-locations.zip" --output "$RUNNER_TEMP/cricos.zip"
+            unzip -p "$RUNNER_TEMP/cricos.zip" '*Institutions.csv' > "$csv"
+            printf '%s  %s\n' "$sha" "$csv" | sha256sum --check
+          fi
+      - name: Reconcile provider codes, aliases and URLs
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: node scripts/boost-cricos-provider-audit.mjs "$RUNNER_TEMP/cricos-institutions.csv" cricos-audit
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cricos-provider-audit
+          path: cricos-audit/cricos-provider-audit.json
+          if-no-files-found: error
