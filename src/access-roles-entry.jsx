@@ -4,6 +4,7 @@ import{createRoot}from'react-dom/client'
 import{AlertTriangle,ArrowLeft,Check,Clock3,KeyRound,LockKeyhole,Plus,RefreshCw,Search,Send,ShieldCheck,Trash2,UserCog,UserPlus,UsersRound,X}from'lucide-react'
 import{supabase,api}from'./lib/supabase'
 import{accessApi}from'./access-roles-api'
+import CreateUserWizard from'./CreateUserWizard'
 import'./access-roles.css'
 import{fmtNumber,fmtDate,fmtDateTime}from'./lib/format.js'
 
@@ -54,7 +55,8 @@ function AccessWorkspace({actorId,embedded=false}){
   const filtered=useMemo(()=>{const q=query.trim().toLowerCase();if(!q)return users;return users.filter(user=>[user.email,user.effective_role?.name,user.effective_role?.code,...(user.roles||[]).map(r=>r.role_name||r.role_code)].filter(Boolean).some(v=>String(v).toLowerCase().includes(q)))},[users,query])
   const active=users.filter(u=>!u.disabled).length,disabled=users.length-active,platformAdmins=users.filter(u=>!u.disabled&&(u.roles||[]).some(r=>r.role_code==='platform_admin'&&r.active)).length
 
-  async function createUser(payload){setError('');setNotice('');try{await accessApi.create(payload);setCreateOpen(false);setNotice(payload.mode==='password'?'User created. The password is not stored or retrievable from StudySearch.':'Invitation created and role assignment recorded.');await load()}catch(e){setError(e.message||String(e));throw e}}
+  // v2.16.35: the guided Create user flow keeps itself open on success to show what happened; the list reloads when it is closed
+  async function createUser(payload){setError('');setNotice('');await accessApi.create(payload);setNotice(payload.mode==='password'?`${payload.email} created. The password is not stored or retrievable from StudySearch.`:`Invitation sent to ${payload.email}.`);load()}
   async function saveRoles(payload){setError('');setNotice('');try{await accessApi.replaceRoles(payload);setEditUser(null);setNotice('Role assignments updated. Effective access follows the highest active role.');await load()}catch(e){setError(e.message||String(e));throw e}}
   // 16 Oct 2026 (Platform Admin): delete a user. Not your own account, not a Platform Admin, not the system account (the database checks too).
   async function deleteUser(user){const typed=prompt(`Delete ${user.email}? They can no longer sign in and leave this list; their roles end. A user named on recorded work is kept in the background so the history stays linked. This cannot be undone.\n\nType the email to confirm:`);if(typed===null)return;if(typed.trim().toLowerCase()!==String(user.email||'').toLowerCase()){setError('The email typed did not match; nothing was deleted.');return}setActingId(user.id);setError('');setNotice('');try{const r=await accessApi.deleteUser(user.id);setNotice(r?.mode==='soft_deleted'?`${user.email} deleted. Their recorded work keeps its history.`:`${user.email} deleted.`);await load()}catch(e){setError(e.message||String(e))}finally{setActingId('')}}
@@ -85,7 +87,7 @@ function AccessWorkspace({actorId,embedded=false}){
     <section className="ar-panel"><div className="ar-panel-head"><div><h2>Recent access changes</h2><p>Server-side audit events. Passwords and tokens are excluded by contract.</p></div></div><AuditEvents events={events}/></section>
     {(data?.deletions||[]).length>0&&<section className="ar-panel ar-deletions"><div className="ar-panel-head"><div><h2>Deleted users</h2><p>Who was deleted, by whom and when.</p></div></div><div className="ar-audit-list">{data.deletions.map((d,i)=><div className="ar-audit-row" key={`${d.at}-${i}`}><span className="ar-audit-icon"><Trash2 size={14}/></span><div><strong>{d.email||'Unknown'}</strong><p>{(d.roles||[]).map(r=>humanise(r.role_code)).join(', ')||'No role'} · {d.mode==='soft_deleted'?'kept in the background (named on recorded work)':'removed'}</p></div><small>{formatDateTime(d.at)}{d.actor_email?` · ${d.actor_email}`:''}</small></div>)}</div></section>}
     </main>
-    {createOpen&&<AccessModal title="Create user" roles={roles} mode="create" onClose={()=>setCreateOpen(false)} onSubmit={createUser}/>} 
+    {createOpen&&<CreateUserWizard roles={roles} existing={users.map(u=>u.email)} onClose={()=>setCreateOpen(false)} onSubmit={createUser} onDone={()=>setCreateOpen(false)}/>} 
     {editUser&&<AccessModal title={`Edit roles · ${editUser.email}`} roles={roles} mode="edit" user={editUser} actorId={actorId} onClose={()=>setEditUser(null)} onSubmit={saveRoles}/>} 
   </div></div>
 }

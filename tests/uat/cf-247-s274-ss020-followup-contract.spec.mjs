@@ -77,7 +77,7 @@ test('item 1: Automations no longer shows Refresh schedules; its runtime health 
 test('items 2 and 4: Link refresh stays on Coverage › Courses; no "conditional Layer 3" row wording; 48 tabs on 20 pages (v2.16.12: Settings › Integrations)', () => {
   expect(read('src/mature-main.jsx')).toContain("<CoverageView view=\"courses\"/><LinkRefresh/>")
   expect(Object.keys(PAGES)).toHaveLength(21) // v2.16.19 (RM0F, decision G-2, Platform Admin 17 Nov 2026): Destination data added after Rankings & statistics (was 20 pages, 48 tabs)
-  expect(Object.values(PAGES).reduce((n, p) => n + (p.tabs?.length || 1), 0)).toBe(55) /* v2.16.20: Users & roles has two tabs; v2.16.24: Platform health gains Country & category completeness */
+  expect(Object.values(PAGES).reduce((n, p) => n + (p.tabs?.length || 1), 0)).toBe(56) /* v2.16.35: Guides gains Role guides; v2.16.20: Users & roles has two tabs; v2.16.24: Platform health gains Country & category completeness */
   const texts = fs.readdirSync('src', { recursive: true }).filter((f) => /\.(jsx?|css)$/.test(f)).map((f) => read(`src/${f}`))
   for (const t of texts) { expect(t).not.toContain('conditional Layer 3'); expect(t).not.toMatch(/\b22 pages\b/) }
   expect(read('src/guide/platformGuide.js')).toContain('Refresh schedules and one-off runs is retired from Automations')

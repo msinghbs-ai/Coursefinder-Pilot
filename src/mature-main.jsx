@@ -23,6 +23,7 @@ import ScholarshipExtraction from'./ScholarshipExtraction'
 import ListEdit from'./ListEdit'
 import{CsvExport}from'./CsvExport' // CF-247 catalogue CSV export (Platform Admin 16 Nov 2026 22:12)
 import DashboardHome from'./Dashboard'
+import{recordRecent,routeEntry,searchEntry}from'./lib/recent-activity'
 import ContextualInsights from'./ContextualInsights'
 import ProviderLogo,{ProviderBrand,logoCapability}from'./ProviderLogo'
 import FlagsPanel from'./FlagsPanel'
@@ -97,6 +98,7 @@ const Progress=lazyPage(()=>import('./Progress'))
 const AdminTasks=lazyPage(()=>import('./AdminTasks'))
 const PlatformGuide=lazyPage(()=>import('./PlatformGuide'))
 const Sop=lazyPage(()=>import('./Sops'))
+const RoleGuides=lazyPage(()=>import('./RoleGuides'))
 const Layer1Sources=lazyPage(()=>import('./layer1-operations-entry'),'Layer1Sources')
 // SS-020 follow-up (Decision 269 amendment, Platform Admin 4 Nov 2026 "Rewire, then retire"): Automations › Refresh schedules and one-off runs
 // retired; Layer 1 › Sources' Schedule edits the Layer 1 refresh policies. Its runtime health panel stays on Automations.
@@ -306,6 +308,9 @@ function App(){
   // person (public.admin_screen_open), so screens retire on their use. Failures are ignored; nothing waits for it.
   const openedKey=context?`${route.page}|${effectiveTab(route.page,route.tab,rank)}`:''
   useEffect(()=>{if(!openedKey)return;const[p,t]=openedKey.split('|');supabase.rpc('admin_screen_open',{p_page:p,p_tab:t||''}).then(()=>{},()=>{})},[openedKey])
+  // v2.16.35 (Platform Admin 18 Nov 2026 10:33): each page, tab and review queue opened goes on the person's own Continue where you left off list (this browser only)
+  const routeKey=`${openedKey}?${route.params?.toString?.()||''}`
+  useEffect(()=>{if(!openedKey||!context?.user_id)return;const t=(PAGES[route.page]?.tabs||[]).find(x=>x.key===effectiveTab(route.page,route.tab,rank));const e=routeEntry(route,PAGES,t?.label);if(e)recordRecent(String(context.user_id),e)},[routeKey])
   // Top-bar health dot: read once after sign-in and every five minutes.
   useEffect(()=>{if(!session||!canOpen('health',rank))return;let live=true;const read=()=>readPlatformHealth().then(h=>{if(live)setHealth(h)});read();const t=setInterval(read,300000);return()=>{live=false;clearInterval(t)}},[session,rank])
   function go(target,params={}){
@@ -390,8 +395,8 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
   return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`}>{dataFirst&&<DataDelivery rank={rank} onError={err}/>}{notices&&<LayerNotices layer={layerNo}/>}{body}</PageLayout>
   function pageBody(){
     switch(pageKey){
-      case'dashboard':return <DashboardHome onError={onError}/>
-      case'guide':return tab==='admin-sop'||tab==='operator-sop'?<Sop key={tab} id={tab} rank={rank} navigate={navigate}/>:<PlatformGuide rank={rank} navigate={navigate}/>
+      case'dashboard':return <DashboardHome onError={onError} rank={rank} actorId={actorId} navigate={navigate}/>
+      case'guide':return tab==='admin-sop'||tab==='operator-sop'?<Sop key={tab} id={tab} rank={rank} navigate={navigate}/>:tab==='role-guides'?<RoleGuides rank={rank} navigate={navigate}/>:<PlatformGuide rank={rank} navigate={navigate}/>
       case'courses':return <Catalogue key="course" type="course" onError={onError} navigate={navigate} initialId={focusId} rank={rank} preset={presetOf(routeParams)}/>
       case'providers':
         if(tab==='campuses')return <Catalogue key="campus" type="campus" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
@@ -740,6 +745,7 @@ const EMPTY_REASON_OPTIONS=[{value:'any',label:'Any reason recorded'},...Object.
 const CAMPUS_PRIMARY_OPTIONS=[{value:'true',label:'Primary campus'},{value:'false',label:'Not primary'}]
 const PRESET_KEYS=['country','subdivision','lifecycle','publication','hasFee','hasIntake','hasEnglish','hasScholarship','courseDescription','studyLoad','emptyReason','campusPrimary','campusLocality','description','admission','sourceTier','website','zoho','providerType','quality']
 function presetOf(p){const o={};if(!p||typeof p.get!=='function')return o;for(const k of PRESET_KEYS){const v=p.get('f_'+k);if(v)o[k]=v}return o}
+const SEARCH_NOUN={course:'Courses',provider:'Providers',campus:'Campuses',scholarship:'Scholarships'}
 function Catalogue({type,onError,navigate,initialId='',completenessMode=false,rank=0,preset={}}){
   const[creating,setCreating]=useState(false),[listEdit,setListEdit]=useState(false),[schDetail,setSchDetail]=useState(false)
   const cfg=ENTITY[type]
@@ -767,6 +773,8 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false,ra
   useEffect(()=>{if(!['provider','course','campus','scholarship'].includes(type))return;if(type==='course'){setFilterData({});setFilterBusy(false);return}let live=true;setFilterBusy(true);api.providerFilterOptions(filters.country||'').then(x=>live&&setFilterData(x||{})).catch(e=>onError(e.message)).finally(()=>live&&setFilterBusy(false));return()=>{live=false}},[type,filters.country,filters.subdivision])
   useEffect(()=>setOffset(0),[debounced,JSON.stringify(filters),sort,direction])
   useEffect(()=>{if(initialId&&String(initialId)!==String(selected))open({id:initialId,course_id:initialId})},[initialId,type])
+  // v2.16.35: a search with text or a filter goes on the person's Continue where you left off list; Resume puts the same search back
+  useEffect(()=>{if(completenessMode||!catalogueUser||catalogueUser==='anonymous')return;const e=searchEntry(type,SEARCH_NOUN[type]||type,{query:debounced,filters,filterLabels});if(e)recordRecent(catalogueUser,e)},[catalogueUser,debounced,JSON.stringify(filters)])
   const rows=rowsOf(data),total=Number(data?.total??rows.length??0),active=activeFilters(filters).filter(([k])=>type!=='scholarship'||!['status','lifecycle','publication'].includes(k))
   async function open(row){const id=row.id??row.course_id;setSelected(id);setSelectedRow(row);setDetailBusy(true);try{setDetail(await adminRead(cfg.detail,{id}))}catch(e){onError(e.message)}finally{setDetailBusy(false)}}
   function patch(k,v,label=''){setFilters(f=>{const n={...f,[k]:v};if(k==='country'){n.subdivision='';if(['course','scholarship','campus'].includes(type))n.provider=''}if(k==='subdivision'&&['course','campus'].includes(type))n.provider='';return n});setFilterLabels(l=>{const n={...l,[k]:label||''};if(k==='country'){delete n.subdivision;if(['course','scholarship','campus'].includes(type))delete n.provider}if(k==='subdivision'&&['course','campus'].includes(type))delete n.provider;return n})}
