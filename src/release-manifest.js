@@ -1,20 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.33'
-export const PACKAGE_VERSION='0.1.455'
+export const UI_VERSION='2.16.34'
+export const PACKAGE_VERSION='0.1.456'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'18 Nov 2026',
-  title:'Layer 4 › Inbox: review grid, saved views and the source quote drawer',
+  title:'Layer 1 › Register: current next dates, real failures only, headings stay in place',
   changes:[
-    'Layer 4 › Inbox has a new Grid view: one kind of item at a time as rows, paged on the server, with a reason filter, a search, oldest or newest first, a column chooser and Export CSV.',
-    'Saved views: three shared views (AER Audit Samples, Official URLs, Provider Blockers) for everyone, changed by a Platform Admin only; anyone can save their own view of the filters and columns.',
-    'Opening a row shows the Source Quote vs Extracted Value drawer: the quote on the saved page beside the value it produced, the evidence link and the decision history, with the item\'s own decision buttons.',
-    'A view only chooses what is shown. The AER audit sample, the course-address rules and every decision path are unchanged.'
+    'A source\'s next ingestion date no longer stays in the past after a check found the file unchanged or failed; it moves on by whole cadences every hour.',
+    'Needs attention shows real failures only: four Canadian college code readers replaced by coverage-sweep are retired, and the QS 2026 and 2027 editions read as checked because they were applied from the publisher files.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Scrolling the Layer 1 register no longer slides table headings over the filter bar or + Add source.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
