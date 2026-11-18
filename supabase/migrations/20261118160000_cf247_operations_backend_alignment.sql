@@ -63,16 +63,16 @@ end $f$;
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, reason, section, used_by) values
  ('pipeline', 'health.dispatcher_stale_minutes', 'Platform health: a dispatcher is late after',
   'Dispatchers (rollup-scheduler, coverage-lane-dispatch, admission-rule-runner) run every minute. With no successful run for this many minutes the Dispatchers check raises a warning.',
-  'number', 5, 2, 60, 'minutes', 790, 'S2-Build, Platform Admin 18 Nov 2026 12:49', 'Platform upkeep', 'security.platform_health_consolidated_v1'),
+  'number', '5'::jsonb, 2, 60, 'minutes', 790, 'S2-Build, Platform Admin 18 Nov 2026 12:49', 'Platform upkeep', 'security.platform_health_consolidated_v1'),
  ('pipeline', 'health.layer4_pending_warn', 'Platform health: Layer 4 backlog warning at',
   'Items waiting in Layer 4 review. At or above this count the Layer 4 backlog check raises a warning.',
-  'number', 6000, 100, 100000, 'items', 791, 'S2-Build, Platform Admin 18 Nov 2026 12:49; 4,959 waiting on 18 Nov', 'Platform upkeep', 'security.platform_health_consolidated_v1'),
+  'number', '6000'::jsonb, 100, 100000, 'items', 791, 'S2-Build, Platform Admin 18 Nov 2026 12:49; 4,959 waiting on 18 Nov', 'Platform upkeep', 'security.platform_health_consolidated_v1'),
  ('pipeline', 'health.layer4_oldest_warn_days', 'Platform health: Layer 4 oldest item warning after',
   'The oldest item waiting in Layer 4 review. Older than this many days, the Layer 4 backlog check raises a warning.',
-  'number', 45, 1, 365, 'days', 792, 'S2-Build, Platform Admin 18 Nov 2026 12:49; oldest 25 Oct on 18 Nov', 'Platform upkeep', 'security.platform_health_consolidated_v1'),
+  'number', '45'::jsonb, 1, 365, 'days', 792, 'S2-Build, Platform Admin 18 Nov 2026 12:49; oldest 25 Oct on 18 Nov', 'Platform upkeep', 'security.platform_health_consolidated_v1'),
  ('pipeline', 'audit.trail_rows', 'Evidence audit trail: rows per list',
   'How many of the latest dispatcher runs, Boost qualifications and Layer 4 decisions the Evidence audit trail shows in each list.',
-  'number', 50, 10, 200, 'rows', 793, 'S2-Build, Platform Admin 18 Nov 2026 12:49', 'Platform upkeep', 'public.admin_ops_audit_v1')
+  'number', '50'::jsonb, 10, 200, 'rows', 793, 'S2-Build, Platform Admin 18 Nov 2026 12:49', 'Platform upkeep', 'public.admin_ops_audit_v1')
 on conflict (toolset_key, key) do nothing;
 
 -- 2. which dispatcher runs a legacy job, and the recorded pause of a job a person switched off
