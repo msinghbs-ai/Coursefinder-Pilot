@@ -226,11 +226,11 @@ on conflict (toolset_key, key) do nothing;
 -- 1: the route and the registry
 with u as (
   update pipeline.ai_service_routes set prompt_source = 'worker code: cdesc-source-grounded-v4',
-         reason = 'prompt cdesc-source-grounded-v4 released (Platform Admin 18 Nov 2026, S1-Courses s662, migration 20261118268000)'
+         reason = 'prompt cdesc-source-grounded-v4 released (Platform Admin 18 Nov 2026, S1-Courses s662, migration 20261118275000)'
    where service_code = 'course_description' and prompt_source = 'worker code: cdesc-source-grounded-v3'
   returning service_code)
 insert into pipeline.admin_control_events(area, action, target, detail, actor)
-select 'settings', 'migration', 'ai_service_routes.course_description', jsonb_build_object('migration', '20261118268000', 'field', 'prompt_source',
+select 'settings', 'migration', 'ai_service_routes.course_description', jsonb_build_object('migration', '20261118275000', 'field', 'prompt_source',
        'before', 'worker code: cdesc-source-grounded-v3', 'after', 'worker code: cdesc-source-grounded-v4'), null from u;
 
 insert into pipeline.prompt_templates(service_code, version, system_text, system_sha256, user_template, variables, answer_schema, pinned_models, source, status, note)
@@ -281,11 +281,11 @@ CITED_OFFICIAL_SOURCE_SPANS[{id,source_url,source_hash,captured_at,exact_text}].
   from pipeline.prompt_templates t where t.service_code = 'course_description' and t.version = 'cdesc-source-grounded-v3'
 on conflict (service_code, version) do nothing;
 update pipeline.prompt_templates set status = 'retired', source = 'worker code: course-text.ts CDESC_SYSTEM_V3 (sha-256 CDESC_SYSTEM_V3_SHA256)',
-       note = coalesce(note, '') || ' | retired 18 Nov 2026: cdesc-source-grounded-v4 released (migration 20261118268000)'
+       note = coalesce(note, '') || ' | retired 18 Nov 2026: cdesc-source-grounded-v4 released (migration 20261118275000)'
  where service_code = 'course_description' and version = 'cdesc-source-grounded-v3' and status = 'shadow';
 
 insert into pipeline.admin_control_events(area, action, target, detail, actor)
-values ('settings', 'migration', 'course descriptions s662/s664', jsonb_build_object('migration', '20261118268000', 'prompt', 'cdesc-source-grounded-v4',
+values ('settings', 'migration', 'course descriptions s662/s664', jsonb_build_object('migration', '20261118275000', 'prompt', 'cdesc-source-grounded-v4',
         'max_sentences', 2, 'max_chars', 360, 'identity_proof_on', 1, 'first_hold_on', 0, 'layer4_choices', jsonb_build_array('reread', 'approve_provider')), null);
 
 -- post-checks
