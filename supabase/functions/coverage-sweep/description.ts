@@ -310,6 +310,33 @@ function openingParagraph(html: string): string {
   return "";
 }
 
+// s762 (CF-247 S2-BOOST-Providers, Platform Admin 19 Nov 2026 07:39): two marks a provider prints beside its own whole name are not "extra words".
+// 196 reads were held provider_name_conflict; in part of them the title or h1 is the whole catalogue name followed by the provider's own initials in
+// brackets ("About Us | Sydney Art School (SAS)", "New Zealand Biosecurity Academy (NZBA)") or by its registration number ("About Health Institute
+// Australasia (RTO 45524)"). Only when the segment already holds the WHOLE name (a label, never an abbreviation alone):
+//   1 a bracket whose content is the initials of that name's words, with or without its small words (of, the, and, for, in, at), is the name again;
+//   2 an RTO, CRICOS or TEQSA registration number (the scheme word, an optional "No", "number", "code", "provider" or "ID", then the code) names no
+//      other entity. The code's form is checked, not its value: the worker is not given the register's numbers.
+// Everything else is unchanged and still held: a place or sub-brand after the name ("Scotch College Melbourne", "X University Malaysia"), another
+// institution, a campus, faculty or school, a shared host, and a bracket that is anything but the name's own initials.
+const IDENTITY_SMALL_WORDS = new Set(["of", "the", "and", "for", "in", "at"]);
+export const IDENTITY_OWN_INITIALS_MIN = 2;  // fixed: one letter in brackets is not an abbreviation of a name
+export function identityOwnInitials(label: string): string[] {
+  const ws = identityWords(label).split(" ").filter(Boolean);
+  const all = ws.map((w) => w[0]).join(""), main = ws.filter((w) => !IDENTITY_SMALL_WORDS.has(w)).map((w) => w[0]).join("");
+  return [...new Set([all, main])].filter((x) => x.length >= IDENTITY_OWN_INITIALS_MIN);
+}
+const IDENTITY_REGISTRATION = /(?<=^| )(?:rto|cricos|teqsa)(?: (?:no|number|code|provider|id))*(?: (?:prv)?\d{3,6}[a-z]?)(?= |$)/g;  // fixed: the printed forms of an RTO code, a CRICOS provider code and a TEQSA provider ID
+export function identityOwnMarksRemoved(segment: string, label: string, extra: string): string {
+  let rest = ` ${extra} `;
+  const own = identityOwnInitials(label);
+  for (const m of String(segment || "").matchAll(/[(\[]([^()\[\]]*)[)\]]/g)) {
+    const inner = identityWords(m[1]);
+    if (inner && own.includes(inner)) rest = rest.replace(` ${inner} `, " ");
+  }
+  return rest.replace(/\s+/g, " ").trim().replace(IDENTITY_REGISTRATION, " ").replace(/\s+/g, " ").trim();
+}
+
 function registryEvidenceIdentity(html: string, names: string[], trace?: IdentityTrace): DescriptionIdentity {
   const uniq = (xs: string[]) => [...new Set(xs.map(identityWords).filter(Boolean))];
   const labels = uniq(descriptionIdentityLabels(names || [])).filter((l) => l.split(" ").length > 1);
@@ -331,7 +358,8 @@ function registryEvidenceIdentity(html: string, names: string[], trace?: Identit
       const label = labels.find((l) => has(w, l)), alias = aliases.find((a) => has(w, a));
       if (label || alias) {
         // the name or an abbreviation with extra words ("X University Malaysia", "UTS College") names something else
-        const extra = strip(w, phrases).replace(IDENTITY_FRAMING, " ").replace(/\s+/g, " ").trim();
+        const extra0 = strip(w, phrases).replace(IDENTITY_FRAMING, " ").replace(/\s+/g, " ").trim();
+        const extra = extra0 && label ? identityOwnMarksRemoved(seg, label, extra0) : extra0;  // s762: the name's own bracketed initials and its registration number are not extra words
         if (extra) return fail(el.tag === "h1" && IDENTITY_SUBUNIT.test(extra) ? "provider_subunit_source" : "provider_name_conflict", { tag: el.tag, heading: el.text, segment: seg, extra });
         if (label) { if (!proof || proof.via !== "registry_heading_name") proof = { name: label, via: "registry_heading_name" } }  // the whole name outranks an abbreviation
         else proof ||= { name: alias!, via: "registry_heading_abbreviation" };
