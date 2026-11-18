@@ -17,8 +17,10 @@
 -- What it changes (CREATE OR REPLACE of existing functions, md5-guarded; settings rows; one rollup target's schedule; no new table or function;
 -- the frozen consumer API is only read, never changed; G3 75/48):
 --   1. security.course_coverage_build_v1 is provider-chunked: each run rebuilds the providers whose coverage rows are oldest, up to
---      batch.course_coverage_courses courses (default 3,000); every per-course scan, the AER covered set included, is restricted to the chunk;
---      country tiers still come from every provider. The whole table is refreshed every 12 runs; course-coverage-build runs every 5 minutes.
+--      batch.course_coverage_courses courses (default 1,500); every per-course scan, the AER covered set included, is restricted to the chunk;
+--      country tiers still come from every provider. The whole table (36,031 courses) is refreshed about every 24 runs (2 hours); course-coverage-build runs every 5 minutes.
+--      The chunk's statistics are taken before its reads (a temporary table has none), the Enrich state is read course by course (index) and the
+--      open absences by a join (measured on 2,900 courses: 4.8 s and 0.6 s became 0.5 s and 0.2 s).
 --      The daily counts (course_coverage_daily, course_coverage_daily_by_country) move by each run's change instead of a count of the whole
 --      table (3.9 s measured); the first run of a day starts from the latest earlier day's counts. Rows of providers with no active course left
 --      are removed by provider, not by a scan of the whole table.
@@ -38,7 +40,7 @@
 insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason)
 values
   ('pipeline', 'batch.course_coverage_courses', 'Coverage build: courses per run', 'Each run rebuilds the providers whose coverage rows are oldest, up to this many active courses.',
-   'number', to_jsonb(3000), 200, 40000, 'courses', 101, 'Job sizes', 'security.course_coverage_build_v1', 'CF-247 s720 (Platform Admin 19 Nov 2026 08:17, IQ-00609): bounded coverage build'),
+   'number', to_jsonb(1500), 200, 40000, 'courses', 101, 'Job sizes', 'security.course_coverage_build_v1', 'CF-247 s720 (Platform Admin 19 Nov 2026 08:17, IQ-00609): bounded coverage build'),
   ('pipeline', 'admit.consumer_snapshot_page_size', 'Admission evidence: consumer API rows read', 'Rows each consumer API read returns in the before/after evidence snapshot of an admission batch.',
    'number', to_jsonb(5), 1, 25, 'rows', 641, 'Admission checks', 'security.consumer_api_snapshot_v1', 'CF-247 s720 (IQ-00594/IQ-00588): bounded admission evidence snapshot'),
   ('pipeline', 'admit.consumer_snapshot_budget_ms', 'Admission evidence: snapshot time budget', 'The evidence snapshot stops after this long and marks the reads it skipped.',
@@ -77,8 +79,8 @@ select pg_temp.cf_edit_many('security.course_coverage_build_v1()'::regprocedure,
     $o$      from pipeline.layer4_review_items where entity_type='course' and status='pending'$o$,
     $o$from pipeline.layer3_work_items where entity_type='course' and status='layer4_required';$o$,
     $o$from pipeline.layer3_work_items where entity_type='course' and status in ('pending','reserved','failed','retry');$o$,
-    $o$from pipeline.field_enrich_items where course_id is not null order by course_id, field, id desc;$o$,
-    $o$where a.resolved_at is null;$o$,
+    $o$select distinct on (course_id, field) course_id, field, state from pipeline.field_enrich_items where course_id is not null order by course_id, field, id desc;$o$,
+    $o$from pipeline.course_field_absence a join pipeline.field_absence_classes k on k.code=a.absence_class where a.resolved_at is null;$o$,
     $o$  truncate pipeline.course_attribute_coverage;$o$,
     $o$  delete from pipeline.course_coverage_daily where snapshot_date=current_date;
   insert into pipeline.course_coverage_daily(snapshot_date,attribute,state,tier,courses)
@@ -92,8 +94,8 @@ select pg_temp.cf_edit_many('security.course_coverage_build_v1()'::regprocedure,
   ],
   array[
     $n$declare v_n int; v_t0 timestamptz:=clock_timestamp();
-        v_batch int := greatest(1, security.pipeline_num_v1('batch.course_coverage_courses', 3000)::int); v_chunk uuid[]; v_gone uuid[]; v_full boolean := false;  -- 20261119100100 (s720)$n$,
-    $n$  -- 20261119100100 (s720): provider-chunked. Every provider with active courses and its country; the chunk is the providers whose coverage rows
+        v_batch int := greatest(1, security.pipeline_num_v1('batch.course_coverage_courses', 1500)::int); v_chunk uuid[]; v_gone uuid[]; v_full boolean := false;  -- 20261119104500 (s720)$n$,
+    $n$  -- 20261119104500 (s720): provider-chunked. Every provider with active courses and its country; the chunk is the providers whose coverage rows
   -- are oldest (never built first), up to batch.course_coverage_courses courses (always at least one provider)
   create temp table _pc on commit drop as
     select co.provider_id, min(k.iso_alpha2::text) country_code, count(*) n
@@ -108,7 +110,8 @@ select pg_temp.cf_edit_many('security.course_coverage_build_v1()'::regprocedure,
   -- providers whose rows remain but who have no active course left; their rows are removed in the same run
   v_gone := array(select x.provider_id from _cp x where not exists (select 1 from _pc pc where pc.provider_id = x.provider_id));
   create temp table _c on commit drop as$n$,
-    $n$     where co.lifecycle_status='active' and co.provider_id = any(v_chunk); -- Decision 213: every country; 20261119100100: the chunk$n$,
+    $n$     where co.lifecycle_status='active' and co.provider_id = any(v_chunk); -- Decision 213: every country; 20261119104500: the chunk
+  analyze _c;  -- s720: the chunk's statistics, so the per-course reads below use their indexes$n$,
     $n$      from (select provider_id, row_number() over (partition by country_code order by n desc, provider_id) rk from _pc) x; -- tiers within each country (every provider, s720)$n$,
     $n$select distinct course_id from pipeline.layer2_course_discovery_candidates where selected and course_id is not null and course_id in (select course_id from _c);$n$,
     $n$from pipeline.layer2_run_items where entity_type='course' and entity_id in (select course_id from _c) group by entity_id;$n$,
@@ -136,8 +139,9 @@ select pg_temp.cf_edit_many('security.course_coverage_build_v1()'::regprocedure,
     $n$      from pipeline.layer4_review_items where entity_type='course' and status='pending' and entity_id in (select course_id from _c)$n$,
     $n$from pipeline.layer3_work_items where entity_type='course' and status='layer4_required' and entity_id in (select course_id from _c);$n$,
     $n$from pipeline.layer3_work_items where entity_type='course' and status in ('pending','reserved','failed','retry') and entity_id in (select course_id from _c);$n$,
-    $n$from pipeline.field_enrich_items where course_id in (select course_id from _c) order by course_id, field, id desc;$n$,
-    $n$where a.resolved_at is null and a.course_id in (select course_id from _c);$n$,
+    $n$select c.course_id, x.field, x.state from _c c
+      cross join lateral (select distinct on (e.field) e.field, e.state from pipeline.field_enrich_items e where e.course_id = c.course_id order by e.field, e.id desc) x;  -- s720: course by course$n$,
+    $n$from _c cc join pipeline.course_field_absence a on a.course_id = cc.course_id join pipeline.field_absence_classes k on k.code=a.absence_class where a.resolved_at is null;  -- s720: the chunk$n$,
     $n$  -- s720: the chunk's providers are rebuilt in place, and the rows of providers with no active course left are removed (derived rows)
   -- the counts of the rows removed are kept so the daily counts can move by this run's change
   create temp table _dold (country_code text, attribute text, state text, tier text, n int) on commit drop;
@@ -173,16 +177,16 @@ select pg_temp.cf_edit_many('security.course_coverage_build_v1()'::regprocedure,
    where snapshot_date = current_date and country_code = 'AU' and courses <> 0;$n$,
     $n$return jsonb_build_object('rows',v_n,'courses',(select count(*) from _c),'providers',cardinality(v_chunk),'gone',cardinality(v_gone),'batch',v_batch,$n$
   ],
-  '20261119100100 (s720)');
+  '20261119104500 (s720)');
 
 update pipeline.rollup_targets set schedule = '2-59/5 * * * *', expected_ms = 8000, updated_at = now(),  -- fixed: the target's own schedule; batch size is the setting
-       note = coalesce(note, '') || ' | 19 Nov 2026 (20261119100100, s720): provider-chunked (batch.course_coverage_courses), every 5 minutes; the whole table is refreshed about every hour'
+       note = coalesce(note, '') || ' | 19 Nov 2026 (20261119104500, s720): provider-chunked (batch.course_coverage_courses), every 5 minutes; the whole table is refreshed about every 2 hours'
  where target_code = 'course-coverage-build';
 
 -- 2. bounded consumer API evidence snapshot (same frozen reads, smaller pages, a time budget)
 do $g$ begin
   if md5((select prosrc from pg_proc where oid = 'security.consumer_api_snapshot_v1()'::regprocedure)) <> '95c063d16fa95b0f06221cb74e11fd44'
-     and position('20261119100100' in (select prosrc from pg_proc where oid = 'security.consumer_api_snapshot_v1()'::regprocedure)) = 0 then
+     and position('20261119104500' in (select prosrc from pg_proc where oid = 'security.consumer_api_snapshot_v1()'::regprocedure)) = 0 then
     raise exception 'live security.consumer_api_snapshot_v1 differs from the definition this change replaces';
   end if;
 end $g$;
@@ -190,7 +194,7 @@ do $r$
 declare v_def text := replace(pg_get_functiondef('security.consumer_api_snapshot_v1()'::regprocedure), chr(13), '');
         v_body text := (select prosrc from pg_proc where oid = 'security.consumer_api_snapshot_v1()'::regprocedure);
         v_new text := $b$
--- 20261119100100 (s720): the before/after evidence of an admission batch (pipeline.consumer_api_baselines, Decision 163): the same frozen reads,
+-- 20261119104500 (s720): the before/after evidence of an admission batch (pipeline.consumer_api_baselines, Decision 163): the same frozen reads,
 -- admit.consumer_snapshot_page_size rows each, cheap reads first and the two free-text searches (about 7 s each) last, stopping at
 -- admit.consumer_snapshot_budget_ms (the reads it skips are marked). A statement-timeout cancel cannot be caught, so the budget is checked
 -- before each read.
@@ -229,7 +233,7 @@ begin
   return res;
 end $b$;
 begin
-  if position('20261119100100' in v_body) > 0 then return; end if;
+  if position('20261119104500' in v_body) > 0 then return; end if;
   -- the definition keeps its own attributes (security, search path); only the body changes
   execute replace(v_def, v_body, v_new);
 end $r$;
@@ -238,7 +242,7 @@ end $r$;
 select pg_temp.cf_edit_many('security.coverage_admission_apply_v1(integer,text,text[])'::regprocedure, 'd36afc8ba115bb8befaa1e8e1d0aea0c',
   array[$o$    perform search.refresh_course_enrichment_scoped_v1(v_courses,true);
     v_after:=security.consumer_api_snapshot_v1();$o$],
-  array[$n$    -- 20261119100100 (s720): never wait for the search-document writer; when it is busy the courses go to the search refresh queue, as
+  array[$n$    -- 20261119104500 (s720): never wait for the search-document writer; when it is busy the courses go to the search refresh queue, as
     -- security.intake_dates_apply_v1 does (search.refresh_requests, processed by the search refresh job's next run)
     if pg_try_advisory_xact_lock(hashtext('cf247:search_course_documents_writer')) then  -- fixed: the one writer lock (W27)
       perform search.refresh_course_enrichment_scoped_v1(v_courses,true);
@@ -246,21 +250,21 @@ select pg_temp.cf_edit_many('security.coverage_admission_apply_v1(integer,text,t
       insert into search.refresh_requests(requested_by) values ('coverage admission: ' || cardinality(v_courses) || ' courses (search writer busy)');
     end if;
     v_after:=security.consumer_api_snapshot_v1();$n$],
-  '20261119100100 (s720)');
+  '20261119104500 (s720)');
 
 -- 4. one claim per stored page
 select pg_temp.cf_edit_many('public.svc_page_text_next_v1(integer)'::regprocedure, '3fde717c00cd160b6dd3916ee761cc31',
   array[$o$    select evidence_id, course_id, 'claimed', now() from cand
     on conflict$o$],
-  array[$n$    -- 20261119100100 (s720, IQ-00606): two courses can share one stored page; the page is claimed once (the items still list every course)
+  array[$n$    -- 20261119104500 (s720, IQ-00606): two courses can share one stored page; the page is claimed once (the items still list every course)
     select distinct on (evidence_id) evidence_id, course_id, 'claimed', now() from cand order by evidence_id, weight desc, csort
     on conflict$n$],
-  '20261119100100 (s720');
+  '20261119104500 (s720');
 
 -- 5. evidence index: ranked providers in order, stopping at the limit
 do $g$ begin
   if md5((select prosrc from pg_proc where oid = 'public.svc_evidence_link_index_next_v1(integer)'::regprocedure)) <> 'bbf9a911ab66c7c63a5123efc4e9dedb'
-     and position('20261119100100' in (select prosrc from pg_proc where oid = 'public.svc_evidence_link_index_next_v1(integer)'::regprocedure)) = 0 then
+     and position('20261119104500' in (select prosrc from pg_proc where oid = 'public.svc_evidence_link_index_next_v1(integer)'::regprocedure)) = 0 then
     raise exception 'live svc_evidence_link_index_next_v1 differs from the definition this change replaces';
   end if;
 end $g$;
@@ -268,7 +272,7 @@ do $r$
 declare v_def text := replace(pg_get_functiondef('public.svc_evidence_link_index_next_v1(integer)'::regprocedure), chr(13), '');
         v_body text := (select prosrc from pg_proc where oid = 'public.svc_evidence_link_index_next_v1(integer)'::regprocedure);
         v_new text := $b$
-  -- 20261119100100 (s720, IQ-00348): ranked providers in order, each provider's newest unindexed artifacts, stopping at the limit (keyset; was a
+  -- 20261119104500 (s720, IQ-00348): ranked providers in order, each provider's newest unindexed artifacts, stopping at the limit (keyset; was a
   -- global sort of every eligible artifact, 9.5 s)
   select coalesce(jsonb_agg(jsonb_build_object('id',x.id,'path',x.storage_path,'mime',x.mime_type,'url',x.source_url,'type',x.evidence_type)),'[]'::jsonb)
   from (select y.id, y.storage_path, y.mime_type, y.source_url, y.evidence_type
@@ -286,14 +290,14 @@ declare v_def text := replace(pg_get_functiondef('public.svc_evidence_link_index
          limit greatest(1,least(coalesce(p_limit,60),200))) x
 $b$;
 begin
-  if position('20261119100100' in v_body) > 0 then return; end if;
+  if position('20261119104500' in v_body) > 0 then return; end if;
   execute replace(v_def, v_body, v_new);
 end $r$;
 
 -- 6. the planner releases stalled automatic plans before it counts its room
 select pg_temp.cf_edit_many('security.enrich_plan_auto_v1()'::regprocedure, 'f0c95d0bbef3ccac550585185c9784c9',
   array[$o$  select count(*) into v_open from pipeline.enrich_plan_runs where mode = 'auto' and state in ('queued', 'running');$o$],
-  array[$n$  -- 20261119100100 (s720): release automatic plans whose jobs have not moved for plans.auto_stall_hours, or whose held steps all wait on budget
+  array[$n$  -- 20261119104500 (s720): release automatic plans whose jobs have not moved for plans.auto_stall_hours, or whose held steps all wait on budget
   -- windows that have ended; the plan is kept (cancelled, outcome released_stalled) and its jobs are not touched
   update pipeline.enrich_plan_runs r
      set state = 'cancelled', finished_at = now(), updated_at = now(), outcome = 'released_stalled',
@@ -308,7 +312,7 @@ select pg_temp.cf_edit_many('security.enrich_plan_auto_v1()'::regprocedure, 'f0c
               and not exists (select 1 from jsonb_array_elements(case when jsonb_typeof(r.steps) = 'array' then r.steps else '[]'::jsonb end) s
                                where s ? 'held' and coalesce((s->'held'->>'ends_at')::timestamptz, 'infinity'::timestamptz) > now())));
   select count(*) into v_open from pipeline.enrich_plan_runs where mode = 'auto' and state in ('queued', 'running');$n$],
-  '20261119100100 (s720)');
+  '20261119104500 (s720)');
 
 -- post-checks (rolled back with the dry run if any fails)
 do $chk$
@@ -329,7 +333,7 @@ begin
     union select r.course_id from catalogue.course_entry_requirements r join catalogue.courses co on co.id = r.course_id and co.lifecycle_status = 'active' and co.provider_id = any(v_prov)
            where r.status = 'active' and r.kind = 'override' and r.audience in ('international', 'all') and (r.min_grade is not null or r.min_entry_score is not null)) q;
   if v_a <> v_b then raise exception 'post-check: the chunk AER rules give % courses, security.aer_covered_courses_v1 gives %', v_b, v_a; end if;
-  if (select count(*) from pg_proc where prosrc like '%20261119100100%' and oid in ('security.course_coverage_build_v1()'::regprocedure, 'security.consumer_api_snapshot_v1()'::regprocedure,
+  if (select count(*) from pg_proc where prosrc like '%20261119104500%' and oid in ('security.course_coverage_build_v1()'::regprocedure, 'security.consumer_api_snapshot_v1()'::regprocedure,
         'security.coverage_admission_apply_v1(integer,text,text[])'::regprocedure, 'public.svc_page_text_next_v1(integer)'::regprocedure,
         'public.svc_evidence_link_index_next_v1(integer)'::regprocedure, 'security.enrich_plan_auto_v1()'::regprocedure)) <> 6 then
     raise exception 'post-check: not all six functions carry the change';
