@@ -1,5 +1,5 @@
 -- CF-247 S2 - BOOST (Platform Admin directive Thu 19 Nov 2026 05:40, item 3: s723, s724 and s726, REQ-61, REQ-69, REQ-70): the Boost multi-field
--- prompt is boost-fields-v2 (worker coverage-sweep v1.0.25). Intakes are every start month the course page announces, not only the next one;
+-- prompt is boost-fields-v2 (worker coverage-sweep v1.0.26). Intakes are every start month the course page announces, not only the next one;
 -- an application_deadlines field (date, the intake it belongs to, and the verbatim quote) is checked by page check boost-fields-check-v3.
 -- This change is records only:
 --   (1) the route qualification row of boost_fields_extract (Qwen3 30B, provisional) names the prompt it now runs. ai_route_v1 checks the
@@ -9,7 +9,7 @@
 --       so live reading does not ask for deadlines; the offline replay (workflow boost-fields-replay.yml) asks for them. Asking them live
 --       and admitting them is a separate recorded step once the replay shows the qualification bar (s725).
 -- A passing replay never switches anything on by itself. No table, function, job or setting is added (G3 stays at 75 functions, 48 tables).
--- Numbered 20261119081500: above the highest migration on main (20261119080000, Pilot #1345) and clear of the numbers held by open PRs (20261119060000 in #1335,
+-- Numbered 20261119091500: above the highest migration on main (20261119084000, Pilot #1344) and clear of the numbers held by open PRs (20261119060000 in #1335,
 -- 20261119070000 in #1331).
 -- Replaces: the boost_fields_extract qualification record of prompt boost-fields-v1 with boost-fields-v2
 -- Retires: nothing
