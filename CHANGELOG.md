@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.459 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.37** (Platform Admin 18 Nov 2026 12:23, hotfix ref ZDUFMC). No migration. `src/AuthEmailTemplates.jsx`: the `lastTest` memo added in v2.16.35 sat below the early returns, so the render after the settings loaded called one more hook (React error #310); it now sits above them. Render guard s634 opens Links & Email Templates and steps through Create user.
+
 ## 0.1.458 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.36** (Platform Admin 18 Nov 2026 11:28, 29-destination readiness). Migration 20261118141000: `public.admin_registration_scheme_register_v1` (Platform Admin, reason, planned, never changes an existing scheme) and `public.admin_subdivisions_register_v1` (ISO 3166-2 rows as data). The induction wizard's step 1 offers + Register a scheme. Guards: `s629`.

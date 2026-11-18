@@ -42,6 +42,9 @@ export default function AuthEmailTemplates({rank=0,onError,client=null,access=ac
   const t=form?.templates?.[kind]
   const values=useMemo(()=>sampleValues(form?.site_url,form?.guide_link),[form?.site_url,form?.guide_link])
   const preview=useMemo(()=>t?`<!doctype html><meta charset="utf-8"><body style="margin:0;padding:16px">${renderTemplate(t.body,values)}</body>`:'',[t?.body,values])
+  // v2.16.37 hotfix (ref ZDUFMC): every hook sits above the early returns below, so each render calls the same hooks in the same order
+  // the latest test email in the control log (sent through Resend or Supabase): proves the key and the sender's domain
+  const lastTest=useMemo(()=>{const e=(d?.last_events||[]).find(x=>x.action==='auth_template_test');return e?{at:e.at,ok:e.synced===true}:null},[d?.last_events])
   if(rank<6)return <EmptyInline text="Links & Email Templates opens for the Platform Admin."/>
   if(err&&!form)return <EmptyInline text={err}/>
   if(!form)return <p className="sl-sub">Loading…</p>
@@ -49,8 +52,6 @@ export default function AuthEmailTemplates({rank=0,onError,client=null,access=ac
   const dirty=JSON.stringify({site_url:form.site_url,guide_link:form.guide_link,templates:form.templates})!==JSON.stringify({site_url:d.settings.site_url,guide_link:d.settings.guide_link,templates:d.settings.templates})
   const dDirty=Boolean(dv&&dform)&&(dform.email_provider!==dv.email_provider||dform.sender_name.trim()!==dv.sender_name||dform.from_email.trim().toLowerCase()!==dv.from_email||newKey.trim()!=='')
   const viaResend=status?.delivery?.effective==='resend'
-  // the latest test email in the control log (sent through Resend or Supabase): proves the key and the sender's domain
-  const lastTest=useMemo(()=>{const e=(d?.last_events||[]).find(x=>x.action==='auth_template_test');return e?{at:e.at,ok:e.synced===true}:null},[d?.last_events])
   const dBad=Boolean(dform)&&dform.email_provider==='resend'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dform.from_email.trim())
   const bad=[...unknownTokens(t.subject),...unknownTokens(t.body)]
   const missingLink=!/\{\{\s*link\s*\}\}/.test(t.body)
