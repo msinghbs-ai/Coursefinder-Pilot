@@ -81,8 +81,8 @@ select cron.schedule('layer4-boost-sl-settle', '7,37 * * * *',
 where not exists (select 1 from cron.job where jobname = 'layer4-boost-sl-settle');
 
 insert into pipeline.component_register (kind, name, layer, area, purpose, status, replaces, introduced_in) values
-  ('job', 'layer4-boost-sl-settle', 'Layer 4', 'Boost', 'Settles refused Boost study load readings after the re-read', 'active', '{}', '20261118175000'),
-  ('function', 'security.boost_study_load_settle_rule_v1', 'Layer 4', 'Boost', 'One run of rule l4-boost-sl-settle-v1', 'active', '{}', '20261118175000')
+  ('job', 'layer4-boost-sl-settle', 'Layer 4', 'Boost', 'Settles refused Boost study load readings after the re-read', 'active', '{}', '20261118183000'),
+  ('function', 'security.boost_study_load_settle_rule_v1', 'Layer 4', 'Boost', 'One run of rule l4-boost-sl-settle-v1', 'active', '{}', '20261118183000')
 on conflict do nothing;
 
 create temp table cf_run on commit drop as select security.boost_study_load_settle_rule_v1(1000) r;

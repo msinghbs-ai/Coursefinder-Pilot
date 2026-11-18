@@ -1,9 +1,9 @@
 // Guards: Boost study load settlement rule l4-boost-sl-settle-v1 (Platform Admin 18 Nov 2026 14:29 item 2): an open Boost study load reading is settled only after its page was read again with the current qualified prompt, as Not stated only when that re-read states none or is refused again by the page check, through the Layer 4 Inbox decision under the system automation account with the rule and the findings as its reason; a reading not yet read again waits
-// CF-247 S645. Migration 20261118175000_cf247_boost_study_load_settle_rule. G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S645. Migration 20261118183000_cf247_boost_study_load_settle_rule. G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const code = fs.readFileSync('supabase/migrations/20261118175000_cf247_boost_study_load_settle_rule.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+const code = fs.readFileSync('supabase/migrations/20261118183000_cf247_boost_study_load_settle_rule.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const fn = (name) => { const i = code.indexOf(`create or replace function ${name}(`); return code.slice(i, code.indexOf('$function$;', i)) }
 
 test('only readings read again with the current qualified prompt are settled, and only as Not stated', () => {
