@@ -1,9 +1,9 @@
 // Guards: page-text copies (Pilot #1252; Platform Admin 18 Nov 2026 14:23): a newer stored copy of a course page is recorded as the next capture version of the course's evidence group, one writer per course, and copies that failed on the duplicate key are retried; nothing is deleted.
-// CF-247 S642. supabase/migrations/20261118166000_cf247_page_text_capture_version_fix.sql.
+// CF-247 S642. supabase/migrations/20261118181000_cf247_page_text_capture_version_fix.sql.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118166000_cf247_page_text_capture_version_fix.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261118181000_cf247_page_text_capture_version_fix.sql', 'utf8')
 
 test('the text copy takes the next capture version of its course group under a per-course lock', () => {
   expect(M).toContain("(select coalesce(max(t2.capture_version), 0) + 1 from pipeline.evidence_artifacts t2 where t2.evidence_group_key = 'coverage:' || x.course_id), 'coverage:' || x.course_id)")
