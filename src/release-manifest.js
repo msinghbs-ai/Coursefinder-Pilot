@@ -1,20 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.46'
-export const PACKAGE_VERSION='0.1.468'
+export const UI_VERSION='2.16.47'
+export const PACKAGE_VERSION='0.1.469'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'19 Nov 2026',
-  title:'Course detail: shorter and role-aware',
+  date:'18 Nov 2026',
+  title:'Course descriptions: 1 to 2 sentences, plain-English holds and four decisions',
   changes:[
-    'Course detail: the Description pipeline is folded by default for Editors and Platform Admins (open it to see the stages, checks, runs and Tasks that held this course). Counsellors and Viewers do not see it.',
-    'Course detail: Related insights & funding (QILT and PRISMS context) is folded by default for everyone; open it when you need it.',
-    'Course detail: scholarships are shown once, in the course\'s Scholarships section (three, then Show all (N) scholarships). The second Scholarships & funding card in the insights is gone; the Provider detail keeps its own.'
+    'Layer 4 Review › Inbox, Course description cards: a Why this is held box says, in plain words, why the description waits and what to do, with how firmly the page matched the course, whether every quote is on the page and the sentence count against the limit.',
+    'Course description cards have four decisions: Approve as read, Re-read (1-2 sentences) (the stored page is read again; the course is not marked bad), Approve all verified for provider (type the count shown to confirm) and Reject (bad page / wrong course). University description cards keep Approve as read and Reject.',
+    'Course descriptions are written in 1 to 2 sentences (about 180 to 360 characters) about the course\'s focus, core skills and stated career outcomes, without intake dates, campus addresses, fees or duration. A description read from the course\'s own page (its CRICOS or NZQA code, or its exact title) is admitted by the machine rule without waiting for a person.'
   ],
   bugFixes:[
-    'Course detail: Check scholarships for this course and other task buttons are hidden for Counsellors and Viewers, and in Preview as Counsellor or Viewer.'
+    'A course description card no longer says it is one of the university\'s first descriptions when that was not why it waited.'
   ]
 }
 

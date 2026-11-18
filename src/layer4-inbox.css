@@ -114,3 +114,7 @@
 .l4c .l4g-confirm{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
 .l4c .l4g-confirm p{margin:0;flex-basis:100%}
 @media (max-width:760px){.l4c .l4c-items{columns:1}}
+/* s664 (18 Nov 2026): course description "Why this is held & recommended action" */
+.l4i-cd-why{margin:4px 0;padding:8px 10px;border-left:3px solid var(--cf-amber-500);background:var(--cf-slate-50);border-radius:var(--cf-radius-sm);font-size:var(--cf-fs-sm);color:var(--cf-slate-700)}
+.l4i-cd-why p{margin:.2rem 0}
+.l4i-cd-why ul{margin:.2rem 0 .2rem 1rem}

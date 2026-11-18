@@ -43,7 +43,7 @@ test('results are closed, cost reaches the ledger, and nothing is dropped', () =
 })
 
 test('the worker asks each candidate directly, with the extraction request and check, and writes only benchmark rows', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.22"')  // v1.0.19 from s674
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.23"')  // v1.0.19 from s674
   expect(mode).toContain('const route = await rpc("svc_boost_benchmark_route_v1", {});')
   expect(mode).toContain('const candidates = new Set<string>((Array.isArray(route?.models) ? route.models : []).map((m: any) => String(m?.model_identifier || "")).filter(Boolean));')
   expect(mode).toContain('if (!candidates.has(model)) {')

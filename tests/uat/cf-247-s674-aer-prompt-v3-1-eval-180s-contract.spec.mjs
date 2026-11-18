@@ -40,7 +40,7 @@ test('round 5 is opened queued with the gate unchanged; nothing is switched, qua
 })
 
 test('worker v1.0.19: the benchmark answers in a background task, 180 s a call inside 360 s; other modes keep their limits', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.22"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.23"')
   expect(IX).toContain('const AER_V3_EVAL_BUDGET_MS = 360_000;  // fixed:')
   expect(IX).toContain('const AER_V3_EVAL_CALL_MS = 180_000;  // fixed:')
   expect(IX).toContain('const BUDGET_MS = 110_000;')
