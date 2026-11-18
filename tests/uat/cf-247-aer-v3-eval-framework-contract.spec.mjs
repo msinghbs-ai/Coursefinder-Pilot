@@ -101,7 +101,7 @@ test('one evaluation path: the #1137 tables retire, the probes move to the pause
 })
 
 test('worker v0.96.0: each wait is bounded by the time the call has left, a late start is skipped, and a cut reply is a timeout, not an empty answer', () => {
-  expect(mode).toContain('const callMs = Math.min(90000, t0 + BUDGET_MS - 10000 - Date.now());')
+  expect(mode).toContain('const callMs = Math.min(AER_V3_EVAL_CALL_MS, t0 + AER_V3_EVAL_BUDGET_MS - 10000 - Date.now());')  // s674: 180 s inside the background task's budget (was 90 s)
   expect(mode).toContain('signal: AbortSignal.timeout(callMs) });')
   expect(mode).not.toContain('signal: AbortSignal.timeout(90000)')
   expect(mode).toContain('if (callMs < 20000) {')
