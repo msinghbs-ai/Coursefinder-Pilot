@@ -30,7 +30,7 @@ test('the workflow runs only on dispatch for the Pilot, with no admission, and t
   expect(W).not.toMatch(/^\s*(schedule|push|pull_request):/m)
   expect(W).toContain('Refused: the typed project ref does not match the Pilot')
   expect(W).toContain('node scripts/aer-v3-replay.mjs "$ROUND" "$MAXMIN"')
-  expect(S).toContain("start.length !== 3 || start.some((r) => r.state !== 'queued')")
+  expect(S).toContain("start.length !== 3 || start.some((r) => r.state !== 'queued' && r.state !== 'answering')")  // s674: a stopped attempt of the round is continued
   expect(S).toContain("jsonb_build_object('mode', 'aer_v3_eval')")
   expect(S).not.toMatch(/'qualified'|ai_service_routes|aer\.v2_shadow_on|route_activate|ai_route_qualify/)
 })

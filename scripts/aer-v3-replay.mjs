@@ -28,8 +28,11 @@ const runs = () => read(`select x.id, p.code, x.state, x.leased_until, v.model_i
    join pipeline.ai_instruction_versions v on v.id = x.version_id where p.code like ${lit(CODE)} and x.arm = 'candidate' order by x.id`)
 
 const start = await runs()
-if (start.length !== 3 || start.some((r) => r.state !== 'queued')) { await summary(`Refused: expected 3 queued ${ROUND} runs, found ${JSON.stringify(start.map((r) => [r.code, r.state]))}`); process.exit(1) }
+if (start.length !== 3 || start.some((r) => r.state !== 'queued' && r.state !== 'answering')) { await summary(`Refused: expected 3 queued ${ROUND} runs, found ${JSON.stringify(start.map((r) => [r.code, r.state]))}`); process.exit(1) }
 let od = null, failure = null
+// a stopped earlier attempt of this round: its leases are released (no task can still be running after 400 s) and its open window is closed first
+if (start.some((r) => r.state === 'answering')) await write(`update pipeline.ai_eval_runs x set leased_until = now() from pipeline.ai_improvement_proposals p where p.id = x.proposal_id and p.code like ${lit(CODE)} and x.state = 'answering' and x.leased_until > now() - interval '1 hour'`)
+await write(`select security.on_demand_close_v1(id) from pipeline.on_demand_requests where closed_at is null and reason like ${lit(`S672 AER v3 replay ${ROUND} %`)}`)
 try {
   const [{ r }] = await write(`select security.on_demand_open_v1('claude_session', ${lit(`S672 AER v3 replay ${ROUND} (Platform Admin standing mandate 18 Nov 2026 19:28 AEDT, step 3): 3 pinned models x 50 frozen cases`)},
       (select provider_ids from pipeline.on_demand_requests where id = 'ca8dee01-5203-4152-a04c-f39b11091421'),
@@ -60,7 +63,7 @@ try {
     while (Date.now() - t < 410000 && Date.now() < until) {  // fixed: longer than the 400 s wall clock of the background task
       await new Promise((r) => setTimeout(r, 15000))
       const now = await counts()
-      if (leased.length && !res.some((r) => r.error) && leased.every((id) => (now[id] || 0) !== (before[id] || 0))) break
+      if (leased.length && !res.some((r) => r.error) && res.filter((r) => r.run).every((r) => (now[String(r.run)] || 0) >= (before[String(r.run)] || 0) + (Number(r.examples) || 1))) break  // s674: every example the task started has its answer
     }
     // the calls are over: a lease they left on a part-answered round run is released, so the next calls continue it
     await write(`update pipeline.ai_eval_runs x set leased_until = now() from pipeline.ai_improvement_proposals p where p.id = x.proposal_id and p.code like ${lit(CODE)} and x.state = 'answering' and x.leased_until > now()`)
