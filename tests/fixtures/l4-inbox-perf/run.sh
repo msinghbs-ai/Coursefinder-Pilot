@@ -12,7 +12,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${L4P_DB:-l4_inbox_perf_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104440000_cf247_l4_inbox_paging.sql
+MIG=supabase/migrations-archive/20261104440000_cf247_l4_inbox_paging.sql
 FX=tests/fixtures/l4-inbox-perf
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }

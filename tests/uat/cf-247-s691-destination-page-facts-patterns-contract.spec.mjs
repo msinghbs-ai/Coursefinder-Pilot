@@ -1,10 +1,10 @@
 // Guards: destination page facts (Platform Admin 18 Nov 2026 17:55): the Home Affairs living-cost benchmark and the Post-Higher Education Work stream stay are read from the rendered pages with a verbatim quote; a table row keeps its label with its value; patterns are data.
-// CF-247 S691. supabase/migrations/20261118224000_cf247_destination_page_facts_patterns.sql, layer1-destination-geo-loader v1.3.1.
+// CF-247 S691. supabase/migrations-archive/20261118224000_cf247_destination_page_facts_patterns.sql, layer1-destination-geo-loader v1.3.1.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { extractFact, htmlToText } from '../../supabase/functions/_shared/cf247-page-facts.js'
 
-const M = fs.readFileSync('supabase/migrations/20261118224000_cf247_destination_page_facts_patterns.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118224000_cf247_destination_page_facts_patterns.sql', 'utf8')
 const fund = M.match(/set pattern = '([^']+)'/)[1]
 const stay = M.match(/'(bachelor\[\^0-9\][^']+)'/)[1]
 

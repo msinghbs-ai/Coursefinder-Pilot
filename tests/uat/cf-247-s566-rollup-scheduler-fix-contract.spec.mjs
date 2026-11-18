@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261116210000_cf247_rollup_scheduler_fix.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261116210000_cf247_rollup_scheduler_fix.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('the tick is edited from its known live text only, each edit exactly once, and refuses anything else', () => {

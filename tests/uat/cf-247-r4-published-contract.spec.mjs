@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261010006800_cf247_r4_published_gate.sql'
+const MIG = 'supabase/migrations-archive/20261010006800_cf247_r4_published_gate.sql'
 
 test('server: hidden providers join the block views; published by default; switch RPC; consumer paths gated', () => {
   const sql = fs.readFileSync(MIG, 'utf8')

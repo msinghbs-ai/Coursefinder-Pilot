@@ -1,7 +1,7 @@
 // Guards: CF-247 AER programme batch 3 (Platform Admin mandate 29 Oct 2026 12:23 B1 and B3): exactly the four corrected sources (Federation, Wollongong, Otago Polytechnic, UWA), one governed attempt each through the Read again mechanism after worker v0.52.0, refusals recorded and not retried, earlier incomplete items superseded and never approved; one course batch through the programme (credit-floor refusal inside the function); logged; nothing admitted, dropped or deleted
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029090000_cf247_aer_programme_batch_3.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029090000_cf247_aer_programme_batch_3.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('the four corrected sources, counted; one attempt each through the Read again mechanism; a refusal recorded, not retried', () => {

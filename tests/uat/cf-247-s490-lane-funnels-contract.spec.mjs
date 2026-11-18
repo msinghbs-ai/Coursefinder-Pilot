@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261108170000_cf247_lane_funnels.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261108170000_cf247_lane_funnels.sql', 'utf8')
 const fx = fs.readFileSync('tests/fixtures/lane-funnels/fixtures.sql', 'utf8')
 const run = fs.readFileSync('tests/fixtures/lane-funnels/run.sh', 'utf8')
 const wf = fs.readFileSync('.github/workflows/lane-funnels-test.yml', 'utf8')

@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261111170000_cf247_named_period_never_later_year.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261111170000_cf247_named_period_never_later_year.sql', 'utf8')
 const n = MIG.slice(MIG.indexOf('array[$n$'), MIG.indexOf('$n$]);'))
 
 test('one md5-guarded edit before the horizon check', () => {

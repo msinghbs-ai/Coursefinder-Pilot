@@ -62,7 +62,7 @@ test('role gates are kept: Operators see API usage only on Settings; Curators se
 })
 
 test('the register migration retires the moved screens and changes nothing else', () => {
-  const m = read('supabase/migrations/20261020110000_cf247_menu_decisions.sql')
+  const m = read('supabase/migrations-archive/20261020110000_cf247_menu_decisions.sql')
   expect(m).toMatch(/^-- Replaces: /m)
   expect(m).toMatch(/^-- Retires: /m)
   for (const s of ['Scholarships › Extraction', 'Coverage & completeness › Flags', 'Layer 1 Register › Scholarships', 'Platform health › Capacity', 'Data model', 'Storage & retention', 'API usage']) expect(m).toContain(`('${s}', `)

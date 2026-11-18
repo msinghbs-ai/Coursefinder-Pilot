@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const m = fs.readFileSync('supabase/migrations/20261027002000_cf247_entry_matrix_inspect_paths.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261027002000_cf247_entry_matrix_inspect_paths.sql', 'utf8')
 const block = w.slice(w.indexOf('if (mode === "entry_inspect") {'), w.indexOf('if (mode === "entry_ai") {'))
 
 test('entry_inspect reads stored copies only: no AI call, no web fetch, no database write', () => {

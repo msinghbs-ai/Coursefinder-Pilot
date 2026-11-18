@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118238000_cf247_s671_aer_matrix_level_inherit_completion.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118238000_cf247_s671_aer_matrix_level_inherit_completion.sql', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 const exclusions = M.split('create or replace function security.aer_matrix_machine_exclusions_v1(p_run uuid)')[1].split('$function$;')[0]
 

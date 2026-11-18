@@ -10,7 +10,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${L4_DB:-ops_layer4_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104120000_cf247_ops_layer4_throughput.sql
+MIG=supabase/migrations-archive/20261104120000_cf247_ops_layer4_throughput.sql
 FX=tests/fixtures/ops-layer4
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }
@@ -20,7 +20,7 @@ $P -d postgres -c "drop database if exists $DB" -c "drop database if exists ${DB
 
 # 1 without workstream A's contract the migration refuses and leaves nothing behind
 $P -d ${DB}_noa -f tests/fixtures/integration-queue/stubs.sql
-$P -d ${DB}_noa -1 -o /dev/null -f supabase/migrations/20261102120000_cf247_integration_queue.sql 2>&1 | show
+$P -d ${DB}_noa -1 -o /dev/null -f supabase/migrations-archive/20261102120000_cf247_integration_queue.sql 2>&1 | show
 if OUT=$($P -d ${DB}_noa -1 -At -f $MIG 2>&1); then echo "the migration applied without workstream A's contract"; exit 1; fi
 grep -q "workstream A's operations contract (migration 20261104010000) must be applied before this change" <<<"$OUT" || { echo "$OUT" | tail -3; exit 1; }
 [ "$($P -d ${DB}_noa -Atc "select count(*) from pg_proc where proname like 'layer4\_%' escape '\\' and proname in ('layer4_readiness_tick_v1','layer4_resolution_for_v1')")" = 0 ] || { echo "a refused run left functions"; exit 1; }
@@ -30,13 +30,13 @@ echo "without A's contract: refused, nothing left"
 $P -d $DB -f tests/fixtures/integration-queue/stubs.sql
 # Integration Controller 3 Nov 2026: the live kind check on the component register (the first deploy failed on it; the shared stub lacks it)
 $P -d $DB -c "alter table pipeline.component_register add constraint component_register_kind_check check (kind = any (array['job','table','view','edge_function','screen','function']))"
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261102120000_cf247_integration_queue.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102120000_cf247_integration_queue.sql 2>&1 | show
 $P -d $DB -f tests/fixtures/ops-controller/stubs-extra.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104010000_cf247_ops_controller.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104010000_cf247_ops_controller.sql 2>&1 | show
 # Integration Controller 3 Nov 2026: the reopen rule (v2.15.436, 20261104100000) is live, so it is loaded as released (its own prerequisites first)
 $P -d $DB -1 -o /dev/null -f tests/fixtures/ops-reopen/ai-guards.sql 2>&1 | show
 $P -d $DB -f tests/fixtures/ops-reopen/stubs-extra.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104100000_cf247_ops_reopen_rule_ai_contract.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104100000_cf247_ops_reopen_rule_ai_contract.sql 2>&1 | show
 $P -d $DB -f $FX/stubs.sql
 declare -A LIVE=(
   ["security.integration_issue_upsert_v1(jsonb,text)"]=c5ce0cb9c431a337789d67bc1878be62

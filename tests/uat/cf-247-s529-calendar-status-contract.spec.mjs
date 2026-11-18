@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261111110000_cf247_calendar_status_read.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261111110000_cf247_calendar_status_read.sql', 'utf8')
 const UI = fs.readFileSync('src/AdaptersWorkspace.jsx', 'utf8')
 
 test('the status read is read only, needs an assigned role, and names every status', () => {

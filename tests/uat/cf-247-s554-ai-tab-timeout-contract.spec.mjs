@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261116060000_cf247_ai_tab_timeout.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261116060000_cf247_ai_tab_timeout.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('the route state is evaluated once per service; the edit is md5-guarded and exact', () => {

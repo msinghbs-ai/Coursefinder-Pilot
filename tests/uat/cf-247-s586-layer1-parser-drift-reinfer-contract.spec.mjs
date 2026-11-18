@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261117233000_cf247_w2b_layer1_parser_drift_reinfer.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261117233000_cf247_w2b_layer1_parser_drift_reinfer.sql', 'utf8')
 const fn = fs.readFileSync('supabase/functions/layer1-ai-induction-mapper/index.ts', 'utf8')
 const rd = fs.readFileSync('supabase/functions/_shared/cf247-layer1-read.ts', 'utf8')
 const drift = (mig.match(/v_msg ~\* '([^']+)'/) || [])[1]

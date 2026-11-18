@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261110040000_cf247_pdesc_basic_profile_upgrade.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261110040000_cf247_pdesc_basic_profile_upgrade.sql', 'utf8')
 const code = mig.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 const rec = fs.readFileSync('supabase/held/pdesc_basic_profile_upgrade_forward_recovery.sql', 'utf8')
 const LIVE = { blocked: '46634e38c0469cbcbd6c23158dfadc94', admit: '5decbd99c8ecd5e0b072d22ed6f68962', selection: '04acb9419b9965b5d6aab420059c7e84', enqueue: '803478538da3dd9594ba08be38284c3e', next: '7583808609dc2dea1d3fc251607405a1' }

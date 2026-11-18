@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261031050000_cf247_d6_course_item_speed.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261031050000_cf247_d6_course_item_speed.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('G3: the consumer change is approved, recorded and re-baselined', () => {

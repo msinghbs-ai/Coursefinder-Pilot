@@ -3,7 +3,7 @@
 // API wont get affected").
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const mig = fs.readFileSync('supabase/migrations/20261019030000_cf247_phase5_hardening.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261019030000_cf247_phase5_hardening.sql', 'utf8')
 const code = mig.split('\n').filter(l => !l.trim().startsWith('--')).join('\n')
 const retired = fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')
 

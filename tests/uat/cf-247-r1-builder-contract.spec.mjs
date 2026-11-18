@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261010006400_cf247_r1_course_finder_builder.sql'
+const MIG = 'supabase/migrations-archive/20261010006400_cf247_r1_course_finder_builder.sql'
 
 test('server: course finder lock, site search keeps it, provider-only find run, own-site course page', () => {
   const sql = fs.readFileSync(MIG, 'utf8')

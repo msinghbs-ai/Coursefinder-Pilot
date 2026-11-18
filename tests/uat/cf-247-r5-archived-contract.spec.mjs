@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261010007000_cf247_r5_archived_status.sql'
+const MIG = 'supabase/migrations-archive/20261010007000_cf247_r5_archived_status.sql'
 
 test('server: archive record, clean-up and restore, Layer 1 triggers, review read, md5-guarded, nothing dropped or deleted', () => {
   const sql = fs.readFileSync(MIG, 'utf8')

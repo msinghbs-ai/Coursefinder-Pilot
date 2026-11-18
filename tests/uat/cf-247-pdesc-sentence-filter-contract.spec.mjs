@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import { copyNote, descriptionRequest, DESCRIPTION_SYSTEM, descriptionClaimCheck } from '../../supabase/functions/coverage-sweep/description.ts'
 import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261110120000_cf247_pdesc_sentence_filter.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261110120000_cf247_pdesc_sentence_filter.sql', 'utf8')
 const CODE = MIG.split('\n').filter((l) => !l.trimStart().startsWith('--')).join('\n')   // the statements, without the comments
 const HARNESS = fs.readFileSync('tests/fixtures/pdesc-sentence-filter/run.sh', 'utf8')
 const SCEN = fs.readFileSync('tests/fixtures/pdesc-sentence-filter/scenarios.sql', 'utf8')

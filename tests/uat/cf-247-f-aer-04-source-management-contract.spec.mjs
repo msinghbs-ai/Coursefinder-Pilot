@@ -8,8 +8,8 @@ import { migrationNames } from './support/migration-files.mjs'
 
 const read = (f) => fs.readFileSync(f, 'utf8')
 const sqlCode = (f) => read(f).split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
-const D3 = sqlCode('supabase/migrations/20261112113700_cf247_aer_source_management.sql')
-const QP = sqlCode('supabase/migrations/20261112110700_cf247_aer_matrix_machine_quote_proof.sql')
+const D3 = sqlCode('supabase/migrations-archive/20261112113700_cf247_aer_source_management.sql')
+const QP = sqlCode('supabase/migrations-archive/20261112110700_cf247_aer_matrix_machine_quote_proof.sql')
 
 test('D1 quote proof: a row whose quote does not carry its published minimum stays with a person, and validation replays the same rule', () => {
   expect(QP).toContain("when not security.aer_quote_has_value_v1(m.quote, m.min_grade, m.min_value) then 'minimum_not_in_quote' end why")

@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${URLFILL_DB:-url_fill_layer4_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261103030000_cf247_url_fill_respects_layer4.sql
+MIG=supabase/migrations-archive/20261103030000_cf247_url_fill_respects_layer4.sql
 SIG="security.course_url_fill_v1()"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 [ -n "${URLFILL_KEEP:-}" ] || trap '$P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT

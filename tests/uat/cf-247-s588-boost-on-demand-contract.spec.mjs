@@ -3,13 +3,13 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118000100_cf247_boost_on_demand.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118000100_cf247_boost_on_demand.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const fn = (src, name) => { const i = src.indexOf(`create or replace function ${name}`); return src.slice(i, src.indexOf('end $function$;', i)) }
 const strip = (s) => s.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const gate = fn(code, 'security.boost_ingest_gate_v1'), promote = fn(code, 'security.boost_promote_v1')
-const oldGate = strip(fn(fs.readFileSync('supabase/migrations/20261117163500_cf247_boost_bulk_ingest.sql', 'utf8'), 'security.boost_ingest_gate_v1'))
-const oldPromote = strip(fn(fs.readFileSync('supabase/migrations/20261117223000_cf247_boost_matrix_settings_and_admitted_count.sql', 'utf8'), 'security.boost_promote_v1'))
+const oldGate = strip(fn(fs.readFileSync('supabase/migrations-archive/20261117163500_cf247_boost_bulk_ingest.sql', 'utf8'), 'security.boost_ingest_gate_v1'))
+const oldPromote = strip(fn(fs.readFileSync('supabase/migrations-archive/20261117223000_cf247_boost_matrix_settings_and_admitted_count.sql', 'utf8'), 'security.boost_promote_v1'))
 
 test('on demand is a setting with an end time; the functions hold no time', () => {
   expect(code).toContain("('pipeline', 'boost.on_demand_until_epoch', 'Boost: run on demand until (Unix time, seconds)',")

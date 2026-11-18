@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { mockLaneFunnels, LANES } from './support/lane-funnel-mock.mjs'
 
-const mig = fs.readFileSync('supabase/migrations/20261110020000_cf247_operations_load_speed.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261110020000_cf247_operations_load_speed.sql', 'utf8')
 const rec = fs.readFileSync('supabase/held/operations_load_speed_forward_recovery.sql', 'utf8')
 const eq = fs.readFileSync('supabase/held/operations_load_speed_equivalence.sql', 'utf8')
 const run = fs.readFileSync('tests/fixtures/operations-load-speed/run.sh', 'utf8')
@@ -142,7 +142,7 @@ test.describe('Operations load speed: held scripts, fixture and workflow', () =>
     expect(wf).toMatch(/^# Guards: /m)
     expect(wf).toContain('postgres:17.6-alpine')
     expect(wf).toContain('tests/fixtures/operations-load-speed/run.sh')
-    expect(wf).toContain('supabase/migrations/20261110020000_cf247_operations_load_speed.sql')
+    expect(wf).toContain('supabase/migrations-archive/20261110020000_cf247_operations_load_speed.sql')
     expect(wf).toContain('supabase/held/operations_load_speed_forward_recovery.sql')
   })
 

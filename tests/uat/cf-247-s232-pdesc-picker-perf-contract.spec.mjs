@@ -7,7 +7,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261103100000_cf247_pdesc_picker_perf.sql'
+const MIG = 'supabase/migrations-archive/20261103100000_cf247_pdesc_picker_perf.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/pdesc-picker-perf'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
@@ -123,7 +123,7 @@ test('the prefilter never skips an address the page rule passes (every combinati
 })
 
 test('the fixture run proves the same choice: old choices recorded before the migration, compared after, applied twice', () => {
-  expect(run).toContain('MIG=supabase/migrations/20261103100000_cf247_pdesc_picker_perf.sql')
+  expect(run).toContain('MIG=supabase/migrations-archive/20261103100000_cf247_pdesc_picker_perf.sql')
   expect(run).toContain('"$BEFORE" = "6ddc25869e9865c9aeebf11c819feee2 33d735da514a7d37e2815bbb0073af03"')
   for (const md5 of [PAGE_RULE, '000b9c49c899c6d33ec99501ae6194d4', '2af79164c5f92d0e6e5aeceb7783e7ee', '3f16959316449464576f5d77a951460a']) expect(run).toContain(md5)
   expect(run).toContain("grep -c 'already applied' | grep -qx 2")

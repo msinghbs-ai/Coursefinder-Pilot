@@ -3,8 +3,8 @@ name: AER shared page hand-bound integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261118220000_cf247_aer_shared_page_hand_bound.sql'
-      - 'supabase/migrations/20261108030000_cf247_aer_shared_page_rejected_binding.sql'
+      - 'supabase/migrations-archive/20261118220000_cf247_aer_shared_page_hand_bound.sql'
+      - 'supabase/migrations-archive/20261108030000_cf247_aer_shared_page_rejected_binding.sql'
       - 'tests/fixtures/aer-hand-bound/**'
       - 'tests/fixtures/aer-qut-shared/**'
       - '.github/workflows/aer-hand-bound-test.yml'

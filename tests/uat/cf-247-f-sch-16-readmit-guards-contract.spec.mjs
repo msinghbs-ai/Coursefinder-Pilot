@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113293700_cf247_sch_readmit_guards_on.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113293700_cf247_sch_readmit_guards_on.sql', 'utf8')
 
 test('the blocker: human decision first, then a closed round with nothing open and not rolling; unknown dates do not block', () => {
   expect(m).toContain('from pipeline.manual_locks l where l.entity_id = p_scholarship')

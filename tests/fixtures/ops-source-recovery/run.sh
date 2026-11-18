@@ -8,9 +8,9 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${OSR_DB:-ops_source_recovery_fixtures}
-MIG=../../../supabase/migrations/20261104030000_cf247_ops_source_recovery.sql
-M190=../../../supabase/migrations/20261103190000_cf247_source_proof_lane_field_backlog.sql
-MRB=../../../supabase/migrations/20261103210000_cf247_release_b_course_enrichment.sql
+MIG=../../../supabase/migrations-archive/20261104030000_cf247_ops_source_recovery.sql
+M190=../../../supabase/migrations-archive/20261103190000_cf247_source_proof_lane_field_backlog.sql
+MRB=../../../supabase/migrations-archive/20261103210000_cf247_release_b_course_enrichment.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 md5of() { $P -d $DB -Atc "select md5(pg_get_functiondef('$1'::regprocedure))"; }

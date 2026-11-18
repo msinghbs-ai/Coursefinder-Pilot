@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261031110000_cf247_ss014_d16_d13.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261031110000_cf247_ss014_d16_d13.sql', 'utf8')
 const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 

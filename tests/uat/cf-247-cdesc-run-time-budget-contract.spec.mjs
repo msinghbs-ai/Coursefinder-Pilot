@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
-const M = fs.readFileSync('supabase/migrations/20261112080000_cf247_cdesc_run_time_budget.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261112080000_cf247_cdesc_run_time_budget.sql', 'utf8')
 const R = fs.readFileSync('supabase/held/cdesc_run_time_budget_forward_recovery.sql', 'utf8')
 const live = (f) => fs.readFileSync(`tests/fixtures/cdesc-run-time-budget/live/${f}`, 'utf8')
 const bodies = (s) => [...s.matchAll(/AS \$function\$([\s\S]*?)\$function\$/g)].map((m) => m[1])

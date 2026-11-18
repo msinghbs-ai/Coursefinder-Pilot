@@ -3,7 +3,7 @@
 // ledger, Q4 why-idle line and the companion data-file fix, the apply-time identity check. Contracts on the migration, worker and screen.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261024004000_cf247_r1_backoff_ledger_identity.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261024004000_cf247_r1_backoff_ledger_identity.sql', 'utf8')
 const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const q = fs.readFileSync('src/QueueWatch.jsx', 'utf8')
 

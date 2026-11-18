@@ -9,7 +9,7 @@ export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's
 DB=${PDSF_DB:-g_pdesc_sentfilter}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-MIG=supabase/migrations/20261110120000_cf247_pdesc_sentence_filter.sql
+MIG=supabase/migrations-archive/20261110120000_cf247_pdesc_sentence_filter.sql
 REC=supabase/held/pdesc_sentence_filter_forward_recovery.sql
 REPLAY=supabase/held/pdesc_sentence_filter_replay.sql
 F=tests/fixtures/pdesc-sentence-filter

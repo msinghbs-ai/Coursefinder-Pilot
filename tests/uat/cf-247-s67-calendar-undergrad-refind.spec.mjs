@@ -2,7 +2,7 @@
 // CF-247 (S67) 19 Oct 2026: calendar intakes for universities' undergraduate courses; re-find a provider's pages on its current website.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const sql = fs.readFileSync('supabase/migrations/20261019010000_cf247_calendar_undergrad_and_refind.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261019010000_cf247_calendar_undergrad_and_refind.sql', 'utf8')
 
 test('calendar: universities only at the study levels in calendar.university_levels (undergraduate), guarded edit', () => {
   expect(sql).toContain("'9d39783597ebdedddf0e59dddec61bbb'")

@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261117020000_cf247_aer_v3_bench_r3.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261117020000_cf247_aer_v3_bench_r3.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('three round-3 proposals on the frozen set 5, one per pinned model, Qwen3 30B not among them', () => {

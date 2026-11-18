@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261031030000_cf247_ss007_remediation_hold.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261031030000_cf247_ss007_remediation_hold.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 const fn = (name) => {
   const i = m.indexOf(`create or replace function ${name}(`)

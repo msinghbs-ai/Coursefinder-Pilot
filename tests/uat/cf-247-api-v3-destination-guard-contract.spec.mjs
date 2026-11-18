@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261115230000_cf247_destination_importer_guard.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261115230000_cf247_destination_importer_guard.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('the guard refuses every route to published without approved terms', () => {

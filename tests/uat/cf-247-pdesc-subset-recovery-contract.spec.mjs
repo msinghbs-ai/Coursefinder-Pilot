@@ -3,7 +3,7 @@
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
-const M = fs.readFileSync('supabase/migrations/20261110210000_cf247_pdesc_sentence_subset_recovery.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261110210000_cf247_pdesc_sentence_subset_recovery.sql', 'utf8')
 const R = fs.readFileSync('supabase/held/pdesc_sentence_subset_recovery_forward_recovery.sql', 'utf8')
 const WF = fs.readFileSync('.github/workflows/provider-description-integration.yml', 'utf8')
 const SQL = M.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')

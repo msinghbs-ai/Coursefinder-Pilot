@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${RELB_DB:-release_b_fixtures}
-MIG=../../../supabase/migrations/20261103210000_cf247_release_b_course_enrichment.sql
+MIG=../../../supabase/migrations-archive/20261103210000_cf247_release_b_course_enrichment.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null

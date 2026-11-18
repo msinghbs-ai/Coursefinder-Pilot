@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const code = fs.readFileSync('supabase/migrations/20261118173000_cf247_layer4_course_link_accept_rule.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+const code = fs.readFileSync('supabase/migrations-archive/20261118173000_cf247_layer4_course_link_accept_rule.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const fn = (name) => { const i = code.indexOf(`create or replace function ${name}(`); return code.slice(i, code.indexOf('$function$;', i)) }
 
 test('the classification rests on the binder proof and the finder refusal; old years, earlier refusals and manual locks are never used', () => {

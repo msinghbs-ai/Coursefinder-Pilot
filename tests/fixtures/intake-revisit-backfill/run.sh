@@ -9,8 +9,8 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/run/postgresql) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 BASE=intake_deakin_calendar_fixtures; DB=${RB_DB:-intake_revisit_backfill_fixtures}; F=tests/fixtures/intake-revisit-backfill; SD=tests/fixtures/intake-self-driving
-MIG=supabase/migrations/20261109170000_cf247_intake_revisit_backfill.sql
-RELEASED=(supabase/migrations/20261109040000_cf247_intake_revisit_page_fingerprint.sql supabase/migrations/20261109041000_cf247_intake_applicability_month_year.sql)
+MIG=supabase/migrations-archive/20261109170000_cf247_intake_revisit_backfill.sql
+RELEASED=(supabase/migrations-archive/20261109040000_cf247_intake_revisit_page_fingerprint.sql supabase/migrations-archive/20261109041000_cf247_intake_applicability_month_year.sql)
 ART=${UAT_ARTIFACTS:-/tmp}
 P=(psql -X -q -v ON_ERROR_STOP=1)
 fail() { echo "FAIL $*"; exit 1; }

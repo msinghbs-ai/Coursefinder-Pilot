@@ -5,14 +5,14 @@ import fs from 'node:fs'
 import crypto from 'node:crypto'
 import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
-const M = fs.readFileSync('supabase/migrations/20261116050000_cf247_prompt_registry_shadow.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261116050000_cf247_prompt_registry_shadow.sql', 'utf8')
 const CT = fs.readFileSync('supabase/functions/coverage-sweep/course-text.ts', 'utf8')
 const DS = fs.readFileSync('supabase/functions/coverage-sweep/description.ts', 'utf8')
 const lit = (src) => new Function(`return (${src})`)()
 
 test('course description: the registered system text is the worker constant, byte for byte, with the worker’s sha-256', () => {
   // v1.0.5 (s559): cdesc-source-grounded-v3 is the worker's CDESC_SYSTEM and is registered by migration 20261116090000; v2 is kept as CDESC_SYSTEM_V2
-  const M3 = fs.readFileSync('supabase/migrations/20261116090000_cf247_cdesc_v3_retry_gate_telemetry.sql', 'utf8')
+  const M3 = fs.readFileSync('supabase/migrations-archive/20261116090000_cf247_cdesc_v3_retry_gate_telemetry.sql', 'utf8')
   for (const [constName, shaName, version, src] of [['CDESC_SYSTEM', 'CDESC_SYSTEM_SHA256', 'cdesc-source-grounded-v3', M3], ['CDESC_SYSTEM_V2', 'CDESC_SYSTEM_V2_SHA256', 'cdesc-source-grounded-v2', M]]) {
     const worker = JSON.parse(new RegExp(`^export const ${constName} = ("(?:[^"\\\\]|\\\\.)*");$`, 'm').exec(CT)[1])
     const sha = new RegExp(`^export const ${shaName} = "([0-9a-f]{64})"`, 'm').exec(CT)[1]

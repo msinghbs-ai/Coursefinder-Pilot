@@ -9,7 +9,7 @@ export LC_ALL=C # fixed: one byte order whatever the runner's locale
 DB=${JTR_DB:-g_jobs_transient_retry}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 F=tests/fixtures/jobs-transient-retry
-M=supabase/migrations/20261111230000_cf247_jobs_transient_retry.sql
+M=supabase/migrations-archive/20261111230000_cf247_jobs_transient_retry.sql
 R=supabase/held/jobs_transient_retry_forward_recovery.sql
 FN='security.admin_jobs_tick_v1(integer)'; BEFORE=f95f8c26d9bbd4fa07a74bcd0797e198; AFTER=d25e4bad56b632eae40d15f69ddfc4f4
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"

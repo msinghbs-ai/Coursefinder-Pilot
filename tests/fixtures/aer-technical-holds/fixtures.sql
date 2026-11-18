@@ -17,8 +17,8 @@ do $t$ declare v_gate jsonb := security.course_entry_gate_v1(pg_temp.it('score')
 end $t$;
 
 \echo apply migrations
-\i supabase/migrations/20261107130000_cf247_aer_stored_read_recovery.sql
-\i supabase/migrations/20261107170000_cf247_aer_replay_job_actor.sql
+\i supabase/migrations-archive/20261107130000_cf247_aer_stored_read_recovery.sql
+\i supabase/migrations-archive/20261107170000_cf247_aer_replay_job_actor.sql
 
 -- 1 the reader: a requirement is never lost to its score field; a repeated requirement is one row
 do $t$ declare v_course uuid := 'c1000000-0000-4000-8000-000000000001'; v_id bigint; v_job uuid := gen_random_uuid(); v_res text; v_item uuid; v_sc numeric; v_notes jsonb; v_n int; v_drop jsonb;

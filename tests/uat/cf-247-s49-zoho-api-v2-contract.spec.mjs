@@ -8,8 +8,8 @@ import { execSync } from 'node:child_process'
 import { readFileSync as __rf } from 'node:fs'
 const EDGE_LIST = Object.entries(JSON.parse(__rf('.github/edge-functions.json', 'utf8')).functions).map(([k, v]) => `\n[${k}]=${v}`).join('') // CF-247 Phase 3: the allow-list moved to .github/edge-functions.json
 
-const fix = fs.readFileSync('supabase/migrations/20261016010000_cf247_api_data_fixes.sql', 'utf8')
-const mig = fs.readFileSync('supabase/migrations/20261016020000_cf247_zoho_api_v2.sql', 'utf8')
+const fix = fs.readFileSync('supabase/migrations-archive/20261016010000_cf247_api_data_fixes.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261016020000_cf247_zoho_api_v2.sql', 'utf8')
 const fn = fs.readFileSync('supabase/functions/zoho-api-v2/index.ts', 'utf8')
 const deploy = (fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8') + EDGE_LIST)
 const nav = fs.readFileSync('src/nav-map.js', 'utf8')
@@ -86,14 +86,14 @@ test.describe('mocked browser', () => {
 })
 
 test('CSV seed then sync: the export gives the cursor to continue from', () => {
-  const cur = fs.readFileSync('supabase/migrations/20261016030000_cf247_zoho_export_sync_cursor.sql', 'utf8')
+  const cur = fs.readFileSync('supabase/migrations-archive/20261016030000_cf247_zoho_export_sync_cursor.sql', 'utf8')
   expect(cur).toContain("v_at bigint := (select coalesce(max(z.seq), 0) from pipeline.zoho_sync_items z);")
   expect(cur).toContain("'sync_cursor', rtrim(translate(replace(encode(convert_to(jsonb_build_object('v', 1, 'm', 'delta', 'a', v_at,")
   expect(fn).toContain('"x-sync-cursor": String(obj.sync_cursor ?? "")')
 })
 
 test('the CSV export comes in pages within the API time limit', () => {
-  const pg = fs.readFileSync('supabase/migrations/20261016040000_cf247_zoho_export_pages.sql', 'utf8')
+  const pg = fs.readFileSync('supabase/migrations-archive/20261016040000_cf247_zoho_export_pages.sql', 'utf8')
   expect(pg).toContain("v_lim int := greatest(security.pipeline_num_v1('zoho.export_page_rows', 3000)::int, 1);")
   expect(pg).toContain("order by z.item->'provider'->>'name', z.item->>'title', z.item_key limit v_lim offset v_off) x;")
   expect(pg).toContain("'has_more', v_off + coalesce(v_n, 0) < v_total,")
@@ -104,7 +104,7 @@ test('the CSV export comes in pages within the API time limit', () => {
 
 test('website v2 at its own URL, in parallel: same functions, own key, logged; wix-course-api untouched', () => {
   const wfn = fs.readFileSync('supabase/functions/website-api-v2/index.ts', 'utf8')
-  const wmig = fs.readFileSync('supabase/migrations/20261016050000_cf247_website_api_v2_url.sql', 'utf8')
+  const wmig = fs.readFileSync('supabase/migrations-archive/20261016050000_cf247_website_api_v2_url.sql', 'utf8')
   expect(deploy).toContain('[website-api-v2]=false')
   expect(wfn).toContain('const API_VERSION = "website-v2";')
   expect(wfn).not.toContain('body.contract')

@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261113271500_cf247_aer_course_machine_approve_except.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261113271500_cf247_aer_course_machine_approve_except.sql', 'utf8')
 
 test('only row-level failures are held back; other gate classes and every item rule still hold the read', () => {
   expect(M).toContain("'1eb645492dd067e699decef07da6402f'")

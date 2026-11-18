@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261105060000_cf247_intake_fairness_precedence.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261105060000_cf247_intake_fairness_precedence.sql', 'utf8')
 
 test('§3: rows are taken round by round per university under a setting; the batch size is unchanged and the job is not bypassed', () => {
   expect(m).toMatch(/'intake_dates\.provider_share'[\s\S]{0,700}'number', to_jsonb\(25\), 5, 200, 'rows'/)
@@ -40,7 +40,7 @@ test('§6: the pre-production regressions run in CI on the production-equivalent
 })
 
 test('P0 IQ-00313 provenance: a withdrawal takes the admission from its own event, so a re-decided row is still corrected', () => {
-  const h = fs.readFileSync('supabase/migrations/20261105070000_cf247_intake_withdraw_provenance.sql', 'utf8')
+  const h = fs.readFileSync('supabase/migrations-archive/20261105070000_cf247_intake_withdraw_provenance.sql', 'utf8')
   expect(h).toContain("'security.intake_date_withdraw_v1(uuid,text,text,boolean)', '746b5c1a4141d4b5d022c1bfa0fa25f3'")
   expect(h).toContain("where e.intake_id = p_intake and e.outcome = 'filled'")
   expect(h).toContain("and not exists (select 1 from pipeline.course_intake_date_events w where w.intake_id = p_intake and w.outcome = 'withdrawn' and w.id > e.id)")
@@ -48,14 +48,14 @@ test('P0 IQ-00313 provenance: a withdrawal takes the admission from its own even
 })
 
 test('§3 focus priority within a round: focus universities first, longest waiting first among them (production finding 17:26)', () => {
-  const f = fs.readFileSync('supabase/migrations/20261105080000_cf247_intake_focus_rounds.sql', 'utf8')
+  const f = fs.readFileSync('supabase/migrations-archive/20261105080000_cf247_intake_focus_rounds.sql', 'utf8')
   expect(f).toContain("'security.intake_dates_plan_v3(uuid[],integer)', '67e930818ee190f9124af45093be2ff0'")
   expect(f).toContain('(f.rank is null), sets.served nulls first, f.rank nulls last, c.provider_id, i.course_id, i.id')
   expect(fs.readFileSync('tests/fixtures/intake-fairness/cases.sql', 'utf8')).toContain('PASS focus priority')
 })
 
 test('explicit pilot scope beside fairness and focus (Platform Admin 5 Nov 2026 18:00): a setting, the existing pilot definition, no hard-coded list', () => {
-  const g = fs.readFileSync('supabase/migrations/20261105090000_cf247_intake_pilot_share.sql', 'utf8')
+  const g = fs.readFileSync('supabase/migrations-archive/20261105090000_cf247_intake_pilot_share.sql', 'utf8')
   expect(g).toMatch(/'intake_dates\.pilot_batch_share'[\s\S]{0,700}'number', to_jsonb\(60\), 0, 100, 'per cent'/)
   expect(g).toContain("'security.intake_dates_plan_v3(uuid[],integer)', '886876cde3afdd3e55fa04a9459c6f95'")
   expect(g).toContain('jsonb_array_elements(security.intake_ui_scopes_v1())')     // the pilot is the existing run_now.cohort_top_au_universities scope

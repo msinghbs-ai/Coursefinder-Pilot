@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261113203100_cf247_aer_machine_approve_except.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261113203100_cf247_aer_machine_approve_except.sql', 'utf8')
 
 test('a failing row is held back with its rule, the same rules as the whole-item check; applicability is never inferred', () => {
   expect(M).toContain('create or replace function security.aer_matrix_machine_exclusions_v1(p_run uuid)')

@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113040000_cf247_sch_activation.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113040000_cf247_sch_activation.sql', 'utf8')
 
 test('the decided values only, each with a control event; the reader stays in shadow', () => {
   for (const [k, v] of [['batch.sch_eligibility_enqueue', 'to_jsonb(300)'], ['batch.sch_eligibility_read', 'to_jsonb(40)'], ['sch_elig.on', 'to_jsonb(1)'],

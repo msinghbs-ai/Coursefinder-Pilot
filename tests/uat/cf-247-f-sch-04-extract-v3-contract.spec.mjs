@@ -104,7 +104,7 @@ test('worker v0.77.0: direct official read first, scraper for a rendered listing
 })
 
 test('migration 20261113060000: prompt 3 active, no default second pass, fill only empty and unlocked fields, no Layer 4 review for unproven or technical cases', () => {
-  const m = fs.readFileSync('supabase/migrations/20261113060000_cf247_sch_extract_v3.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261113060000_cf247_sch_extract_v3.sql', 'utf8')
   expect(m).toContain('SYSTEM — STUDYSEARCH SCHOLARSHIP EXTRACTION / sch-extract-v3')
   expect(m).toContain('update pipeline.scholarship_ai_prompts set active = (version = 3)')
   expect(m).toContain('set confirm_admissions = false')

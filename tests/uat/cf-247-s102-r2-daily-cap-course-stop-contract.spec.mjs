@@ -2,7 +2,7 @@
 // CF-247 R2 (v2.15.350; throughput record section 3.3, O10 approved 24 Oct 2026): daily picked-courses cap and per-course stop.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261024013000_cf247_r2_daily_cap_course_stop.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261024013000_cf247_r2_daily_cap_course_stop.sql', 'utf8')
 
 test('settings: search.daily_picked_cap 100 [10–2,000] and search.stop_per_course_after 6 [3–20], in Course page search', () => {
   expect(m).toMatch(/'search\.daily_picked_cap', .*'100'::jsonb, '10', '2000', 'courses a day', \d+, 'Course page search'/)

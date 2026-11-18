@@ -9,7 +9,7 @@ cd "$(dirname "$0")/../../.."
 export LC_ALL=C # fixed: one byte order for sort and comm
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 DB=${CCN_DB:-c_ccn_fixture}
-M=supabase/migrations/20261118073000_cf247_course_study_load_empty_reason_campus_primary_locality.sql
+M=supabase/migrations-archive/20261118073000_cf247_course_study_load_empty_reason_campus_primary_locality.sql
 HELD=supabase/held/course_campus_new_fields_forward_recovery.sql
 F=tests/fixtures/course-campus-new-fields
 q() { psql -X -d "$1" -Atc "$2"; }

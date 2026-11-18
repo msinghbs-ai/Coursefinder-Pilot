@@ -1,9 +1,9 @@
 // Guards: open-licence destination editions publish without manual clicks (Platform Admin 18 Nov 2026 13:07): an edition whose owner is on destination.open_licence_owners and whose terms are approved has its attributed draft rows approved and is published hourly with an audit entry; QILT is not on the list; publishing never supersedes another owner's edition; the BOM climate statistics terms are recorded (CC BY 4.0) with full attribution.
-// CF-247 S637. supabase/migrations/20261118161000_cf247_destination_open_licence_publish.sql.
+// CF-247 S637. supabase/migrations-archive/20261118161000_cf247_destination_open_licence_publish.sql.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118161000_cf247_destination_open_licence_publish.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118161000_cf247_destination_open_licence_publish.sql', 'utf8')
 
 test('only open-licence owners with approved terms are approved and published, each with an audit entry; QILT stays gated', () => {
   expect(M).toContain("where x.status in ('draft', 'in_review') and x.terms_status = 'approved' and x.source_owner = any (v_owners)")

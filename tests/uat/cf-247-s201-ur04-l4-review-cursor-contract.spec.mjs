@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const m = fs.readFileSync('supabase/migrations/20261101050000_cf247_ur04_l4_review_cursor.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261101050000_cf247_ur04_l4_review_cursor.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('migration: md5-guarded; stable order with a unique tie-breaker; keyset position; cap unchanged; nothing dropped', () => {

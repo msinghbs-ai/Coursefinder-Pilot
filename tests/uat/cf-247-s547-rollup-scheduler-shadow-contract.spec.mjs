@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261115210000_cf247_rollup_scheduler_shadow.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261115210000_cf247_rollup_scheduler_shadow.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const body = (name) => {
   const i = code.indexOf(`create or replace ${name}`)

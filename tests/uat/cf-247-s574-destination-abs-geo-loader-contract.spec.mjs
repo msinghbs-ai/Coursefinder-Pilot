@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const raw = fs.readFileSync('supabase/migrations/20261117180000_cf247_rm1b_destination_abs_geo_loader.sql', 'utf8')
+const raw = fs.readFileSync('supabase/migrations-archive/20261117180000_cf247_rm1b_destination_abs_geo_loader.sql', 'utf8')
 const mig = raw.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const edge = fs.readFileSync('supabase/functions/layer1-destination-geo-loader/index.ts', 'utf8')
 const wf = fs.readFileSync('.github/workflows/destination-abs-shares-load.yml', 'utf8')

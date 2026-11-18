@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const code = fs.readFileSync('supabase/migrations/20261118190000_cf247_course_page_needed_search_rule.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+const code = fs.readFileSync('supabase/migrations-archive/20261118190000_cf247_course_page_needed_search_rule.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const fn = (name) => { const i = code.indexOf(`create or replace function ${name}(`); return code.slice(i, code.indexOf('$function$;', i)) }
 
 test('only the existing Search again decision, under the system automation account, within the per-course limit', () => {

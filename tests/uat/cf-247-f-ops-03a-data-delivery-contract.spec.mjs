@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261110000100_cf247_fops03a_data_delivery.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261110000100_cf247_fops03a_data_delivery.sql', 'utf8')
 const UI = fs.readFileSync('src/DataDelivery.jsx', 'utf8')
 const MAIN = fs.readFileSync('src/mature-main.jsx', 'utf8')
 const FX = fs.readFileSync('tests/fixtures/fops03a-data-delivery/fixtures.sql', 'utf8')

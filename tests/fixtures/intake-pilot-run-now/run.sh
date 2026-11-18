@@ -13,7 +13,7 @@ cd "$(dirname "$0")/../../.."
 FX=tests/fixtures/intake-pilot-run-now
 DB=${RUN_NOW_DB:-intake_run_now_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104610000_cf247_intake_pilot_run_now.sql
+MIG=supabase/migrations-archive/20261104610000_cf247_intake_pilot_run_now.sql
 TMP=$(mktemp -d)
 [ -n "${RUN_NOW_KEEP:-}" ] && trap 'rm -rf "$TMP"' EXIT || trap 'rm -rf "$TMP"; $P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT
 INTAKE_DB=$DB INTAKE_KEEP=1 bash tests/fixtures/intake-dates/run.sh > "$TMP/base.log" 2>&1 || { cat "$TMP/base.log"; exit 1; }
@@ -31,7 +31,7 @@ $P -d $DB -1 -o /dev/null -f $MIG
 [ "$($P -d $DB -Atc "select count(*) from pipeline.platform_toolset_settings where key like 'run_now.%'")" = 3 ] || { echo "settings added twice"; exit 1; }
 echo "second run: unchanged"
 # the cohort scope (Platform Admin 4 Nov 2026 20:53): from the cohort function as live after v2.15.476, the scope migration twice
-MIG2=supabase/migrations/20261104630000_cf247_intake_pilot_top_au_universities.sql
+MIG2=supabase/migrations-archive/20261104630000_cf247_intake_pilot_top_au_universities.sql
 CC="array['security.run_now_cohort_create_v1(text,uuid,text,text)']"
 [ "$(md5of "$CC")" = "0fd43a771a427530995c20f88eb1af1c" ] || { echo "cohort function differs from live: $(md5of "$CC")"; exit 1; }
 $P -d $DB -c "alter table catalogue.providers add column if not exists provider_type_id uuid" \
@@ -41,7 +41,7 @@ CCA=$(md5of "$CC"); echo "cohort scope after: $CCA"
 $P -d $DB -1 -o /dev/null -f $MIG2
 # hotfix 20261104640000: production's outcome-code foreign key on admin_jobs, reproduced, then the fix applied twice
 $P -d $DB -q -c "create table if not exists pipeline.ops_outcome_codes(code text primary key); insert into pipeline.ops_outcome_codes values ('succeeded_with_result'),('succeeded_no_movement'),('not_needed'),('deferred_dependency'),('blocked_policy'),('blocked_evidence'),('failed_retryable'),('failed_remediation') on conflict do nothing; alter table pipeline.admin_jobs drop constraint if exists admin_jobs_outcome_fkey; update pipeline.admin_jobs set outcome = null where outcome is not null and outcome not in (select code from pipeline.ops_outcome_codes); alter table pipeline.admin_jobs add constraint admin_jobs_outcome_fkey foreign key (outcome) references pipeline.ops_outcome_codes(code);" >/dev/null
-MIG3=supabase/migrations/20261104640000_cf247_run_now_outcome_code.sql
+MIG3=supabase/migrations-archive/20261104640000_cf247_run_now_outcome_code.sql
 $P -d $DB -1 -o /dev/null -f $MIG3
 $P -d $DB -1 -o /dev/null -f $MIG3
 [ "$(md5of "$CC")" = "$CCA" ] || { echo "a second run of the scope migration changed the definition"; exit 1; }

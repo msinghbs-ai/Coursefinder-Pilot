@@ -1,4 +1,4 @@
--- Workstream A's shared contract: the contract section of supabase/migrations/20261104010000_cf247_ops_controller.sql on branch cf247-ops-a
+-- Workstream A's shared contract: the contract section of supabase/migrations-archive/20261104010000_cf247_ops_controller.sql on branch cf247-ops-a
 -- (commit d8b11de1, 3 Nov 2026), byte for byte between the markers. Fixture only; never a Supabase project.
 -- >>> contract (tests/fixtures/ops-controller/stub-ops-contract.sql is this section, byte for byte) ------------------------------------------
 -- The authority boundary (mandate §2, §6, §15 "the AI must never grant itself broader permissions"): while the controller runs a remedy it sets

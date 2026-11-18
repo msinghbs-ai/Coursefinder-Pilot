@@ -5,7 +5,7 @@ import fs from 'node:fs'
 // CF-247 v2.15.306 (Platform Admin, 21 Oct 2026 12:03): end to end enrichment per university; automation within the toolset shares,
 // manual Run now from its own on-demand allowance after seeing the estimate. Choices: "Own on-demand allowance", "All, most missing
 // first", "Universities row + plan tab".
-const m = fs.readFileSync('supabase/migrations/20261021170000_cf247_enrichment_plan.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261021170000_cf247_enrichment_plan.sql', 'utf8')
 const ui = fs.readFileSync('src/EnrichPlan.jsx', 'utf8')
 const nav = fs.readFileSync('src/nav-map.js', 'utf8')
 const row = fs.readFileSync('src/AdaptersWorkspace.jsx', 'utf8')
@@ -43,7 +43,7 @@ test('screen: plan tab, row link, estimate before Run now', () => {
 // v2.15.307 (Platform Admin 21 Oct 2026 17:30, "Pick b, and proceed with task 2 and 3"): plan tasks say they belong to a plan; plans that
 // finish with a stopped or skipped step say what a person has to do; automatic search refresh requests are spaced out.
 test('plan tasks are labelled, plans that need a person are listed, automatic refreshes spaced', () => {
-  const n = fs.readFileSync('supabase/migrations/20261021190000_cf247_plan_needs_person.sql', 'utf8')
+  const n = fs.readFileSync('supabase/migrations-archive/20261021190000_cf247_plan_needs_person.sql', 'utf8')
   const tasks = fs.readFileSync('src/AdminTasks.jsx', 'utf8')
   expect(n).toContain("args || jsonb_build_object('plan_run', r.id, 'plan_mode', r.mode)")
   expect(n).toContain('alter table pipeline.enrich_plan_runs add column if not exists needs_person text;')
@@ -60,7 +60,7 @@ test('plan tasks are labelled, plans that need a person are listed, automatic re
 
 // v2.15.308 (Platform Admin 21 Oct 2026 18:36, "Two tracks + more credits")
 test('two tracks per plan, priority countries, larger shares logged', () => {
-  const k = fs.readFileSync('supabase/migrations/20261021230000_cf247_plan_two_tracks.sql', 'utf8')
+  const k = fs.readFileSync('supabase/migrations-archive/20261021230000_cf247_plan_two_tracks.sql', 'utf8')
   expect(k).toContain("foreach v_track in array array['ai', 'fc'] loop")
   expect(k).toContain("case when x->>'step' = 'fields' then 'ai' else 'fc' end = v_track")
   expect(k).toContain("('pipeline', 'plans.priority_countries'")

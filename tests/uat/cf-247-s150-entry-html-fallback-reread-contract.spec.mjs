@@ -1,7 +1,7 @@
 // Guards: CF-247 AER programme bounded re-read after worker v0.50.2 (Platform Admin consolidated mandate 28 Oct 2026 23:22; the 28 Oct deploy-order lesson): an entry source takes no stored markdown copy; only markdown sources whose reads wait on no person are fetched again, and only no-answer runs with no Layer 4 item get their tries back, each bounded, history kept; nothing dropped
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029007000_cf247_aer_html_fallback_reread.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029007000_cf247_aer_html_fallback_reread.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('md5-guarded: an entry source takes no markdown copy', () => {

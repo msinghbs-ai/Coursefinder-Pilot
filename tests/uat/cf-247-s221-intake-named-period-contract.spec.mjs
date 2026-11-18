@@ -8,7 +8,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261102100000_cf247_intake_named_period.sql'
+const MIG = 'supabase/migrations-archive/20261102100000_cf247_intake_named_period.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/intake-dates'
@@ -75,5 +75,5 @@ test('the fixtures cover the named-period rule and the CRICOS write', () => {
     "'year only from a heading: not printed with the period'", "'the year printed on the page with the named period'", "'the named period, not another in the month'",
     "'CRICOS re-admission without a year keeps year, date and deadline'", "'CRICOS: an older year never replaces a later one'"]) expect(fixtures).toContain(w)
   expect(fixtures).toContain("pg_temp.course('monthnamed', 'harbour', 'harbour.edu.au', 'MC279', 'Master of Statistics', 'Starts in March')")
-  expect(run).toContain('MIG2=supabase/migrations/20261102100000_cf247_intake_named_period.sql')
+  expect(run).toContain('MIG2=supabase/migrations-archive/20261102100000_cf247_intake_named_period.sql')
 })

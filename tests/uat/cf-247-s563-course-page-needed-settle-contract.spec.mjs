@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261116160000_cf247_course_page_needed_settle.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261116160000_cf247_course_page_needed_settle.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('settles only on recorded evidence: active official link -> page_added; confirmed no-page record -> no_page_exists', () => {

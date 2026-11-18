@@ -6,7 +6,7 @@ import { openServiceDetails } from './support/cards.mjs'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const sql = fs.readFileSync('supabase/migrations/20261012011900_cf247_firecrawl_daily_budget.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261012011900_cf247_firecrawl_daily_budget.sql', 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const outside = s => s.replace(/\$f\$[\s\S]*?\$f\$/g, '').replace(/CREATE OR REPLACE FUNCTION[\s\S]*?\$function\$;/g, '')
 
@@ -59,7 +59,7 @@ test.describe('mocked browser', () => {
 })
 
 test('12000: top 50 Australian providers by CRICOS courses queued first; small pilot rows held; data only', () => {
-  const m = fs.readFileSync('supabase/migrations/20261012012000_cf247_au_top50_cohort.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261012012000_cf247_au_top50_cohort.sql', 'utf8')
   expect(m).toContain("c.course_code ~ '^[0-9]{6}[0-9A-Z]$'")
   expect(m).toContain('order by x.courses desc, x.provider_id limit 50')
   expect(m).toContain("'au-top-2026-10-12'")

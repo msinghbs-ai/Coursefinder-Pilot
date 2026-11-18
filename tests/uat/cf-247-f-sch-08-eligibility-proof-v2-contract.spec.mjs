@@ -36,7 +36,7 @@ test('worker v0.78.0 and migration 20261113064000: shadow only, government sites
   expect(w).toContain('const SCH_V3_TIMEOUT_MS = 90_000;') // a version 3 call may finish its long answer
   expect(w).toContain('signal: AbortSignal.timeout(v3 ? SCH_V3_TIMEOUT_MS : 60000)')
   expect(w).toContain('if (Date.now() - t0 > BUDGET_MS - (Number(it.prompt_version || 0) >= 3 ? SCH_V3_TIMEOUT_MS : 25000)) { await rec({ p_retry: true });')
-  const m = fs.readFileSync('supabase/migrations/20261113064000_cf247_sch_eligibility_proof_v2.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261113064000_cf247_sch_eligibility_proof_v2.sql', 'utf8')
   expect(m).not.toMatch(/update pipeline\.platform_toolset_settings/i) // the reader stays in shadow; going live is its own step
   expect(m).toContain("'5b684e8b755092672641c7d113c3800e'")
   expect(m).toContain("security.scholarship_government_host_v1(v_url)")

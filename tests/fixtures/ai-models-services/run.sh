@@ -12,9 +12,9 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${AIMS_DB:-ai_models_services_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG0="supabase/migrations/20261113377000_cf247_ai_ledger_columns.sql supabase/migrations/20261113378000_cf247_ai_settings_home_columns.sql supabase/migrations/20261113379000_cf247_ai_item_model_column.sql"
-MIG=supabase/migrations/20261113380000_cf247_ai_models_services.sql
-MIG2=supabase/migrations/20261113390000_cf247_ai_routes_only.sql
+MIG0="supabase/migrations-archive/20261113377000_cf247_ai_ledger_columns.sql supabase/migrations-archive/20261113378000_cf247_ai_settings_home_columns.sql supabase/migrations-archive/20261113379000_cf247_ai_item_model_column.sql"
+MIG=supabase/migrations-archive/20261113380000_cf247_ai_models_services.sql
+MIG2=supabase/migrations-archive/20261113390000_cf247_ai_routes_only.sql
 FX=tests/fixtures/ai-models-services
 q() { $P -d "$1" -Atc "$2"; }
 md5of() { q "$1" "select md5(pg_get_functiondef('$2'::regprocedure))"; }

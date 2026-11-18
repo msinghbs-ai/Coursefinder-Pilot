@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${COURSETEXT_DB:-course_text_fixtures}
-MIG=../../../supabase/migrations/20261103110000_cf247_course_description_deadline_fields.sql
+MIG=../../../supabase/migrations-archive/20261103110000_cf247_course_description_deadline_fields.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 # Admin #382: the fixture is destructive only to its local throwaway database.
 # Refuse a remote transport or a Supabase role before creating/dropping anything.
@@ -63,7 +63,7 @@ for s in "${!AFTER[@]}"; do [ "$(md5of "$s")" = "${AFTER[$s]}" ] || { echo "seco
 echo "second run: nothing changed"
 # P0 Admin #382: exercise the actual CLI-created pure guard migration twice on
 # the existing admission path. This is isolated fixture execution, not production.
-P0=../../../supabase/migrations/20261106450000_cf247_deadline_closing_semantics.sql
+P0=../../../supabase/migrations-archive/20261106450000_cf247_deadline_closing_semantics.sql
 $P -d "$DB" -1 -f "$P0"
 $P -d "$DB" -1 -f "$P0"
 

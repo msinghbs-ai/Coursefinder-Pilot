@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
-const M = fs.readFileSync('supabase/migrations/20261113280000_cf247_cdesc_recovery_throughput.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261113280000_cf247_cdesc_recovery_throughput.sql', 'utf8')
 const H = fs.readFileSync('supabase/held/cdesc_recovery_throughput_forward_recovery.sql', 'utf8')
 const RUN = fs.readFileSync('tests/fixtures/cdesc-recovery/run.sh', 'utf8')
 const WF = fs.readFileSync('.github/workflows/course-descriptions-test.yml', 'utf8')

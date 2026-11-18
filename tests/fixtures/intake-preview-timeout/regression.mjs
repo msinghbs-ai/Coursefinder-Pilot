@@ -10,7 +10,7 @@ let before
 try { const out=execFileSync('psql',['-X','-q','-At','-v','ON_ERROR_STOP=1','-d','intake_ui_fixtures','-c',sql],{encoding:'utf8',stdio:['ignore','pipe','pipe']});before={timed_out:false,plan:JSON.parse(out)} }
 catch(e) {if(!/statement timeout/.test(e.stderr))throw e;before={timed_out:true,sqlstate:'57014',context:'course_title_key / course_page_check_v1 / intake_dates_plan_v2'}}
 if(!before.timed_out) throw Error('Dense evidence fixture did not reproduce the old timeout')
-const mig='supabase/migrations/20261105010000_intake_preview_identity_lookup.sql'
+const mig='supabase/migrations-archive/20261105010000_intake_preview_identity_lookup.sql'
 runFile(mig);runFile(mig);runFile(dir+'assert.sql')
 const plans=[]
 for(let i=0;i<3;i++)plans.push(JSON.parse(execFileSync('psql',['-X','-q','-At','-v','ON_ERROR_STOP=1','-d','intake_ui_fixtures','-c',sql],{encoding:'utf8'})))

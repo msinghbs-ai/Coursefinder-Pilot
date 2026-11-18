@@ -3,11 +3,11 @@ name: AER discovery spare capacity integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261112103900_cf247_aer_discovery_spare.sql'
+      - 'supabase/migrations-archive/20261112103900_cf247_aer_discovery_spare.sql'
       - 'supabase/held/aer_discovery_spare_forward_recovery.sql'
       - 'tests/fixtures/aer-discovery-spare/**'
       - 'tests/fixtures/aer-discovery-campaign/**'
-      - 'supabase/migrations/20261112040000_cf247_aer_discovery_campaign.sql'
+      - 'supabase/migrations-archive/20261112040000_cf247_aer_discovery_campaign.sql'
       - '.github/workflows/aer-discovery-spare-test.yml'
   workflow_dispatch:
 jobs:

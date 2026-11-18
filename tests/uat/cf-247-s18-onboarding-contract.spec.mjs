@@ -11,7 +11,7 @@ import { PAGES, resolveTarget } from '../../src/nav-map.js'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('migration: the onboarding table, tick, stop at Ready to admit, no auto-admit, new-provider trigger, credit notices, catalogued cron', () => {
-  const m = read('supabase/migrations/20261012010200_cf247_provider_onboarding.sql')
+  const m = read('supabase/migrations-archive/20261012010200_cf247_provider_onboarding.sql')
   expect(m).toContain('create table if not exists pipeline.provider_onboarding (')
   expect(m).toContain('create table if not exists pipeline.provider_onboarding_settings (')
   expect(m).toContain('create or replace function security.provider_onboarding_tick_v1()')
@@ -31,7 +31,7 @@ test('migration: the onboarding table, tick, stop at Ready to admit, no auto-adm
   expect(m).not.toMatch(/\bdelete\s+from\b/i)
   expect(m).not.toMatch(/\btruncate\b/i)
   expect(m).not.toMatch(/\bdrop\s+(table|function|trigger|index|view|schema|column)\b/i)
-  expect(fs.existsSync('supabase/migrations/20261012010300_cf247_provider_onboarding_tick_fix.sql')).toBe(true)
+  expect(fs.existsSync('supabase/migrations-archive/20261012010300_cf247_provider_onboarding_tick_fix.sql')).toBe(true)
 })
 
 test('source: Onboarding component, builder approvals, Layer 4 retirements, banner', () => {

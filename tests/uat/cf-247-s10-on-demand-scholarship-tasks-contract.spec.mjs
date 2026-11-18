@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261011009000_cf247_on_demand_scholarship_tasks.sql'
+const MIG = 'supabase/migrations-archive/20261011009000_cf247_on_demand_scholarship_tasks.sql'
 
 test('task kinds are a registry; three scholarship task kinds; nothing dropped; md5-guarded', () => {
   const sql = fs.readFileSync(MIG, 'utf8')
@@ -55,7 +55,7 @@ test('guide describes the buttons and Running now', () => {
 })
 
 test('empty tasks are refused and the credits note is honest (9100)', () => {
-  const sql = fs.readFileSync('supabase/migrations/20261011009100_cf247_scholarship_task_checks.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations-archive/20261011009100_cf247_scholarship_task_checks.sql', 'utf8')
   expect(sql).toContain("this scholarship is not active, so there is no page to read; restore it first")
   expect(sql).toContain("use Find scholarships now on the provider")
   expect(sql).toContain("' while the task ran'")
@@ -64,7 +64,7 @@ test('empty tasks are refused and the credits note is honest (9100)', () => {
 })
 
 test('every scheduled job has a Task manager label (9200)', () => {
-  const sql = fs.readFileSync('supabase/migrations/20261011009200_cf247_label_every_scheduled_job.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations-archive/20261011009200_cf247_label_every_scheduled_job.sql', 'utf8')
   expect(sql).toContain("('admin-jobs',")
   expect(sql).toContain('on conflict (jobname) do nothing')
   expect(sql).toContain('scheduled jobs still without a label')

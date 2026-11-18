@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261117152300_cf247_boost_staging_bucket_and_tables.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261117152300_cf247_boost_staging_bucket_and_tables.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('the bucket is private and the change refuses a public bucket or a storage policy anon or authenticated could reach', () => {

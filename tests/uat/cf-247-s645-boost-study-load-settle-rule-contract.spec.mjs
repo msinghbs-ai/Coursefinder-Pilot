@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const code = fs.readFileSync('supabase/migrations/20261118183000_cf247_boost_study_load_settle_rule.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+const code = fs.readFileSync('supabase/migrations-archive/20261118183000_cf247_boost_study_load_settle_rule.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const fn = (name) => { const i = code.indexOf(`create or replace function ${name}(`); return code.slice(i, code.indexOf('$function$;', i)) }
 
 test('only readings read again with the current qualified prompt are settled, and only as Not stated', () => {

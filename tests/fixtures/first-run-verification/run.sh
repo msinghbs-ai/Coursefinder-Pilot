@@ -11,7 +11,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${FRV_DB:-first_run_verification_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104460000_cf247_first_run_verification.sql
+MIG=supabase/migrations-archive/20261104460000_cf247_first_run_verification.sql
 FX=tests/fixtures/first-run-verification
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }
@@ -21,14 +21,14 @@ $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/n
 
 # 1 the database as live (4 Nov 2026 08:20 AEDT)
 $P -d $DB -f tests/fixtures/integration-queue/stubs.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261102120000_cf247_integration_queue.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102120000_cf247_integration_queue.sql 2>&1 | show
 $P -d $DB -f tests/fixtures/ops-controller/stubs-extra.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104010000_cf247_ops_controller.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104010000_cf247_ops_controller.sql 2>&1 | show
 $P -d $DB -1 -o /dev/null -f tests/fixtures/ops-reopen/ai-guards.sql 2>&1 | show
 $P -d $DB -f tests/fixtures/ops-reopen/stubs-extra.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104100000_cf247_ops_reopen_rule_ai_contract.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104100000_cf247_ops_reopen_rule_ai_contract.sql 2>&1 | show
 # upsert-live.sql is SS-021 F2 as in its migration, byte for byte
-A=supabase/migrations/20261104320000_cf247_work_continuity_adopt.sql
+A=supabase/migrations-archive/20261104320000_cf247_work_continuity_adopt.sql
 diff <(sed -n '3,$p' $FX/upsert-live.sql) <({ awk '/^create or replace function pg_temp.edit_once/,/^end \$f\$;/' $A; awk '/^create or replace function security.integration_issue_allowed_v1/,/^revoke all on function security.integration_issue_allowed_v1/' $A;
   awk "/^select pg_temp.edit_once\('security.integration_issue_upsert_v1\(jsonb,text\)'/,/array\[1, 1, 1\]\);/" $A; }) >/dev/null || { echo "upsert-live.sql differs from migration 20261104320000"; exit 1; }
 $P -d $DB -1 -o /dev/null -f $FX/upsert-live.sql

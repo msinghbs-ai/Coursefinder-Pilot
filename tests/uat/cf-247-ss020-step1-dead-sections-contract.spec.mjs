@@ -11,7 +11,7 @@ import { RETIRED_FETCHERS, RETIRED_TOOLSETS, isRetiredFetcher } from '../../src/
 import { PAGES } from '../../src/nav-map.js'
 
 const read = (p) => fs.readFileSync(p, 'utf8')
-const MIG = read('supabase/migrations/20261104340000_cf247_ss020_step1_retire_dead_sections.sql')
+const MIG = read('supabase/migrations-archive/20261104340000_cf247_ss020_step1_retire_dead_sections.sql')
 
 test('migration: the Layer 3 AI jobs move area and keep running; retirements are register rows only', () => {
   expect(MIG).toContain("update pipeline.automation_catalogue set area = 'Course pages'\n where jobname in ('coverage-ai-match-prepare', 'coverage-ai-match') and area = 'Layer 3 AI';")

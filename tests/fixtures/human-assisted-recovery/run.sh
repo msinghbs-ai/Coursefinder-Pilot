@@ -14,11 +14,11 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${HAR_DB:-human_assisted_recovery_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104450000_cf247_human_assisted_recovery.sql
+MIG=supabase/migrations-archive/20261104450000_cf247_human_assisted_recovery.sql
 FX=tests/fixtures/human-assisted-recovery
 P1=tests/fixtures/p1-provider-descriptions
-WC=supabase/migrations/20261104170000_cf247_work_continuity.sql
-SC=supabase/migrations/20261104390000_cf247_sch_coverage_recovery.sql
+WC=supabase/migrations-archive/20261104170000_cf247_work_continuity.sql
+SC=supabase/migrations-archive/20261104390000_cf247_sch_coverage_recovery.sql
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }
 md5of() { q "select md5(pg_get_functiondef('$1'::regprocedure))"; }
@@ -29,18 +29,18 @@ TMP=$(mktemp -d); trap 'rm -rf "$TMP"; [ -n "${HAR_KEEP:-}" ] || $P -d postgres 
 # 1 the live Layer 4 Inbox (as ../l4-course-link/run.sh builds it)
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f $P1/stubs.sql >/dev/null
 for f in $P1/live-before/*.sql; do PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f "$f" >/dev/null; done
-PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -o /dev/null -f supabase/migrations/20261102090000_cf247_p1_provider_descriptions.sql 2>&1 | show
-M=supabase/migrations/20261103110000_cf247_course_description_deadline_fields.sql
+PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102090000_cf247_p1_provider_descriptions.sql 2>&1 | show
+M=supabase/migrations-archive/20261103110000_cf247_course_description_deadline_fields.sql
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f tests/fixtures/course-text/live/security.layer4_review_decide_impl.sql >/dev/null
 { sed -n '/^create or replace function pg_temp.edit_once/,/^end \$f\$;/p' $M; sed -n "/^select pg_temp.edit_once('security.layer4_inbox_items_v1()'/,/]], array\[/p" $M
   sed -n "/^select pg_temp.edit_once('security.layer4_review_decide_impl(uuid,text,text,jsonb)'/,/]], array\[/p" $M; } > "$TMP/items.sql"
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -At -f "$TMP/items.sql" >/dev/null
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f tests/fixtures/iq67-coverage-admit/live/security.layer4_course_link_apply_impl.def >/dev/null
-sed -n '/^create or replace function security.binding_refusal_route_v1/,/^end \$function\$;/p' supabase/migrations/20261102030000_cf247_e16_binding_validation.sql > "$TMP/brr.sql"
-sed -n '/^create or replace function security.layer4_url_key_v1/,/^\$function\$;/p' supabase/migrations/20261104120000_cf247_ops_layer4_throughput.sql > "$TMP/key.sql"
+sed -n '/^create or replace function security.binding_refusal_route_v1/,/^end \$function\$;/p' supabase/migrations-archive/20261102030000_cf247_e16_binding_validation.sql > "$TMP/brr.sql"
+sed -n '/^create or replace function security.layer4_url_key_v1/,/^\$function\$;/p' supabase/migrations-archive/20261104120000_cf247_ops_layer4_throughput.sql > "$TMP/key.sql"
 PGOPTIONS='-c check_function_bodies=off' $P -d $DB -f "$TMP/brr.sql" -f "$TMP/key.sql" >/dev/null
 $P -d $DB -f tests/fixtures/l4-course-link/stubs.sql >/dev/null
-PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -o /dev/null -f supabase/migrations/20261104260000_cf247_l4_course_link.sql 2>&1 | show
+PGOPTIONS='-c check_function_bodies=off' $P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104260000_cf247_l4_course_link.sql 2>&1 | show
 
 # 2 the contracts this change builds on, and the stubs
 $P -d $DB -f tests/fixtures/sch-coverage-recovery/stub-ops-contract.sql >/dev/null
@@ -74,7 +74,7 @@ for s in "security.layer4_inbox_kinds_v1()" "security.layer4_inbox_items_v1()" "
   [ "$(md5of "$s")" = "${LIVE[$s]}" ] || { echo "the migration changed $s, which it does not own"; exit 1; }; done
 echo "applied twice: the second run changed nothing; the Inbox functions are untouched"
 # CF-247 hotfix (Platform Admin report 4 Nov 2026 11:13): the recovery detail's case list without the per-read gate, applied twice
-HOT=supabase/migrations/20261104475000_cf247_aer_recovery_detail_hotfix.sql
+HOT=supabase/migrations-archive/20261104475000_cf247_aer_recovery_detail_hotfix.sql
 $P -d $DB -1 -q -f $HOT >/dev/null 2>&1 || { $P -d $DB -1 -f $HOT 2>&1 | tail -5; exit 1; }
 H1=$(md5of "security.layer4_aer_recovery_detail_v1(text)")
 $P -d $DB -1 -q -f $HOT >/dev/null 2>&1 || { echo "the hotfix did not apply a second time"; exit 1; }

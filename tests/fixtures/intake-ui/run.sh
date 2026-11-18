@@ -9,7 +9,7 @@ P=(psql -X -q -v ON_ERROR_STOP=1 -d "$RUN_NOW_DB")
 # Rebuild relevant constraints/triggers/grants from the committed authoritative metadata snapshot.
 node tests/fixtures/intake-ui/parity.mjs > /tmp/intake-ui-parity.sql
 "${P[@]}" -1 -f /tmp/intake-ui-parity.sql
-MIG=supabase/migrations/20261105000000_intake_run_validate_bridge.sql
+MIG=supabase/migrations-archive/20261105000000_intake_run_validate_bridge.sql
 BEFORE=$("${P[@]}" -Atc "select md5(pg_get_functiondef('security.run_now_cohort_create_v1(text,uuid,text,text)'::regprocedure)) || md5(pg_get_functiondef('security.job_run_now_v1(text,text,jsonb,uuid)'::regprocedure))")
 "${P[@]}" -1 -f "$MIG"
 "${P[@]}" -1 -f "$MIG"

@@ -2,7 +2,7 @@
 // Live proof of each rule is the rolled-back fixture dry run recorded in the admin build log (28 Oct 2026); this spec holds the shape.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261028001000_cf247_entry_step_b_course_read_resolver.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261028001000_cf247_entry_step_b_course_read_resolver.sql', 'utf8')
 const code = m.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')
 const fn = code.slice(code.indexOf('create or replace function security.entry_resolve_v1'), code.indexOf('revoke all on function security.entry_resolve_v1'))
 

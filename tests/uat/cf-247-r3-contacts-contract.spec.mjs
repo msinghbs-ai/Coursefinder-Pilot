@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261010006600_cf247_r3_provider_contacts.sql'
+const MIG = 'supabase/migrations-archive/20261010006600_cf247_r3_provider_contacts.sql'
 
 test('server: contact tables, service-only worker functions, fill only empty values, internal regulatory contact', () => {
   const sql = fs.readFileSync(MIG, 'utf8')
@@ -44,7 +44,7 @@ test('contact quality: no media/security/feedback mailboxes, main contact page f
   expect(w).toContain('const NEG = /^(media|press|news|security|privacy|feedback')
   expect(w).toContain('https://cricos.education.gov.au/Institution/InstitutionDetails.aspx?ProviderCode=${code}')
   expect(w).not.toContain('peo_search')
-  const sql = fs.readFileSync('supabase/migrations/20261010006700_cf247_contact_quality.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations-archive/20261010006700_cf247_contact_quality.sql', 'utf8')
   expect(sql).toContain('7869de71bd8d7ff639d47ef4d6197452')
   expect(sql).toContain('when p.phone is not distinct from v_prev.phone and v_prev.id is not null then v_phone')
   expect(sql).toContain("select cron.alter_job((select jobid from cron.job where jobname = 'cricos-peo'), active := true);")

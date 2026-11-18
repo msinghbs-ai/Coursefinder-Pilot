@@ -15,9 +15,9 @@ DB=${TP_DB:-tuition_publication_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
 FX=tests/fixtures/tuition-publication
 E16=tests/fixtures/e16-binding-validation
-E16MIG=supabase/migrations/20261102030000_cf247_e16_binding_validation.sql
-L4MIG=supabase/migrations/20261104120000_cf247_ops_layer4_throughput.sql
-MIG=supabase/migrations/20261104380000_cf247_tuition_publication.sql
+E16MIG=supabase/migrations-archive/20261102030000_cf247_e16_binding_validation.sql
+L4MIG=supabase/migrations-archive/20261104120000_cf247_ops_layer4_throughput.sql
+MIG=supabase/migrations-archive/20261104380000_cf247_tuition_publication.sql
 TMP=$(mktemp -d)
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 if [ -n "${TP_KEEP:-}" ]; then trap 'rm -rf "$TMP"' EXIT; else trap 'rm -rf "$TMP"; $P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT; fi

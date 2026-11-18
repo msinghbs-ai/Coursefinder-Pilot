@@ -3,7 +3,7 @@
 // the cache row (rule_reason) so it survives the minute refresh; override_reason keeps its meaning (set by hand).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261024012000_cf247_target_rule_reason.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261024012000_cf247_target_rule_reason.sql', 'utf8')
 const adp = fs.readFileSync('src/AdaptersWorkspace.jsx', 'utf8')
 const fc = fs.readFileSync('src/FirecrawlWork.jsx', 'utf8')
 

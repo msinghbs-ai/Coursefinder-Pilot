@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/run/postgresql) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 BASE=${INTAKE_UI_DB:-intake_ui_fixtures}; DB=intake_calendar_v2_fixtures; F=tests/fixtures/intake-calendar-v2
-MIG=supabase/migrations/20261105020000_cf247_intake_calendar_v2.sql
+MIG=supabase/migrations-archive/20261105020000_cf247_intake_calendar_v2.sql
 P=(psql -X -q -v ON_ERROR_STOP=1)
 "${P[@]}" -d postgres -c "drop database if exists $DB" -c "create database $DB template $BASE"
 [ -n "${INTAKE_CAL_KEEP:-}" ] || trap '"${P[@]}" -d postgres -c "drop database if exists $DB" >/dev/null' EXIT

@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${E16_DB:-e16_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261102030000_cf247_e16_binding_validation.sql
+MIG=supabase/migrations-archive/20261102030000_cf247_e16_binding_validation.sql
 SIGS="array['security.coverage_page_refused_host_guard()', 'security.exit_awards_apply_v2(uuid)', 'security.enrich_fields_slice_v1(uuid,integer)', 'search.refresh_course_enrichment_core_v1(boolean)', 'search.refresh_course_enrichment_core_scoped_v1(uuid[],boolean)']"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 [ -n "${E16_KEEP:-}" ] || trap '$P -d postgres -c "drop database if exists $DB" >/dev/null' EXIT

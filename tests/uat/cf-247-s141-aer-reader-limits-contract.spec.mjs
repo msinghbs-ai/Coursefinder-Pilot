@@ -1,7 +1,7 @@
 // Guards: CF-247 AER programme (Platform Admin consolidated mandate 28 Oct 2026 23:22; admin docs/platform/ENTRY-REQUIREMENTS-PROGRAMME-DECISION-2026-10-28.md P2 sources, P10 automation): the entry-matrix reader's answer length and slice size are settings, a cut-off answer is named, and a Firecrawl budget refusal neither blocks a seeded never-read entry source by the central refresh interval nor uses up the page's tries; every other gate unchanged
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029001000_cf247_aer_reader_limits.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029001000_cf247_aer_reader_limits.sql', 'utf8')
 const code = m.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')
 const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const e = fs.readFileSync('supabase/functions/coverage-sweep/entry.ts', 'utf8')

@@ -8,7 +8,7 @@ export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's
 DB=${PDSR_DB:-g_pdesc_sigreader}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-MIG=supabase/migrations/20261110090000_cf247_pdesc_signature_reader_version.sql
+MIG=supabase/migrations-archive/20261110090000_cf247_pdesc_signature_reader_version.sql
 REC=supabase/held/pdesc_signature_reader_forward_recovery.sql
 F=tests/fixtures/pdesc-signature-reader
 SIG='security.provider_description_signature_v1(text,text,text)'
@@ -21,7 +21,7 @@ q() { psql -X -d "$DB" -Atc "$1"; }
 BASE=$(PDLRT_KEEP=1 PDLRT_DB=$DB bash tests/fixtures/pdesc-lease-record-timeouts/run.sh 2>&1) || { echo "$BASE" | tail -15; echo "the base harness failed"; exit 1; }
 echo "base: pdesc-lease-record-timeouts harness built the database (20261109020000, 20261109030000, 20261109120000, 20261109182000, 20261109185000 and 20261109233000 applied)"
 W=$(mktemp -d); trap 'rm -rf "$W"; [ -n "${PDSR_KEEP:-}" ] || { dropdb --if-exists '$DB' >/dev/null 2>&1; dropdb --if-exists '${DB}_refuse' >/dev/null 2>&1; }' EXIT
-$P -1 -At -f supabase/migrations/20261110040000_cf247_pdesc_basic_profile_upgrade.sql >/dev/null || { echo "the prerequisite migration 20261110040000 failed"; exit 1; }
+$P -1 -At -f supabase/migrations-archive/20261110040000_cf247_pdesc_basic_profile_upgrade.sql >/dev/null || { echo "the prerequisite migration 20261110040000 failed"; exit 1; }
 echo "prerequisite: 20261110040000 applied (the picker and the lease as live has them after #973)"
 
 # the edited function, the recorder and the checker are the live ones (md5 of the function body, pg_proc.prosrc, read 10 Nov 2026, project fxcwkweaxjtknorudmwp)

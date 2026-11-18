@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261112010000_cf247_rule_b_qualification_register.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261112010000_cf247_rule_b_qualification_register.sql', 'utf8')
 const UI = fs.readFileSync('src/RuleBRegister.jsx', 'utf8')
 const fn = (name) => { const i = MIG.indexOf(`create or replace function ${name}(`); return MIG.slice(i, MIG.indexOf('$function$;', i)) }
 

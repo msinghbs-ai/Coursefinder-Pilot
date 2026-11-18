@@ -1,5 +1,5 @@
 // Mocked answers for public.admin_lane_funnel_v1 and public.admin_firecrawl_acceptance_v1 (OPS/UI lane). Shapes follow the server functions in
-// supabase/migrations/20261108170000_cf247_lane_funnels.sql. Nothing reaches a real backend.
+// supabase/migrations-archive/20261108170000_cf247_lane_funnels.sql. Nothing reaches a real backend.
 const NOW = new Date().toISOString()
 const ago = (h) => new Date(Date.now() - h * 3600000).toISOString()
 const soon = (m) => new Date(Date.now() + m * 60000).toISOString()

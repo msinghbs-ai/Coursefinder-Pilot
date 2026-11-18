@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118020000_cf247_boost_benchmark.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118020000_cf247_boost_benchmark.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const mode = IX.slice(IX.indexOf('if (mode === "boost_benchmark") {'), IX.indexOf('// v1.0.16 (18 Nov 2026, CF-247 S2 - BOOST, Platform Admin 07:08 decision 3 and 10:10): Boost multi-field reading.'))  // the benchmark mode ends where the multi-field mode starts (s621)

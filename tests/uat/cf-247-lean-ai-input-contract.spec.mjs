@@ -7,7 +7,7 @@ import fs from 'node:fs'
 import { LEAN_CONVERTER, OBSERVATION_CONTRACT, leanText, preflight, observation, fingerprint } from '../../supabase/functions/coverage-sweep/lean-input.ts'
 
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const MIG = fs.readFileSync('supabase/migrations/20261113400000_cf247_lean_ai_input_observations.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261113400000_cf247_lean_ai_input_observations.sql', 'utf8')
 
 const page = `<html><nav>Menu Courses Fees Deadline</nav><main>${'<p>About the course and its graduates.</p>'.repeat(60)}<h2>Fees</h2><table><thead><tr><th>Year</th><th>International fee</th></tr></thead>` +
   `<tbody><tr><td>2026</td><td>A$45,000</td></tr><tr><td>2027</td><td>A$46,500</td></tr></tbody></table><h2>Key dates</h2><ul><li>Applications close 30 November</li><li>Semester 1 starts February</li></ul>` +

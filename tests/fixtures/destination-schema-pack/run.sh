@@ -11,8 +11,8 @@ DB=${DSP_DB:-g_destination_schema_pack}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 F=tests/fixtures/destination-schema-pack
-S=supabase/migrations/20261115190000_api_v3_additive_schema.sql; G=supabase/migrations/20261115230000_cf247_destination_importer_guard.sql
-M=supabase/migrations/20261117040000_cf247_rm_destination_schema_pack.sql
+S=supabase/migrations-archive/20261115190000_api_v3_additive_schema.sql; G=supabase/migrations-archive/20261115230000_cf247_destination_importer_guard.sql
+M=supabase/migrations-archive/20261117040000_cf247_rm_destination_schema_pack.sql
 trap '[ -n "${DSP_KEEP:-}" ] || dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
 dropdb --if-exists $DB >/dev/null 2>&1; createdb $DB
 psql -X -q -d postgres -c "do \$\$ begin if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if; if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if; if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role; end if; end \$\$"

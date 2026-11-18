@@ -8,7 +8,7 @@ export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's
 DB=${PDLRT_DB:-g_pdesc_leasetimeouts}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-MIG=supabase/migrations/20261109233000_cf247_pdesc_lease_record_timeouts.sql
+MIG=supabase/migrations-archive/20261109233000_cf247_pdesc_lease_record_timeouts.sql
 F=tests/fixtures/pdesc-lease-record-timeouts
 OP=tests/fixtures/pdesc-lease-one-pass
 q() { psql -X -d "$DB" -Atc "$1"; }

@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261117211000_cf247_layer1_plan_finish_reactivation_speed.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261117211000_cf247_layer1_plan_finish_reactivation_speed.sql', 'utf8')
 
 test('the reactivation statement collects the new codes first and matches them with = any, guarded by the live body md5', () => {
   expect(mig).toContain("v_new_codes := array(select distinct upper(i->>0) from jsonb_array_elements(p.items) i where i->>2='new');")

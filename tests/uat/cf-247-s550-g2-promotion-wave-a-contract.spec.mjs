@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261116020000_cf247_g2_promotion_wave_a.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261116020000_cf247_g2_promotion_wave_a.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const SETTINGS = [['layer1.reverify_after_days', 30, 'days'], ['scholarship.scheduler_retry_minutes', 60, 'minutes'], ['coverage.link_search_retry_days', 7, 'days'],
   ['data_quality.stale_after_days', 180, 'days'], ['retention.progress_snapshots_days', 90, 'days'], ['retention.evidence_min_age_days', 7, 'days'],

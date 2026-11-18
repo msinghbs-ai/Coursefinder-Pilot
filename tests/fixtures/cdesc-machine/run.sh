@@ -12,8 +12,8 @@ export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's
 DB=${CDM_DB:-g_cdesc_machine}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-M1=supabase/migrations/20261110060000_cf247_cdesc_machine_policy_shadow.sql
-M2=supabase/migrations/20261110060100_cf247_cdesc_machine_admission.sql
+M1=supabase/migrations-archive/20261110060000_cf247_cdesc_machine_policy_shadow.sql
+M2=supabase/migrations-archive/20261110060100_cf247_cdesc_machine_admission.sql
 F=tests/fixtures/cdesc-machine
 q() { psql -X -d "$DB" -Atc "$1"; }
 BASE=$(CDBP_KEEP=1 CDBP_DB=$DB bash tests/fixtures/course-description-backpressure/run.sh 2>&1) || { echo "$BASE" | tail -15; echo "the base harness failed"; exit 1; }
@@ -109,9 +109,9 @@ echo "applied again with the switch at 1: both post-checks pass and the switch s
 
 # 20261110100000 (Data Delivery stage counts), 20261110100100 (the wrong_page_kind decline) and 20261110130000 (the stage counts read what the Website serves): applied here, before the scenarios, so every earlier scenario also runs with them in place.
 # A copy from before them is kept to prove the new regression fails on the old evaluator body.
-M3A=supabase/migrations/20261110100000_cf247_cdesc_visible_results.sql
-M3B=supabase/migrations/20261110100100_cf247_cdesc_wrong_page_kind.sql
-M3C=supabase/migrations/20261110130000_cf247_dd_served_to_website.sql
+M3A=supabase/migrations-archive/20261110100000_cf247_cdesc_visible_results.sql
+M3B=supabase/migrations-archive/20261110100100_cf247_cdesc_wrong_page_kind.sql
+M3C=supabase/migrations-archive/20261110130000_cf247_dd_served_to_website.sql
 dropdb --if-exists "${DB}_oldchk" >/dev/null 2>&1; createdb -T "$DB" "${DB}_oldchk"
 fnmd5() { psql -X -d "$1" -Atc "select p.oid::regprocedure::text || ' ' || md5(p.prosrc) from pg_proc p where p.oid = '$2'::regprocedure"; }
 # (file, held recovery file, function, live md5, edited md5)

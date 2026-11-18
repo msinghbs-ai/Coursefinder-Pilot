@@ -9,7 +9,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261104120000_cf247_ops_layer4_throughput.sql'
+const MIG = 'supabase/migrations-archive/20261104120000_cf247_ops_layer4_throughput.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/ops-layer4'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
@@ -25,7 +25,7 @@ test('codes against workstream A\'s live contract and edits no existing function
   for (const [sig, md5] of [['security.ops_remedy_register_v1(text,jsonb)', 'cec6cd2f6518b453fbc8ec3137ce39bd'], ['security.ops_root_cause_register_v1(text,jsonb)', '591616a6a0bd60d607f65c41c18e2968'],
     ['security.integration_issue_upsert_v1(jsonb,text)', 'c5ce0cb9c431a337789d67bc1878be62'], ['security.pipeline_list_v1(text,jsonb)', 'c33c2152bbadc8d01625ced9bf2c9bda']])
     expect(run).toContain(`["${sig}"]=${md5}`)
-  expect(run).toContain('supabase/migrations/20261104010000_cf247_ops_controller.sql')
+  expect(run).toContain('supabase/migrations-archive/20261104010000_cf247_ops_controller.sql')
   expect(run).toContain("without A's contract: refused, nothing left")
   expect(run).toContain('applied: no existing function changed')
   expect(run).toContain('applied twice: the second run changed nothing')

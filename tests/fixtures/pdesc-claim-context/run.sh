@@ -10,7 +10,7 @@ export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's
 DB=${PDCC_DB:-g_pdesc_claimctx}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-MIG=supabase/migrations/20261109120000_cf247_pdesc_claim_word_context.sql
+MIG=supabase/migrations-archive/20261109120000_cf247_pdesc_claim_word_context.sql
 F=tests/fixtures/pdesc-claim-context
 q() { psql -X -d "$DB" -Atc "$1"; }
 [ -n "${PDCC_KEEP:-}" ] || trap 'dropdb --if-exists '$DB' >/dev/null 2>&1; dropdb --if-exists '${DB}_refuse' >/dev/null 2>&1; dropdb --if-exists '${DB}_scale' >/dev/null 2>&1' EXIT

@@ -16,7 +16,7 @@ test('worker reads scholarship and listing pages through the scraper (rendered p
 })
 
 test('setting, budget and immediate re-read; md5-guarded; nothing dropped', () => {
-  const sql = fs.readFileSync('supabase/migrations/20261011008200_cf247_scholarship_scraper_first.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations-archive/20261011008200_cf247_scholarship_scraper_first.sql', 'utf8')
   expect(sql).toContain("values ('read_via_scraper', 2, 'Read scholarship pages through the scraper',")
   expect(sql).toContain("'scraper', coalesce((select s.value from pipeline.scholarship_layer_settings s where s.key = 'read_via_scraper'), 1)")
   expect(sql).toContain("update pipeline.scholarship_layer_settings set value = 12000")

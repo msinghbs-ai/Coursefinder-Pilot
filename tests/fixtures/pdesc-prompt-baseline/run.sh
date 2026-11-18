@@ -6,7 +6,7 @@ cd "$(dirname "$0")/../../.."
 DB=${PDPB_DB:-g_pdesc_promptbase}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-MIG=supabase/migrations/20261110125000_cf247_pdesc_prompt_baseline_v2_1.sql
+MIG=supabase/migrations-archive/20261110125000_cf247_pdesc_prompt_baseline_v2_1.sql
 REC=supabase/held/pdesc_prompt_baseline_forward_recovery.sql
 q() { psql -X -d "$DB" -Atc "$1"; }
 [ -n "${PDPB_KEEP:-}" ] || trap "dropdb --if-exists $DB >/dev/null 2>&1; dropdb --if-exists ${DB}_x >/dev/null 2>&1" EXIT

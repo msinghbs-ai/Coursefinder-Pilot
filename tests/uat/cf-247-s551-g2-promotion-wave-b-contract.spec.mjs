@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261116030000_cf247_g2_promotion_wave_b.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261116030000_cf247_g2_promotion_wave_b.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const SETTINGS = [['onboarding.job_done_wait_minutes', 90], ['onboarding.read_quiet_minutes', 60], ['onboarding.proposal_wait_minutes', 30],
   ['onboarding.apply_max_minutes', 90], ['onboarding.apply_quiet_minutes', 10], ['onboarding.apply_activity_minutes', 5], ['onboarding.enrich_wait_minutes', 20],

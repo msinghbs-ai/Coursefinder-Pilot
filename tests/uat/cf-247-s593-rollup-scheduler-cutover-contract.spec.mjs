@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118010000_cf247_rollup_scheduler_cutover.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118010000_cf247_rollup_scheduler_cutover.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const gate = code.slice(code.indexOf('-- the gate') >= 0 ? code.indexOf('if exists (select 1 from pipeline.rollup_targets') : 0, code.indexOf('for v_t in select t.target_code'))
 

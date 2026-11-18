@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${AERB_DB:-aer_phase_b_fixtures}
-MIG=supabase/migrations/20261102110000_cf247_aer_phase_b_assurance.sql
+MIG=supabase/migrations-archive/20261102110000_cf247_aer_phase_b_assurance.sql
 FX=tests/fixtures/aer-phase-b
 P="psql -v ON_ERROR_STOP=1 -q -X"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null

@@ -8,9 +8,9 @@ import { htmlToText } from '../../supabase/functions/coverage-sweep/extract.ts'
 const fx = (n) => fs.readFileSync(`tests/fixtures/entry-matrix/${n}`, 'utf8')
 const COUNTRIES = JSON.parse(fx('ref-countries.json')).countries
 const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const m = fs.readFileSync('supabase/migrations/20261027001000_cf247_entry_matrix_d2_d3.sql', 'utf8')
-const m709 = fs.readFileSync('supabase/migrations/20261026010000_cf247_entry_matrix_completeness_guard.sql', 'utf8')
-const m710 = fs.readFileSync('supabase/migrations/20261026011000_cf247_entry_matrix_complete_admission.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261027001000_cf247_entry_matrix_d2_d3.sql', 'utf8')
+const m709 = fs.readFileSync('supabase/migrations-archive/20261026010000_cf247_entry_matrix_completeness_guard.sql', 'utf8')
+const m710 = fs.readFileSync('supabase/migrations-archive/20261026011000_cf247_entry_matrix_complete_admission.sql', 'utf8')
 const rowsFor = (man, cc, cname, map = (x) => x) => man.entries.map(e => map({
   country_code: cc, country_name: cname, study_level: e.level, qualification_name: e.header.replace(/\*$/, ''), min_grade: e.cell, min_value: null,
   grade_scale: 'none', benchmark_band: e.band, course_name: null, conditions: {}, confidence: 0.95, quote: e.line }))

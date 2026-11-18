@@ -8,7 +8,7 @@ on:
       - 'src/automation-progress.css'
       - 'src/ProcessResults.jsx'
       - 'src/process-results-api.js'
-      - 'supabase/migrations/20261106400000_cf247_intake_automation_progress.sql'
+      - 'supabase/migrations-archive/20261106400000_cf247_intake_automation_progress.sql'
       - 'tests/fixtures/intake-progress/**'
       - 'tests/integration-progress/**'
       - 'playwright.intake-progress.config.mjs'

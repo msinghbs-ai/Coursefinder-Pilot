@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
-const MIG = fs.readFileSync('supabase/migrations/20261106400000_cf247_intake_automation_progress.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261106400000_cf247_intake_automation_progress.sql', 'utf8')
 
 test('the browser bridge: progress reads one role-checked function; Pause and Resume go to the existing Automations control only', async ({ page }) => {
   await page.goto('/')

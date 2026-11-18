@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
-const M = fs.readFileSync('supabase/migrations/20261113290000_cf247_zoho_api_v3.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261113290000_cf247_zoho_api_v3.sql', 'utf8')
 const V3 = fs.readFileSync('supabase/functions/zoho-api-v3/index.ts', 'utf8')
 const V2 = fs.readFileSync('supabase/functions/zoho-api-v2/index.ts', 'utf8')
 const EDGE = JSON.parse(fs.readFileSync('.github/edge-functions.json', 'utf8'))

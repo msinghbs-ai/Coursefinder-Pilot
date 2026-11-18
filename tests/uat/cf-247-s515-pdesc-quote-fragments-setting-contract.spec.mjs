@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261109184000_cf247_pdesc_quote_fragments_setting.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261109184000_cf247_pdesc_quote_fragments_setting.sql', 'utf8')
 const CODE = MIG.split('\n').filter((l) => !l.trimStart().startsWith('--')).join('\n')
 
 test('the setting row is governed (G2) and ships off', () => {

@@ -9,8 +9,8 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 const read = f => fs.readFileSync(f, 'utf8')
-const mig = read('supabase/migrations/20261014013200_cf247_studysearch_codes_and_scholarship_search_flag.sql')
-const fix = read('supabase/migrations/20261014013300_cf247_printed_code_wins.sql')
+const mig = read('supabase/migrations-archive/20261014013200_cf247_studysearch_codes_and_scholarship_search_flag.sql')
+const fix = read('supabase/migrations-archive/20261014013300_cf247_printed_code_wins.sql')
 
 test('StudySearch codes: printed codes kept, a short code for the rest, never written into course_code', () => {
   expect(mig).toContain('create table if not exists ref.course_code_schemes (')

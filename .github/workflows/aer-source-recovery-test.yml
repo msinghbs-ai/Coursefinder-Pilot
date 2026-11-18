@@ -3,10 +3,10 @@ name: AER source recovery integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261110160000_cf247_aer_source_recovery.sql'
+      - 'supabase/migrations-archive/20261110160000_cf247_aer_source_recovery.sql'
       - 'supabase/held/aer_source_recovery_forward_recovery.sql'
-      - 'supabase/migrations/20261107150000_cf247_aer_source_stored_discovery.sql'
-      - 'supabase/migrations/20261110150000_cf247_dd_provider_ai_allowance.sql'
+      - 'supabase/migrations-archive/20261107150000_cf247_aer_source_stored_discovery.sql'
+      - 'supabase/migrations-archive/20261110150000_cf247_dd_provider_ai_allowance.sql'
       - 'tests/fixtures/aer-source-recovery/**'
       - 'tests/fixtures/pdesc-dd-ai/live/**'
       - '.github/workflows/aer-source-recovery-test.yml'

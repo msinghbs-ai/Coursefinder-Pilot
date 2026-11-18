@@ -3,7 +3,7 @@
 // "proceed with recommended choice"); the Adapter builder guide reads whether they will run.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const sql = fs.readFileSync('supabase/migrations/20261018140000_cf247_asked_searches_first.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261018140000_cf247_asked_searches_first.sql', 'utf8')
 
 test('server: guarded edits, asked-for searches exempt from the focus rule and first, every other check kept', () => {
   expect(sql).toContain("'8b6c6f829d6269a0448ed9e6faff5aa0'")

@@ -8,7 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 DB=${OPSAM_DB:-ops_aer_missing_fixtures}
 ROOT=../../..
-MIG=$ROOT/supabase/migrations/20261104090000_cf247_ops_c_aer_missing_universities.sql
+MIG=$ROOT/supabase/migrations-archive/20261104090000_cf247_ops_c_aer_missing_universities.sql
 PASTE=$ROOT/tests/fixtures/paste/PASTE-20261104-aer-missing-university-sources.sql
 ROLL=$ROOT/tests/fixtures/paste/PASTE-20261104-aer-missing-university-sources-rollback.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"

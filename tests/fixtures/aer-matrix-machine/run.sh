@@ -10,7 +10,7 @@ DB=${AMM_DB:-g_aer_matrix_machine}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 Q=tests/fixtures/aer-qualification-first; F=tests/fixtures/aer-matrix-machine
-M=supabase/migrations/20261112093700_cf247_aer_matrix_machine_admission.sql; R=supabase/held/aer_matrix_machine_admission_forward_recovery.sql
+M=supabase/migrations-archive/20261112093700_cf247_aer_matrix_machine_admission.sql; R=supabase/held/aer_matrix_machine_admission_forward_recovery.sql
 RUN='security.aer_machine_run_v1()'; RUN_B=ad143b44722ba6fbc0129cd38386661c; RUN_A=f88ab3f16833dec601786af5c7cdbbcc
 q() { psql -X -d "$DB" -Atc "$1"; }
 trap '[ -n "${AMM_KEEP:-}" ] || dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
@@ -18,7 +18,7 @@ dropdb --if-exists $DB >/dev/null 2>&1; createdb $DB
 psql -X -q -d postgres -c "do \$\$ begin if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if; if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if; if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role; end if; end \$\$"
 $P -f $Q/stubs.sql; $P -f $F/stubs.sql
 for f in $Q/live/public.svc_entry_matrix_record.sql $Q/live/security.entry_matrix_review_apply_v1.sql $F/live/security.aer_machine_run_v1.sql; do { echo "set check_function_bodies = off;"; cat $f; echo ";"; } | $P; done
-{ echo "set check_function_bodies = off;"; cat supabase/migrations/20261112060000_cf247_aer_qualification_first.sql; } | $P -1 >/dev/null
+{ echo "set check_function_bodies = off;"; cat supabase/migrations-archive/20261112060000_cf247_aer_qualification_first.sql; } | $P -1 >/dev/null
 [ "$(q "select md5(prosrc) from pg_proc where oid = '$RUN'::regprocedure")" = $RUN_B ] || { echo "loaded job differs from live $RUN_B"; exit 1; }
 echo "loaded: the entry-matrix decision path after 20261112060000 and aer_machine_run_v1 as live ($RUN_B)"
 

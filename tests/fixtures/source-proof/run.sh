@@ -8,8 +8,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 DB=${PROOF_DB:-source_proof_fixtures}
 LANES=../lanes-gap-queue
-LMIG=../../../supabase/migrations/20261103160000_cf247_lanes_and_gap_queue.sql
-MIG=../../../supabase/migrations/20261103190000_cf247_source_proof_lane_field_backlog.sql
+LMIG=../../../supabase/migrations-archive/20261103160000_cf247_lanes_and_gap_queue.sql
+MIG=../../../supabase/migrations-archive/20261103190000_cf247_source_proof_lane_field_backlog.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 md5of() { $P -d $DB -Atc "select md5(pg_get_functiondef('$1'::regprocedure))"; }

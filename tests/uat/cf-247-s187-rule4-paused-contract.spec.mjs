@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261031020000_cf247_f1c_rule4_paused.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261031020000_cf247_f1c_rule4_paused.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('the job is paused, not retired or rescheduled, and the post-check refuses an active job', () => {

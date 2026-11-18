@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261109060000_cf247_intake_calendar_qualify.sql'
+const MIG = 'supabase/migrations-archive/20261109060000_cf247_intake_calendar_qualify.sql'
 const FX = 'tests/fixtures/intake-calendar-qualify'
 const sql = fs.readFileSync(MIG, 'utf8')
 const body = sql.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')

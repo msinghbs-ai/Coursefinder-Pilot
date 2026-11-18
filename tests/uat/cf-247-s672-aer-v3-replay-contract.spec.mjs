@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
 
-const M = fs.readFileSync('supabase/migrations/20261118239000_cf247_s672_aer_v3_replay_r4.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118239000_cf247_s672_aer_v3_replay_r4.sql', 'utf8')
 const S = fs.readFileSync('scripts/aer-v3-replay.mjs', 'utf8')
 const W = fs.readFileSync('.github/workflows/aer-v3-replay.yml', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')

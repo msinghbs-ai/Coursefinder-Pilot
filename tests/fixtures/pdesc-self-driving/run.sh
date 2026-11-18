@@ -7,7 +7,7 @@ cd "$(dirname "$0")/../../.."
 DB=${PDSD_DB:-g_pdesc_selfdriving}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-MIG=supabase/migrations/20261109010000_cf247_pdesc_description_lost.sql
+MIG=supabase/migrations-archive/20261109010000_cf247_pdesc_description_lost.sql
 q() { psql -X -d "$DB" -Atc "$1"; }
 [ -n "${PDSD_KEEP:-}" ] || trap 'dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
 # the base: the retry-funnel harness builds and checks the database as live, applies 20261108140000 and keeps it

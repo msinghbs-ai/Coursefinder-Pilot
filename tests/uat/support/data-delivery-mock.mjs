@@ -1,5 +1,5 @@
 // Mocked answer for public.admin_layer23('data_delivery') (F-OPS.03A). The shape follows security.data_delivery_v1 in
-// supabase/migrations/20261110000100_cf247_fops03a_data_delivery.sql. Nothing reaches a real backend.
+// supabase/migrations-archive/20261110000100_cf247_fops03a_data_delivery.sql. Nothing reaches a real backend.
 const ago = (m) => new Date(Date.now() - m * 60000).toISOString()
 const soon = (m) => new Date(Date.now() + m * 60000).toISOString()
 const meta = (m = 3) => ({ measured_at: ago(m), age_minutes: m, stale: false, took_ms: 400 })

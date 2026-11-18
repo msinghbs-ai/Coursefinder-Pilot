@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { awardSection, scholarshipExtractPartRequest, mergeRecoveryParts, DETAIL_PART_A, DETAIL_PART_B, DETAIL_SCHEMA, RECOVERY_VARIANT } from '../../supabase/functions/coverage-sweep/sch-extract.ts'
 
-const m = fs.readFileSync('supabase/migrations/20261113294100_cf247_sch_detail_long_page_recovery.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113294100_cf247_sch_detail_long_page_recovery.sql', 'utf8')
 const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 
 test('the award section: an umbrella page gives only the named award\'s part; a name not on the page is recorded as not found', () => {

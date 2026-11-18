@@ -6,7 +6,7 @@ import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 
-const m = fs.readFileSync('supabase/migrations/20261113250000_cf247_english_tests_oet_celpip.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113250000_cf247_english_tests_oet_celpip.sql', 'utf8')
 async function parser() {
   const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'wp21-')), 'policy.mjs')
   execFileSync('npx', ['esbuild', 'supabase/functions/coverage-sweep/policy.ts', '--format=esm', `--outfile=${out}`, '--log-level=error'])

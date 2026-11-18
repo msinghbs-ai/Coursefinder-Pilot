@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261031040000_cf247_ss010_enrich_mismatch_hold.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261031040000_cf247_ss010_enrich_mismatch_hold.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('one md5-guarded edit of the central enrichment hold, before and after pinned', () => {

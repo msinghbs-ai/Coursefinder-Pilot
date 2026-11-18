@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261114001500_cf247_aer_v2_sample_table.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261114001500_cf247_aer_v2_sample_table.sql', 'utf8')
 const fn = (name) => M.slice(M.indexOf(`create or replace function ${name}`), M.indexOf('$function$;', M.indexOf(`create or replace function ${name}`)) + 1)
 
 test('the selector replaces the live definition it was measured on and reads only the stored sample', () => {

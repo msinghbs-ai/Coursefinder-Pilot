@@ -9,7 +9,7 @@ export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's
 DB=${PDRL_DB:-g_pdesc_labels}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-MIG=supabase/migrations/20261109180000_cf247_pdesc_registry_label_words.sql
+MIG=supabase/migrations-archive/20261109180000_cf247_pdesc_registry_label_words.sql
 F=tests/fixtures/pdesc-registry-labels
 q() { psql -X -d "$DB" -Atc "$1"; }
 BASE=$(PDCC_KEEP=1 PDCC_DB=$DB bash tests/fixtures/pdesc-claim-context/run.sh 2>&1) || { echo "$BASE" | tail -15; echo "the base harness failed"; exit 1; }

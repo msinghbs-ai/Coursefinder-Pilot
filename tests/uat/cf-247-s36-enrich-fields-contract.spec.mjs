@@ -7,9 +7,9 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 const read = f => fs.readFileSync(f, 'utf8')
-const mig = read('supabase/migrations/20261014013500_cf247_enrich_fields_job.sql')
-const fix = read('supabase/migrations/20261014013600_cf247_enrich_fields_fix_ai_next.sql')
-const batch = read('supabase/migrations/20261014013700_cf247_enrich_fields_ai_batching.sql')
+const mig = read('supabase/migrations-archive/20261014013500_cf247_enrich_fields_job.sql')
+const fix = read('supabase/migrations-archive/20261014013600_cf247_enrich_fields_fix_ai_next.sql')
+const batch = read('supabase/migrations-archive/20261014013700_cf247_enrich_fields_ai_batching.sql')
 const worker = read('supabase/functions/coverage-sweep/index.ts')
 
 test('the job: field sources by country, one item per course and field, only missing values, never a hand-set value', () => {

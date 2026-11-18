@@ -9,7 +9,7 @@ import { mockOnDemand, ORDER } from './support/cdesc-on-demand-mock.mjs'
 // s698 (Platform Admin 18 Nov 2026 23:51): the Description pipeline is folded by default; open it before reading it
 const openPipeline = async (p) => { await p.locator('[data-cdod-fold] > summary').click() }
 
-const MIG = fs.readFileSync('supabase/migrations/20261110070000_cf247_cdesc_on_demand.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261110070000_cf247_cdesc_on_demand.sql', 'utf8')
 const code = MIG.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const REC = fs.readFileSync('supabase/held/cdesc_on_demand_forward_recovery.sql', 'utf8')
 const UI = fs.readFileSync('src/CourseDescriptionOnDemand.jsx', 'utf8')

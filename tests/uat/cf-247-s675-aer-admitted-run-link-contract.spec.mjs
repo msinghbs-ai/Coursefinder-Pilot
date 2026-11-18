@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118270000_cf247_s675_aer_admitted_run_link.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118270000_cf247_s675_aer_admitted_run_link.sql', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 
 test('both functions are edited in place once, under their live md5 of 18 Nov', () => {

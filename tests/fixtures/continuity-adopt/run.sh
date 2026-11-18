@@ -11,7 +11,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${WCA_DB:-continuity_adopt_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104320000_cf247_work_continuity_adopt.sql
+MIG=supabase/migrations-archive/20261104320000_cf247_work_continuity_adopt.sql
 WC=tests/fixtures/work-continuity
 FX=tests/fixtures/continuity-adopt
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
@@ -24,15 +24,15 @@ $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/n
 # 1 the database as live (v2.15.443)
 $P -d $DB -f tests/fixtures/integration-queue/stubs.sql
 $P -d $DB -c "alter table pipeline.component_register add constraint component_register_kind_check check (kind = any (array['job','table','view','edge_function','screen','function']))"
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261102120000_cf247_integration_queue.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102120000_cf247_integration_queue.sql 2>&1 | show
 $P -d $DB -f tests/fixtures/ops-controller/stubs-extra.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104010000_cf247_ops_controller.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104010000_cf247_ops_controller.sql 2>&1 | show
 $P -d $DB -1 -o /dev/null -f tests/fixtures/ops-reopen/ai-guards.sql 2>&1 | show
 $P -d $DB -f tests/fixtures/ops-reopen/stubs-extra.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104100000_cf247_ops_reopen_rule_ai_contract.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104100000_cf247_ops_reopen_rule_ai_contract.sql 2>&1 | show
 $P -d $DB -f $WC/stubs.sql
 for f in $WC/live/*.sql; do $P -d $DB -c "set check_function_bodies = off" -f "$f"; done
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104170000_cf247_work_continuity.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104170000_cf247_work_continuity.sql 2>&1 | show
 $P -d $DB -f $FX/stubs.sql
 for f in $FX/live/*.sql; do $P -d $DB -c "set check_function_bodies = off" -f "$f"; done
 declare -A LIVE=(

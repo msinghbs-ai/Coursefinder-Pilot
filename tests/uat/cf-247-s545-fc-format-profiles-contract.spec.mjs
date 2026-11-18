@@ -13,7 +13,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const DIR = 'supabase/functions/coverage-sweep'
 const ix = fs.readFileSync(`${DIR}/index.ts`, 'utf8')
 const fcSrc = fs.readFileSync(`${DIR}/firecrawl.ts`, 'utf8')
-const mig = fs.readFileSync('supabase/migrations/20261114201500_cf247_firecrawl_format_profiles.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261114201500_cf247_firecrawl_format_profiles.sql', 'utf8')
 const SURCHARGE = ['json', 'summary', 'question', 'highlights']
 
 async function load(file, tag) {

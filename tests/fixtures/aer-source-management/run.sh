@@ -10,8 +10,8 @@ DB=${ASM_DB:-g_aer_source_management}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 Q=tests/fixtures/aer-qualification-first; MM=tests/fixtures/aer-matrix-machine; F=tests/fixtures/aer-source-management
-M0=supabase/migrations/20261112093700_cf247_aer_matrix_machine_admission.sql
-M=${ASM_MIG:-supabase/migrations/20261112113700_cf247_aer_source_management.sql}; R=${ASM_REC:-supabase/held/aer_source_management_forward_recovery.sql}
+M0=supabase/migrations-archive/20261112093700_cf247_aer_matrix_machine_admission.sql
+M=${ASM_MIG:-supabase/migrations-archive/20261112113700_cf247_aer_source_management.sql}; R=${ASM_REC:-supabase/held/aer_source_management_forward_recovery.sql}
 CK='security.aer_matrix_machine_check_v1(uuid)'; CK_B=8b25b3dcb246a08561dd0ebd48f0ff37; CK_A=${ASM_AFTER:-26e7a3f959a5bc7c2c29fc9031c594c2}
 q() { psql -X -d "$DB" -Atc "$1"; }
 trap '[ -n "${ASM_KEEP:-}" ] || dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
@@ -19,9 +19,9 @@ dropdb --if-exists $DB >/dev/null 2>&1; createdb $DB
 psql -X -q -d postgres -c "do \$\$ begin if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if; if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if; if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role; end if; end \$\$"
 $P -f $Q/stubs.sql; $P -f $MM/stubs.sql
 for f in $Q/live/public.svc_entry_matrix_record.sql $Q/live/security.entry_matrix_review_apply_v1.sql $MM/live/security.aer_machine_run_v1.sql; do { echo "set check_function_bodies = off;"; cat $f; echo ";"; } | $P; done
-{ echo "set check_function_bodies = off;"; cat supabase/migrations/20261112060000_cf247_aer_qualification_first.sql; } | $P -1 >/dev/null
+{ echo "set check_function_bodies = off;"; cat supabase/migrations-archive/20261112060000_cf247_aer_qualification_first.sql; } | $P -1 >/dev/null
 { echo "set check_function_bodies = off;"; cat $M0; } | $P -1 >/dev/null
-QP=supabase/migrations/20261112110700_cf247_aer_matrix_machine_quote_proof.sql
+QP=supabase/migrations-archive/20261112110700_cf247_aer_matrix_machine_quote_proof.sql
 [ "$(q "select md5(prosrc) from pg_proc where oid = 'security.aer_matrix_machine_validate_v1()'::regprocedure")" = c4cb5e0f02bcee4b04c5bb0702c2a8c7 ] || { echo "the validation after 20261112093700 differs from live"; exit 1; }
 $P -1 -f $QP >/dev/null 2>&1 || { echo "the quote proof migration did not apply"; $P -1 -f $QP 2>&1 | tail -3; exit 1; }
 [ "$(q "select md5(prosrc) from pg_proc where oid = 'security.aer_matrix_machine_validate_v1()'::regprocedure")" = 5c9d6e287b60f1a48fb28f71f4c3dba3 ] || { echo "the validation did not reach 5c9d6e28"; exit 1; }

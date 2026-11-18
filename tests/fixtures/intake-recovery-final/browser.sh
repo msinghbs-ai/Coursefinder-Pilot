@@ -9,9 +9,9 @@ F=tests/fixtures/intake-calendar-v2; P=(psql -X -q -v ON_ERROR_STOP=1 -d intake_
 bash tests/fixtures/intake-preview-timeout/run.sh > /dev/null  # the #872 database with #876 applied, as in production
 PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -f $F/parity-tables.sql
 "${P[@]}" -f $F/live-functions.sql
-PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -1 -o /dev/null -f supabase/migrations/20261105020000_cf247_intake_calendar_v2.sql
+PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -1 -o /dev/null -f supabase/migrations-archive/20261105020000_cf247_intake_calendar_v2.sql
 PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -f tests/fixtures/intake-recovery-final/parity-tables.sql
-PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -1 -o /dev/null -f supabase/migrations/20261105040000_cf247_intake_recovery_final.sql
+PGOPTIONS='-c client_min_messages=warning' "${P[@]}" -1 -o /dev/null -f supabase/migrations-archive/20261105040000_cf247_intake_recovery_final.sql
 [ "$("${P[@]}" -Atc "select (position('intake-dates-plan-v3' in pg_get_functiondef('security.intake_ui_selection_v1(text,integer)'::regprocedure)) > 0)::text || ' ' || (select count(*) from pg_trigger where tgname = 'intake_failure_class')")" = 'true 2' ] || { echo 'final recovery not in place'; exit 1; }
 echo 'PASS intake fixture database on plan v3 with the failure classes, publication check and plan v3 label'
 npx playwright test --config=playwright.intake.config.mjs

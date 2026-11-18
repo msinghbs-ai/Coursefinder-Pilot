@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261108140000_cf247_pdesc_retry_on_new_evidence_and_funnel.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261108140000_cf247_pdesc_retry_on_new_evidence_and_funnel.sql', 'utf8')
 const run = fs.readFileSync('tests/fixtures/pdesc-retry-funnel/run.sh', 'utf8')
 const sc = fs.readFileSync('tests/fixtures/pdesc-retry-funnel/scenarios.sql', 'utf8')
 const fn = fs.readFileSync('tests/fixtures/pdesc-retry-funnel/funnel.sql', 'utf8')
