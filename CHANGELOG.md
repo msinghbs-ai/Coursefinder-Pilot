@@ -1,8 +1,11 @@
 # Changelog
 
-## 0.1.470 — 19 Nov 2026
+## 0.1.472 — 19 Nov 2026
 
-- Prepared visible PIM Admin release candidate **v2.16.48** (Platform Admin 18 Nov 2026, chat S1-Courses, s662 and s664; first built 18 Nov as Pilot #1314, numbered after the canonical squash and v2.16.47). Migration `20261119060000` (md5-guarded edits of seven functions; no new table or function): course description prompt `cdesc-source-grounded-v4` (1 to 2 sentences) with worker `coverage-sweep` v1.0.23, limits 2 sentences and 360 characters, identity proof in `cdesc-machine-v2` (setting `enrich.course_description_identity_proof_on`), the first-description hold off (setting `enrich.course_description_first_hold_on`), and the Layer 4 course description card's plain-English hold box (`src/lib/cdesc-hold.js`, `CdWhy`) with Re-read (1-2 sentences) and Approve all verified for provider. Specs s662 and s664.
+- Prepared visible PIM Admin release candidate **v2.16.50** (Platform Admin 18 Nov 2026, chat S1-Courses, s662 and s664; first built 18 Nov as Pilot #1314, renumbered after v2.16.49). Migration `20261119084000` (md5-guarded edits of seven functions; no new table or function): course description prompt `cdesc-source-grounded-v4` (1 to 2 sentences) with worker `coverage-sweep` v1.0.25, limits 2 sentences and 360 characters, identity proof in `cdesc-machine-v2` (setting `enrich.course_description_identity_proof_on`), the first-description hold off (setting `enrich.course_description_first_hold_on`), and the Layer 4 course description card's plain-English hold box (`src/lib/cdesc-hold.js`, `CdWhy`) with Re-read (1-2 sentences) and Approve all verified for provider. Specs s662 and s664.
+## 0.1.471 — 19 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.49** (Platform Admin 19 Nov 2026 06:39, after a live check of v2.16.47 at 375x812 as Viewer and Counsellor). No migration (zero schema in S1-RM-Design). `src/CorrelatedBlade.jsx`: the Course card `entry` is headed "Entry requirements" and its scholarship column is removed, so the Scholarships section is the only scholarship list; `src/lib/correlation-adapters.js` (CARD_SPEC `entry`) and `src/correlated-blade.css` follow. The Provider card is unchanged. Spec s699 (all four roles and phone width); `s694` and `s697` adjusted.
 
 ## 0.1.469 — 19 Nov 2026
 

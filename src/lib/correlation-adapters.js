@@ -39,9 +39,8 @@ export const CARD_SPEC = {
       F('rule_id', 'Rule id', 'study_rules.id', null, 'internal'),
       F('approval_status', 'Approval and edition status', 'study_rules.approval_status, editions.status', null, 'internal'),
     ] },
-    { id: 'entry', title: 'Entry requirements & scholarships', join: 'course › entry requirement rows and published scholarships', fields: [
+    { id: 'entry', title: 'Entry requirements', join: 'course › entry requirement rows (scholarships are listed once, in the Scholarships section)', fields: [
       F('entry_rows', 'Academic entry requirements (kind, requirement, score and basis)', 'admin_entry_requirements course rows', 'item.entry_requirements.summary'),
-      F('scholarships', 'Published scholarships (name, value, closing date)', 'course_scholarships.items', 'item.scholarships[].name'),
       F('raw_quote', 'Quote read from the page', 'entry requirement quote', null, 'internal'),
       F('layer4_queue_state', 'Waiting in Layer 4', 'entry requirement status proposed', null, 'internal'),
     ] },

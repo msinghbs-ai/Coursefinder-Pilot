@@ -102,12 +102,10 @@ test.describe('mocked browser', () => {
     await expect(btn).toHaveAttribute('aria-expanded', 'true')
     await btn.click()
     await expect(cards).toHaveCount(3)
-    const card = drawer.locator('[data-correlated="course"] [data-cb-sch-list] li')
-    await expect(card).toHaveCount(3)
-    await drawer.locator('[data-show-all="cb-scholarships"]').click()
-    await expect(card).toHaveCount(5)
-    // no nested scroll box around a scholarship list
-    for (const sel of ['[data-course-scholarships] .cs-cards', '[data-correlated="course"] [data-cb-sch-list]']) {
+    // s699: the correlated card no longer carries a second scholarship list
+    await expect(drawer.locator('[data-correlated="course"] [data-cb-sch-list], [data-correlated="course"] [data-cb-scholarships]')).toHaveCount(0)
+    // no nested scroll box around the scholarship list
+    for (const sel of ['[data-course-scholarships] .cs-cards']) {
       const o = await drawer.locator(sel).evaluate((e) => { const s = getComputedStyle(e); return { y: s.overflowY, mh: s.maxHeight } })
       expect(['visible', 'clip'].includes(o.y) || o.mh === 'none', sel).toBe(true)
     }
