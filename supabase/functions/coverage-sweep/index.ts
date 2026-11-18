@@ -373,6 +373,7 @@ const BUDGET_MS = 110_000;
 // v1.0.19 (s674): the AER v3 evaluation answers in a background task, so one call may wait longer than the 150 s request idle time-out
 const AER_V3_EVAL_BUDGET_MS = 360_000;  // fixed: a background task stays inside the 400 s wall clock of a paid-plan worker, with a margin to record the answers
 const AER_V3_EVAL_CALL_MS = 180_000;  // fixed: API time-out of one evaluation call (Platform Admin 18 Nov 2026 20:53, s674; was 90 s)
+const AER_V3_EVAL_TASK_MAX = 8;  // fixed: CPU guard, examples one background task starts (the 2 s CPU limit of a request; "CPU Time exceeded" on 18 Nov 2026 21:26 with 50 pages queued)
 // v0.78.0: a version 3 scholarship extraction answers a long structured object; 16 of 52 reads after v0.77.1 were cut by the 60 s abort while the
 // answer was arriving (read as "no choices"). fixed: API time-out of one version 3 call; such a call starts only in the first 20 s of a worker call
 const SCH_V3_TIMEOUT_MS = 90_000;
@@ -2509,6 +2510,7 @@ async function handle(req: Request): Promise<Response> {
       if (!key) return j({ ok: false, mode, run: w.run, error: "OpenRouter credential unavailable", worker: WORKER }, 503);
       // v1.0.19 (s674, Platform Admin 18 Nov 2026 20:53): the run is answered in a background task (EdgeRuntime.waitUntil) so a call may wait up to
       // AER_V3_EVAL_CALL_MS (180 s) inside AER_V3_EVAL_BUDGET_MS; the caller gets 202 at once and reads the run's recorded answers. Without EdgeRuntime it answers inline.
+      const edge = (globalThis as any).EdgeRuntime, bg = !!edge?.waitUntil;
       const work = async () => {
         const refs = aerV2Refs(w?.countries, w?.qualifications), quals = (Array.isArray(w?.qualifications) ? w.qualifications : []).map((q: any) => ({ code: String(q.code), name: String(q.name) }));
         const pageChars = wsNum("reading.aer_v2_page_chars", 60000), maxTokens = wsNum("reading.aer_v2_max_tokens", 6000), gapMax = wsNum("reading.aer_v3_lead_in_max_blocks", 3);
@@ -2516,7 +2518,7 @@ async function handle(req: Request): Promise<Response> {
         const quoteMax = Number(spec.quote_max_chars) || 300;  // fixed: the prompt's own quote limit when the version has none
         const routing = spec.routing && typeof spec.routing === "object" ? spec.routing : null, params = spec.params && typeof spec.params === "object" ? spec.params : null;
         const cap = Number(w?.budget?.cap_usd) || 0; let spent = Number(w?.budget?.spent_usd) || 0;
-        const examples: any[] = Array.isArray(w?.examples) ? w.examples : [], answers: any[] = [], ors = orStats(), tally: Record<string, number> = {};
+        const examples: any[] = (Array.isArray(w?.examples) ? w.examples : []).slice(0, bg ? AER_V3_EVAL_TASK_MAX : undefined), answers: any[] = [], ors = orStats(), tally: Record<string, number> = {};
         const late = () => Date.now() - t0 > AER_V3_EVAL_BUDGET_MS - 25000;  // fixed: time left for the last call and the record
         await pool(examples, Math.max(1, Math.min(wsNum("reading.aer_v2_concurrency", 4), 8)), async (x: any) => {  // fixed: the setting's upper bound (reading.aer_v2_concurrency)
           if (late()) { tally.time_budget = (tally.time_budget || 0) + 1; return }  // not answered: the run is leased again
@@ -2558,16 +2560,17 @@ async function handle(req: Request): Promise<Response> {
           if (ans.skip) return;  // not answered: leased again by a later call
           tally[ans.error ? "error" : "answered"] = (tally[ans.error ? "error" : "answered"] || 0) + 1;
           answers.push(ans);
+          // v1.0.19 (s674): each answer is recorded as soon as it is given, so a task the platform stops keeps what it answered (on conflict, nothing twice)
+          await rpc("svc_ai_eval_answer_record_v1", { p_run: w.run, p_answers: { answers: [ans], worker: WORKER } }).catch(() => { tally.record_retry = (tally.record_retry || 0) + 1 });
         });
         let rec: any = null;
         try { rec = await rpc("svc_ai_eval_answer_record_v1", { p_run: w.run, p_answers: { answers, worker: WORKER } }) } catch (e) { tally.record_failed = 1; rec = { error: e instanceof Error ? e.message : String(e) } }
         return j({ ok: true, mode, run: w.run, version: ver.version, model, examples: examples.length, tally, recorded: rec, cost_usd: answers.reduce((t, a) => t + (Number(a.cost_usd) || 0), 0),
           spent_usd: spent, cap_usd: cap, openrouter: ors.summary(), ms: Date.now() - t0, worker: WORKER });
       };
-      const edge = (globalThis as any).EdgeRuntime;
-      if (edge?.waitUntil) {
+      if (bg) {
         edge.waitUntil(work().catch((e: unknown) => console.error("aer_v3_eval background", e instanceof Error ? e.message : String(e))));
-        return j({ ok: true, mode, run: w.run, version: ver.version, model, background: true, budget_ms: AER_V3_EVAL_BUDGET_MS, call_ms: AER_V3_EVAL_CALL_MS, worker: WORKER }, 202);
+        return j({ ok: true, mode, run: w.run, version: ver.version, model, background: true, examples: Math.min(AER_V3_EVAL_TASK_MAX, Array.isArray(w?.examples) ? w.examples.length : 0), budget_ms: AER_V3_EVAL_BUDGET_MS, call_ms: AER_V3_EVAL_CALL_MS, worker: WORKER }, 202);
       }
       return await work();
     }
