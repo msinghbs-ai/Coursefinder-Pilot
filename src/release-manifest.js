@@ -1,20 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.43'
-export const PACKAGE_VERSION='0.1.465'
+export const UI_VERSION='2.16.44'
+export const PACKAGE_VERSION='0.1.466'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'18 Nov 2026',
-  title:'Layer 4 clusters; City metrics fit a narrow pane',
+  title:'Course descriptions: 1 to 2 sentences, plain-English holds and four decisions',
   changes:[
-    'Layer 4 Review › Inbox › Grid › Clusters: choose a kind and the waiting items are grouped by university, reason and the same quote (numbers, spacing and links ignored). Open a cluster to see its items, export the clusters, or tick clusters and settle them with one choice, one reason and a typed confirmation. Each item is decided exactly as on its own card, at the rank it needs, and logged.',
-    'Entry requirements, campus localities, provider departures and Human input needed are inspect only in Clusters: they are decided one at a time. A choice that needs a value or a page is never offered for a whole cluster.',
-    'A cluster that keeps coming back is the case for a Boost or reader rule: export it so the rule can be written into the worker and tested.'
+    'Layer 4 Review › Inbox, Course description cards: a Why this is held box says, in plain words, why the description waits and what to do, with how firmly the page matched the course, whether every quote is on the page and the sentence count against the limit.',
+    'Course description cards have four decisions: Approve as read, Re-read (1-2 sentences) (the stored page is read again; the course is not marked bad), Approve all verified for provider (type the count shown to confirm) and Reject (bad page / wrong course). University description cards keep Approve as read and Reject.',
+    'Course descriptions are written in 1 to 2 sentences (about 180 to 360 characters) about the course\'s focus, core skills and stated career outcomes, without intake dates, campus addresses, fees or duration. A description read from the course\'s own page (its CRICOS or NZQA code, or its exact title) is admitted by the machine rule without waiting for a person.'
   ],
   bugFixes:[
-    'Destination data › City metrics & costs: a long measure name (climate_annual_rainfall_mm) now wraps, so the table fits a narrow window without scrolling sideways.'
+    'A course description card no longer says it is one of the university\'s first descriptions when that was not why it waited.'
   ]
 }
 

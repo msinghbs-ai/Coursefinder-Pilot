@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
-import { CDESC_PROMPT_VERSION, CDESC_SYSTEM, CDESC_SYSTEM_SHA256, CDESC_SYSTEM_V2 } from '../../supabase/functions/coverage-sweep/course-text.ts'
+import { CDESC_SYSTEM_V3 as CDESC_SYSTEM, CDESC_SYSTEM_V3_SHA256 as CDESC_SYSTEM_SHA256, CDESC_SYSTEM_V2 } from '../../supabase/functions/coverage-sweep/course-text.ts'
 
 const D = 'supabase/functions/coverage-sweep'
 const M = fs.readFileSync('supabase/migrations/20261116090000_cf247_cdesc_v3_retry_gate_telemetry.sql', 'utf8')
@@ -13,7 +13,8 @@ const IX = fs.readFileSync(`${D}/index.ts`, 'utf8')
 const CS = fs.readFileSync(`${D}/cascade.ts`, 'utf8')
 
 test('prompt v3: v2 plus the opener rule, released in the worker and the database together', () => {
-  expect(CDESC_PROMPT_VERSION).toBe('cdesc-source-grounded-v3')
+  // v1.0.20 (s662): v4 is released; v3 is kept as CDESC_SYSTEM_V3 and checked here as it was sent
+  expect(CDESC_SYSTEM.startsWith('SYSTEM — STUDYSEARCH COURSE DESCRIPTION / cdesc-source-grounded-v3\n')).toBe(true)
   expect(crypto.createHash('sha256').update(CDESC_SYSTEM).digest('hex')).toBe(CDESC_SYSTEM_SHA256)
   expect(CDESC_SYSTEM).toContain('Do not open with, and do not write, a sentence that only introduces the course, such as\n"The <course title> at <provider> is a ..."')
   expect(CDESC_SYSTEM).toContain('Start the first sentence directly with a substantive fact about this course that a cited span\nprints')
