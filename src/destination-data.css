@@ -25,3 +25,5 @@
 /* v2.16.42: climate icons beside a climate measure (src/lib/climate-icons.js) */
 .dst-climate{display:inline-flex;align-items:center;margin-right:6px;color:var(--cf-text-2);vertical-align:-2px}
 .dst-climate .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* v2.16.43: a long measure key (climate_annual_rainfall_mm) wraps, so City metrics & costs fits a narrow pane */
+.dst-measure{overflow-wrap:anywhere;word-break:break-word;min-width:9ch}

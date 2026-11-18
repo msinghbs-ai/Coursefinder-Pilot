@@ -135,7 +135,7 @@ export default function Layer4Inbox({onError,routeParams}){
       <Button compact onClick={()=>{loadSum();loadUnis(offset);loadItems(cur)}}><RefreshCw size={14}/>Refresh</Button>
     </div>
     {note&&<p className="l4i-note" role="status">{note}</p>}
-    {view==='grid'?<Layer4Grid kinds={kinds} targetDays={sum.target_days} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
+    {view==='grid'?<Layer4Grid kinds={kinds} targetDays={sum.target_days} rank={sum.rank} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
     view==='group'?<GroupList group={grp} refresh={gtick} renderItem={it=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={r=>{decided(r);setGtick(x=>x+1)}} onError={onError} onRefresh={()=>{loadSum();setGtick(x=>x+1)}}/>}/>:
     view==='decided'?<Decided items={items} kinds={kinds}/>:view==='kind'&&!kind?<Empty text="Choose a kind above to see its items across every university."/>:
     <div className={view==='university'?'l4i-split':''}>
