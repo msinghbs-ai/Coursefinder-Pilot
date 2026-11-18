@@ -20,7 +20,8 @@
 --      batch.course_coverage_courses courses (default 1,500); every per-course scan, the AER covered set included, is restricted to the chunk;
 --      country tiers still come from every provider. The whole table (36,031 courses) is refreshed about every 24 runs (2 hours); course-coverage-build runs every 5 minutes.
 --      The chunk's statistics are taken before its reads (a temporary table has none), the Enrich state is read course by course (index) and the
---      open absences by a join (measured on 2,900 courses: 4.8 s and 0.6 s became 0.5 s and 0.2 s).
+--      open absences by a join (measured on 2,900 courses: 4.8 s and 0.6 s became 0.5 s and 0.2 s); the chunk order walks the provider index
+--      instead of grouping every coverage row (1.1 s), and the chunk's tables have statistics before the write.
 --      The daily counts (course_coverage_daily, course_coverage_daily_by_country) move by each run's change instead of a count of the whole
 --      table (3.9 s measured); the first run of a day starts from the latest earlier day's counts. Rows of providers with no active course left
 --      are removed by provider, not by a scan of the whole table.
@@ -101,8 +102,12 @@ select pg_temp.cf_edit_many('security.course_coverage_build_v1()'::regprocedure,
     select co.provider_id, min(k.iso_alpha2::text) country_code, count(*) n
       from catalogue.courses co join catalogue.providers p on p.id=co.provider_id join ref.countries k on k.id=p.country_id
      where co.lifecycle_status='active' group by co.provider_id;
+  -- the providers that have coverage rows (a walk of the provider index) and when each was built (one row each; a run writes one time per provider)
   create temp table _cp on commit drop as
-    select provider_id, min(computed_at) last_at from pipeline.course_attribute_coverage group by provider_id;
+  with recursive p as (select min(x.provider_id) id from pipeline.course_attribute_coverage x
+                       union all
+                       select (select min(x.provider_id) from pipeline.course_attribute_coverage x where x.provider_id > p.id) from p where p.id is not null)
+  select p.id provider_id, (select x.computed_at from pipeline.course_attribute_coverage x where x.provider_id = p.id limit 1) last_at from p where p.id is not null;
   select array_agg(z.provider_id) into v_chunk from (
     select q.provider_id, sum(q.n) over (order by q.last_at nulls first, q.provider_id) run_n, row_number() over (order by q.last_at nulls first, q.provider_id) rn
       from (select pc.provider_id, pc.n, x.last_at from _pc pc left join _cp x on x.provider_id = pc.provider_id) q) z
@@ -143,6 +148,7 @@ select pg_temp.cf_edit_many('security.course_coverage_build_v1()'::regprocedure,
       cross join lateral (select distinct on (e.field) e.field, e.state from pipeline.field_enrich_items e where e.course_id = c.course_id order by e.field, e.id desc) x;  -- s720: course by course$n$,
     $n$from _c cc join pipeline.course_field_absence a on a.course_id = cc.course_id join pipeline.field_absence_classes k on k.code=a.absence_class where a.resolved_at is null;  -- s720: the chunk$n$,
     $n$  -- s720: the chunk's providers are rebuilt in place, and the rows of providers with no active course left are removed (derived rows)
+  analyze _val; analyze _read; analyze _found; analyze _sw; analyze _l4; analyze _l3; analyze _ei; analyze _ab;  -- s720: the chunk's statistics for the write
   -- the counts of the rows removed are kept so the daily counts can move by this run's change
   create temp table _dold (country_code text, attribute text, state text, tier text, n int) on commit drop;
   with d as (delete from pipeline.course_attribute_coverage where provider_id = any(v_chunk || v_gone) returning country_code, attribute, state, tier)
@@ -352,6 +358,7 @@ declare d text := pg_get_functiondef('security.course_coverage_build_v1()'::regp
 begin
   d := regexp_replace(d, E'\n  create temp table (\\w+)', replace(format(m, 'X'), 'X', E'\\1') || E'\n  create temp table \\1', 'g');
   d := replace(d, E'\n  with d as (delete', format(m, 'delete') || E'\n  with d as (delete');
+  d := replace(d, E'\n  analyze _val;', format(m, 'analyze') || E'\n  analyze _val;');
   d := replace(d, E'\n  insert into pipeline.course_attribute_coverage(', format(m, 'insert') || E'\n  insert into pipeline.course_attribute_coverage(');
   d := replace(d, E'\n  get diagnostics v_n=row_count;', E'\n  get diagnostics v_n=row_count;' || format(m, 'inserted'));
   d := replace(d, E'\n  delete from pipeline.course_coverage_daily where', format(m, 'au_daily') || E'\n  delete from pipeline.course_coverage_daily where');
