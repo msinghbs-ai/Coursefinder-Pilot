@@ -31,7 +31,7 @@ test('job, settings and worker: catalogued, sized by settings, no Firecrawl and 
   expect(M).toContain("('page-text', 'Coverage sweep', 395, 'Page text for Boost',")
   expect(M).toContain("security.pipeline_num_v1(''batch.page_text'', 40)::int")
   expect(M).toContain("'page_text.min_chars'")
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.23"')  // v1.0.19 from s674
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.24"')  // v1.0.19 from s674
   expect(block).toContain('rpc("svc_page_text_next_v1"')
   expect(block).toContain('htmlToText(await readEvidenceCopy(c, String(it.storage_path)))')
   expect(block).toContain('const path = `coverage-text/${it.course_id}/${hash.slice(0, 32)}.txt`;')

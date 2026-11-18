@@ -52,7 +52,7 @@ test('courses are claimed in matrix order, once per stored page, and the table a
 })
 
 test('the worker asks the route\'s one model through cascadeFetch, never holds its own key path, and writes to staging-boost/inbound', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.23"')  // v1.0.19 from s674
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.24"')  // v1.0.19 from s674
   // v1.0.11: the run waits for a dispatcher tick to finish (up to six looks, 5 s apart) instead of skipping
   expect(mode).toContain('let gate: any = null; for (let i = 0; i < 6; i++) { gate = await rpc("svc_boost_extract_gate", {}); if (gate?.ok || gate?.reason !== "a dispatcher tick is running") break; await new Promise((r) => setTimeout(r, 5000)) }')
   expect(mode).toContain('const route = await rpc("svc_boost_extract_route_v1", {});')
@@ -73,11 +73,11 @@ test('boost.ts: only the parts around the study words are sent, and a page with 
   const page = 'Intro text. '.repeat(300) + '\nStudy mode: available full-time (3 years) or part-time (6 years) on campus.\n' + 'Other text. '.repeat(400) + '\nInternational students must study Full Time.'
   // v1.0.13: a page that states a study load for international students is asked about those sentences only (rules in s601 and s602)
   const i = B.studyLoadSections(page, 6000)
-  expect(i).toMatchObject({ hits: 3, selector: 'study-load-international-v2', text: 'International students must study Full Time.' })
+  expect(i).toMatchObject({ hits: 3, selector: 'study-load-international-v3', text: 'International students must study Full Time.' })
   const general = page.replace('\nInternational students must study Full Time.', '')
   const s = B.studyLoadSections(general, 6000)
   expect(s.hits).toBe(2)
-  expect(s.selector).toBe('study-load-windows-v5')  // v4 from worker v1.0.17 (s647); v5 from v1.0.20 (s661)
+  expect(s.selector).toBe('study-load-windows-v6')  // v4 from worker v1.0.17 (s647); v5 from v1.0.20 (s661)
   expect(s.text).toContain('available full-time (3 years) or part-time (6 years)')
   expect(s.chars).toBeLessThan(general.length / 4)
   expect(B.studyLoadSections('Delivered online and on campus over three years.', 6000)).toMatchObject({ hits: 0, selector: 'no_signal', text: '' })
