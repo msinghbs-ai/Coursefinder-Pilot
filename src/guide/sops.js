@@ -9,7 +9,7 @@
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 // Check the admin copy with `node scripts/export-sops.mjs --check-mirror <coursefinder-admin/docs/sops>` (SS-016 UR-03): it exits 1 on drift.
 
-export const SOP_REVIEWED_FOR = '2.16.34'
+export const SOP_REVIEWED_FOR = '2.16.35'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -45,7 +45,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.60', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.61', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -127,7 +127,8 @@ export const SOPS = [
       'Scholarships withdrawn by the nightly review: a jump means a rule changed or a site moved its pages.',
     ],
     escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
-    changes: [{ version: '2.60', date: '18 Nov 2026', release: '2.16.34', change: 'Layer 1 › Register: Needs attention lists real failures only. Overdue next ingestion dates are moved on every hour by the dispatcher; four Canadian college code readers replaced by coverage-sweep are retired (kept, paused). The ten Ontario college readers that fail have no other course source: decide whether to repair or replace them.' },
+    changes: [{ version: '2.61', date: '18 Nov 2026', release: '2.16.35', change: 'Onboarding a new country: Layer 1 › Register › + Add source, step 1, + Register a scheme adds the country\'s registration scheme as planned (with a reason); no database change is needed. Subdivisions are loaded as data (public.admin_subdivisions_register_v1).' },
+      { version: '2.60', date: '18 Nov 2026', release: '2.16.34', change: 'Layer 1 › Register: Needs attention lists real failures only. Overdue next ingestion dates are moved on every hour by the dispatcher; four Canadian college code readers replaced by coverage-sweep are retired (kept, paused). The ten Ontario college readers that fail have no other course source: decide whether to repair or replace them.' },
       { version: '2.59', date: '18 Nov 2026', release: '2.16.33', change: 'Layer 4 › Inbox › Grid: the shared views (AER Audit Samples, Official URLs, Provider Blockers) are changed by a Platform Admin only (Update shared view, logged); a view only chooses what is shown and never changes the AER audit sample or the course-address rules. The CSV export holds up to Layer 4 grid: rows a CSV export holds (Settings › Pipeline settings).' },
       { version: '2.58', date: '18 Nov 2026', release: '2.16.32', change: 'Destination data › City metrics & costs: Bulk Approve Drafts approves every clean draft figure of an edition with one reason (Platform Admin), as on Localities & postcodes.' },
       { version: '2.57', date: '18 Nov 2026', release: '2.16.31', change: 'Destination data › Localities & postcodes: Bulk Approve Drafts approves every clean draft locality of an edition with one reason (Platform Admin). Then approve the figures, record the edition terms and Publish edition on Overview & editions.' },

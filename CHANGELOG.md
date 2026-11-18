@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.457 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.35** (Platform Admin 18 Nov 2026 11:28, 29-destination readiness). Migration 20261118133000: `public.admin_registration_scheme_register_v1` (Platform Admin, reason, planned, never changes an existing scheme) and `public.admin_subdivisions_register_v1` (ISO 3166-2 rows as data). The induction wizard's step 1 offers + Register a scheme. Guards: `s625`.
+
 ## 0.1.456 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.34** (Platform Admin 18 Nov 2026 10:51, Layer 1 Register issues on v2.16.32). Migration 20261118125000: `security.layer1_next_due_roll_v1` as live `rollup-scheduler` target `layer1-next-due-roll` (overdue next ingestion dates moved on by whole cadences; run once); four Canadian college code readers superseded by coverage-sweep retired (Aurora, College of the North Atlantic, Confederation, Loyalist; checked live), their dedicated edge functions marked retiring; QS 2026 and 2027 verification recorded from the applied publisher files. Layer 1 register headings no longer stick over the filter bar. Guards: `s624`.
