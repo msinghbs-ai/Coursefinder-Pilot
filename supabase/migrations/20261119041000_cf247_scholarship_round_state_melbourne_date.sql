@@ -8,7 +8,7 @@
 --
 -- What it changes
 --   * scholarship_round_state_refresh_v1 decides open, opening soon and closed on the Melbourne date ((now() at time zone
---     'Australia/Melbourne')::date) instead of the UTC date (md5-guarded edit of every current_date in the body; nothing else changes).
+--     'Australia/Melbourne')::date) instead of the UTC date (md5-guarded edit of the four current_date comparisons in the body; nothing else changes).
 --   * A rollup-scheduler target scholarship-round-state-refresh (hourly at :23, group A, live, no legacy job) runs it with the batch setting
 --     batch.scholarship_round_state ("records classified an hour"); its command holds no number. The paused discovery job is left as it is.
 -- The round states are read by the scholarship screens and the v3 scholarship status; no v2 feed and no updated_at of a consumer table is
@@ -25,7 +25,7 @@ declare
 begin
   if position('Australia/Melbourne' in v_src) > 0 then raise notice 'already on the Melbourne date'; return; end if;
   if md5(v_src) <> '09b6bce7b2eea9d25872af4fc9ed9cc0' then raise exception 'live scholarship_round_state_refresh_v1 differs from the definition this change edits (body md5 %)', md5(v_src); end if;
-  if (length(v_src) - length(replace(v_src, 'current_date', ''))) / length('current_date') <> 6 then raise exception 'expected six current_date comparisons'; end if;
+  if (length(v_src) - length(replace(v_src, 'current_date', ''))) / length('current_date') <> 4 then raise exception 'expected four current_date comparisons'; end if;
   v_def := replace(pg_get_functiondef(v_sig), chr(13), '');
   execute replace(v_def, 'current_date', v_new);
   if md5((select prosrc from pg_proc where oid = v_sig)) <> md5(replace(v_src, 'current_date', v_new)) then raise exception 'scholarship_round_state_refresh_v1 after the edit is not the expected body'; end if;
