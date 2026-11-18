@@ -1,10 +1,11 @@
 // Guards: destination page facts (Platform Admin 18 Nov 2026 14:23 and 15:32): figures and rules are read from official pages by a pattern with a verbatim quote, evidence and the time read, never typed in; restricted terms are not read; QILT stays gated; a reviewed row is never changed.
-// CF-247 S653. supabase/migrations/20261118185000_cf247_destination_page_facts.sql, supabase/functions/_shared/cf247-page-facts.js, layer1-destination-geo-loader v1.2.0 mode facts.
+// CF-247 S653. supabase/migrations/20261118185000_cf247_destination_page_facts.sql and 20261118186000 (first load), supabase/functions/_shared/cf247-page-facts.js, layer1-destination-geo-loader v1.2.0 mode facts.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { anchorWindows, extractFact, htmlToText, parseOccupationGrid, quoteAround, xlsxLinks } from '../../supabase/functions/_shared/cf247-page-facts.js'
 
 const M = fs.readFileSync('supabase/migrations/20261118185000_cf247_destination_page_facts.sql', 'utf8')
+const F = fs.readFileSync('supabase/migrations/20261118186000_cf247_destination_page_facts_first_load.sql', 'utf8')
 const E = fs.readFileSync('supabase/functions/layer1-destination-geo-loader/index.ts', 'utf8')
 
 const PAGE = `<html><head><title>Student visa</title><style>.x{color:red}</style></head><body>
@@ -87,4 +88,10 @@ test('the loader: mode facts reads the pages and the workbook through the shared
   expect(E).toContain('if (clean(body.mode) === "facts") return await facts(service, runId, trigger, started);')
   expect(E).toContain('await rpc(service, "svc_destination_page_facts_load_v1", { p_payload: { run_id: runId, trigger, pages, jsa } });')
   expect(E).toContain('const path = `destination/page-facts/${host}/${hash}.html`;')
+})
+
+test('the first load is asked for only after the loader that knows mode facts is deployed', () => {
+  expect(F).toContain("raise exception 'the page-facts load (20261118185000) is not applied';")
+  expect(F).toContain("v_run := security.destination_job_run_now_v1('destination-page-facts-load',")
+  expect(F).not.toMatch(/^\s*(delete from|drop |truncate )/im)
 })
