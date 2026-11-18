@@ -6,12 +6,14 @@
 import fs from 'node:fs'
 import { need, read, lit, worker, summary } from './boost-live-lib.mjs'
 need()
-const rules = String(process.argv[2] || 'gate_incomplete,all_rows_held').split(',').map((s) => s.trim()).filter(Boolean)
-const items = await read(`select i.id as item_id, c->>'rule' as rule, (c->'checks'->>'run_id') as run_id, (c->'checks'->>'source_id') as source_id, c->'checks'->>'source_url' as url,
-    (select count(*) from catalogue.provider_entry_matrix m where m.run_id = (c->'checks'->>'run_id')::uuid and m.status = 'proposed') as proposed_rows,
-    (c->'checks'->'gate'->>'read_rows')::int as read_rows, jsonb_array_length(coalesce(c->'checks'->'gate'->'dropped_lost', '[]'::jsonb)) as dropped_lost
-  from (select i.*, security.aer_matrix_machine_check_v1(i.id) c from pipeline.layer4_review_items i where i.status = 'pending' and i.field_code = 'entry_matrix_first_run') i
-  where c->>'rule' in (${rules.map(lit).join(', ')}) and c->'checks'->>'source_id' is not null order by c->>'rule', c->'checks'->>'source_url'`)
+// The read-only database role cannot run security functions (first run, 19 Nov 2026 06:24: "permission denied for function aer_matrix_machine_check_v1"), so the list is taken
+// from the tables: every entry-matrix first read waiting in Layer 4, with its run's completeness verdict and dropped rows. Argument 1 is kept for the record only.
+const rules = String(process.argv[2] || 'all').split(',').map((s) => s.trim()).filter(Boolean)
+const items = await read(`select i.id as item_id, r.id as run_id, r.source_id, s.url, r.result->'completeness'->>'status' as rule,
+    (select count(*) from catalogue.provider_entry_matrix m where m.run_id = r.id and m.status = 'proposed') as proposed_rows,
+    jsonb_array_length(coalesce(r.result->'dropped', '[]'::jsonb)) as dropped_lost
+  from pipeline.layer4_review_items i join pipeline.entry_matrix_runs r on r.review_item_id = i.id left join pipeline.entry_matrix_sources s on s.id = r.source_id
+  where i.status = 'pending' and i.field_code = 'entry_matrix_first_run' and r.source_id is not null order by s.url`)
 const pages = []
 for (let k = 0; k < items.length; k += 4) {  // a small batch keeps one worker answer well under the response size pg_net keeps
   const chunk = items.slice(k, k + 4)
@@ -22,6 +24,6 @@ for (let k = 0; k < items.length; k += 4) {  // a small batch keeps one worker a
 fs.mkdirSync('out', { recursive: true })
 fs.writeFileSync('out/aer-entry-pages.json', JSON.stringify({ rules, at: new Date().toISOString(), items: items.length, pages }, null, 1))
 const ok = pages.filter((p) => !p.error)
-let md = `### AER entry-matrix stored pages (read only)\n\n${items.length} waiting items (${rules.join(', ')}); ${ok.length} stored copies exported, ${pages.length - ok.length} not read. No model call, no fetch, no write.\n\n| Rule | Source | Tables | Characters | Proposed rows | Dropped |\n|---|---|---|---|---|---|\n`
+let md = `### AER entry-matrix stored pages (read only)\n\n${items.length} waiting first reads; ${ok.length} stored copies exported, ${pages.length - ok.length} not read. No model call, no fetch, no write.\n\n| Rule | Source | Tables | Characters | Proposed rows | Dropped |\n|---|---|---|---|---|---|\n`
 for (const p of pages) md += `| ${p.item?.rule ?? ''} | ${String(p.url).replace(/\|/g, '/').slice(0, 100)} | ${p.tables ?? p.error ?? ''} | ${p.chars ?? ''} | ${p.item?.proposed_rows ?? ''} | ${p.item?.dropped_lost ?? ''} |\n`
 await summary(md)
