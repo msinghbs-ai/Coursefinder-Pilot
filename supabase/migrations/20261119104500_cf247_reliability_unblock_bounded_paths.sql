@@ -303,6 +303,9 @@ begin
 end $r$;
 
 -- 6. the planner releases stalled automatic plans before it counts its room
+insert into pipeline.ops_outcome_codes (code, title, counts_as_movement)
+values ('released_stalled', 'Released: no job movement, or every held step waits on an ended budget window (planner room reclaimed)', false)
+on conflict (code) do nothing;
 select pg_temp.cf_edit_many('security.enrich_plan_auto_v1()'::regprocedure, 'f0c95d0bbef3ccac550585185c9784c9',
   array[$o$  select count(*) into v_open from pipeline.enrich_plan_runs where mode = 'auto' and state in ('queued', 'running');$o$],
   array[$n$  -- 20261119104500 (s720): release automatic plans whose jobs have not moved for plans.auto_stall_hours, or whose held steps all wait on budget
