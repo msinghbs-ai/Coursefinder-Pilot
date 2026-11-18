@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.31; reviewed-release=2.16.46; source-commit=e9fb78471eac+local; content-sha256=756de0bbcc8a4330d5f24dd4ef83e1c23167e0cee24d21475b3d77005d1f07d5 -->
+<!-- sop-export: id=operator-sop; version=2.32; reviewed-release=2.16.47; source-commit=a18020c8ad89+local; content-sha256=63e960b730af3add60ed589a6455af8428d909f1244dfd3f8b32ca6c57834944 -->
 # StudySearch – Operator SOP
 
-**Version:** 2.31 (reviewed for platform release v2.16.46)  
+**Version:** 2.32 (reviewed for platform release v2.16.47)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -116,6 +116,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.32 | 19 Nov 2026 | v2.16.47 | Around this course and Around this provider now show the approved city, career and visa figures to you as well. Accreditations show on the Provider detail. |
 | 2.31 | 19 Nov 2026 | v2.16.46 | Course detail: the Description pipeline and Related insights & funding are folded; open them when you need them. Scholarships are listed once. |
 | 2.30 | 18 Nov 2026 | v2.16.45 | Course detail: Counsellors and Viewers see approved entry requirements only, and scholarship lists show three with Show all (N) scholarships. |
 | 2.29 | 18 Nov 2026 | v2.16.44 | Course and Provider detail show the campus city weather and population, careers, visa and living-cost rules, rankings and scholarships in a read-only block. Use Preview as (Editors and above) to see the Counsellor view. |

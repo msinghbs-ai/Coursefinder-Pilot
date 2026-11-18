@@ -4,8 +4,9 @@
 // Provider: Rankings, Campus city profiles, Scholarships & accreditations. The joins and the column list are in
 // src/lib/correlation-adapters.js (CARD_SPEC); what each role sees is in src/lib/field-visibility.js. Internal fields carry
 // data-vis="<field>" so the drawer hides them for Viewer and Counsellor, and for an Editor previewing as one.
-// City figures, careers and full rule rows are read with admin_destination_review, which the server opens to Curator and
-// above; a Viewer or Counsellor sees the read-gap note until a student-facing read is added (hand-off to S2-Build).
+// City figures, careers and full rule rows are read with admin_destination_review. Since v2.16.47 (S2-Build s712, migration
+// 20261119045000) the server answers every StudySearch role: Viewer and Counsellor get approved rows of published editions with
+// student-facing fields only, Curator and above the full rows. The read-gap note shows only when that read fails.
 import React,{useEffect,useState}from'react'
 import{Eye,MapPin,Briefcase,Plane,GraduationCap,Trophy,Building2,Award}from'lucide-react'
 import{StatusChip}from'./ui-kit'
@@ -32,7 +33,7 @@ const Gap=({children})=><p className="cb-gap" data-cb-read-gap>{children}</p>
 const Empty=({children,id})=><p className="cb-empty" data-cb-empty={id}>{children}</p>
 const kindLabel=k=>{const t=String(k||'').replaceAll('_',' ');return t.length<=4?t.toUpperCase():t.replace(/^./,c=>c.toUpperCase())}
 const deg=v=>v==null?'—':`${Number(v).toFixed(1)}°`
-const GAP_TEXT='City figures, careers and visa figures show for Curators and above until the student-facing read is added (S2-Build).'
+const GAP_TEXT='City figures, careers and visa figures could not be read just now. Open the record again in a moment.'
 
 function ClimateIcon({k}){if(!k||!CLIMATE_ICONS[k])return null;const[I,label]=CLIMATE_ICONS[k];return <span className="cb-icon" data-cb-climate={k} title={`${label} (long-term average, not a forecast)`}><I size={16} aria-hidden="true"/><span className="sr-only">{label}</span></span>}
 function City({loc,metrics}){
@@ -54,28 +55,28 @@ function City({loc,metrics}){
   </div>}
 
 export function CourseCorrelated({data,rank=0}){
-  const curator=Number(rank)>=3,courseId=data?.id,providerId=data?.provider_id
+  const reader=Number(rank)>=1,courseId=data?.id,providerId=data?.provider_id // v2.16.47: every StudySearch role reads (s712)
   const pd=useRead(()=>rpc('admin_provider_destination_read',{p_provider_id:providerId}),[providerId],!!providerId)
   const cd=useRead(()=>rpc('admin_course_destination_read',{p_course_id:courseId}),[courseId],!!courseId)
-  const mt=useRead(()=>reviewList('locality_metric'),[curator],curator)
-  const co=useRead(()=>reviewList('career_outcome'),[curator],curator)
-  const sr=useRead(()=>reviewList('study_rule'),[curator],curator)
+  const mt=useRead(()=>reviewList('locality_metric'),[reader],reader)
+  const co=useRead(()=>reviewList('career_outcome'),[reader],reader)
+  const sr=useRead(()=>reviewList('study_rule'),[reader],reader)
   const er=useRead(()=>rpc('admin_entry_requirements',{p_action:'course',p_args:{course_id:courseId}}),[courseId],!!courseId)
   const entry=(er.data?.rows||[]).filter(r=>!['rejected','inactive'].includes(String(r.status))),sch=Array.isArray(data?.course_scholarships?.items)?data.course_scholarships.items.filter(x=>(x.publication_status||'published')==='published'):[]
   const{shown:schShown,toggle:schToggle}=useShowAll(sch,{id:'cb-scholarships'}) // s697: first three, then Show all (N) scholarships
   if(!courseId)return null
   const locs=campusLocalities(data.campuses,pd.data?.campuses),cc=cd.data?.country_code||null
-  const careers=curator&&co.done?careerOutlook(data.field_code,co.data,{country:cc}):null
+  const careers=reader&&co.done&&!co.err?careerOutlook(data.field_code,co.data,{country:cc}):null
   const visa=visaSnapshot(cd.data?.study_rules,sr.data)
   return <section className="cb" data-correlated="course" aria-label="Around this course">
     <header className="cb-head"><strong>Around this course</strong><small>Read only. Joined from the campus city, the field of study and the destination's rules.</small></header>
     <div className="cb-grid">
       <Card id="location" icon={MapPin} title="Location & weather">
-        {!pd.done?<small>Loading…</small>:!locs.length?<Empty id="location">No campus is held for this course yet.</Empty>:locs.map((l,i)=><City key={i} loc={l} metrics={curator?mt.data:null}/>)}
-        {!curator&&<Gap>{GAP_TEXT}</Gap>}
+        {!pd.done?<small>Loading…</small>:!locs.length?<Empty id="location">No campus is held for this course yet.</Empty>:locs.map((l,i)=><City key={i} loc={l} metrics={reader?mt.data:null}/>)}
+        {mt.err&&<Gap>{GAP_TEXT}</Gap>}
       </Card>
       <Card id="careers" icon={Briefcase} title="Career pathway, jobs & salary outlook" note={data.field_name?`Field of study: ${data.field_name}`:null}>
-        {!curator?<Gap>{GAP_TEXT}</Gap>:!careers?<small>Loading…</small>:careers.state!=='matched'?<Empty id="careers">{EMPTY_CAREERS[careers.state]}{careers.held?<span className="cb-int" data-vis="dataset_edition"> {fmtNumber(careers.held)} occupation rows read, {fmtNumber(careers.with_figures||0)} with figures.</span>:null}</Empty>:
+        {co.err?<Gap>{GAP_TEXT}</Gap>:!careers?<small>Loading…</small>:careers.state!=='matched'?<Empty id="careers">{EMPTY_CAREERS[careers.state]}{careers.held?<span className="cb-int" data-vis="dataset_edition"> {fmtNumber(careers.held)} occupation rows read, {fmtNumber(careers.with_figures||0)} with figures.</span>:null}</Empty>:
           <table className="cf-table cb-table" data-cb-careers><thead><tr><th>Occupation</th><th>Growth</th><th>Median salary</th><th>Shortage</th></tr></thead>
             <tbody>{careers.items.slice(0,5).map((o,i)=><tr key={i}><td>{o.occupation}<small className="cb-sub">{o.code}</small></td><td>{o.growth||'—'}{o.horizon?<small className="cb-sub">{o.horizon}-year outlook</small>:null}</td>
               <td className="num">{o.median_salary!=null?fmtMoney(o.median_salary,o.currency||'AUD'):'—'}</td><td>{o.shortage||'—'}</td></tr>)}</tbody></table>}
@@ -88,7 +89,6 @@ export function CourseCorrelated({data,rank=0}){
           {visa.visa_fees.map((f,i)=><li key={i} data-cb-fact="visa_fee"><span>{f.title}</span><b>{f.amount!=null?fmtMoney(f.amount,f.currency):'—'}</b>{f.rule_id&&<code className="cb-int" data-vis="rule_id">{String(f.rule_id).slice(0,8)}</code>}</li>)}
           {visa.health_cover.map((h,i)=><li key={`h${i}`} data-cb-fact="health_cover"><span>Health cover</span><b>{h.title}</b></li>)}
         </ul>}
-        {!curator&&visa.rules>0&&<Gap>Figures for each rule show for Curators and above until the student-facing read is added (S2-Build).</Gap>}
       </Card>
       <Card id="entry" icon={GraduationCap} title="Entry requirements & scholarships">
         <div className="cb-two">
@@ -104,10 +104,10 @@ export function CourseCorrelated({data,rank=0}){
   </section>}
 
 export function ProviderCorrelated({data,rank=0}){
-  const curator=Number(rank)>=3,providerId=data?.id
+  const reader=Number(rank)>=1,providerId=data?.id // v2.16.47: every StudySearch role reads (s712)
   const pd=useRead(()=>rpc('admin_provider_destination_read',{p_provider_id:providerId}),[providerId],!!providerId)
   const rk=useRead(()=>api.providerRankingHistory(providerId).then(d=>d?.items||[]),[providerId],!!providerId)
-  const mt=useRead(()=>reviewList('locality_metric'),[curator],curator)
+  const mt=useRead(()=>reviewList('locality_metric'),[reader],reader)
   if(!providerId)return null
   const snap=rankingSnapshot(rk.data),campuses=(pd.data?.campuses||[]).map(p=>campusLocalities([{name:p.name}],[p])[0]).filter(Boolean)
   const regs=pd.data?.registrations||[]
@@ -122,17 +122,16 @@ export function ProviderCorrelated({data,rank=0}){
         {rk.done&&!rk.err&&<p className="cb-sub" data-cb-subject>{snap.subject.length?`Subject ranks: ${snap.subject.slice(0,4).map(x=>`${x.label} #${x.rank||'—'}`).join(' · ')}`:'No subject rank is held yet.'}</p>}
       </Card>
       <Card id="campus_cities" icon={Building2} title="Campus city profiles">
-        {!pd.done?<small>Loading…</small>:!campuses.length?<Empty id="campus_cities">No campus is held for this provider yet.</Empty>:campuses.slice(0,6).map((l,i)=><City key={i} loc={l} metrics={curator?mt.data:null}/>)}
+        {!pd.done?<small>Loading…</small>:!campuses.length?<Empty id="campus_cities">No campus is held for this provider yet.</Empty>:campuses.slice(0,6).map((l,i)=><City key={i} loc={l} metrics={reader?mt.data:null}/>)}
         {campuses.length>6&&<small className="cb-sub">and {campuses.length-6} more campuses</small>}
-        {!curator&&<Gap>{GAP_TEXT}</Gap>}
+        {mt.err&&<Gap>{GAP_TEXT}</Gap>}
       </Card>
       <Card id="scholarships_accreditations" icon={Award} title="Scholarships & accreditations">
         <ul className="cb-list">
           <li data-cb-fact="scholarships"><span>Scholarships</span><b>{fmtNumber(Number(data.scholarship_count||0))}</b></li>
-          <li data-cb-fact="accreditations"><span>Accreditations (AACSB, EQUIS, AMBA)</span><b>{Array.isArray(data.accreditations)&&data.accreditations.length?data.accreditations.map(a=>a.body_code||a).join(', '):'Sent in API v3'}</b></li>
+          <li data-cb-fact="accreditations"><span>Accreditations (AACSB, EQUIS, AMBA)</span><b>{!Array.isArray(data.accreditations)?'Sent in API v3':!data.accreditations.length?'None held':data.accreditations.map((a,i)=><span key={i} data-cb-accreditation={a.body_code||a}>{i?', ':''}{a.body_code||a}{a.status&&a.status!=='active'?<small className="cb-int" data-vis="approval_status"> ({String(a.status).replace(/_/g,' ')})</small>:null}</span>)}</b></li>
           {regs.slice(0,3).map((r,i)=><li key={i} data-cb-fact="registration"><span>{r.label||String(r.scheme).toUpperCase()}</span><b>{r.code}</b></li>)}
         </ul>
-        {!Array.isArray(data.accreditations)&&<Gap>Accreditations are sent to the website as item.provider.accreditations; the admin read for them is part of the S2-Build hand-off.</Gap>}
       </Card>
     </div>
   </section>}
