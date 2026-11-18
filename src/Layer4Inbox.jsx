@@ -24,7 +24,7 @@ import{ItemLifecycle}from'./Layer4ItemLifecycle' // CF-247 decision 12:24: actio
 import{layer4DeepLinkCursor}from'./layer4-deep-link'
 import AerCourseLinks from'./AerCourseLinks' // CF-247 F-AER.08 step 3: course links of a university's entry tables
 import Layer4Grid from'./Layer4Grid' // CF-247 UI/UX audit Phase 5 (18 Nov 2026): the review grid, saved views and the quote/value drawer
-import{CdList,CdPanel,ChecksLine,ReasonChips,isCourseDescription,useCdQueue}from'./CourseDescriptionPanel' // CF-247 course descriptions (6 Nov 2026): reconcile, ready first, the sample
+import{CdList,CdPanel,CdWhy,ChecksLine,ReasonChips,cdChoices,isCourseDescription,useCdQueue}from'./CourseDescriptionPanel' // CF-247 course descriptions (6 Nov 2026): reconcile, ready first, the sample
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
 // SS-016 role simulation (1 Nov 2026): the rank a choice needs, as public.admin_layer4_inbox decides it: its own rank, else rank 4
@@ -210,6 +210,7 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh}){
   const gated=c=>(held||mheld)&&(c.key==='approve'||(c.key==='approve_except'&&!exceptOpen))
   const choices=(k.choices||[]).filter(c=>!(fee&&c.key==='use')).filter(c=>!(feeCheck&&c.key==='enter')).filter(c=>!((fee||feeCheck)&&c.key==='refuse')).map(c=>feeCheck&&FEE_CHECK[c.key]?{...c,...FEE_CHECK[c.key]}:c)
     .map(c=>it.kind==='provider_description'&&c.key==='reject'?{...c,returns:'Rejects this proposal; another read requires eligible evidence and existing retry/approval rules.'}:c).filter(hookOk)
+  const cdChoiceList=it.kind==='provider_description'?cdChoices(choices,isCourseDescription(d)):choices // s664: the course description card's four decisions
   const choose=c=>{setErr('');if(c.link){recordNavigation(it.kind,it.ref,c.key);window.location.hash=linkFor(c.link,it).replace(/^#/,'');return}setOpen(c);setReason(c.reason||'');setValue(c.input==='url'&&it.kind==='course_link'&&!fee?urlOf(d.proposed):c.input==='url'&&it.kind==='conjoint_first_run'?(d.proposed?.parent_url||''):(c.input==='courses'||c.input==='rows')?'[]':'')}
   // hotfix 26 Oct 2026: a university's first run (no page published / conjoint rule) shows its sample; "has a page" ticks courses from it
   const firstRun=it.kind==='no_page_first_run'||it.kind==='conjoint_first_run'
@@ -245,16 +246,18 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh}){
       <ol className="l4i-sample">{(Array.isArray(d.proposed?.sentences)?d.proposed.sentences:[]).map((x,i)=><li key={i}>{x.text}<br/><small>Page: <q>{x.quote}</q></small></li>)}</ol>
       {d.proposed?.source_url&&<p><small>Official page: <a href={d.proposed.source_url} target="_blank" rel="noreferrer">{d.proposed.source_url} <ExternalLink size={11}/></a></small></p>}
     </div>}
+    {it.kind==='provider_description'&&isCourseDescription(d)&&<CdWhy d={d}/>}
     {it.kind==='provider_description'&&isCourseDescription(d)&&<ChecksLine d={d}/>}
     {it.kind==='provider_departure'&&d.note&&<p className="l4i-why" data-l4-departure><small>{d.note}</small></p>}
     {it.kind==='held_scholarship'&&<dl className="l4i-dl">{d.url&&<><dt>Page</dt><dd><a href={d.url} target="_blank" rel="noreferrer">{d.url} <ExternalLink size={11}/></a></dd></>}{it.suggestion&&<><dt>AI re-check</dt><dd>{it.suggestion}</dd></>}{d.audience_quote&&<><dt>Who</dt><dd><q>{d.audience_quote}</q></dd></>}{d.value_quote&&<><dt>Value</dt><dd><q>{d.value_quote}</q></dd></>}</dl>}
-    <div className="l4i-choices">{choices.map(c=>{const low=rank<needs(c),stop=gated(c);return <button key={c.key} type="button" className={`${open?.key===c.key?'on':''}${c.link?' link':''}`} disabled={low||stop} title={low?`Needs ${roleName(needs(c))} (rank ${needs(c)}) or above`:stop?'Held: this read is incomplete (see above)':c.returns} onClick={()=>choose(c)} data-l4-choice={c.key}>{c.label}{c.link&&<ArrowRight size={12}/>}</button>})}</div>
+    <div className="l4i-choices">{cdChoiceList.map(c=>{const low=rank<needs(c),stop=gated(c);return <button key={c.key} type="button" className={`${open?.key===c.key?'on':''}${c.link?' link':''}`} disabled={low||stop} title={low?`Needs ${roleName(needs(c))} (rank ${needs(c)}) or above`:stop?'Held: this read is incomplete (see above)':c.returns} onClick={()=>choose(c)} data-l4-choice={c.key}>{c.label}{c.link&&<ArrowRight size={12}/>}</button>})}</div>
     {(()=>{const by={};for(const c of choices)if(rank<needs(c))(by[needs(c)]||=[]).push(c.label)
       return Object.keys(by).length?<p className="l4i-why" data-l4-handoff><small>{Object.entries(by).map(([n,l])=>`${l.join(', ')}: ${roleName(n)} (rank ${n}) or above decides; ask a ${roleName(n)}.`).join(' ')}</small></p>:null})()}
     {open&&<div className="l4i-confirm">
       <p className="l4i-next"><strong>What happens next:</strong> {open.returns}</p>
       {open.input==='url'&&<input value={value} onChange={e=>setValue(e.target.value)} placeholder="https://…" aria-label="Web address"/>}
       {open.input==='provider'&&<input value={value} onChange={e=>setValue(e.target.value)} placeholder="Successor: its exact name, or its CRICOS or NZQA code" aria-label="Successor provider"/>}
+      {open.input==='count'&&<input value={value} onChange={e=>setValue(e.target.value.replace(/[^0-9]/g,''))} inputMode="numeric" placeholder="Type the count shown to confirm" aria-label="Confirm the count" data-l4-cd-count/>}
       {open.input==='text'&&<textarea value={value} onChange={e=>setValue(e.target.value)} rows={3} placeholder="What is missing or correct" aria-label="Details" data-l4-text/>}
       {open.input==='scholarship'&&<input value={value} onChange={e=>setValue(e.target.value)} placeholder="The published scholarship's id (same university)" aria-label="Published scholarship" data-l4-duplicate-of/>}
       {open.input==='rows'&&exceptOpen&&flagIds.length>0&&<p className="l4i-next" data-l4-aer-flag-needed>{flagIds.every(id=>ticked.includes(id))?'Every row that cannot be admitted as read is ticked.':`Tick the ${flagIds.length===1?'row':`${flagIds.length} rows`} marked "cannot be admitted as read" to leave ${flagIds.length===1?'it':'them'} out.`}</p>}

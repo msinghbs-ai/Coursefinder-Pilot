@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.72; reviewed-release=2.16.47; source-commit=a18020c8ad89+local; content-sha256=9e21506cdc4f5eaa9cfa9c99e8fa52a11e1b96080fdd750f42d9e5e0aed66da2 -->
+<!-- sop-export: id=admin-sop; version=2.73; reviewed-release=2.16.48; source-commit=5b4e09cec38e+local; content-sha256=adb89f783e5ea43fa8c08c645d03a7e9349b877e40d889567d8bf9d3eb4e4f98 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.72 (reviewed for platform release v2.16.47)  
+**Version:** 2.73 (reviewed for platform release v2.16.48)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -120,6 +120,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 - Operations lane funnels: read each lane stage by stage. A green job, a stage transfer and published data are different things; a lane with items waiting for a person needs a decision from a person. Firecrawl allowance and remaining credits are read only; check the room above the reserved floor before asking for more course-link work.
 - English faculty and course-group scores wait for Platform Admin approval and explicit binding; No rule yet and held course-specific cases remain visible without invented coverage.
 - Course descriptions: distinguish proposed, human-admitted and actually published counts. Review held evidence and use Previous on the final reviewer page.
+- Course descriptions (v2.16.48): each card says why it is held and what to do. Re-read (1-2 sentences) re-reads the stored page without marking the course bad; Approve all verified for provider asks you to type the count it shows.
 - An application deadline must quote an actual closing date; commencement and intake dates are not closing dates. Escalate incorrect records without removing human locks.
 - A held or uncertain production release: confirm the Integration Controller and operation evidence before recovery; keep read-only health checks available.
 - Provider descriptions: the status on the Provider description prompt card (AI spend against the ceiling and daily guard, Firecrawl use, admitted in 24 hours, waiting, held, written by hand, the jobs' last runs). Descriptions waiting for a person are marketing wording or words kept for human eyes ("accredited"); decide them in Layer 4.
@@ -139,6 +140,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.73 | 19 Nov 2026 | v2.16.48 | Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. The machine rule now admits a description whose own page proves the course (CRICOS or NZQA code, or exact title). |
 | 2.72 | 19 Nov 2026 | v2.16.47 | Around this course and Around this provider show live figures for every role: Counsellors and Viewers see the approved climate, population, career and visa figures. Accreditations are listed on the Provider detail; rows under review are marked for Editors and up and are not shown to Counsellors or Viewers. |
 | 2.71 | 19 Nov 2026 | v2.16.46 | Course detail: open the Description pipeline fold to see stages, runs and Tasks that held this course; Related insights & funding (QILT, PRISMS) is also folded. Scholarships are listed once, in the Scholarships section. Counsellors and Viewers do not see the pipeline or task buttons (check with Preview as). |
 | 2.70 | 18 Nov 2026 | v2.16.45 | Course detail: check a Counsellor or Viewer view with Preview as. Archive course, Read with AI and the Read / refresh entry requirements now panel are hidden there; only approved entry requirements show. Scholarship lists show three, then Show all (N) scholarships. |

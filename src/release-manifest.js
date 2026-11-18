@@ -1,19 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.47'
-export const PACKAGE_VERSION='0.1.469'
+export const UI_VERSION='2.16.48'
+export const PACKAGE_VERSION='0.1.470'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'19 Nov 2026',
-  title:'Around this course and provider: live figures for every role',
+  title:'Course descriptions: 1 to 2 sentences, plain-English holds and four decisions',
   changes:[
-    'Course and Provider detail › Around this course / Around this provider: Viewers and Counsellors now see the approved city climate and population figures, career outcomes and visa and living-cost figures (published editions only, student-facing fields only). The note that these figures show for Curators and above is gone.',
-    'Provider detail › Scholarships & accreditations: accreditations are listed from the provider record. Editors and Platform Admins also see rows still under review, marked as such; Counsellors and Viewers see only what the website receives.'
+    'Layer 4 Review › Inbox, Course description cards: a Why this is held box says, in plain words, why the description waits and what to do, with how firmly the page matched the course, whether every quote is on the page and the sentence count against the limit.',
+    'Course description cards have four decisions: Approve as read, Re-read (1-2 sentences) (the stored page is read again; the course is not marked bad), Approve all verified for provider (type the count shown to confirm) and Reject (bad page / wrong course). University description cards keep Approve as read and Reject.',
+    'Course descriptions are written in 1 to 2 sentences (about 180 to 360 characters) about the course\'s focus, core skills and stated career outcomes, without intake dates, campus addresses, fees or duration. A description read from the course\'s own page (its CRICOS or NZQA code, or its exact title) is admitted by the machine rule without waiting for a person.'
   ],
   bugFixes:[
-    'Around this course / Around this provider: if a figure read fails, one plain note says so instead of an empty card.'
+    'A course description card no longer says it is one of the university\'s first descriptions when that was not why it waited.'
   ]
 }
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.470 — 19 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.48** (Platform Admin 18 Nov 2026, chat S1-Courses, s662 and s664; first built 18 Nov as Pilot #1314, numbered after the canonical squash and v2.16.47). Migration `20261119060000` (md5-guarded edits of seven functions; no new table or function): course description prompt `cdesc-source-grounded-v4` (1 to 2 sentences) with worker `coverage-sweep` v1.0.23, limits 2 sentences and 360 characters, identity proof in `cdesc-machine-v2` (setting `enrich.course_description_identity_proof_on`), the first-description hold off (setting `enrich.course_description_first_hold_on`), and the Layer 4 course description card's plain-English hold box (`src/lib/cdesc-hold.js`, `CdWhy`) with Re-read (1-2 sentences) and Approve all verified for provider. Specs s662 and s664.
+
 ## 0.1.469 — 19 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.47** (Platform Admin 19 Nov 2026 05:21, item 4: "so the Around this course and Around this provider blades render live values for all roles"). Server read from Pilot #1329 (migration `20261119045000`, spec s712); no migration here. `src/CorrelatedBlade.jsx`: the destination review reads run for every StudySearch role (rank 1 and up); the read-gap note shows only when a read fails; accreditations from `provider_detail` (status shown to Editors and up as internal). Specs s694 and s696 follow.
