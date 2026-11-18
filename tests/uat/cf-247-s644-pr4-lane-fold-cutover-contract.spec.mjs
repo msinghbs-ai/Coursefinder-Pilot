@@ -14,7 +14,7 @@ test('the gate: once only, the shadow of 20261118170000 checked on today\'s runs
   expect(c).toContain("raise exception 'gate: today''s settings-backup-daily start has not succeeded with a shadow_due rollup run for its minute'")
   expect(c).toContain("raise exception 'gate: the latest finished rollup-scheduler tick did not succeed'")
   expect(m).toMatch(/^-- Early cutover \(Platform Admin 19 Nov 2026 07:47 AEDT, chat S1-Build\)/m)
-  expect(c).toContain("x.status in ('shadow_due', 'deferred')")
+  expect(c).toContain("x.due_at in (lm.m, lm.m - interval '1 minute') and x.status in ('shadow_due', 'deferred')")
   expect(c).toContain("where z.uncovered > 1 or z.refused > 0 or z.legacy_minutes = 0;")
   expect(c).toContain("raise exception 'gate: settings-backup-daily shadow does not cover its % legacy start(s)'")
   expect(c).toContain("raise exception 'gate: % of 8 legacy jobs still carry the registered command and schedule'")

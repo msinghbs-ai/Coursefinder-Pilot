@@ -15,8 +15,9 @@
 --   * today's settings-backup-daily start (06:50 AEDT) succeeded and its shadow_due rollup run holds the same minute; the latest finished
 --     rollup-scheduler tick succeeded;
 --   * minute coverage (the measure accepted for PR 1, Platform Admin 17 Nov 2026 23:20): for each of the 8 lanes, every minute its legacy job
---     started in the window has a dispatcher row for that minute (shadow_due, or deferred while the legacy job was off), at most 1 boundary minute
---     apart; no refused dispatch (call_sql changed). The dispatcher may hold more minutes than the legacy job: pg_cron skips a legacy start at
+--     started in the window has a dispatcher row for that minute or the minute before (shadow_due, or deferred while the legacy job was off; a
+--     legacy start pg_cron ran one minute late, as at 18 Nov 17:28 and 19 Nov 05:28 for central-find and ops-diagnose, belongs to the slot the
+--     dispatcher recorded), at most 1 boundary minute apart; no refused dispatch (call_sql changed). The dispatcher may hold more minutes than the legacy job: pg_cron skips a legacy start at
 --     busy minutes (cron.max_running_jobs), the dispatcher does not;
 --   * settings-backup-daily: every legacy start in the window has a shadow_due rollup run for that minute, and there was at least one;
 --   * every legacy job still carries exactly the registered command and schedule (md5), and a legacy job that is off holds a raised idle flag.
@@ -62,7 +63,7 @@ begin
     from (select fr.lane_code,
                  (select count(distinct date_trunc('minute', d.start_time)) from cron.job_run_details d where d.jobid = j.jobid and d.start_time >= v_from and d.start_time < v_to) legacy_minutes,
                  (select count(*) from (select distinct date_trunc('minute', d.start_time) m from cron.job_run_details d where d.jobid = j.jobid and d.start_time >= v_from and d.start_time < v_to) lm
-                   where not exists (select 1 from pipeline.coverage_lane_runs x where x.lane_code = fr.lane_code and x.due_at = lm.m and x.status in ('shadow_due', 'deferred'))) uncovered,
+                   where not exists (select 1 from pipeline.coverage_lane_runs x where x.lane_code = fr.lane_code and x.due_at in (lm.m, lm.m - interval '1 minute') and x.status in ('shadow_due', 'deferred'))) uncovered,  -- fixed: a legacy start that pg_cron ran one minute late (17:27 slot started 17:28) is covered by the dispatcher row for its slot
                  (select count(*) from pipeline.coverage_lane_runs x where x.lane_code = fr.lane_code and x.due_at >= v_from and x.status = 'refused') refused
             from pipeline.field_execution_registry fr join cron.job j on j.jobname = fr.legacy_job
            where fr.lane_code = any (v_lanes)) z
