@@ -28,14 +28,17 @@ with shared as (  -- the claim's own set: page text stored for more than one cou
   select e.content_hash from pipeline.evidence_artifacts e
    where e.evidence_type = 'provider_course_page_text' and e.storage_path is not null and e.content_hash is not null
    group by e.content_hash having count(distinct e.entity_id) > 1),
+x0 as materialized (  -- the items first; each course is looked up by its key
+  select x.item_key, x.entity_id, x.evidence_id, x.state from pipeline.boost_extract_items x
+   where x.lane = 'study_load' and x.entity = 'course' and x.state in ('rejected', 'failed', 'verified')
+     and exists (select 1 from catalogue.courses c where c.id = x.entity_id and c.study_load is null and c.lifecycle_status = 'active')
+     and not exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = x.entity_id and l.field in ('study_load', 'study_load_source', 'study_load_evidence_id'))),
 i as (
   select x.item_key, x.entity_id, x.evidence_id, x.state,
          (select e.id from pipeline.evidence_artifacts e where e.entity_id = x.entity_id and e.evidence_type = 'provider_course_page_text' and e.storage_path is not null
            order by e.captured_at desc nulls last limit 1) as latest_ev,
          (select s.promotion_state from pipeline.boost_inbound_staging s where s.item_key = x.item_key order by s.loaded_at desc nulls last limit 1) as last_promo
-    from pipeline.boost_extract_items x join catalogue.courses c on c.id = x.entity_id
-   where x.lane = 'study_load' and x.entity = 'course' and c.study_load is null and c.lifecycle_status = 'active'
-     and not exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = c.id and l.field in ('study_load', 'study_load_source', 'study_load_evidence_id'))),
+    from x0 x),
 r as (
   select i.item_key from i join pipeline.evidence_artifacts a on a.id = i.latest_ev
    where i.latest_ev = i.evidence_id
