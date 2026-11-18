@@ -9,6 +9,7 @@ begin
   r:=r||jsonb_build_object('cp',round(extract(epoch from clock_timestamp()-t)*1000)); t:=clock_timestamp();
   select array_agg(z.provider_id) into v_chunk from (select q.provider_id, sum(q.n) over (order by q.last_at nulls first, q.provider_id) run_n, row_number() over (order by q.last_at nulls first, q.provider_id) rn from (select pc.provider_id, pc.n, x.last_at from _pc pc left join _cp x on x.provider_id = pc.provider_id) q) z where z.rn = 1 or z.run_n <= 3000;
   create temp table _c on commit drop as select co.id course_id, co.provider_id from catalogue.courses co where co.lifecycle_status='active' and co.provider_id = any(v_chunk);
+  analyze _c;
   r:=r||jsonb_build_object('chunk_c',round(extract(epoch from clock_timestamp()-t)*1000),'nc',(select count(*) from _c),'np',cardinality(v_chunk)); t:=clock_timestamp();
   perform count(*) from _pc t2 join catalogue.providers p on p.id=t2.provider_id where nullif(btrim(p.website),'') is not null or exists(select 1 from pipeline.provider_discovery_links l where l.provider_id=t2.provider_id);
   r:=r||jsonb_build_object('site',round(extract(epoch from clock_timestamp()-t)*1000)); t:=clock_timestamp();
@@ -24,8 +25,12 @@ begin
   r:=r||jsonb_build_object('l3',round(extract(epoch from clock_timestamp()-t)*1000)); t:=clock_timestamp();
   perform count(*) from (select distinct on (course_id, field) course_id from pipeline.field_enrich_items where course_id in (select course_id from _c) order by course_id, field, id desc) x;
   r:=r||jsonb_build_object('ei',round(extract(epoch from clock_timestamp()-t)*1000)); t:=clock_timestamp();
+  perform count(*) from _c c cross join lateral (select distinct on (e.field) e.field, e.state from pipeline.field_enrich_items e where e.course_id = c.course_id order by e.field, e.id desc) x;
+  r:=r||jsonb_build_object('ei_lat',round(extract(epoch from clock_timestamp()-t)*1000)); t:=clock_timestamp();
   perform count(*) from pipeline.course_field_absence a join pipeline.field_absence_classes k on k.code=a.absence_class where a.resolved_at is null and a.course_id in (select course_id from _c);
   r:=r||jsonb_build_object('ab',round(extract(epoch from clock_timestamp()-t)*1000)); t:=clock_timestamp();
+  perform count(*) from _c c join pipeline.course_field_absence a on a.course_id = c.course_id join pipeline.field_absence_classes k on k.code=a.absence_class where a.resolved_at is null;
+  r:=r||jsonb_build_object('ab_join',round(extract(epoch from clock_timestamp()-t)*1000)); t:=clock_timestamp();
   perform count(*) from catalogue.provider_entry_matrix m cross join lateral unnest(array_remove(array[m.study_level_id], null) || coalesce(security.entry_label_levels_v1(m.level_label), '{}'::uuid[])) x where m.status = 'active' and m.course_id is null and m.matrix_kind = 'provider_minimum' and m.min_grade is not null and m.grade_scale is distinct from 'none' and m.provider_id = any(v_chunk);
   r:=r||jsonb_build_object('aer_pm',round(extract(epoch from clock_timestamp()-t)*1000)); t:=clock_timestamp();
   perform count(*) from catalogue.provider_entry_matrix m where m.status = 'active' and m.course_id is not null and m.min_grade is not null and m.grade_scale is distinct from 'none' and m.course_id in (select course_id from _c);
