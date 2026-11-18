@@ -11,7 +11,7 @@ const W = fs.readFileSync('.github/workflows/destination-run-now.yml', 'utf8')
 test('the rendered read: Firecrawl /v1/scrape with the main content only, spent first and logged, evidence kept', () => {
   expect(firecrawlScrapeBody('https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/student-500'))
     .toEqual({ url: 'https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/student-500', formats: ['html', 'markdown'], onlyMainContent: true })
-  expect(E).toContain('const VERSION = "layer1-destination-geo-loader-v1.3.0";')
+  expect(E).toMatch(/const VERSION = "layer1-destination-geo-loader-v1\.([3-9]|[1-9][0-9])\.[0-9]+";/)  // v1.3.0 brought the rendered read
   expect(E).toContain('await fetch("https://api.firecrawl.dev/v1/scrape", {')
   expect(E).toContain('if (!await rpc(service, "svc_fc_spend", { p_units: 1, p_purpose: "destination_page_facts", p_provider_id: null, p_url: pageUrl })) {')
   expect(E).toContain('await rpc(service, "svc_fc_call_log", { p: { run_id: runId, use_case: "destination_page_facts", endpoint: "v1/scrape", url: pageUrl,')

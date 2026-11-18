@@ -23,7 +23,8 @@ import { anchorWindows, extractFact, firecrawlScrapeBody, headerSample, htmlToTe
 // whose content the browser builds) is read through Firecrawl /v1/scrape (JS rendering, onlyMainContent): the spend is asked of the database
 // first (svc_fc_spend, purpose destination_page_facts, the "other" daily share and the monthly plan limit), every call is logged
 // (svc_fc_call_log), and the rendered HTML is stored as the evidence. The JSA Table 1 headings are read over two rows.
-const VERSION = "layer1-destination-geo-loader-v1.3.0";
+// v1.3.1 (18 Nov 2026, third live run): a table cell ends with a bar in the page text, so a quote keeps a row label with its value.
+const VERSION = "layer1-destination-geo-loader-v1.3.1";
 const FUNCTION_NAME = "layer1-destination-geo-loader";
 const EDITION = {
   source_url: "https://www.abs.gov.au/statistics/people/population/regional-population/2024-25/32180DS0004_2001-25.xlsx",
