@@ -1,15 +1,19 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import * as XLSX from "npm:xlsx@0.18.5";
+import { parseBomClimate } from "../_shared/cf247-bom-climate.js";
 
 // CF-247 RM1B (Platform Admin 17 Nov 2026 13:12; approvals A-1 to A-4 of 07:29 and 07:35): ABS population loader for Australian
 // destination localities. Reads ABS Regional population 2024-25, Table 2 (estimated resident population by Significant Urban Area),
 // stores the file as evidence and hands the SUA rows to public.svc_destination_abs_load_v1, which writes draft localities and figures
 // with attribution and maps postcodes from the ASGS Edition 3 shares (workflow destination-abs-shares-load).
+// Mode climate (RM1I, Platform Admin 18 Nov 2026 10:31; job destination-climate-load and Run now): reads the Bureau of Meteorology climate
+// statistics page of each active station (destination.climate_stations), stores the page as evidence and hands the parsed monthly statistics to
+// public.svc_destination_climate_load_v1, which writes nothing while the edition's terms are pending and draft figures once they are approved.
 // Run by job destination-abs-load (1st of the month, 05:30 Sydney) and Run now, each with a one-time nonce; a Platform Admin may also
 // call it signed in. A new ABS edition is a new approval (design: "Any source beyond A-1 and A-4 needs a new approval"), so the
 // edition below changes only with a reviewed code change.
-const VERSION = "layer1-destination-geo-loader-v1.0.0";
+const VERSION = "layer1-destination-geo-loader-v1.1.0";
 const FUNCTION_NAME = "layer1-destination-geo-loader";
 const EDITION = {
   source_url: "https://www.abs.gov.au/statistics/people/population/regional-population/2024-25/32180DS0004_2001-25.xlsx",
@@ -95,6 +99,37 @@ export function parseTable2(rows: unknown[][], year: string) {
   return { headerRow: hi, valueCol, rows: out };
 }
 
+// RM1I: one page per station, read in turn (eight pages); a station that fails is reported and the others still load
+async function climate(service: any, runId: string | null, trigger: string, started: number) {
+  try {
+    const cfg = await rpc(service, "svc_destination_climate_stations_v1");
+    const stations: any[] = Array.isArray(cfg?.stations) ? cfg.stations : [];
+    if (!stations.length) throw new Error("no active climate station");
+    const out: any[] = [];
+    for (const st of stations) {
+      try {
+        const bytes = await download(st.page_url);
+        const hash = await sha256(bytes);
+        const html = new TextDecoder("utf-8").decode(bytes);
+        const parsed = parseBomClimate(html);
+        if (parsed.station && parsed.station !== st.station_id) throw new Error(`page is station ${parsed.station}, expected ${st.station_id}`);
+        const path = `destination/bom/climate/${st.station_id}/${hash}.html`;
+        const up = await service.storage.from("evidence").upload(path, bytes, { contentType: "text/html", upsert: true });
+        out.push({ station_id: st.station_id, page_url: st.page_url, sha256: hash, storage_path: up.error ? null : path, prepared: parsed.prepared,
+          statistics: parsed.statistics, missing: parsed.missing });
+      } catch (e) {
+        out.push({ station_id: st.station_id, page_url: st.page_url, error: e instanceof Error ? e.message : String(e) });
+      }
+    }
+    const result = await rpc(service, "svc_destination_climate_load_v1", { p_payload: { run_id: runId, trigger, stations: out } });
+    return json({ ok: true, version: VERSION, mode: "climate", trigger, run_id: runId, ms: Date.now() - started, result });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    try { await rpc(service, "svc_destination_climate_load_v1", { p_payload: { error: `${VERSION}: ${message}`, run_id: runId, trigger } }); } catch { /* recorded below */ }
+    return json({ ok: false, version: VERSION, mode: "climate", error: message }, 500);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "POST required" }, 405);
@@ -109,6 +144,7 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: e instanceof Error ? e.message : String(e) }, 401);
   }
   const started = Date.now();
+  if (clean(body.mode) === "climate") return await climate(service, runId, trigger, started);
   try {
     const bytes = await download(EDITION.source_url);
     const hash = await sha256(bytes);
