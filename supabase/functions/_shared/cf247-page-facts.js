@@ -16,7 +16,9 @@ export function htmlToText(html) {
   s = s.replace(/<head\b[^>]*>[\s\S]*?<\/head\s*>/i, ' ')
   s = s.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, ' ')
   s = s.replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, ' ')
-  s = s.replace(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr|\/td|\/th|\/section|\/article)\b[^>]*>/gi, ' . ')
+  // 18 Nov 2026 (third live run): a table cell ends with a bar, not a stop, so a quote keeps a row's label with its value (Primary applicant | AUD29,710)
+  s = s.replace(/<\/(td|th)\b[^>]*>/gi, ' | ')
+  s = s.replace(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr|\/section|\/article)\b[^>]*>/gi, ' . ')
   s = s.replace(/<[^>]+>/g, ' ')
   s = s.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
   s = s.replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
@@ -24,6 +26,7 @@ export function htmlToText(html) {
   s = s.replace(/ /g, ' ')
   s = s.replace(/\s+/g, ' ')
   s = s.replace(/(\s\.)+/g, ' .')
+  s = s.replace(/\|\s*\./g, '.')
   return s.trim()
 }
 
