@@ -307,18 +307,22 @@ select pg_temp.cf_edit_many('security.enrich_plan_auto_v1()'::regprocedure, 'f0c
   array[$o$  select count(*) into v_open from pipeline.enrich_plan_runs where mode = 'auto' and state in ('queued', 'running');$o$],
   array[$n$  -- 20261119104500 (s720): release automatic plans whose jobs have not moved for plans.auto_stall_hours, or whose held steps all wait on budget
   -- windows that have ended; the plan is kept (cancelled, outcome released_stalled) and its jobs are not touched
+  with k as (select make_interval(hours => greatest(1, security.pipeline_num_v1('plans.auto_stall_hours', 2)::int)) iv),
+  st as (
+    select r.id from pipeline.enrich_plan_runs r, k
+     where r.mode = 'auto' and r.state in ('queued', 'running') and r.created_at < now() - k.iv
+       and ((not exists (select 1 from jsonb_array_elements(case when jsonb_typeof(r.steps) = 'array' then r.steps else '[]'::jsonb end) s
+                          join pipeline.admin_jobs j on j.id = case when s->'ref'->>'id' ~ '^[0-9a-fA-F-]{36}$' then (s->'ref'->>'id')::uuid end
+                         where s->'ref'->>'kind' = 'job' and j.updated_at > now() - k.iv))
+            or (exists (select 1 from jsonb_array_elements(case when jsonb_typeof(r.steps) = 'array' then r.steps else '[]'::jsonb end) s where s ? 'held')
+                and not exists (select 1 from jsonb_array_elements(case when jsonb_typeof(r.steps) = 'array' then r.steps else '[]'::jsonb end) s
+                                 where s ? 'held' and coalesce((s->'held'->>'ends_at')::timestamptz, 'infinity'::timestamptz) > now())))
+     for update of r skip locked)  -- a plan a worker is changing now is left for the next run
   update pipeline.enrich_plan_runs r
      set state = 'cancelled', finished_at = now(), updated_at = now(), outcome = 'released_stalled',
          outcome_detail = coalesce(r.outcome_detail, '{}'::jsonb) || jsonb_build_object('released_at', now(), 'rule', 's720',
-           'reason', 'no job movement for ' || security.pipeline_num_v1('plans.auto_stall_hours', 2)::int || ' h, or every held step waits on an ended budget window')
-   where r.mode = 'auto' and r.state in ('queued', 'running')
-     and r.created_at < now() - make_interval(hours => security.pipeline_num_v1('plans.auto_stall_hours', 2)::int)
-     and ((not exists (select 1 from jsonb_array_elements(case when jsonb_typeof(r.steps) = 'array' then r.steps else '[]'::jsonb end) s
-                        join pipeline.admin_jobs j on j.id::text = s->'ref'->>'id'
-                       where s->'ref'->>'kind' = 'job' and j.updated_at > now() - make_interval(hours => security.pipeline_num_v1('plans.auto_stall_hours', 2)::int)))
-          or (exists (select 1 from jsonb_array_elements(case when jsonb_typeof(r.steps) = 'array' then r.steps else '[]'::jsonb end) s where s ? 'held')
-              and not exists (select 1 from jsonb_array_elements(case when jsonb_typeof(r.steps) = 'array' then r.steps else '[]'::jsonb end) s
-                               where s ? 'held' and coalesce((s->'held'->>'ends_at')::timestamptz, 'infinity'::timestamptz) > now())));
+           'reason', 'no job movement for plans.auto_stall_hours, or every held step waits on an ended budget window')
+    from st where st.id = r.id;
   select count(*) into v_open from pipeline.enrich_plan_runs where mode = 'auto' and state in ('queued', 'running');$n$],
   '20261119104500 (s720)');
 
