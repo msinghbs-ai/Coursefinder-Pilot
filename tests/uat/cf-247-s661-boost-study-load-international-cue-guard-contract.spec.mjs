@@ -1,5 +1,5 @@
 // Guards: Boost study load reader, international cue guard (Platform Admin S2-Courses directive 18 Nov 2026 21:59, item 1): a course closed to international students is never read as a study load rule, nothing is inferred from "not available to international students", and an international statement needs its international and study words within 80 characters or a labelled "International ..." line; the prompt and the model route are unchanged
-// CF-247 S661. Worker coverage-sweep v1.0.21 (boost.ts selectors study-load-windows-v5 and study-load-international-v2). No migration. The sentences are those matched on the 41 stored pages settled "Not stated" (findings 18 Nov 2026). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S661. Worker coverage-sweep v1.0.22 (boost.ts selectors study-load-windows-v5 and study-load-international-v2). No migration. The sentences are those matched on the 41 stored pages settled "Not stated" (findings 18 Nov 2026). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { build } from 'esbuild'
@@ -23,8 +23,9 @@ test('versions: the reader is v6 by selector; the prompt and the route are uncha
   expect(B.BOOST_SELECTOR).toBe('study-load-windows-v5')
   expect(B.BOOST_SELECTOR_INTERNATIONAL).toBe('study-load-international-v2')
   expect(B.BOOST_STUDY_LOAD_PROMPT_VERSION).toBe('boost-study-load-v5')  // the route qualification is tied to the prompt version (a migration), so the prompt text stays
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.21"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.22"')
   expect(BX).toMatch(/const INTL_NEAR = 80;\s+\/\/ fixed: /)
+  expect(BX).toMatch(/const INTL_LABEL_NEAR = 160;\s+\/\/ fixed: /)
   expect(BX).toMatch(/const LOAD_SUBJECT_GAP = 40;\s+\/\/ fixed: /)
 })
 
@@ -67,9 +68,22 @@ test('proximity: the international word and the study word lie within 80 charact
   }
   expect(B.internationalNear(DARWIN_TABLE)).toBe(true)
   // exactly at the width
-  const at = (gap) => `international${' '.repeat(gap)}full-time`
+  const at = (gap) => `international students${' '.repeat(gap)}full-time`
   expect(B.internationalNear(at(80))).toBe(true)
   expect(B.internationalNear(at(81))).toBe(false)
+})
+
+test('live false matches of the first inspection (18 Nov 2026 22:25): a CRICOS code, a course title or a far label is not an international statement', () => {
+  const no = ['1 year full-time, or part-time equivalent Starts SMAH Annual 2026 Codes CRICOS: 012095M UOW: 862 Overview This one-year degree is designed for students who must have completed a Bachelor of Nursing',
+    'Short courses International Exchange - One Sem 0.5 year/s full-time Not available to domestic students.',
+    'Master of Business Administration (International) 2 years full-time and you must hold an AQF level 7 degree',
+    'Master of Applied Human Performance Science Status Not available in 2027 CRICOS code 073570 Attendance Full-time only']
+  for (const x of no) expect(B.internationalStudySentences(x), x).toEqual([])
+  // a label counts only with its study word close after it
+  const far = `International - Academic and English Requirements ${'You must meet the entry requirements set out for every pathway and intake of the provider. '.repeat(3)}at least one year of full-time studies`
+  expect(B.internationalNear(far)).toBe(false)
+  // what names the student still counts
+  for (const x of ['Note: International students studying in Australia on a student visa may only take this course in on-campus mode full time.', 'Student Visa holders must study internally full time.', 'International onshore Study mode: Full time']) expect(B.internationalNear(x), x).toBe(true)
 })
 
 test('earlier rules are unchanged: fee, work and definition lines are still not a load; a general statement still passes', () => {

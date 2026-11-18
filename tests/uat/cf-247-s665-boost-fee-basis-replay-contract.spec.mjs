@@ -9,7 +9,8 @@ const W = fs.readFileSync('.github/workflows/boost-fields-replay.yml', 'utf8')
 test('the gold query holds the fee basis: provider annual bases are "year", provider and registered whole-course totals are "total"', () => {
   expect(S).toContain("case when f.basis in ('annual', 'indicative_annual', 'current indicative annual international tuition') then 'year' else 'total' end")
   expect(S).toContain("f.fee_type = 'provider_current_tuition' and f.basis in ('annual', 'indicative_annual', 'current indicative annual international tuition', 'total_indicative')")
-  expect(S).toContain("f.fee_type = 'tuition' and f.basis = 'registered_total_course'")
+  expect(S).toContain("f.fee_type in ('tuition', 'estimated_total_course_cost') and f.basis = 'registered_total_course'")  // a page's "Total course cost" includes non-tuition fees
+  expect(S).toContain("if (f.value?.audience === 'domestic') { bump(lane, 'gold_not_comparable'); continue }")
   expect(S).toContain("f.status = 'active'")
   expect(S).toContain("f.audience = 'international'")
   // a separate stratum draws pages of courses whose provider states a whole-course total, so the total basis is tested at all
@@ -24,6 +25,11 @@ test('an answer is compared with held fees of its own basis only', () => {
   expect(S).toContain("bump(lane, `${cls}_${agree ? 'agree' : 'disagree'}`)")
   // the old comparison, any held amount against any answer, is gone
   expect(S).not.toContain('agree = p.fees.some(')
+})
+
+test('intakes: an answer that lists every held month and more is counted, so the intake question can be asked', () => {
+  expect(S).toContain("bump(lane, 'gold_superset')")
+  expect(S).toContain('the S2-Intakes question')
 })
 
 test('the report shows each basis on its own row and says what was not compared', () => {
