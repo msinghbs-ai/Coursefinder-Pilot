@@ -104,9 +104,9 @@ select pg_temp.cf_edit_many('security.course_coverage_build_v1()'::regprocedure,
      where co.lifecycle_status='active' group by co.provider_id;
   -- the providers that have coverage rows (a walk of the provider index) and when each was built (one row each; a run writes one time per provider)
   create temp table _cp on commit drop as
-  with recursive p as (select min(x.provider_id) id from pipeline.course_attribute_coverage x
+  with recursive p as (select (select x.provider_id from pipeline.course_attribute_coverage x order by x.provider_id limit 1) id
                        union all
-                       select (select min(x.provider_id) from pipeline.course_attribute_coverage x where x.provider_id > p.id) from p where p.id is not null)
+                       select (select x.provider_id from pipeline.course_attribute_coverage x where x.provider_id > p.id order by x.provider_id limit 1) from p where p.id is not null)
   select p.id provider_id, (select x.computed_at from pipeline.course_attribute_coverage x where x.provider_id = p.id limit 1) last_at from p where p.id is not null;
   select array_agg(z.provider_id) into v_chunk from (
     select q.provider_id, sum(q.n) over (order by q.last_at nulls first, q.provider_id) run_n, row_number() over (order by q.last_at nulls first, q.provider_id) rn
