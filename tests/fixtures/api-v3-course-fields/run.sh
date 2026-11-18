@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Guards: API v3 course fields and city profiles edition rows (Platform Admin 18 Nov 2026 10:33 and 10:34, ref G7QN3W) and G4 database-backed tests:
-# migration 20261118123707 on top of the destination schema (20261115190000, 20261115230000, 20261117040000, 20261117131500) and the v3 course item
+# migration 20261118133707 on top of the destination schema (20261115190000, 20261115230000, 20261117040000, 20261117131500) and the v3 course item
 # (20261113180000) runs on an isolated PostgreSQL 16 (fixtures only, never a Supabase project). It proves: the migration applies twice; every v3 course
 # item carries study_load and empty_reason_code from the catalogue, each campus the approved locality its postcode maps to (never a draft one), and the
 # provider's active, unexpired accreditations; the intake reading is unchanged; the provider action carries accreditations; a city profiles edition
@@ -13,7 +13,7 @@ DB=${V3CF_DB:-g_api_v3_course_fields}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 F=tests/fixtures/api-v3-course-fields
-M=supabase/migrations/20261118123707_cf247_api_v3_course_study_load_edition_rows.sql
+M=supabase/migrations/20261118133707_cf247_api_v3_course_study_load_edition_rows.sql
 trap '[ -n "${V3CF_KEEP:-}" ] || dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
 dropdb --if-exists $DB >/dev/null 2>&1; createdb $DB
 psql -X -q -d postgres -c "do \$\$ begin if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if; if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if; if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role; end if; end \$\$"

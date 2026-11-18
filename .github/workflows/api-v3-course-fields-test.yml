@@ -1,9 +1,9 @@
-# Guards: API v3 course fields and city profiles edition rows (Platform Admin 18 Nov 2026 10:33 and 10:34, ref G7QN3W) and G4 database-backed tests: migration 20261118123707 runs its functions on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
+# Guards: API v3 course fields and city profiles edition rows (Platform Admin 18 Nov 2026 10:33 and 10:34, ref G7QN3W) and G4 database-backed tests: migration 20261118133707 runs its functions on an isolated PostgreSQL 16 (fixtures only, never a Supabase project).
 name: API v3 course fields integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261118123707_cf247_api_v3_course_study_load_edition_rows.sql'
+      - 'supabase/migrations/20261118133707_cf247_api_v3_course_study_load_edition_rows.sql'
       - 'supabase/migrations/20261113180000_cf247_website_api_v3_r28.sql'
       - 'tests/fixtures/api-v3-course-fields/**'
       - 'tests/fixtures/destination-admin-ui/stubs.sql'

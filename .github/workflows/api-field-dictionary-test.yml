@@ -6,7 +6,7 @@ on:
       - 'supabase/migrations/20261115190000_api_v3_additive_schema.sql'
       - 'supabase/migrations/20261116110000_cf247_api_field_dictionary_sync.sql'
       - 'supabase/migrations/20261117061000_cf247_api_field_dictionary_destination.sql'
-      - 'supabase/migrations/20261118123717_cf247_api_field_dictionary_course_study_load.sql'
+      - 'supabase/migrations/20261118133717_cf247_api_field_dictionary_course_study_load.sql'
       - 'docs/api/v3/field-dictionary.json'
       - 'scripts/api-v3-field-dictionary.mjs'
       - 'tests/fixtures/api-field-dictionary/**'

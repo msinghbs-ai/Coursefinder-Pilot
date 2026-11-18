@@ -1,5 +1,5 @@
 -- CF-247 API v3 field dictionary: study_load, empty_reason_code, campuses[].locality and provider.accreditations on the v3 course actions, and
--- accreditations on the provider action (S1-RM-Design, Platform Admin 18 Nov 2026 10:33; served from migration 20261118123707).
+-- accreditations on the provider action (S1-RM-Design, Platform Admin 18 Nov 2026 10:33; served from migration 20261118133707).
 -- Replaces: nothing (20261116110000 keeps the sync and drift functions; this file only loads the next reviewed list)
 -- Retires: nothing
 --
