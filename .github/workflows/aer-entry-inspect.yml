@@ -29,6 +29,14 @@ jobs:
           node-version: 22
       - name: Export the stored pages
         run: node scripts/aer-entry-inspect.mjs "${{ inputs.rules }}"
+      # the same file, gzipped and base64 in marked lines of the job log, for a session whose network cannot reach the artifact store (19 Nov 2026)
+      - name: Print the export to the log
+        if: ${{ always() }}
+        run: |
+          if [ -f out/aer-entry-pages.json ]; then
+            gzip -9 -c out/aer-entry-pages.json | base64 -w 3000 | sed 's/^/AERPAGES:/'
+            echo "AERPAGES-SHA256:$(sha256sum out/aer-entry-pages.json | cut -d' ' -f1)"
+          fi
       - uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:
