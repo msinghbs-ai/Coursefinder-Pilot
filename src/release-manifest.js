@@ -1,12 +1,12 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.47'
-export const PACKAGE_VERSION='0.1.469'
+export const UI_VERSION='2.16.48'
+export const PACKAGE_VERSION='0.1.470'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'18 Nov 2026',
+  date:'19 Nov 2026',
   title:'Course descriptions: 1 to 2 sentences, plain-English holds and four decisions',
   changes:[
     'Layer 4 Review › Inbox, Course description cards: a Why this is held box says, in plain words, why the description waits and what to do, with how firmly the page matched the course, whether every quote is on the page and the sentence count against the limit.',

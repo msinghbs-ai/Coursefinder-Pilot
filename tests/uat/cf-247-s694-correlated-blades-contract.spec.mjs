@@ -88,7 +88,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page, { rank: 6 })
     await routeCorrelated(page)
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_read', (r) => (r.request().postDataJSON() || {}).p_operation === 'provider_detail'
-      ? r.fulfill({ json: { id: 'p1', canonical_name: 'RMIT University', country_code: 'AU', course_count: 509, scholarship_count: 307, publication_status: 'published' } }) : r.fallback())
+      ? r.fulfill({ json: { id: 'p1', canonical_name: 'RMIT University', country_code: 'AU', course_count: 509, scholarship_count: 307, publication_status: 'published', accreditations: [{ body_code: 'AMBA', status: 'under_review' }] } }) : r.fallback())
     await page.goto('/#providers?id=p1')
     const p = page.locator('[data-correlated="provider"]')
     await expect(p).toBeVisible()
@@ -98,6 +98,8 @@ test.describe('mocked browser', () => {
     await expect(p.locator('[data-cb-card="campus_cities"] [data-cb-city="Melbourne"] [data-cb-fact="population"]')).toContainText('5,350,705')
     await expect(p.locator('[data-cb-card="campus_cities"] [data-vis="layer4_queue_state"]')).toBeVisible()
     await expect(p.locator('[data-cb-fact="accreditations"]')).toBeVisible()
+    // v2.16.47 (s712): accreditations come from provider_detail; a row under review is marked for Editors and up
+    await expect(p.locator('[data-cb-accreditation="AMBA"]')).toContainText('AMBA (under review)')
     await expect(p.locator('[data-cb-fact="registration"]')).toContainText('00122A')
   })
 })

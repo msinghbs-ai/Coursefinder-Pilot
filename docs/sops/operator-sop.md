@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.32; reviewed-release=2.16.47; source-commit=5b31009899a7+local; content-sha256=ee0dadc156a73cacba20310491f67ab4e69a371e78d00235df1f8cfad7ab80f6 -->
+<!-- sop-export: id=operator-sop; version=2.33; reviewed-release=2.16.48; source-commit=5b4e09cec38e+local; content-sha256=95f8aeaff3e86ba4069dc0d8b7d1d91c27d9f0f5e1a546c1b019807d8002de8c -->
 # StudySearch – Operator SOP
 
-**Version:** 2.32 (reviewed for platform release v2.16.47)  
+**Version:** 2.33 (reviewed for platform release v2.16.48)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -99,7 +99,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 - Operations lane funnels: read each lane stage by stage. A green job, a stage transfer and published data are different things; a lane with items waiting for a person needs a decision from a person. Firecrawl allowance and remaining credits are read only; check the room above the reserved floor before asking for more course-link work.
 - English faculty and course-group scores wait for Platform Admin approval and explicit binding; No rule yet and held course-specific cases remain visible without invented coverage.
 - Course descriptions: distinguish proposed, human-admitted and actually published counts. Review held evidence and use Previous on the final reviewer page.
-- Course descriptions (v2.16.47): each card says why it is held and what to do. Re-read (1-2 sentences) re-reads the stored page without marking the course bad; Approve all verified for provider asks you to type the count it shows.
+- Course descriptions (v2.16.48): each card says why it is held and what to do. Re-read (1-2 sentences) re-reads the stored page without marking the course bad; Approve all verified for provider asks you to type the count it shows.
 - An application deadline must quote an actual closing date; commencement and intake dates are not closing dates. Escalate incorrect records without removing human locks.
 - Task manager › Background jobs: a job Failing, or a worker repeating the same error.
 - Layer 4 waiting counts rising two days running: find out why before working harder (reviewers behind, a burst of new arrivals, evidence that cannot be opened, the same defect repeating, or work waiting on another step).
@@ -117,7 +117,8 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
-| 2.32 | 19 Nov 2026 | v2.16.47 | Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. |
+| 2.33 | 19 Nov 2026 | v2.16.48 | Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. |
+| 2.32 | 19 Nov 2026 | v2.16.47 | Around this course and Around this provider now show the approved city, career and visa figures to you as well. Accreditations show on the Provider detail. |
 | 2.31 | 19 Nov 2026 | v2.16.46 | Course detail: the Description pipeline and Related insights & funding are folded; open them when you need them. Scholarships are listed once. |
 | 2.30 | 18 Nov 2026 | v2.16.45 | Course detail: Counsellors and Viewers see approved entry requirements only, and scholarship lists show three with Show all (N) scholarships. |
 | 2.29 | 18 Nov 2026 | v2.16.44 | Course and Provider detail show the campus city weather and population, careers, visa and living-cost rules, rankings and scholarships in a read-only block. Use Preview as (Editors and above) to see the Counsellor view. |
