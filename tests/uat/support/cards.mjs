@@ -31,7 +31,9 @@ export async function openAdapter(page, id, blocks = []) {
 }
 
 // SS-020 step 2 (Decision 269, 3 Nov 2026): Scheduled jobs › Automations areas start closed. Opens every area on the page.
-export async function openAutomationAreas(page) {
+// v2.16.39 (Platform Admin 18 Nov 2026 12:50): retired legacy jobs are hidden until "Show retired legacy jobs" is ticked; { retired: true } ticks it first.
+export async function openAutomationAreas(page, { retired = false } = {}) {
+  if (retired) await page.locator('[data-au-show-retired]').check()
   await page.locator('[data-area-toggle]').first().waitFor()
   const closed = page.locator('[data-area-toggle][aria-expanded="false"]')
   for (let n = await closed.count(); n > 0; n = await closed.count()) await closed.first().click()

@@ -60,7 +60,7 @@ const readSel=()=>{try{return JSON.parse(sessionStorage.getItem(SEL)||'null')}ca
 export default function Layer4Inbox({onError,routeParams}){
   const want=routeParams?.get?.('kind')||'',wantProvider=routeParams?.get?.('provider')||'',wantView=routeParams?.get?.('view')||'',wantRef=routeParams?.get?.('ref')||'',wantAt=routeParams?.get?.('review_at')||'' // v2.15.343: the Dashboard opens the Inbox by kind (?view=kind)
   const[grp,setGrp]=useState(''),[gtick,setGtick]=useState(0)
-  const[sum,setSum]=useState(null),[view,setView]=useState(wantProvider?'university':want?'kind':wantView==='kind'?'kind':'university'),[kind,setKind]=useState(want),[q,setQ]=useState('')
+  const[sum,setSum]=useState(null),[view,setView]=useState(wantProvider?'university':want?'kind':['kind','grid','decided'].includes(wantView)?wantView:'university') /* v2.16.39: ?view=grid and ?view=decided open those views (Evidence links here) */,[kind,setKind]=useState(want),[q,setQ]=useState('')
   const[unis,setUnis]=useState(null),[offset,setOffset]=useState(0),[pick,setPick]=useState(null),[items,setItems]=useState(null),[note,setNote]=useState('')
   const[cur,setCur]=useState(null),[stack,setStack]=useState([]),restored=useRef(readPos()),hold=useRef(true)
   const linkedPosition=useRef('')

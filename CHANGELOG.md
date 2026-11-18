@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.463 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.41** (Platform Admin 18 Nov 2026 12:50, Operations screens aligned with the consolidated dispatchers; S1-RM-Design, beside S2-Build's backend v2.16.39; v2.16.40 was S2-Build's Layer 4 grouped decisions). No migration. Automations: Dispatchers panel (rollup-scheduler, admission-rule-runner, coverage-lane-dispatch) and retired legacy jobs behind Show retired legacy jobs. Platform health: Open issues and check links named from the menu (Work queues became Queues & yield). Storage & retention: new `src/StagingRetention.jsx` (Storage now). Evidence: Where evidence comes from, linked to the Audit trail. Layer 4 › Inbox opens `?view=grid` and `?view=decided`. Spec s640; s203, s206, s209 and the control sweep tick Show retired legacy jobs (guards unchanged). Admin SOP 2.65, Operator SOP 2.26.
+
 ## 0.1.462 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.40** (Platform Admin 18 Nov 2026 13:02). Migration `20261118162000` (s639): Layer 4 › Inbox › Grid › Grouped decisions (`security.layer4_decision_groups_v1`, `public.admin_layer4_group_decide_read_v1`, `public.admin_layer4_group_decide_v1`, `src/Layer4GroupDecide.jsx`): AER items held only for a shared stored page (237 live, 125 in 60 groups) and refused study loads with the same quote (252 in 48 groups); each item through `admin_layer4_inbox` at the single item's rank; audit samples never grouped. Decision A2 amended for shared-page groups only.

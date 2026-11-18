@@ -17,15 +17,28 @@ import PipelineMaintenance from'./PipelineMaintenance'
 
 
 const STATUS={succeeded:['success','Succeeded'],failed:['danger','Failed'],running:['info','Running'],starting:['info','Starting']}
+// v2.16.39 (Platform Admin 18 Nov 2026 12:50, Operations aligned with the consolidated dispatchers): the three dispatchers that took over the
+// legacy scheduled jobs (CURRENT-STATE section 4) lead the tab, each with its lanes; jobs a dispatcher (or another job) replaced are retired and
+// are hidden until "Show retired legacy jobs" is ticked, so the counts above are the jobs that still matter.
+export const DISPATCHERS=[
+  {job:'rollup-scheduler',label:'Reports and caches',what:'Runs every report and cache refresh from its own list (pipeline.rollup_targets).'},
+  {job:'admission-rule-runner',label:'Admission rules',what:'Runs every admission rule from its own list (pipeline.admission_rules), in three lanes.'},
+  {job:'coverage-lane-dispatch',label:'Coverage lanes',what:'Runs the coverage worker lanes from the field execution registry (pipeline.field_execution_registry), in three lanes.'},
+]
+export const lanesOf=(jobs,base)=>jobs.filter(j=>j.job===base||new RegExp(`^${base}-[a-z]$`).test(j.job))
+export const replacedBy=(jobs,base)=>jobs.filter(j=>j.retirement&&String(j.retirement.replaced_by||'').startsWith(base)).length
+export const isRetired=j=>Boolean(j?.retirement)
+
 const ACTION_LABEL={pause:'Paused',resume:'Resumed',pause_area:'Area paused',resume_area:'Area resumed',run_now:'Run now',set_every:'Frequency changed',set_batch:'Batch size changed'}
 
 // v2.15.131 (au-error-text): known database errors in plain words; the original text stays in the tooltip.
 export default function Automations({onError}){
-  const[data,setData]=useState(null),[busy,setBusy]=useState(false),[failed,setFailed]=useState(''),[area,setArea]=useState('all'),[show,setShow]=useState('all'),[q,setQ]=useState('')
+  const[data,setData]=useState(null),[busy,setBusy]=useState(false),[failed,setFailed]=useState(''),[area,setArea]=useState('all'),[show,setShow]=useState('all'),[q,setQ]=useState(''),[retired,setRetired]=useState(false)
   const load=async()=>{setBusy(true);setFailed('');try{const{data:d,error}=await supabase.rpc('admin_automations_read');if(error)throw error;setData(d||{})}catch(e){setFailed(e.message||String(e))}finally{setBusy(false)}}
   const act=async(job,action,args={},confirmText)=>{if(confirmText&&!window.confirm(confirmText))return false;setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_automation_control',{p_job:job,p_action:action,p_args:args});if(error)throw error;setData(d||{});return true}catch(e){onError?.(e.message||String(e));return false}finally{setBusy(false)}}
   useEffect(()=>{load()},[])
-  const jobs=data?.jobs||[],rank=Number(data?.rank||0)
+  const everyJob=data?.jobs||[],rank=Number(data?.rank||0),retiredCount=everyJob.filter(isRetired).length
+  const jobs=useMemo(()=>retired?everyJob:everyJob.filter(j=>!isRetired(j)),[everyJob,retired])
   const areas=useMemo(()=>[...new Set(jobs.map(j=>j.area))],[jobs])
   const shown=jobs.filter(j=>(area==='all'||j.area===area)&&(show==='all'||(show==='paused'&&!j.active)||(show==='failed'&&Number(j.failed_24h)>0))&&(!q||`${j.label} ${j.description} ${j.job}`.toLowerCase().includes(q.toLowerCase())))
   if(!data&&!failed)return <section className="m-panel"><Loading label="Loading automations…"/></section>
@@ -34,8 +47,9 @@ export default function Automations({onError}){
   return <>
     {/* Pipeline Maintenance Mode (Platform Admin 15 Nov 2026): pause every job before a database change, resume exactly those jobs */}
     <PipelineMaintenance rank={rank} onError={onError} onChanged={load}/>
+    <Dispatchers jobs={everyJob}/>
     <div className="cf-metric-grid">
-      <Metric label="Automations" value={`${jobs.length-paused} running`} detail={paused?`${paused} paused`:'None paused'} icon={AlarmClock} tone={paused?'warning':'success'}/>
+      <Metric label="Automations" value={`${fmtNumber(jobs.length-paused)} running`} detail={`${paused?`${fmtNumber(paused)} paused`:'None paused'}${!retired&&retiredCount?` · ${fmtNumber(retiredCount)} retired, hidden`:''}`} icon={AlarmClock} tone={paused?'warning':'success'}/>
       <Metric label="Runs in the last 24 hours" value={fmtNumber(runs)} icon={Zap}/>
       <Metric label="Failed in the last 24 hours" value={failing?`${failing} automation${failing===1?'':'s'}`:'None'} tone={failing?'danger':'success'} icon={AlarmClock}/>
     </div>
@@ -44,17 +58,33 @@ export default function Automations({onError}){
         <input className="au-search" type="search" placeholder="Find an automation" value={q} onChange={e=>setQ(e.target.value)} aria-label="Find an automation"/>
         <select className="fv-filter" value={area} onChange={e=>setArea(e.target.value)} aria-label="Area"><option value="all">All areas</option>{areas.map(a=><option key={a} value={a}>{a}</option>)}</select>
         <select className="fv-filter" value={show} onChange={e=>setShow(e.target.value)} aria-label="Show"><option value="all">All</option><option value="paused">Paused ({paused})</option><option value="failed">Failed in 24h ({failing})</option></select>
+        <label className="fcc-only au-retired-toggle"><input type="checkbox" checked={retired} onChange={e=>setRetired(e.target.checked)} data-au-show-retired/> Show retired legacy jobs ({fmtNumber(retiredCount)})</label>
         <Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button></div>}/>
       {rank<5&&<p className="l3v-note">You can view automations. Each one names the role that changes it (PIM Admin or Platform Admin): note the job, the error and when, and hand it to that role.</p>}
     </section>
     {/* SS-020 step 2 (Decision 269, 3 Nov 2026): each area starts collapsed (the tab was about 40,800 px with 486 buttons); a search or a
         Paused or Failed filter opens the areas that match, and an area with a failure in 24 hours says so on its closed header */}
-    {areas.filter(a=>shown.some(j=>j.area===a)).map(a=><AreaPanel key={a} area={a} jobs={shown.filter(j=>j.area===a)} all={jobs.filter(j=>j.area===a)} rank={rank} busy={busy} act={act} filtered={Boolean(q)||show!=='all'}/>)}
+    {areas.filter(a=>shown.some(j=>j.area===a)).map(a=><AreaPanel key={a} area={a} jobs={shown.filter(j=>j.area===a)} all={jobs.filter(j=>j.area===a)} rank={rank} busy={busy} act={act} filtered={Boolean(q)||show!=='all'||retired}/>)}
     {!shown.length&&<section className="m-panel"><Empty text="No automation matches."/></section>}
     <section className="m-panel"><SectionTitle title="Recent changes"/>
-      {(data.events||[]).length?<ul className="l3c-events">{data.events.map((e,i)=><li key={i}><span>{fmtDateTime(e.at)}</span><strong>{ACTION_LABEL[e.action]||e.action}</strong><small>{[jobs.find(j=>j.job===e.target)?.label||e.target,e.detail?.minutes&&EVERY.find(x=>x[0]===Number(e.detail.minutes))?.[1],e.detail?.batch&&`batch ${e.detail.batch}`].filter(Boolean).join(' · ')}</small></li>)}</ul>:<Empty text="No changes recorded."/>}
+      {(data.events||[]).length?<ul className="l3c-events">{data.events.map((e,i)=><li key={i}><span>{fmtDateTime(e.at)}</span><strong>{ACTION_LABEL[e.action]||e.action}</strong><small>{[everyJob.find(j=>j.job===e.target)?.label||e.target,e.detail?.minutes&&EVERY.find(x=>x[0]===Number(e.detail.minutes))?.[1],e.detail?.batch&&`batch ${e.detail.batch}`].filter(Boolean).join(' · ')}</small></li>)}</ul>:<Empty text="No changes recorded."/>}
     </section>
   </>
+}
+
+function Dispatchers({jobs}){
+  return <section className="m-panel au-dispatchers" data-au-dispatchers>
+    <SectionTitle icon={Zap} title="Dispatchers" subtitle="Three dispatchers run what used to be separate scheduled jobs. Each takes its work from its own list every minute; the jobs it replaced are retired and kept switched off until they are removed."/>
+    <div className="au-dispatcher-grid">{DISPATCHERS.map(d=>{const lanes=lanesOf(jobs,d.job),on=lanes.filter(j=>j.active).length,runs=lanes.reduce((n,j)=>n+Number(j.runs_24h||0),0),bad=lanes.reduce((n,j)=>n+Number(j.failed_24h||0),0)
+      const last=lanes.map(j=>j.last).filter(Boolean).sort((a,b)=>String(b.at).localeCompare(String(a.at)))[0],took=replacedBy(jobs,d.job)
+      const tone=!lanes.length?'neutral':on<lanes.length?'warning':bad?'danger':'success'
+      return <article key={d.job} className="au-dispatcher" data-au-dispatcher={d.job}>
+        <header><strong>{d.label}</strong><StatusChip value={tone} tone={tone} label={!lanes.length?'Not found':on===lanes.length?(bad?'Failures in 24 hours':'Running'):`${on} of ${lanes.length} lanes on`}/></header>
+        <code>{d.job}</code><p>{d.what}</p>
+        <dl><div><dt>Lanes</dt><dd>{fmtNumber(lanes.length)}</dd></div><div><dt>Runs in 24 hours</dt><dd>{fmtNumber(runs)}</dd></div><div><dt>Failed</dt><dd className={bad?'l3v-bad':''}>{fmtNumber(bad)}</dd></div><div><dt>Legacy jobs replaced</dt><dd data-au-replaced>{fmtNumber(took)}</dd></div></dl>
+        <small>{last?`Last run ${fmtDateTime(last.at)}`:'Not run yet'}</small>
+      </article>})}</div>
+  </section>
 }
 
 function AreaPanel({area,jobs,all,rank,busy,act,filtered}){

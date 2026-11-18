@@ -64,7 +64,7 @@ test.describe('mocked browser', () => {
         retirement: { status: 'retiring', replaced_by: 'Layer 4 review', retire_after: '2026-11-14' } },
       { job: 'layer4-ok', area: 'Layer 4', sort: 2, label: 'Active job', description: '', schedule: '*/10 * * * *', active: false, control_rank: 6, catalogued: true, runs_24h: 1, failed_24h: 0 }] } }))
     await page.goto('/#scheduled-jobs')
-    await openAutomationAreas(page) // SS-020 step 2: areas start closed
+    await openAutomationAreas(page, { retired: true }) // SS-020 step 2: areas start closed; v2.16.39: retired jobs shown on request
     const retired = page.locator('[data-job="l4-rule-low-agreement"]')
     await expect(retired).toContainText('Retiring')
     await expect(retired.locator('[data-retired-job]')).toContainText('replaced by Layer 4 review')
