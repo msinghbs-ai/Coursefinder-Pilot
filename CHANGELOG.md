@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.461 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.39** (Platform Admin 18 Nov 2026 12:49). Migration `20261118160000` (s636): Task manager reads within the statement time-out (index-backed task runner lookup); 254 entry requirement tasks stranded on the switched-off route closed with their reason and the scheduled entry reading held while the route is off; health stall check, work-queue watchdog and Find course pages block reason follow the dispatchers and recorded pauses; new Platform health checks Dispatchers, Boost, Layer 4 backlog and Guardrails (rollup-scheduler target `platform-health-consolidated`); Storage & retention staging figures (`security.retention_storage_v1`); Evidence audit trail (`public.admin_ops_audit_v1`, `src/EvidenceAuditTrail.jsx`).
+
 ## 0.1.460 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.38** (Platform Admin 18 Nov 2026 10:31, 10:33 and 12:21). No migration. New `src/Layer1BaselinePreview.jsx`: Layer 1 › + Add source, step 1, shows What this source will create for the chosen target record type (baseline records from S2-Build #1258 and #1263, their rules, and the API v3 fields filled). It calls nothing. Spec s635. Admin SOP 2.63.
