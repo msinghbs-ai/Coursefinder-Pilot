@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.29; reviewed-release=2.16.44; source-commit=0cee260370be+local; content-sha256=4537bbe0ca615304f8a1385afe9354940b4ee251f724958f234195cbe3996968 -->
+<!-- sop-export: id=operator-sop; version=2.30; reviewed-release=2.16.45; source-commit=497fa8b586d4+local; content-sha256=4d7672ce9d62ff7355f90ca35462cd60a49ff24ba724687a1b34b8849b4d85b2 -->
 # StudySearch – Operator SOP
 
-**Version:** 2.29 (reviewed for platform release v2.16.44)  
+**Version:** 2.30 (reviewed for platform release v2.16.45)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -99,7 +99,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 - Operations lane funnels: read each lane stage by stage. A green job, a stage transfer and published data are different things; a lane with items waiting for a person needs a decision from a person. Firecrawl allowance and remaining credits are read only; check the room above the reserved floor before asking for more course-link work.
 - English faculty and course-group scores wait for Platform Admin approval and explicit binding; No rule yet and held course-specific cases remain visible without invented coverage.
 - Course descriptions: distinguish proposed, human-admitted and actually published counts. Review held evidence and use Previous on the final reviewer page.
-- Course descriptions (v2.16.44): each card says why it is held and what to do. Re-read (1-2 sentences) re-reads the stored page without marking the course bad; Approve all verified for provider asks you to type the count it shows.
+- Course descriptions (v2.16.45): each card says why it is held and what to do. Re-read (1-2 sentences) re-reads the stored page without marking the course bad; Approve all verified for provider asks you to type the count it shows.
 - An application deadline must quote an actual closing date; commencement and intake dates are not closing dates. Escalate incorrect records without removing human locks.
 - Task manager › Background jobs: a job Failing, or a worker repeating the same error.
 - Layer 4 waiting counts rising two days running: find out why before working harder (reviewers behind, a burst of new arrivals, evidence that cannot be opened, the same defect repeating, or work waiting on another step).
@@ -117,7 +117,8 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
-| 2.29 | 18 Nov 2026 | v2.16.44 | Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. |
+| 2.30 | 18 Nov 2026 | v2.16.45 | Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. |
+| 2.29 | 18 Nov 2026 | v2.16.44 | Course and Provider detail show the campus city weather and population, careers, visa and living-cost rules, rankings and scholarships in a read-only block. Use Preview as (Editors and above) to see the Counsellor view. |
 | 2.28 | 18 Nov 2026 | v2.16.43 | Layer 4 › Inbox › Grid › Clusters shows items that share a university, a reason and a quote. Settle a cluster only when every item in it truly takes the same decision; open it first. |
 | 2.27 | 18 Nov 2026 | v2.16.42 | Coverage & completeness › Courses › Coverage now: read Readiness by country and the fields with the lowest share; Enrich fields keeps the stalled-field controls. |
 | 2.26 | 18 Nov 2026 | v2.16.41 | Scheduled jobs › Automations: the Dispatchers panel at the top shows whether the three dispatchers and their lanes are running; a failure there is the first thing to report. Retired legacy jobs are hidden unless you tick Show retired legacy jobs. Evidence: Where evidence comes from filters by what wrote the page, and opens the Audit trail. Open issues links now say Queues & yield. |

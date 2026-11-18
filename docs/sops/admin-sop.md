@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.69; reviewed-release=2.16.44; source-commit=0cee260370be+local; content-sha256=4c5dbf642541e264342097a11c4e7c869d4800513344ba4e48a6e6d0ae1196b6 -->
+<!-- sop-export: id=admin-sop; version=2.70; reviewed-release=2.16.45; source-commit=497fa8b586d4+local; content-sha256=1af8f119ae1e87803a501cdb11234b5510dd5b7c5f5cfe5c62938eef3be0e2a7 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.69 (reviewed for platform release v2.16.44)  
+**Version:** 2.70 (reviewed for platform release v2.16.45)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -120,7 +120,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 - Operations lane funnels: read each lane stage by stage. A green job, a stage transfer and published data are different things; a lane with items waiting for a person needs a decision from a person. Firecrawl allowance and remaining credits are read only; check the room above the reserved floor before asking for more course-link work.
 - English faculty and course-group scores wait for Platform Admin approval and explicit binding; No rule yet and held course-specific cases remain visible without invented coverage.
 - Course descriptions: distinguish proposed, human-admitted and actually published counts. Review held evidence and use Previous on the final reviewer page.
-- Course descriptions (v2.16.44): each card says why it is held and what to do. Re-read (1-2 sentences) re-reads the stored page without marking the course bad; Approve all verified for provider asks you to type the count it shows.
+- Course descriptions (v2.16.45): each card says why it is held and what to do. Re-read (1-2 sentences) re-reads the stored page without marking the course bad; Approve all verified for provider asks you to type the count it shows.
 - An application deadline must quote an actual closing date; commencement and intake dates are not closing dates. Escalate incorrect records without removing human locks.
 - A held or uncertain production release: confirm the Integration Controller and operation evidence before recovery; keep read-only health checks available.
 - Provider descriptions: the status on the Provider description prompt card (AI spend against the ceiling and daily guard, Firecrawl use, admitted in 24 hours, waiting, held, written by hand, the jobs' last runs). Descriptions waiting for a person are marketing wording or words kept for human eyes ("accredited"); decide them in Layer 4.
@@ -140,7 +140,8 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
-| 2.69 | 18 Nov 2026 | v2.16.44 | Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. The machine rule now admits a description whose own page proves the course (CRICOS or NZQA code, or exact title). |
+| 2.70 | 18 Nov 2026 | v2.16.45 | Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. The machine rule now admits a description whose own page proves the course (CRICOS or NZQA code, or exact title). |
+| 2.69 | 18 Nov 2026 | v2.16.44 | Course and Provider detail carry read-only correlated blocks (Around this course, Around this provider). Viewers and Counsellors see student-facing values only; use Preview as in the detail header to check what a Counsellor or Viewer sees. Destination data › City metrics & costs has Metric type pills. |
 | 2.68 | 18 Nov 2026 | v2.16.43 | Layer 4 › Inbox › Grid › Clusters: when the same refusal on the same words appears for many items of one university, settle the cluster here with one reason, then export it and ask for the rule to be written into the Boost worker or the reader (with a test), so it stops coming back. |
 | 2.67 | 18 Nov 2026 | v2.16.42 | Coverage & completeness › Courses: start from Readiness by country and Every field. A field marked Not labelled is newly recorded; ask for its label and domain. Guides › Platform guide › How the data connects is the model to give the website and Zoho developers when they ask how records join. |
 | 2.66 | 18 Nov 2026 | v2.16.41 | Scheduled jobs › Automations: read the Dispatchers panel first (all lanes Running, no failures in 24 hours). Retired legacy jobs are hidden; tick Show retired legacy jobs to see them before their removal date. Platform health › Storage & retention: Storage now shows staging growth and whether staging retention prunes or only reports; switch it on in Settings with a reason once a dry run has shown what would go. |
