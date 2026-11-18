@@ -1,6 +1,6 @@
 -- CF-247 S1-Courses s662 and s664 (Platform Admin 18 Nov 2026, chat S1-Courses, spec block s660 to s669): the course description reader writes 1 to 2
 -- sentences, the machine rule admits a description whose own page proves the course, the provider's first-description hold is off, and the Layer 4
--- course description card explains each hold in plain English with four purpose-built decisions. Worker coverage-sweep v1.0.20 ships in the same change.
+-- course description card explains each hold in plain English with four purpose-built decisions. Worker coverage-sweep v1.0.23 ships in the same change.
 -- Found on Layer 4 (Ara Institute of Canterbury, New Zealand Diploma in Applied Science (Level 5)) and read live 18 Nov 2026 21:15 AEDT (rolled-back probe):
 -- 666 course descriptions wait (identity margin thin 451, binding ambiguous 143, refused word 44, evidence moved 15, wrong page kind 13), 2.96 sentences
 -- each on average; of the 451 held on the margin, the binder proved the page by the course's own CRICOS code 161, NZQA code 9, exact title 172 (degree
@@ -226,11 +226,11 @@ on conflict (toolset_key, key) do nothing;
 -- 1: the route and the registry
 with u as (
   update pipeline.ai_service_routes set prompt_source = 'worker code: cdesc-source-grounded-v4',
-         reason = 'prompt cdesc-source-grounded-v4 released (Platform Admin 18 Nov 2026, S1-Courses s662, migration 20261118253000)'
+         reason = 'prompt cdesc-source-grounded-v4 released (Platform Admin 18 Nov 2026, S1-Courses s662, migration 20261118268000)'
    where service_code = 'course_description' and prompt_source = 'worker code: cdesc-source-grounded-v3'
   returning service_code)
 insert into pipeline.admin_control_events(area, action, target, detail, actor)
-select 'settings', 'migration', 'ai_service_routes.course_description', jsonb_build_object('migration', '20261118253000', 'field', 'prompt_source',
+select 'settings', 'migration', 'ai_service_routes.course_description', jsonb_build_object('migration', '20261118268000', 'field', 'prompt_source',
        'before', 'worker code: cdesc-source-grounded-v3', 'after', 'worker code: cdesc-source-grounded-v4'), null from u;
 
 insert into pipeline.prompt_templates(service_code, version, system_text, system_sha256, user_template, variables, answer_schema, pinned_models, source, status, note)
@@ -277,15 +277,15 @@ COURSE_ID; PROVIDER_ID; OFFICIAL_COURSE_ID/CRICOS; COURSE_TITLE; STUDY_LEVEL;
 VERIFIED_COURSE_FACTS[{key,value,evidence_ids}];
 CITED_OFFICIAL_SOURCE_SPANS[{id,source_url,source_hash,captured_at,exact_text}].$cdesc$, 'ae87713ca58e1ea0768bed6fad02483a554bbe1ab285e5b3e5c507637a88372a',
        t.user_template, t.variables, t.answer_schema, t.pinned_models, 'worker code: course-text.ts CDESC_SYSTEM (sha-256 CDESC_SYSTEM_SHA256)', 'shadow',
-       'released 18 Nov 2026 (worker v1.0.20); v3 with 1 to 2 sentences and no intake, campus, fee or duration sentence'
+       'released 18 Nov 2026 (worker v1.0.23); v3 with 1 to 2 sentences and no intake, campus, fee or duration sentence'
   from pipeline.prompt_templates t where t.service_code = 'course_description' and t.version = 'cdesc-source-grounded-v3'
 on conflict (service_code, version) do nothing;
 update pipeline.prompt_templates set status = 'retired', source = 'worker code: course-text.ts CDESC_SYSTEM_V3 (sha-256 CDESC_SYSTEM_V3_SHA256)',
-       note = coalesce(note, '') || ' | retired 18 Nov 2026: cdesc-source-grounded-v4 released (migration 20261118253000)'
+       note = coalesce(note, '') || ' | retired 18 Nov 2026: cdesc-source-grounded-v4 released (migration 20261118268000)'
  where service_code = 'course_description' and version = 'cdesc-source-grounded-v3' and status = 'shadow';
 
 insert into pipeline.admin_control_events(area, action, target, detail, actor)
-values ('settings', 'migration', 'course descriptions s662/s664', jsonb_build_object('migration', '20261118253000', 'prompt', 'cdesc-source-grounded-v4',
+values ('settings', 'migration', 'course descriptions s662/s664', jsonb_build_object('migration', '20261118268000', 'prompt', 'cdesc-source-grounded-v4',
         'max_sentences', 2, 'max_chars', 360, 'identity_proof_on', 1, 'first_hold_on', 0, 'layer4_choices', jsonb_build_array('reread', 'approve_provider')), null);
 
 -- post-checks

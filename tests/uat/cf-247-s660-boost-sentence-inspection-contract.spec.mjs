@@ -13,7 +13,7 @@ test.beforeAll(async () => {
 })
 
 // sentences quoted in live readings of 18 Nov 2026
-const T3 = 'Trimester 3 is part-time only and is not available to commencing International students studying in Australia on a student visa.'
+const T3 = 'Part-time study is not available to commencing International students studying in Australia on a student visa.'  // s661: the earlier Trimester 3 sentence ("is part-time only and is not available to ...") is a closure and no longer one
 const VISA = 'Student Visa holders must study internally full time.'
 const FEE = 'Your student contribution amount is based on a standard full-time load of 48 credit points (1.0 EFTSL).'
 
@@ -22,7 +22,7 @@ test('the inspection returns each sentence for international students with the l
   const r = B.boostSentenceInspection(page)
   expect(r.page_chars).toBe(page.length)
   expect(r.study_word_hits).toBe(3)
-  expect(r.selector).toBe('study-load-international-v1')
+  expect(r.selector).toBe('study-load-international-v2')
   expect(r.international_total).toBe(1)
   expect(r.international_sentences[0].text).toBe(T3)
   expect(r.international_sentences[0].load).toBe('full_time')
@@ -59,7 +59,7 @@ test('the size of what one call returns is capped', () => {
 })
 
 test('the worker mode is read only: stored pages by path, no model, no web fetch, no database call, no file written', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.20"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.23"')  // v1.0.19 from s674
   expect(mode.length).toBeGreaterThan(200)
   expect(mode).toContain('.slice(0, BOOST_INSPECT_MAX_PAGES)')
   expect(mode).toContain('!p.includes("..")')

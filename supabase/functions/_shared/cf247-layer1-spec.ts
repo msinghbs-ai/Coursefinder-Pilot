@@ -2,6 +2,8 @@
 // and the Layer 1 declarative runner. A spec only names columns, fixed types and fixed transforms (security.layer1_parser_spec_validate_v1
 // checks it first); nothing here evaluates code or builds SQL.
 
+import { normaliseCricosProviderWebsite } from "./cf247-cricos-provider-website.mjs";
+
 export type SpecField = { source: string; target: string; type: string; required?: boolean; transforms?: { op: string; arg?: unknown }[] };
 export type Spec = {
   spec_version: number; record_type: string; target_table: string; format: string; source?: Record<string, unknown>;
@@ -25,7 +27,7 @@ function toIsoDate(v: string, pattern: string | null): string | null {
   return `${y}-${pad(m)}-${pad(d)}`;
 }
 
-export function transformValue(raw: unknown, field: SpecField): { value: string | number | boolean | null; error?: string } {
+export function transformValue(raw: unknown, field: SpecField, normaliseCricosWebsite = false): { value: string | number | boolean | null; error?: string } {
   let v: string | null = raw === null || raw === undefined ? null : String(raw);
   let datePattern: string | null = null;
   for (const t of field.transforms || []) {
@@ -45,21 +47,24 @@ export function transformValue(raw: unknown, field: SpecField): { value: string 
     case "numeric": case "currency_amount": { const n = Number(v.replace(/,/g, "").replace(/^\$/, "")); return Number.isFinite(n) ? { value: n } : { value: null, error: `${field.target} "${v}" is not a number` }; }
     case "date": { const d = toIsoDate(v, datePattern); return d ? { value: d } : { value: null, error: `${field.target} "${v}" is not a date${datePattern ? ` in ${datePattern}` : ""}` }; }
     case "boolean": { const s = v.trim().toLowerCase(); if (["true", "yes", "y", "1"].includes(s)) return { value: true }; if (["false", "no", "n", "0"].includes(s)) return { value: false }; return { value: null, error: `${field.target} "${v}" is not yes or no` }; }
-    case "url": return /^https?:\/\/\S+$/i.test(v.trim()) ? { value: v.trim() } : { value: null, error: `${field.target} "${v}" is not a web address` };
+    case "url": {
+      const website = normaliseCricosWebsite ? normaliseCricosProviderWebsite(v) : /^https?:\/\/\S+$/i.test(v.trim()) ? v.trim() : null;
+      return website ? { value: website } : { value: null, error: `${field.target} "${v}" is not a web address` };
+    }
     case "code": return { value: v.trim() };
     default: return { value: v };
   }
 }
 
 // Rows are objects keyed by source column (tabular) or key (JSON). Returns the canonical records and the problems found.
-export function applySpec(spec: Spec, rows: Record<string, unknown>[], maxErrors = 20) {
+export function applySpec(spec: Spec, rows: Record<string, unknown>[], maxErrors = 20, registrationScheme = "") {
   const records: Record<string, unknown>[] = [];
   const errors: string[] = [];
   rows.forEach((row, i) => {
     const rec: Record<string, unknown> = {};
     let bad = false;
     for (const f of spec.fields) {
-      const r = transformValue(row[f.source], f);
+      const r = transformValue(row[f.source], f, spec.record_type === "provider_register" && registrationScheme === "cricos" && f.target === "website");
       if (r.error) { bad = bad || !!f.required; if (errors.length < maxErrors) errors.push(`Row ${i + 1}: ${r.error}.`); }
       rec[f.target] = r.value;
     }

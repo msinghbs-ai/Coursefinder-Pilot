@@ -1,9 +1,9 @@
 // Guards: Layer 4 course description cards explain every hold in plain English and offer four purpose-built decisions (Platform Admin 18 Nov 2026, chat S1-Courses, s664): "Why this is held & recommended action" maps each cdesc-machine-v2 hold (identity_margin_thin, first_provider_sample, sentence_count_over_2, boilerplate_detected, quote_mismatch and the rest) to words without raw codes, with the page match score, quote check and sentence count; the buttons are Approve as read, Re-read (1-2 sentences), Approve all verified for provider (count confirmed) and Reject (bad page / wrong course); university descriptions keep their two.
-// CF-247 S664. src/lib/cdesc-hold.js (CD_HOLD, cdHoldKey, cdChoices), src/CourseDescriptionPanel.jsx (CdWhy), src/Layer4Inbox.jsx, migration 20261118253000 (md5-guarded edits of security.layer4_inbox_kinds_v1, security.layer4_inbox_items_v2, public.admin_layer4_inbox). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S664. src/lib/cdesc-hold.js (CD_HOLD, cdHoldKey, cdChoices), src/CourseDescriptionPanel.jsx (CdWhy), src/Layer4Inbox.jsx, migration 20261118268000 (md5-guarded edits of security.layer4_inbox_kinds_v1, security.layer4_inbox_items_v2, public.admin_layer4_inbox). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118253000_cf247_s662_s664_cdesc_one_two_sentences_identity_proof.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261118268000_cf247_s662_s664_cdesc_one_two_sentences_identity_proof.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const INBOX = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8')
 let P

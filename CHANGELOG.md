@@ -2,7 +2,7 @@
 
 ## 0.1.466 — 18 Nov 2026
 
-- Prepared visible PIM Admin release candidate **v2.16.44** (Platform Admin 18 Nov 2026, chat S1-Courses, s662 and s664). Migration `20261118253000` (md5-guarded edits of seven functions; no new table or function): course description prompt `cdesc-source-grounded-v4` (1 to 2 sentences) with worker `coverage-sweep` v1.0.20, limits 2 sentences and 360 characters, identity proof in `cdesc-machine-v2` (setting `enrich.course_description_identity_proof_on`), the first-description hold off (setting `enrich.course_description_first_hold_on`), and the Layer 4 course description card's plain-English hold box (`src/lib/cdesc-hold.js`, `CdWhy`) with Re-read (1-2 sentences) and Approve all verified for provider. Specs s662 and s664.
+- Prepared visible PIM Admin release candidate **v2.16.44** (Platform Admin 18 Nov 2026, chat S1-Courses, s662 and s664). Migration `20261118268000` (md5-guarded edits of seven functions; no new table or function): course description prompt `cdesc-source-grounded-v4` (1 to 2 sentences) with worker `coverage-sweep` v1.0.23, limits 2 sentences and 360 characters, identity proof in `cdesc-machine-v2` (setting `enrich.course_description_identity_proof_on`), the first-description hold off (setting `enrich.course_description_first_hold_on`), and the Layer 4 course description card's plain-English hold box (`src/lib/cdesc-hold.js`, `CdWhy`) with Re-read (1-2 sentences) and Approve all verified for provider. Specs s662 and s664.
 
 ## 0.1.465 — 18 Nov 2026
 

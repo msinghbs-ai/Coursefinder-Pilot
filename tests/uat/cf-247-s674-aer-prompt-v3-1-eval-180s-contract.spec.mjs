@@ -39,7 +39,7 @@ test('round 5 is opened queued with the gate unchanged; nothing is switched, qua
 })
 
 test('worker v1.0.19: the benchmark answers in a background task, 180 s a call inside 360 s; other modes keep their limits', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.20"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.23"')
   expect(IX).toContain('const AER_V3_EVAL_BUDGET_MS = 360_000;  // fixed:')
   expect(IX).toContain('const AER_V3_EVAL_CALL_MS = 180_000;  // fixed:')
   expect(IX).toContain('const BUDGET_MS = 110_000;')
@@ -47,8 +47,18 @@ test('worker v1.0.19: the benchmark answers in a background task, 180 s a call i
   expect(mode).toContain('const late = () => Date.now() - t0 > AER_V3_EVAL_BUDGET_MS - 25000;')
   expect(mode).not.toContain('Math.min(90000')
   expect(mode).toContain('edge.waitUntil(work().catch(')
-  expect(mode).toContain('background: true, budget_ms: AER_V3_EVAL_BUDGET_MS, call_ms: AER_V3_EVAL_CALL_MS')
+  expect(mode).toContain('background: true, examples: Math.min(AER_V3_EVAL_TASK_MAX,')
   expect(mode).toContain('return await work();')
+  // after the 21:23 attempt (CPU Time exceeded, nothing recorded): each answer is recorded at once and a task starts at most AER_V3_EVAL_TASK_MAX examples
+  expect(IX).toContain('const AER_V3_EVAL_TASK_MAX = 8;  // fixed: CPU guard')
+  expect(mode).toContain('.slice(0, bg || streamed ? AER_V3_EVAL_TASK_MAX : undefined)')
+  // 22:15: a background task waiting on a slow model is dropped (EarlyDrop), so the replay asks for a streamed answer straight from the worker
+  expect(mode).toContain('const tick = setInterval(() => { try { ctl.enqueue(enc.encode(" ")) } catch { /* closed */ } }, 10000);  // fixed: keep-alive')
+  expect(mode).toContain('headers: { "content-type": "application/json", "x-cf-stream": "1" }')
+  expect(IX).toContain('if (modeOf && res.headers.get("x-cf-stream") !== "1") {')
+  expect(R).toContain("select public.svc_pilot_issue_nonce('coverage-sweep') as n")
+  expect(R).toContain("'x-cf-run-nonce': String(n)")
+  expect(mode).toContain('await rpc("svc_ai_eval_answer_record_v1", { p_run: w.run, p_answers: { answers: [ans], worker: WORKER } })')
   // the version check and the credential check stay before the background task, so a refused run answers at once
   expect(mode.indexOf('the benchmark version is not an AER v3 prompt')).toBeLessThan(mode.indexOf('const work = async () => {'))
   expect(mode.indexOf('OpenRouter credential unavailable')).toBeLessThan(mode.indexOf('const work = async () => {'))
@@ -57,9 +67,10 @@ test('worker v1.0.19: the benchmark answers in a background task, 180 s a call i
 
 test('the replay waits for each background task before releasing a lease, and answers v3 and v3.1 rounds alike', () => {
   expect(R).toContain('const CODE = `aer-v2-course-v3%-${ROUND}`')
-  expect(R).toContain('while (Date.now() - t < 410000 && Date.now() < until) {  // fixed: longer than the 400 s wall clock of the background task')
-  expect(R.indexOf('while (Date.now() - t < 410000')).toBeLessThan(R.indexOf("x.state = 'answering' and x.leased_until > now()"))
-  expect(R).toContain("if (leased.length && !res.some((r) => r.error) && leased.every((id) => (now[id] || 0) !== (before[id] || 0))) break")
+  expect(R).toContain('while (res.some((r) => r.error) && Date.now() - t < 410000 && Date.now() < until) {  // fixed: longer than the 400 s wall clock of the background task')
+  expect(R.indexOf('while (res.some((r) => r.error) && Date.now() - t < 410000')).toBeLessThan(R.lastIndexOf("x.state = 'answering' and x.leased_until > now()`)"))
+  expect(R).toContain("res.filter((r) => r.run).every((r) => (now[String(r.run)] || 0) >= (before[String(r.run)] || 0) + (Number(r.examples) || 1))) break")
+  expect(R).toContain("reason like ${lit(`S672 AER v3 replay ${ROUND} %`)}")
 })
 
 test('the standing renewal runs only on the named thresholds and validators, reports and fails otherwise, and changes nothing else', () => {

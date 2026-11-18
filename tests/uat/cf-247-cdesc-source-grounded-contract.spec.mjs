@@ -19,7 +19,7 @@ const RUN = fs.readFileSync('tests/fixtures/cdesc-source-grounded/run.sh', 'utf8
 
 test('the prompt: the contract text verbatim, hash recorded, version pinned and equal in the worker and the database', () => {
   expect(crypto.createHash('sha256').update(CDESC_SYSTEM).digest('hex')).toBe(CDESC_SYSTEM_SHA256)
-  expect(CDESC_SYSTEM_SHA256).toBe('ae87713ca58e1ea0768bed6fad02483a554bbe1ab285e5b3e5c507637a88372a')  // v1.0.20 (s662): cdesc-source-grounded-v4
+  expect(CDESC_SYSTEM_SHA256).toBe('ae87713ca58e1ea0768bed6fad02483a554bbe1ab285e5b3e5c507637a88372a')  // v1.0.23 (s662): cdesc-source-grounded-v4
   expect(CDESC_SYSTEM.startsWith('SYSTEM — STUDYSEARCH COURSE DESCRIPTION / cdesc-source-grounded-v4\n')).toBe(true)
   expect(crypto.createHash('sha256').update(CDESC_SYSTEM_V3).digest('hex')).toBe(CDESC_SYSTEM_V3_SHA256)
   expect(CDESC_SYSTEM_V3_SHA256).toBe('59ba8f1b0bfd4a4994bd6cf5ff281a18224323d2edc26c47faba7ebda40e68b8')

@@ -13,7 +13,7 @@ const IX = fs.readFileSync(`${D}/index.ts`, 'utf8')
 const CS = fs.readFileSync(`${D}/cascade.ts`, 'utf8')
 
 test('prompt v3: v2 plus the opener rule, released in the worker and the database together', () => {
-  // v1.0.20 (s662): v4 is released; v3 is kept as CDESC_SYSTEM_V3 and checked here as it was sent
+  // v1.0.23 (s662): v4 is released; v3 is kept as CDESC_SYSTEM_V3 and checked here as it was sent
   expect(CDESC_SYSTEM.startsWith('SYSTEM — STUDYSEARCH COURSE DESCRIPTION / cdesc-source-grounded-v3\n')).toBe(true)
   expect(crypto.createHash('sha256').update(CDESC_SYSTEM).digest('hex')).toBe(CDESC_SYSTEM_SHA256)
   expect(CDESC_SYSTEM).toContain('Do not open with, and do not write, a sentence that only introduces the course, such as\n"The <course title> at <provider> is a ..."')

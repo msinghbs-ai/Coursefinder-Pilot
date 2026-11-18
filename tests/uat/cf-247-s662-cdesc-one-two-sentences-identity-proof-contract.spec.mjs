@@ -1,11 +1,11 @@
 // Guards: Course descriptions are 1 to 2 sentences and a description from the course's own page is admitted on its proof (Platform Admin 18 Nov 2026, chat S1-Courses, s662): prompt cdesc-source-grounded-v4 asks for 1 to 2 sentences (about 180 to 360 characters) with no intake, campus, fee or duration sentence and keeps quote grounding per sentence; the database limits are 2 sentences and 360 characters; cdesc-machine-v2 does not apply the 0.1 margin when the page proves the course by its own CRICOS or NZQA code, or its unshared exact title or title address, and no other course shares the page; the provider's first-description hold is off by setting.
-// CF-247 S662. Worker coverage-sweep v1.0.20 (course-text.ts), migration 20261118253000 (md5-guarded edits of security.cdesc_prompt_version_v1, course_description_machine_check_v1, enrich_course_text_record_v1, course_description_promote_held_v1). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S662. Worker coverage-sweep v1.0.23 (course-text.ts), migration 20261118268000 (md5-guarded edits of security.cdesc_prompt_version_v1, course_description_machine_check_v1, enrich_course_text_record_v1, course_description_promote_held_v1). G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
 import { CDESC_PROMPT_VERSION, CDESC_SYSTEM, CDESC_SYSTEM_SHA256, CDESC_SYSTEM_V3, courseTextLengthNote } from '../../supabase/functions/coverage-sweep/course-text.ts'
 
-const M = fs.readFileSync('supabase/migrations/20261118253000_cf247_s662_s664_cdesc_one_two_sentences_identity_proof.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261118268000_cf247_s662_s664_cdesc_one_two_sentences_identity_proof.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 
@@ -22,7 +22,7 @@ test('prompt v4: 1 to 2 sentences, no intake, campus, fee or duration sentence, 
   const back = CDESC_SYSTEM.replace(/Write 1–2 complete factual sentences[\s\S]*?State distinctive subject matter/, 'Write 2–4 complete factual sentences where evidence supports them. Prefer about\n55–100 words if useful facts support that length; shorter is acceptable when evidence is thin.\nState distinctive subject matter')
     .replaceAll('cdesc-source-grounded-v4', 'cdesc-source-grounded-v3')
   expect(back).toBe(CDESC_SYSTEM_V3)
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.20"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.23"')
 })
 
 test('the database releases v4 with the worker, and the limits the check applies are 2 sentences and 360 characters', () => {
