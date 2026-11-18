@@ -287,7 +287,7 @@ test.describe('mocked browser (SS-016 22:01)', () => {
           retirement: { status: 'retiring', replaced_by: null, retire_after: '2026-11-14' } },
       ] }) }))
     await page.goto('/#scheduled-jobs?tab=automations')
-    await openAutomationAreas(page) // SS-020 step 2: areas start closed
+    await openAutomationAreas(page, { retired: true }) // SS-020 step 2: areas start closed; v2.16.39: retired jobs shown on request
     const auto = page.locator('tr[data-job="policy-auto-approve"]')
     await expect(auto.locator('[data-control-owner]')).toHaveText('Changed by Platform Admin')
     await expect(auto.locator('[data-admission-path="auto"]')).toContainText('Automatic while its switch is on')

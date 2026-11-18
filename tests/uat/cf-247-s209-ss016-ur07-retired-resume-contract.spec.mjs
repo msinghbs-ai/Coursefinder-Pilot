@@ -10,7 +10,7 @@ test.describe('mocked browser', () => {
       const auto = await mockAutomations(page, rank)
       page.on('dialog', (d) => d.accept())
       await page.goto('/#scheduled-jobs')
-      await openAutomationAreas(page) // SS-020 step 2: areas start closed
+      await openAutomationAreas(page, { retired: true }) // SS-020 step 2: areas start closed; v2.16.39: retired jobs shown on request
       for (const [job, word, by] of [['l4-rule-low-agreement', 'Retired', 'l4-rule-v2'], ['cron-history-trim', 'Retiring', 'hygiene-check']]) {
         const row = page.locator(`tr[data-job="${job}"]`)
         await expect(row).toContainText(word)
@@ -32,7 +32,7 @@ test.describe('mocked browser', () => {
     await asRole(page, 6)
     const auto = await mockAutomations(page, 6, { staleRetired: ['l4-rule-low-agreement'] })
     await page.goto('/#scheduled-jobs')
-    await openAutomationAreas(page) // SS-020 step 2: areas start closed
+    await openAutomationAreas(page, { retired: true }) // SS-020 step 2: areas start closed; v2.16.39: retired jobs shown on request
     const stale = page.locator('tr[data-job="l4-rule-low-agreement"]')
     await stale.getByRole('button', { name: 'Resume' }).click()
     await expect(page.locator('[data-global-error]')).toContainText(LIVE.RETIRED('l4-rule-v2'))

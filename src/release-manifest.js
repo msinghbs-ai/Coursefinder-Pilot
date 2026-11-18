@@ -1,17 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.40'
-export const PACKAGE_VERSION='0.1.462'
+export const UI_VERSION='2.16.41'
+export const PACKAGE_VERSION='0.1.463'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'18 Nov 2026',
-  title:'Layer 4 grid: grouped decisions',
+  title:'Operations screens: dispatchers first, storage now, evidence by origin',
   changes:[
-    'Layer 4 › Inbox › Grid › Grouped decisions: one choice and one reason for a whole group: entry requirement items held only because the stored page is shared with other programmes (per university and page) and refused study loads with the same quote at the same university. Each item is decided as on its own card, at the same rank, with a typed confirmation; the AER audit sample and other kinds stay one at a time.'
+    'Scheduled jobs › Automations starts with the three dispatchers (Reports and caches, Admission rules, Coverage lanes): their lanes, runs and failures in 24 hours, last run, and how many legacy jobs each replaced.',
+    'Retired legacy jobs are hidden from Automations and its counts until you tick Show retired legacy jobs.',
+    'Platform health › Storage & retention starts with Storage now: database size and its 7-day change, staging growth in 7 days, whether nightly staging retention prunes or only reports, and its last run.',
+    'Evidence starts with Where evidence comes from: each type in plain words under what writes it (coverage lanes, Boost page text, scholarships, registers, earlier Layer 2 reads); one click filters to it. Dispatcher runs and Layer 4 audit opens the Audit trail or the audit samples grid.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Platform health › Open issues: links named Work queues now say Queues & yield, the tab they open. Every issue and check link is named from the menu.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

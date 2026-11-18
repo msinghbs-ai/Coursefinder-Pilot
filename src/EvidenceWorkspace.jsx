@@ -11,6 +11,17 @@ import'./evidence-workspace.css'
 import EvidenceAuditTrail from'./EvidenceAuditTrail'
 
 const PAGE_SIZE=50
+// v2.16.40 (Platform Admin 18 Nov 2026 12:50: "keep Evidence aligned with consolidated dispatcher, Boost, and Layer 4 audit records"): each
+// evidence type in plain words, grouped by what writes it today. One click filters to that type; Layer 4 audit samples open in the grid.
+export const EVIDENCE_ORIGINS=[
+  {key:'coverage',label:'Coverage lanes',by:'coverage-lane-dispatch',types:[['source_snapshot','Stored source page']]},
+  {key:'boost',label:'Course page text (Boost)',by:'page-text job; read by the Boost worker',types:[['provider_course_page_text','Course page text']]},
+  {key:'scholarships',label:'Scholarships',by:'scholarship reads',types:[['scholarship_candidate_page','Scholarship candidate page'],['scholarship_page','Scholarship page'],['scholarship_ai_page','Scholarship page read by AI']]},
+  {key:'registers',label:'Registers and datasets',by:'Layer 1 sources',types:[['regulatory_snapshot','Register snapshot'],['dataset_file','Dataset file'],['enrich_home_page','Provider home page']]},
+  {key:'retired',label:'Earlier Layer 2 reads',by:'before October; kept as evidence',types:[['layer2_extraction_input','Layer 2 extraction input'],['layer2_html_snapshot','Layer 2 page'],['layer2_screenshot','Layer 2 screenshot'],['layer2_raw_json','Layer 2 raw answer']]},
+]
+export const EVIDENCE_TYPE_WORDS=Object.fromEntries(EVIDENCE_ORIGINS.flatMap(g=>g.types))
+const withWords=list=>(Array.isArray(list)?list:[]).map(x=>{const c=typeof x==='object'?(x.code??x.id??x.value??x.name):x;return EVIDENCE_TYPE_WORDS[c]?{code:c,name:EVIDENCE_TYPE_WORDS[c]}:x})
 const ENTITY_PAGE={provider:'Providers',course:'Courses',campus:'Campuses',scholarship:'Scholarships'}
 const EMPTY_FILTERS={country:'',sourceId:'',layer:'',entityType:'',entityId:'',providerId:'',jobId:'',evidenceType:'',mime:'',jobStatus:'',status:'',extractionState:'',freshness:'',verifiedFrom:'',verifiedTo:'',hash:'',unresolvedConflicts:''}
 
@@ -49,6 +60,17 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
       <div className="evidence-hero-actions"><button className={`m-secondary ${audit?'active':''}`} aria-pressed={audit} data-evidence-audit-toggle onClick={()=>setAudit(x=>!x)}><FileCheck2 size={14}/>Audit trail</button><button className="m-secondary" onClick={()=>{setBusy(true);api.evidencePage(args).then(setData).catch(e=>onError(e.message)).finally(()=>setBusy(false))}}><RefreshCw size={14}/>Refresh</button></div>
     </section>
 
+    {/* v2.16.40: where evidence comes from now (dispatchers, Boost, registers); the Audit trail (S2-Build, v2.16.39) and the Layer 4 audit samples */}
+    <section className="m-panel evidence-origins" data-evidence-origins>
+      <h3 className="sl-h4">Where evidence comes from</h3>
+      <div className="evidence-origin-grid">{EVIDENCE_ORIGINS.map(g=><div key={g.key} className="evidence-origin" data-evidence-origin={g.key}>
+        <strong>{g.label}</strong><small>{g.by}</small>
+        <div>{g.types.map(([c,l])=><button key={c} type="button" className={`m-secondary compact${filters.evidenceType===c?' active':''}`} aria-pressed={filters.evidenceType===c} onClick={()=>setFilter('evidenceType',filters.evidenceType===c?'':c)} data-evidence-origin-type={c}>{l}</button>)}</div></div>)}
+        <div className="evidence-origin" data-evidence-origin="layer4"><strong>Dispatcher runs and Layer 4 audit</strong><small>who ran or decided what, when and why</small>
+          <div><button type="button" className={`m-secondary compact${audit?' active':''}`} aria-pressed={audit} onClick={()=>setAudit(true)} data-evidence-open-audit>Audit trail</button><a className="m-secondary compact" href="#layer-4-review?view=grid" data-evidence-layer4-audit>Audit samples grid</a></div></div>
+      </div>
+    </section>
+
     {audit&&<EvidenceAuditTrail onError={onError}/>}
 
     <section className="m-panel evidence-workbench">
@@ -63,7 +85,7 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
         <PagedEvidenceSelect label="Source" value={filters.sourceId} valueLabel={sourceLabel} country={filters.country} onChange={(v,l)=>{setSourceLabel(l||'');setFilter('sourceId',v)}}/>
         <Select label="Layer" value={filters.layer} onChange={v=>setFilter('layer',v)} options={normalise(opts.layers)}/>
         <Select label="Entity type" value={filters.entityType} onChange={v=>setFilter('entityType',v)} options={normalise(opts.entity_types)}/>
-        <Select label="Evidence type" value={filters.evidenceType} onChange={v=>setFilter('evidenceType',v)} options={normalise(opts.evidence_types)}/>
+        <Select label="Evidence type" value={filters.evidenceType} onChange={v=>setFilter('evidenceType',v)} options={normalise(withWords(opts.evidence_types))}/>
         <Select label="Status" value={filters.status} onChange={v=>setFilter('status',v)} options={normalise(opts.statuses)}/>
         <Select label="Freshness" value={filters.freshness} onChange={v=>setFilter('freshness',v)} options={normalise(opts.freshness_states)}/>
         <Select label="MIME" value={filters.mime} onChange={v=>setFilter('mime',v)} options={normalise(opts.mimes)}/>
@@ -199,7 +221,7 @@ function normalise(list){return(Array.isArray(list)?list:[]).map(x=>{if(typeof x
 function o(value,label,meta=''){return{value,label,meta}}
 function activeFilters(f){return Object.entries(f).filter(([,v])=>v!==''&&v!=null)}
 function labelFor(k){return({sourceId:'Source',entityType:'Entity type',entityId:'Entity',providerId:'Provider',jobId:'Job',evidenceType:'Evidence type',jobStatus:'Job status',extractionState:'Extraction',verifiedFrom:'Verified from',verifiedTo:'Verified to',unresolvedConflicts:'Unresolved conflict'})[k]||human(k)}
-function optionLabel(k,v,opts){const sets={country:opts.countries,sourceId:opts.sources,layer:opts.layers,entityType:opts.entity_types,evidenceType:opts.evidence_types,mime:opts.mimes,jobStatus:opts.job_statuses,status:opts.statuses,extractionState:opts.extraction_states,freshness:opts.freshness_states};const found=normalise(sets[k]).find(x=>String(x.value)===String(v));if(k==='unresolvedConflicts')return v==='true'?'Yes':'No';return found?.label||String(v)}
+function optionLabel(k,v,opts){const sets={country:opts.countries,sourceId:opts.sources,layer:opts.layers,entityType:opts.entity_types,evidenceType:withWords(opts.evidence_types),mime:opts.mimes,jobStatus:opts.job_statuses,status:opts.statuses,extractionState:opts.extraction_states,freshness:opts.freshness_states};const found=normalise(sets[k]).find(x=>String(x.value)===String(v));if(k==='unresolvedConflicts')return v==='true'?'Yes':'No';return found?.label||String(v)}
 function rowsOf(v){if(Array.isArray(v))return v;return v?.items??v?.rows??v?.data??[]}
 function useDebounce(value,delay){const[v,setV]=useState(value);useEffect(()=>{const t=setTimeout(()=>setV(value),delay);return()=>clearTimeout(t)},[value,delay]);return v}
 function human(v){if(v==null||v==='')return'—';return String(v).replace(/[_-]+/g,' ').replace(/\b\w/g,m=>m.toUpperCase())}

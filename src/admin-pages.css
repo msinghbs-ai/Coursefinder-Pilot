@@ -933,3 +933,15 @@
 .rg-two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--cf-space-3)}
 .rg-pages{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
 .rg-pages li{display:grid;gap:2px}.rg-pages small{color:var(--cf-text-2)}
+/* v2.16.39: Scheduled jobs › Automations: the three dispatchers lead the tab */
+.au-dispatcher-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--cf-space-3,12px)}
+.au-dispatcher{border:1px solid var(--cf-border);border-radius:var(--cf-radius-md,8px);padding:12px;background:var(--cf-surface);display:flex;flex-direction:column;gap:6px}
+.au-dispatcher header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.au-dispatcher p{margin:0;font-size:var(--cf-fs-sm);color:var(--cf-text-2)}
+.au-dispatcher code{font-size:var(--cf-fs-xs);color:var(--cf-text-2)}
+.au-dispatcher dl{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 12px;margin:0}
+.au-dispatcher dl div{display:flex;justify-content:space-between;gap:6px;font-size:var(--cf-fs-sm)}
+.au-dispatcher dt{color:var(--cf-text-2)}
+.au-dispatcher dd{margin:0;font-weight:600}
+.au-dispatcher small{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
+.au-retired-toggle{display:inline-flex;align-items:center;gap:4px;font-size:var(--cf-fs-sm)}

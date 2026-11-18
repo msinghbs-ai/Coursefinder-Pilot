@@ -6,6 +6,7 @@ import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,fmtNumber}from'./ui-kit'
 import{fmtDateTime}from'./lib/format.js'
 import StorageSizes from'./StorageSizes'
+import StagingRetention from'./StagingRetention'
 import{plainError}from'./lib/errors'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
@@ -36,12 +37,12 @@ function Staging({s}){
 }
 
 export default function RetentionScreen({onError}){
-  const[r,setR]=useState(null),[busy,setBusy]=useState(''),[open,setOpen]=useState('')
+  const[r,setR]=useState(null),[busy,setBusy]=useState(''),[open,setOpen]=useState(''),[sizes,setSizes]=useState(null)
   const load=async()=>{try{const{data,error}=await supabase.rpc('admin_retention',{p_action:'read',p_args:{}});if(error)throw error;setR(data)}catch(e){onError?.(errText(e))}}
   useEffect(()=>{load()},[])
   const active=(r?.categories||[]).some(c=>c.active)
   useEffect(()=>{if(!active)return;const t=setInterval(load,15000);return()=>clearInterval(t)},[active])
-  if(!r)return <div className="m-page-stack rt-screen" data-retention><StorageSizes onError={onError}/><Loading label="Measuring storage…"/></div>
+  if(!r)return <div className="m-page-stack rt-screen" data-retention><StagingRetention sizes={sizes} storage={null} onError={onError}/><Loading label="Measuring storage…"/><StorageSizes onError={onError} onData={setSizes}/></div>
   const act=async(c,action)=>{
     const reason=window.prompt(action==='stop'?`Stop the ${c.label.toLowerCase()} run?\n\nReason (kept in the log):`:c.key==='evidence_audit'?`Run the evidence audit? It counts references in the background and deletes nothing.\n\nReason (kept in the log):`:`Purge ${c.label.toLowerCase()}?\n\nRule: ${c.rule}\n\nReason (kept in the log):`)
     if(!reason||reason.trim().length<4)return
@@ -49,8 +50,8 @@ export default function RetentionScreen({onError}){
     if(action==='purge'&&c.key!=='evidence_audit'){confirm=window.prompt(`Type ${c.key} to confirm. This cannot be undone.`)||'';if(confirm!==c.key)return}
     setBusy(c.key);try{const{error}=await supabase.rpc('admin_retention',{p_action:action,p_args:{category:c.key,reason:reason.trim(),confirm}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy('')}}
   return <div className="m-page-stack rt-screen" data-retention>
-    {/* 16 Oct 2026: database, schema, table and bucket sizes, recorded daily */}
-    <StorageSizes onError={onError}/>
+    {/* v2.16.39 (Platform Admin 18 Nov 2026 12:50): storage now, staging growth and nightly staging retention lead the tab */}
+    <StagingRetention sizes={sizes} storage={r.storage} onError={onError}/>
     <section className="m-panel"><div className="m-workspace-head"><div><h2>Storage & retention</h2><p>Database {mb(r.database_bytes)}. Each category shows what it holds and its rule. Preview changes nothing; Purge runs in the background in small batches and is logged. Values on record and the evidence behind them are never purged here.</p></div></div>
       <div className="cf-table-wrap"><table className="cf-table" data-retention-categories><thead><tr><th>Category</th><th>Size now</th><th>Would go</th><th>Measured</th><th>Status</th><th></th></tr></thead><tbody>
         {r.categories.map(c=>{const e=c.estimate,run=c.active||c.last;return <React.Fragment key={c.key}><tr data-retention-row={c.key}>
@@ -67,6 +68,8 @@ export default function RetentionScreen({onError}){
         </React.Fragment>})}
       </tbody></table></div></section>
     <Staging s={r.storage}/>
+    {/* 16 Oct 2026: database, schema, table and bucket sizes, recorded daily (after the categories since v2.16.39) */}
+    <StorageSizes onError={onError} onData={setSizes}/>
     <section className="m-panel"><h3 className="sl-h4">Runs</h3>{(r.runs||[]).length?<div className="cf-table-wrap"><table className="cf-table" data-retention-runs><thead><tr><th>When</th><th>Category</th><th>Status</th><th>Removed</th><th>Reason</th></tr></thead><tbody>
       {r.runs.map(x=><tr key={x.id}><td>{when(x.created_at)}</td><td>{x.category.replace(/_/g,' ')}</td><td><span className={`cf-chip ${TONE[x.status]||'tone-neutral'}`}>{x.status}</span></td><td>{fmtNumber(x.removed)}{x.bytes?` · ${mb(x.bytes)}`:''}</td><td><small className="sl-sub">{x.reason}</small></td></tr>)}
     </tbody></table></div>:<Empty text="No purge or audit has run yet."/>}</section>

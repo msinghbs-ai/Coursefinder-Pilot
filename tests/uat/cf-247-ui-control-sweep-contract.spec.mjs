@@ -90,7 +90,7 @@ test.describe('mocked browser', () => {
     await expect.poll(() => page.l3calls.find(c => c.p_action === 'set_batch')?.p_args).toEqual({ batch: 40 })
     await page.locator('.au-area[data-area="Layer 3 AI"]').getByRole('button', { name: 'Pause area' }).click()
     await expect.poll(() => page.l3calls.find(c => c.p_action === 'pause_area')?.p_args).toEqual({ area: 'Layer 3 AI' })
-    await page.getByLabel('Show').selectOption('failed')
+    await page.getByLabel('Show', { exact: true }).selectOption('failed')
     await expect(page.locator('.au-table tbody tr')).toHaveCount(1)
   })
 

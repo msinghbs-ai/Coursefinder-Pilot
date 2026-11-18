@@ -11,9 +11,9 @@ import{plainError}from'./lib/errors'
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const change=(now,before)=>{if(before==null||now==null)return'—';const d=now-before;return d===0?'no change':`${d>0?'+':'−'}${fmtBytes(Math.abs(d))}`}
 
-export default function StorageSizes({onError}){
+export default function StorageSizes({onError,onData}){
   const[d,setD]=useState(null),[busy,setBusy]=useState(false),[q,setQ]=useState(''),[all,setAll]=useState(false)
-  const load=()=>supabase.rpc('admin_storage_sizes',{p_days:30}).then(({data,error})=>{if(error)throw error;setD(data)}).catch(e=>onError?.(errText(e)))
+  const load=()=>supabase.rpc('admin_storage_sizes',{p_days:30}).then(({data,error})=>{if(error)throw error;setD(data);onData?.(data)}).catch(e=>onError?.(errText(e)))
   useEffect(()=>{load()},[])
   const measure=async()=>{setBusy(true);try{const{error}=await supabase.rpc('admin_storage_sizes_measure');if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const tables=useMemo(()=>{const t=(d?.tables||[]).filter(x=>!q||x.name.toLowerCase().includes(q.toLowerCase()));return all||q?t:t.slice(0,25)},[d,q,all])
