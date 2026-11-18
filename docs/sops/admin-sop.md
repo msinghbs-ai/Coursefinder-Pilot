@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.72; reviewed-release=2.16.47; source-commit=a18020c8ad89+local; content-sha256=9e21506cdc4f5eaa9cfa9c99e8fa52a11e1b96080fdd750f42d9e5e0aed66da2 -->
+<!-- sop-export: id=admin-sop; version=2.73; reviewed-release=2.16.49; source-commit=8f9bacf64d48+local; content-sha256=31b3ba4cab8fe3a49a08faf6c9e8104de79efc1cc58f61bc0dcc016aad9e6920 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.72 (reviewed for platform release v2.16.47)  
+**Version:** 2.73 (reviewed for platform release v2.16.49)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.73 | 19 Nov 2026 | v2.16.49 | Course detail › Around this course: the Entry requirements card no longer carries a scholarship line. Scholarships are listed once, in the Scholarships section (three, then Show all (N) scholarships), for every role. |
 | 2.72 | 19 Nov 2026 | v2.16.47 | Around this course and Around this provider show live figures for every role: Counsellors and Viewers see the approved climate, population, career and visa figures. Accreditations are listed on the Provider detail; rows under review are marked for Editors and up and are not shown to Counsellors or Viewers. |
 | 2.71 | 19 Nov 2026 | v2.16.46 | Course detail: open the Description pipeline fold to see stages, runs and Tasks that held this course; Related insights & funding (QILT, PRISMS) is also folded. Scholarships are listed once, in the Scholarships section. Counsellors and Viewers do not see the pipeline or task buttons (check with Preview as). |
 | 2.70 | 18 Nov 2026 | v2.16.45 | Course detail: check a Counsellor or Viewer view with Preview as. Archive course, Read with AI and the Read / refresh entry requirements now panel are hidden there; only approved entry requirements show. Scholarship lists show three, then Show all (N) scholarships. |

@@ -9,7 +9,7 @@
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 // Check the admin copy with `node scripts/export-sops.mjs --check-mirror <coursefinder-admin/docs/sops>` (SS-016 UR-03): it exits 1 on drift.
 
-export const SOP_REVIEWED_FOR = '2.16.47'
+export const SOP_REVIEWED_FOR = '2.16.49'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -45,7 +45,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.72', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.73', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -127,7 +127,8 @@ export const SOPS = [
       'Scholarships withdrawn by the nightly review: a jump means a rule changed or a site moved its pages.',
     ],
     escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
-    changes: [{ version: '2.72', date: '19 Nov 2026', release: '2.16.47', change: 'Around this course and Around this provider show live figures for every role: Counsellors and Viewers see the approved climate, population, career and visa figures. Accreditations are listed on the Provider detail; rows under review are marked for Editors and up and are not shown to Counsellors or Viewers.' },
+    changes: [{ version: '2.73', date: '19 Nov 2026', release: '2.16.49', change: 'Course detail › Around this course: the Entry requirements card no longer carries a scholarship line. Scholarships are listed once, in the Scholarships section (three, then Show all (N) scholarships), for every role.' },
+      { version: '2.72', date: '19 Nov 2026', release: '2.16.47', change: 'Around this course and Around this provider show live figures for every role: Counsellors and Viewers see the approved climate, population, career and visa figures. Accreditations are listed on the Provider detail; rows under review are marked for Editors and up and are not shown to Counsellors or Viewers.' },
       { version: '2.71', date: '19 Nov 2026', release: '2.16.46', change: 'Course detail: open the Description pipeline fold to see stages, runs and Tasks that held this course; Related insights & funding (QILT, PRISMS) is also folded. Scholarships are listed once, in the Scholarships section. Counsellors and Viewers do not see the pipeline or task buttons (check with Preview as).' },
       { version: '2.70', date: '18 Nov 2026', release: '2.16.45', change: 'Course detail: check a Counsellor or Viewer view with Preview as. Archive course, Read with AI and the Read / refresh entry requirements now panel are hidden there; only approved entry requirements show. Scholarship lists show three, then Show all (N) scholarships.' },
       { version: '2.69', date: '18 Nov 2026', release: '2.16.44', change: 'Course and Provider detail carry read-only correlated blocks (Around this course, Around this provider). Viewers and Counsellors see student-facing values only; use Preview as in the detail header to check what a Counsellor or Viewer sees. Destination data › City metrics & costs has Metric type pills.' },

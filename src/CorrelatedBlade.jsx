@@ -1,6 +1,6 @@
 // CF-247 S1-RM-Design (Platform Admin 18 Nov 2026 21:23; admin docs/platform/2026-11-18-correlated-blades-role-visibility-mockup.md):
 // read-only correlated sections in the Course and Provider drawers, joined in the browser from reads the admin already has
-// (no new schema). Course: Location & weather, Career pathway, Visa & living-cost snapshot, Entry requirements & scholarships.
+// (no new schema). Course: Location & weather, Career pathway, Visa & living-cost snapshot, Entry requirements (s699: no scholarship line here; scholarships appear once, in the Scholarships section).
 // Provider: Rankings, Campus city profiles, Scholarships & accreditations. The joins and the column list are in
 // src/lib/correlation-adapters.js (CARD_SPEC); what each role sees is in src/lib/field-visibility.js. Internal fields carry
 // data-vis="<field>" so the drawer hides them for Viewer and Counsellor, and for an Editor previewing as one.
@@ -15,7 +15,6 @@ import{supabase,api}from'./lib/supabase'
 import{CLIMATE_ICONS}from'./lib/climate-icons.js'
 import{campusLocalities,cityProfile,careerOutlook,visaSnapshot,rankingSnapshot,EMPTY_CAREERS}from'./lib/correlation-adapters.js'
 import{PREVIEW_ROLES,audienceOf,studentHideCss,STUDENT_ONLY_EMPTY_ENTRY,STUDENT_FACING_ENTRY}from'./lib/field-visibility.js'
-import{useShowAll}from'./ShowAllToggle'
 import'./correlated-blade.css'
 import'./field-visibility.css'
 
@@ -62,8 +61,7 @@ export function CourseCorrelated({data,rank=0}){
   const co=useRead(()=>reviewList('career_outcome'),[reader],reader)
   const sr=useRead(()=>reviewList('study_rule'),[reader],reader)
   const er=useRead(()=>rpc('admin_entry_requirements',{p_action:'course',p_args:{course_id:courseId}}),[courseId],!!courseId)
-  const entry=(er.data?.rows||[]).filter(r=>!['rejected','inactive'].includes(String(r.status))),sch=Array.isArray(data?.course_scholarships?.items)?data.course_scholarships.items.filter(x=>(x.publication_status||'published')==='published'):[]
-  const{shown:schShown,toggle:schToggle}=useShowAll(sch,{id:'cb-scholarships'}) // s697: first three, then Show all (N) scholarships
+  const entry=(er.data?.rows||[]).filter(r=>!['rejected','inactive'].includes(String(r.status)))
   if(!courseId)return null
   const locs=campusLocalities(data.campuses,pd.data?.campuses),cc=cd.data?.country_code||null
   const careers=reader&&co.done&&!co.err?careerOutlook(data.field_code,co.data,{country:cc}):null
@@ -90,15 +88,11 @@ export function CourseCorrelated({data,rank=0}){
           {visa.health_cover.map((h,i)=><li key={`h${i}`} data-cb-fact="health_cover"><span>Health cover</span><b>{h.title}</b></li>)}
         </ul>}
       </Card>
-      <Card id="entry" icon={GraduationCap} title="Entry requirements & scholarships">
-        <div className="cb-two">
-          <div data-cb-entry><small className="cb-label">Academic entry</small>{!er.done?<small>Loading…</small>:!entry.length?<Empty id="entry">{STUDENT_ONLY_EMPTY_ENTRY}</Empty>:
+      <Card id="entry" icon={GraduationCap} title="Entry requirements">
+        <div data-cb-entry><small className="cb-label">Academic entry</small>{!er.done?<small>Loading…</small>:!entry.length?<Empty id="entry">{STUDENT_ONLY_EMPTY_ENTRY}</Empty>:
             <><ul className="cb-list">{entry.slice(0,3).map(r=><li key={r.id} data-vis={STUDENT_FACING_ENTRY.has(String(r.status))?undefined:'unapproved_entry'}><span>{kindLabel(r.kind)}</span><b>{r.min_entry_score!=null?`${r.min_entry_score} (${r.min_entry_score_basis})`:r.description}</b>
               {r.quote&&<small className="cb-int" data-vis="raw_quote">“{r.quote}”</small>}{r.status==='proposed'&&<small className="cb-int" data-vis="layer4_queue_state">waiting in Layer 4</small>}</li>)}</ul>
               {!entry.some(r=>STUDENT_FACING_ENTRY.has(String(r.status)))&&<p className="cb-empty" data-student-only data-cb-empty="entry-approved">{STUDENT_ONLY_EMPTY_ENTRY}</p>}</>}</div>
-          <div data-cb-scholarships><small className="cb-label">Scholarships</small>{!sch.length?<Empty id="scholarships">No published scholarship applies to this course.</Empty>:
-            <><ul className="cb-list" data-cb-sch-list>{schShown.map((s,i)=><li key={s.id||s.mapping_id||i}><span>{s.name||s.title}</span><b>{s.value_label||s.value_text||s.amount_text||(s.amount!=null?fmtMoney(s.amount,s.currency||'AUD'):'')}</b></li>)}</ul>{schToggle}</>}</div>
-        </div>
       </Card>
     </div>
   </section>}

@@ -1,4 +1,4 @@
-// Guards: Correlated read-only drawer sections (Platform Admin 18 Nov 2026 21:23; admin docs/platform/2026-11-18-correlated-blades-role-visibility-mockup.md): the Course drawer shows Location & weather (BOM, ABS), Career pathway (JSA, with an empty state while figures load), Visa & living-cost snapshot (Home Affairs) and Entry requirements & scholarships; the Provider drawer shows Rankings (QS, THE, ARWU, subject), Campus city profiles and Scholarships & accreditations. Joins are client-side over existing reads only (zero schema) and every card follows CARD_SPEC.
+// Guards: Correlated read-only drawer sections (Platform Admin 18 Nov 2026 21:23; admin docs/platform/2026-11-18-correlated-blades-role-visibility-mockup.md): the Course drawer shows Location & weather (BOM, ABS), Career pathway (JSA, with an empty state while figures load), Visa & living-cost snapshot (Home Affairs) and Entry requirements (s699: scholarships are listed once, in the Scholarships section); the Provider drawer shows Rankings (QS, THE, ARWU, subject), Campus city profiles and Scholarships & accreditations. Joins are client-side over existing reads only (zero schema) and every card follows CARD_SPEC.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
@@ -58,7 +58,7 @@ test('zero schema: the sections read existing functions only, and no migration c
 })
 
 test.describe('mocked browser', () => {
-  test('Course drawer: Melbourne weather and population, careers empty state, visa snapshot, entry and scholarships', async ({ page }) => {
+  test('Course drawer: Melbourne weather and population, careers empty state, visa snapshot and entry requirements', async ({ page }) => {
     await mockAdmin(page, { rank: 6 })
     await routeCorrelated(page)
     await page.goto('/#courses?id=0b1fb6d4-c02f-47c7-98d0-9f0d57240fd5')
