@@ -39,3 +39,7 @@ test('the replay compares deadlines with held course intake deadlines', () => {
   expect(S).toContain("to_char(i.application_deadline, 'YYYY-MM-DD')) from catalogue.course_intakes i where i.course_id = c.id and i.status = 'active' and i.application_deadline is not null) as deadlines")
   expect(S).toContain("agree = ans.length > 0 && ans.every((d) => held.some((h) => d.length === 10 ? h === d : h.slice(5) === d))")
 })
+
+test('the worker that carries the v2 prompt is v1.0.25', () => {
+  expect(fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')).toContain('const WORKER = "coverage-sweep-worker-v1.0.26"')
+})
