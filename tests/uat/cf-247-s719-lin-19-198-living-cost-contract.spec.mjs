@@ -1,10 +1,10 @@
 // Guards: Home Affairs financial-capacity living cost (Platform Admin 19 Nov 2026 06:41, 06:45 and 06:50): LIN 19/198 is registered in the Layer 1 Register under Australia before it is read, its fact and the Home Affairs Step by step tab state the same rule, two sources that disagree are held for a person, a successor edition carries one read date and every source's attribution, a tab page is read whole, and every study rule applies to its country (proven) so Around this course shows it.
-// CF-247 S719. supabase/migrations/20261119075000_cf247_lin_19_198_living_cost.sql, supabase/functions/_shared/cf247-page-facts.js (loader v1.5.0).
+// CF-247 S719. supabase/migrations/20261119083100_cf247_lin_19_198_living_cost.sql, supabase/functions/_shared/cf247-page-facts.js (loader v1.5.0).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { firecrawlScrapeBody, extractFact, htmlToText } from '../../supabase/functions/_shared/cf247-page-facts.js'
 
-const M = fs.readFileSync('supabase/migrations/20261119075000_cf247_lin_19_198_living_cost.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261119083100_cf247_lin_19_198_living_cost.sql', 'utf8')
 const loader = fs.readFileSync('supabase/functions/layer1-destination-geo-loader/index.ts', 'utf8')
 
 test('a page address that names a tab is read whole; every other page keeps main content', () => {

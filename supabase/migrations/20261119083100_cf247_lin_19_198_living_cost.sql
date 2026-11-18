@@ -54,7 +54,7 @@ insert into pipeline.layer1_source_operations(source_id, authority_name, authori
        verification_cadence_days, ingestion_cadence_days, variance_warn_percent, variance_block_percent, auto_ingest, next_verification_at, change_reason)
 select s.id, s.metadata->>'publisher', array['legislation.gov.au', 'www.legislation.gov.au'], 'Federal Register of Legislation compilation page (static HTML)',
        'rules', true, false, 30, 30, 20, 60, true, null,  -- monthly; variance warn 20%, block 60%; made due by the follow-up change
-       'Registered 19 Nov 2026 (20261119075000, s719): living-cost amount for the Home Affairs study rules edition'
+       'Registered 19 Nov 2026 (20261119083100, s719): living-cost amount for the Home Affairs study rules edition'
   from pipeline.sources s
  where s.label = 'LIN 19/198 Evidence of Financial Capacity (Subclass 500 and 590)' and s.metadata->>'source_system' = 'DESTINATION'
    and not exists (select 1 from pipeline.layer1_source_operations o where o.source_id = s.id);
@@ -67,7 +67,7 @@ select 'AU', f.edition_label,
        'amount', f.rule_category, f.title, f.applicant_scope,
        'AUD\s?([0-9]{2},[0-9]{3})\s*\(primary applicant annual living costs\)', 'i', f.unit, 'AUD', 20000, 40000,
        'primary applicant annual living costs', 'active', 'static',
-       'Seeded 19 Nov 2026 (20261119075000, s719): LIN 19/198 subsection 6(2), compilation No. 2; the Home Affairs Step by step tab corroborates'
+       'Seeded 19 Nov 2026 (20261119083100, s719): LIN 19/198 subsection 6(2), compilation No. 2; the Home Affairs Step by step tab corroborates'
   from destination.page_facts f
  where f.id = '5c795851-f84c-4453-8675-12059376e039'
    and not exists (select 1 from destination.page_facts g where g.page_url like 'https://www.legislation.gov.au/F2019L01366/%' and g.title = f.title);
@@ -77,7 +77,7 @@ update destination.page_facts
        pattern = '(?:primary applicant|student or guardian|student/guardian|student primary applicant|\byou\b)[^0-9]{0,160}?AUD\s?\$?\s?([0-9]{2},[0-9]{3})',
        anchor = 'living cost|financial capacity|12 months',
        min_value = 20000, max_value = 40000,
-       note = note || '; 19 Nov 2026 (20261119075000, s719): reads the Step by step tab (#HowTo, read whole); corroborates LIN 19/198',
+       note = note || '; 19 Nov 2026 (20261119083100, s719): reads the Step by step tab (#HowTo, read whole); corroborates LIN 19/198',
        updated_at = now()
  where id = '5c795851-f84c-4453-8675-12059376e039' and page_url not like '%#HowTo';
 
@@ -114,13 +114,13 @@ select pg_temp.cf_edit_many('security.destination_page_facts_load_v1(jsonb)'::re
   -- the JSA OSCA occupation workbook$o5$
   ],
   array[
-    $n1$        -- 20261119075000 (s719): one read date in a successor's label, and a time when a second successor opens on the same day
+    $n1$        -- 20261119083100 (s719): one read date in a successor's label, and a time when a second successor opens on the same day
         v_label := regexp_replace(e.edition_label, '\s\(read [^)]*\)$', '') || ' (read ' || v_day || ')';
         if v_label = e.edition_label then
           v_label := regexp_replace(e.edition_label, '\s\(read [^)]*\)$', '') || ' (read ' || v_day || ', ' || to_char(now() at time zone 'Australia/Sydney', 'HH24:MI') || ')';
         end if;$n1$,
     $n2$          values (e.country_id, e.domain, v_label, current_date, 'draft', e.source_url, e.source_owner,
-                  -- 20261119075000 (s719): the attribution of every other registered destination source a fact of this run came from
+                  -- 20261119083100 (s719): the attribution of every other registered destination source a fact of this run came from
                   e.attribution_text || coalesce((select ' ' || string_agg(distinct src.metadata->>'attribution', ' ')
                      from jsonb_array_elements(v_found) z
                      join pipeline.layer1_source_operations o on lower(substring(z->>'page_url' from '^https?://([^/:?#]+)')) = any (o.authority_domains)
@@ -129,10 +129,10 @@ select pg_temp.cf_edit_many('security.destination_page_facts_load_v1(jsonb)'::re
                       and coalesce(src.metadata->>'attribution', '') <> '' and position(src.metadata->>'attribution' in coalesce(e.attribution_text, '')) = 0), ''),
                   e.terms_status, now())$n2$,
     $n3$          update destination.study_rules set numeric_threshold = v_val, quote_on_page = fd->>'quote', evidence_id = coalesce(nullif(fd->>'evidence_id', '')::uuid, evidence_id),
-                 source_url = fd->>'page_url',  -- 20261119075000 (s719): the rule names the page its quote is from$n3$,
+                 source_url = fd->>'page_url',  -- 20261119083100 (s719): the rule names the page its quote is from$n3$,
     $n4$        select * into f from destination.page_facts where id = (fd->>'fact_id')::uuid;
         v_val := nullif(fd->>'value', '')::numeric; v_read := (fd->>'read_at')::timestamptz;
-        -- 20261119075000 (s719): two official sources for one rule must agree; when they do not, both are held and a person decides
+        -- 20261119083100 (s719): two official sources for one rule must agree; when they do not, both are held and a person decides
         if exists (select 1 from jsonb_array_elements(v_found) z2 join destination.page_facts p2 on p2.id = (z2->>'fact_id')::uuid
                     where (z2->>'edition_id')::uuid = v_ed and p2.id <> f.id and p2.rule_category = f.rule_category and p2.title = f.title
                       and nullif(z2->>'value', '')::numeric is distinct from v_val) then
@@ -144,7 +144,7 @@ select pg_temp.cf_edit_many('security.destination_page_facts_load_v1(jsonb)'::re
     $n5$          v_unchanged := v_unchanged + 1;
         end if;
       end loop;
-      -- 20261119075000 (s719): a national authority's rule applies to every course of its country: one proven country applicability per rule
+      -- 20261119083100 (s719): a national authority's rule applies to every course of its country: one proven country applicability per rule
       insert into destination.rule_applicability(rule_id, entity_type, entity_id, entity_code, applicability_status, evidence_url, quote_on_page, verified_at)
       select r.id, 'country', r.country_id, (select c.iso_alpha2 from ref.countries c where c.id = r.country_id), 'proven', r.source_url, r.quote_on_page,
              coalesce(r.last_checked_at, now())
@@ -156,7 +156,7 @@ select pg_temp.cf_edit_many('security.destination_page_facts_load_v1(jsonb)'::re
 
   -- the JSA OSCA occupation workbook$n5$
   ],
-  '20261119075000 (s719)');
+  '20261119083100 (s719)');
 
 -- 4. country applicability for the rules of the published Home Affairs edition (backfill; the load writes it from now on)
 insert into destination.rule_applicability(rule_id, entity_type, entity_id, entity_code, applicability_status, evidence_url, quote_on_page, verified_at)
@@ -175,7 +175,7 @@ begin
   select count(*) into v_n from destination.page_facts where title = 'Student visa (subclass 500) 12-month living cost (financial capacity)' and status = 'active'
      and (page_url like 'https://www.legislation.gov.au/F2019L01366/%' or page_url like '%student-500#HowTo');
   if v_n <> 2 then raise exception 'post-check: expected the instrument fact and the Step by step fact (%)', v_n; end if;
-  if (select count(*) from pg_proc where prosrc like '%20261119075000 (s719)%' and oid = 'security.destination_page_facts_load_v1(jsonb)'::regprocedure) <> 1 then
+  if (select count(*) from pg_proc where prosrc like '%20261119083100 (s719)%' and oid = 'security.destination_page_facts_load_v1(jsonb)'::regprocedure) <> 1 then
     raise exception 'post-check: the load function was not edited';
   end if;
   if exists (select 1 from destination.study_rules r join destination.editions e on e.id = r.edition_id
