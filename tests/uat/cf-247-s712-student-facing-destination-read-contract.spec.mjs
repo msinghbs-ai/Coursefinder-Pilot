@@ -1,9 +1,9 @@
 // Guards: student-facing correlated read (S1-RM-Design hand-off, Platform Admin 18 Nov 2026 21:23): Viewer and Counsellor read approved, published destination figures with student-facing fields only; Curator and above keep the full review read; provider detail carries accreditations (all statuses for Curator and above, the API v3 set for lower roles); no new table or function.
-// CF-247 S712. supabase/migrations/20261119045000_cf247_student_facing_correlated_read.sql.
+// CF-247 S712. supabase/migrations/20261119045000_cf247_student_facing_destination_read.sql.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261119045000_cf247_student_facing_correlated_read.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261119045000_cf247_student_facing_destination_read.sql', 'utf8')
 const code = M.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
 const student = code.slice(code.indexOf("if coalesce(security.current_role_rank(), 0) < 3 then"), code.indexOf("'20261119045000 (s712)');"))
 
