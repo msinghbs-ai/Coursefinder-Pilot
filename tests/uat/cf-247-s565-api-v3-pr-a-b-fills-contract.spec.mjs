@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261116180000_cf247_api_v3_pr_a_b_fills.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261116180000_cf247_api_v3_pr_a_b_fills.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('PR A1 primary campus: CRICOS registered address, exactly one active campus, never over an existing primary', () => {

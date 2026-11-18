@@ -2,8 +2,8 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const A = fs.readFileSync('supabase/migrations/20261107130000_cf247_aer_stored_read_recovery.sql', 'utf8')
-const B = fs.readFileSync('supabase/migrations/20261107130100_cf247_aer_row_limit_rule.sql', 'utf8')
+const A = fs.readFileSync('supabase/migrations-archive/20261107130000_cf247_aer_stored_read_recovery.sql', 'utf8')
+const B = fs.readFileSync('supabase/migrations-archive/20261107130100_cf247_aer_row_limit_rule.sql', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 const run = fs.readFileSync('tests/fixtures/aer-technical-holds/run.sh', 'utf8')
 const fx = fs.readFileSync('tests/fixtures/aer-technical-holds/fixtures.sql', 'utf8')
@@ -78,7 +78,7 @@ test('governance: job catalogued with no number in its command, tables commented
 })
 
 test('fix 1 (20261107170000): the replay job record is requested by the system identity, never null (live admin_jobs.requested_by is NOT NULL), and a read that is not applied keeps its reason', () => {
-  const sql = fs.readFileSync('supabase/migrations/20261107170000_cf247_aer_replay_job_actor.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations-archive/20261107170000_cf247_aer_replay_job_actor.sql', 'utf8')
   const body = sql.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
   expect(body).toContain("'total', 1), security.system_actor_id(), 'Replay of stored read")
   expect(body).not.toMatch(/'total', 1\), null,/)

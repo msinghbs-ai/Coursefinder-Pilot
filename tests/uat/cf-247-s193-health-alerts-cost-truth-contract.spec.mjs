@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261031080000_cf247_ss014_health_alerts_cost_truth.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261031080000_cf247_ss014_health_alerts_cost_truth.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 
 test('one md5-guarded edit of the existing health check; four settings with label, range, unit and used_by', () => {

@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const sql = fs.readFileSync('supabase/migrations/20261102060000_cf247_admission_schedule_stagger.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261102060000_cf247_admission_schedule_stagger.sql', 'utf8')
 
 test('Decision 4: coverage-admit :x3, coverage-admit-intakes :x5, adapter-overwrite :x9 (approved pattern)', () => {
   expect(sql).toContain(`jobname = 'coverage-admit'), schedule => '3-59/10 * * * *'`)

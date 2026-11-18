@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const read = (p) => fs.readFileSync(p, 'utf8')
-const m = read('supabase/migrations/20261117131500_cf247_rm0f_destination_admin_ui.sql')
+const m = read('supabase/migrations-archive/20261117131500_cf247_rm0f_destination_admin_ui.sql')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const nav = read('src/nav-map.js'), page = read('src/DestinationData.jsx'), main = read('src/mature-main.jsx')
 

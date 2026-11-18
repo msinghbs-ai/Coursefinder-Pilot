@@ -1,13 +1,13 @@
 // Guards: destination page facts (Platform Admin 18 Nov 2026 14:23 and 15:32): figures and rules are read from official pages by a pattern with a verbatim quote, evidence and the time read, never typed in; restricted terms are not read; QILT stays gated; a reviewed row is never changed.
-// CF-247 S653. supabase/migrations/20261118185000_cf247_destination_page_facts.sql and 20261118186000 (first load), supabase/functions/_shared/cf247-page-facts.js, layer1-destination-geo-loader v1.2.0 mode facts.
+// CF-247 S653. supabase/migrations-archive/20261118185000_cf247_destination_page_facts.sql and 20261118186000 (first load), supabase/functions/_shared/cf247-page-facts.js, layer1-destination-geo-loader v1.2.0 mode facts.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { anchorWindows, extractFact, htmlToText, linkWords, parseOccupationGrid, quoteAround, xlsxLinks } from '../../supabase/functions/_shared/cf247-page-facts.js'
 
-const M = fs.readFileSync('supabase/migrations/20261118185000_cf247_destination_page_facts.sql', 'utf8')
-const R = fs.readFileSync('supabase/migrations/20261118191000_cf247_destination_page_facts_reader_fix.sql', 'utf8')
-const S = fs.readFileSync('supabase/migrations/20261118194000_cf247_destination_page_facts_second_load.sql', 'utf8')
-const F = fs.readFileSync('supabase/migrations/20261118186000_cf247_destination_page_facts_first_load.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118185000_cf247_destination_page_facts.sql', 'utf8')
+const R = fs.readFileSync('supabase/migrations-archive/20261118191000_cf247_destination_page_facts_reader_fix.sql', 'utf8')
+const S = fs.readFileSync('supabase/migrations-archive/20261118194000_cf247_destination_page_facts_second_load.sql', 'utf8')
+const F = fs.readFileSync('supabase/migrations-archive/20261118186000_cf247_destination_page_facts_first_load.sql', 'utf8')
 const E = fs.readFileSync('supabase/functions/layer1-destination-geo-loader/index.ts', 'utf8')
 
 const PAGE = `<html><head><title>Student visa</title><style>.x{color:red}</style></head><body>

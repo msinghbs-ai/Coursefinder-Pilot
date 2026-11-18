@@ -97,7 +97,7 @@ test('audit: the excluded proposal names the active row it leaves in place; the 
     "'retains_active_row_hash', (select a.row_hash from catalogue.provider_entry_matrix a where a.row_hash = m.row_hash and a.status = 'active'"]) expect(e.neu[3]).toContain(k)
   expect(e.neu[4]).toContain("|| case when v_map is not null then jsonb_build_object('retained', v_ret, 'supersede_map', v_map) else '{}'::jsonb end;")
   // the decide function records the apply result in the aer_approve_except event (A1, unchanged here)
-  const a1 = fs.readFileSync('supabase/migrations/20261030070000_cf247_aer_review_path.sql', 'utf8')
+  const a1 = fs.readFileSync('supabase/migrations-archive/20261030070000_cf247_aer_review_path.sql', 'utf8')
   expect(a1).toContain("'lineage', v_aer, 'excluded_row_ids', coalesce(v_final->'exclude_row_ids', '[]'::jsonb), 'result', v_scalar), v_actor);")
 })
 

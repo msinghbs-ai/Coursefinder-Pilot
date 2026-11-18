@@ -11,12 +11,12 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${AIEVAL_DB:-ops_ai_eval_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104070000_cf247_ai_eval_self_improvement.sql
+MIG=supabase/migrations-archive/20261104070000_cf247_ai_eval_self_improvement.sql
 FX=tests/fixtures/ops-ai-eval
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }
-if git cat-file -e origin/cf247-ops-a:supabase/migrations/20261104010000_cf247_ops_controller.sql 2>/dev/null; then
-  diff <(git show origin/cf247-ops-a:supabase/migrations/20261104010000_cf247_ops_controller.sql | awk '/^-- >>> contract/{f=1} f{print} /^-- <<< contract/{f=0}') \
+if git cat-file -e origin/cf247-ops-a:supabase/migrations-archive/20261104010000_cf247_ops_controller.sql 2>/dev/null; then
+  diff <(git show origin/cf247-ops-a:supabase/migrations-archive/20261104010000_cf247_ops_controller.sql | awk '/^-- >>> contract/{f=1} f{print} /^-- <<< contract/{f=0}') \
        <(sed -n '/^-- >>> contract/,$p' $FX/stub-ops-contract.sql) >/dev/null || { echo "stub-ops-contract.sql differs from workstream A's contract section"; exit 1; }
   echo "stub-ops-contract.sql = workstream A's contract section (origin/cf247-ops-a)"
 fi

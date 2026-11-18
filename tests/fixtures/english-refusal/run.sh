@@ -9,7 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/run/postgresql) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 DB=${RF_DB:-h2_refusal_fixture}; FX=tests/fixtures/english-refusal; M=tests/fixtures/english-requirements/manifests/english-path.json
-MIG=supabase/migrations/20261107060000_cf247_refusal_is_not_a_try.sql
+MIG=supabase/migrations-archive/20261107060000_cf247_refusal_is_not_a_try.sql
 P="psql -X -q -At -v ON_ERROR_STOP=1 -d $DB"
 cleanup() { [ -n "${RF_KEEP:-}" ] || dropdb --if-exists "$DB" 2>/dev/null || true; }
 trap cleanup EXIT

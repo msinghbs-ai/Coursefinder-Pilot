@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
-const M = fs.readFileSync('supabase/migrations/20261111000000_cf247_cdesc_admit_outside_ai_record.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261111000000_cf247_cdesc_admit_outside_ai_record.sql', 'utf8')
 const R = fs.readFileSync('supabase/held/cdesc_admit_outside_ai_record_forward_recovery.sql', 'utf8')
 const LIVE = fs.readFileSync('tests/fixtures/cdesc-admit-outside-record/live/security.course_description_machine_trg_v1.sql', 'utf8')
 const BEFORE = 'ec9b96498c54e37f8492a1003ea97520'

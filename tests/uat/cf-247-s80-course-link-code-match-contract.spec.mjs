@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const mig = fs.readFileSync('supabase/migrations/20261020050000_cf247_course_link_major_rule.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261020050000_cf247_course_link_major_rule.sql', 'utf8')
 
 test('page rule: a major or specialisation page of the course held does not replace it', () => {
   expect(mig).toContain("md5(pg_get_functiondef('security.course_page_rule_v1(text,text)'::regprocedure)) <> '53e4bcf49c72e0e29936f3c61f6045c4'")

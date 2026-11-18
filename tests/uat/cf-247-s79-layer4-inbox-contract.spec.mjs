@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const mig = fs.readFileSync('supabase/migrations/20261020040000_cf247_layer4_inbox.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261020040000_cf247_layer4_inbox.sql', 'utf8')
 
 test('inbox: every source, every kind names its choices and return path; decide routes to the existing actions', () => {
   for (const k of ['course_link', 'held_scholarship', 'website_needed', 'pages_not_found', 'too_few_pages', 'nothing_ready', 'central_to_approve', 'onboarding_failed', 'site_down', 'not_offered', 'fee_check', 'counsellor_report', 'not_on_site'])

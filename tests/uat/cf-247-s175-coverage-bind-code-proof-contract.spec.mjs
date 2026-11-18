@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { identity } from '../../supabase/functions/coverage-sweep/extract.ts'
 
-const MIG = 'supabase/migrations/20261030030000_cf247_coverage_bind_code_proof.sql'
+const MIG = 'supabase/migrations-archive/20261030030000_cf247_coverage_bind_code_proof.sql'
 const sql = fs.readFileSync(MIG, 'utf8')
 
 test('W31 migration: one md5-guarded edit of coverage_bind_v2 from the live definition read on 30 Oct 2026', () => {

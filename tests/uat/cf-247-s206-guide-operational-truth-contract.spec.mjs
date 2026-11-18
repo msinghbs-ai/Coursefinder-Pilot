@@ -141,7 +141,7 @@ test.describe('mocked browser', () => {
 
 // SS-016 §2 (Platform Admin 1 Nov 2026 21:02): the automation control's floor names the role it checks; the boundary is unchanged
 test('automation control: the rank-5 refusal names the PIM Admin, and the boundary is unchanged', () => {
-  const m = fs.readFileSync('supabase/migrations/20261101090000_cf247_automation_denial_message.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261101090000_cf247_automation_denial_message.sql', 'utf8')
   expect(m).toContain("'30c319b8ed37dbc1df6700a0d3f5c46f', '71951aa2faf643f0dd86aae580e6c34d'")
   expect(m).toContain("if auth.uid() is null or v_rank<5 then raise exception 'PIM Admin role or above required to change automations.")
   expect(m).toContain("array[1]")
@@ -336,7 +336,7 @@ test.describe('mocked browser (SS-016 22:01)', () => {
 
 // SS-016 acceptance S1, G1–G3 (role walkthrough fixtures, overnight mandate 1 Nov 2026 22:01): refusals and links name the role that acts
 test('automation control: the per-automation refusal names its role; guide links above a role say which role opens them', () => {
-  const m = fs.readFileSync('supabase/migrations/20261101110000_cf247_automation_owner_refusal.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261101110000_cf247_automation_owner_refusal.sql', 'utf8')
   expect(m).toContain("'71951aa2faf643f0dd86aae580e6c34d', '431aff603f21b8c8a030073b07a08259'")
   expect(m).toContain("if v_rank<coalesce(c.control_rank,6) then raise exception 'this automation is changed by the %'")
   expect(m).toMatch(/^-- Retires: nothing/m)

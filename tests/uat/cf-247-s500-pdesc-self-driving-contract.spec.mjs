@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { descriptionIdentityLabels, descriptionSourceIdentity, descriptionPageText } from '../../supabase/functions/coverage-sweep/description.ts'
 
-const M = fs.readFileSync('supabase/migrations/20261109010000_cf247_pdesc_description_lost.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261109010000_cf247_pdesc_description_lost.sql', 'utf8')
 const run = fs.readFileSync('tests/fixtures/pdesc-self-driving/run.sh', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 const C = code(M)

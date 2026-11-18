@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const sql = fs.readFileSync('supabase/migrations/20261012010500_cf247_onboarding_recipe_off_dashboard.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261012010500_cf247_onboarding_recipe_off_dashboard.sql', 'utf8')
 
 test('migration: other-domain switched-off search replaced; same-website one stops as recipe_off; guarded; nothing dropped', () => {
   expect(sql).toContain('pipeline.course_link_recipes.search_domain is distinct from excluded.search_domain')
@@ -26,7 +26,7 @@ test('migration: Dashboard waiting rows', () => {
 })
 
 test('migration 10600: a proposal with no answer after 30 minutes is asked again, twice at most', () => {
-  const s = fs.readFileSync('supabase/migrations/20261012010600_cf247_onboarding_proposal_stall_retry.sql', 'utf8')
+  const s = fs.readFileSync('supabase/migrations-archive/20261012010600_cf247_onboarding_proposal_stall_retry.sql', 'utf8')
   expect(s).toContain("or (d.status = 'proposing' and v_age > interval '30 minutes')) and o.attempts < 2 then")
   expect(s).toContain('live % differs from the definition this change replaces')
   expect(s).not.toMatch(/^\s*(drop|delete|truncate)\b/im)

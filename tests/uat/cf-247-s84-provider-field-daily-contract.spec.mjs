@@ -4,7 +4,7 @@ import fs from 'node:fs'
 
 // CF-247 (Platform Admin, 21 Oct 2026 18:32): "Produce it daily please" - the NZ per-provider field report, daily. Real day-by-day
 // counts per provider instead of working out "before" afterwards.
-const m = fs.readFileSync('supabase/migrations/20261021210000_cf247_provider_field_daily.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261021210000_cf247_provider_field_daily.sql', 'utf8')
 
 test('daily field counts per provider: table, job, retention setting, seeds', () => {
   expect(m).toContain('create table if not exists pipeline.provider_field_daily')

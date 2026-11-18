@@ -10,9 +10,9 @@ DB=${ARN_DB:-g_aer_read_now}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 F=tests/fixtures/aer-read-now
-M=supabase/migrations/20261110220000_cf247_aer_read_now.sql
+M=supabase/migrations-archive/20261110220000_cf247_aer_read_now.sql
 R=supabase/held/aer_read_now_forward_recovery.sql
-PARKED=supabase/migrations/20261110160000_cf247_aer_source_recovery.sql
+PARKED=supabase/migrations-archive/20261110160000_cf247_aer_source_recovery.sql
 POP='security.aer_course_population_v1()'; DDA='security.data_delivery_aer_v1()'; L4D='security.layer4_aer_review_detail_v1(text)'; DDV='security.data_delivery_v1()'
 POP_BEFORE=d593eb0aa0fe06b0b4b28c86821bfff5; DDA_BEFORE=27a42c5f02d09f518e77bd965814bbe0; L4D_BEFORE=330e079018c93f8db8a649ed3a08ae12; DDV_BEFORE=208067f054c2f3ac7adb1196e3e8c25c
 q() { psql -X -d "$DB" -Atc "$1"; }

@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/run/postgresql) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 BASE=intake_calendar_v2_fixtures; DB=intake_recovery_final_fixtures; F=tests/fixtures/intake-recovery-final
-MIG=supabase/migrations/20261105040000_cf247_intake_recovery_final.sql
+MIG=supabase/migrations-archive/20261105040000_cf247_intake_recovery_final.sql
 P=(psql -X -q -v ON_ERROR_STOP=1)
 if [ -z "${INTAKE_RF_REUSE:-}" ] || ! "${P[@]}" -d postgres -Atc "select 1 from pg_database where datname = '$BASE'" | grep -q 1; then
   bash tests/fixtures/intake-preview-timeout/run.sh > /dev/null   # a clean #872 + #876 base (an earlier browser run changes its data)

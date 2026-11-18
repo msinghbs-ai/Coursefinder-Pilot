@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const sql = fs.readFileSync('supabase/migrations/20261012011700_cf247_course_pages_firecrawl_reads.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261012011700_cf247_course_pages_firecrawl_reads.sql', 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const outside = s => s.slice(0, s.indexOf('CREATE OR REPLACE FUNCTION')) + s.slice(s.lastIndexOf('$function$;'))
 
@@ -21,7 +21,7 @@ test('worker v0.21.3: a found page is read directly first, Firecrawl only when b
 })
 
 test('11800: basic proxy setting, second reader paused (not removed)', () => {
-  const m = fs.readFileSync('supabase/migrations/20261012011800_cf247_firecrawl_fallback_basic_proxy.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261012011800_cf247_firecrawl_fallback_basic_proxy.sql', 'utf8')
   expect(m).toContain("set value = '\"basic\"'::jsonb")
   expect(m).toContain("cron.alter_job(j.jobid, active := false)")
   expect(m).not.toMatch(/cron\.unschedule|^\s*(drop|delete|truncate)\b/im)

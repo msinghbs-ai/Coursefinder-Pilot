@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113373500_cf247_sch_ai_vendor_hold_and_fresh_first.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113373500_cf247_sch_ai_vendor_hold_and_fresh_first.sql', 'utf8')
 
 test('md5-guarded edits of the fire and the picker', () => {
   expect(m).toContain("select pg_temp.edit_n('security.scholarship_ai_fire_v1()', '3d48dc20a4e9a571266f3de243a31545', array[")

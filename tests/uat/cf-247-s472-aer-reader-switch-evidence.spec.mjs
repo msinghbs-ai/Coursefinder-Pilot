@@ -11,7 +11,7 @@ import { entryCountryAliases, entryMatrixParsed } from '../../supabase/functions
 import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 const SHAPES = JSON.parse(fs.readFileSync('tests/fixtures/aer-reader-switch-evidence/quote-shapes-20261108.json', 'utf8')).drops
-const QM = fs.readFileSync('supabase/migrations/20261108020000_cf247_aer_reader_quality.sql', 'utf8')
+const QM = fs.readFileSync('supabase/migrations-archive/20261108020000_cf247_aer_reader_quality.sql', 'utf8')
 const flat = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '')
 
 // deterministic text of exactly `letters` letters in words, unlike any other text of the fixture

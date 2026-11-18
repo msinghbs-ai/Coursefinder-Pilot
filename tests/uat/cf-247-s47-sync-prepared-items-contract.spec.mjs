@@ -3,7 +3,7 @@
 // the item it built (its hash is of that copy); sync serves it and fills a page by size; pages hold up to 200 items.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const mig = fs.readFileSync('supabase/migrations/20261015100000_cf247_sync_prepared_items.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261015100000_cf247_sync_prepared_items.sql', 'utf8')
 test('the change check stores the item; sync serves it by size; page max 200 is a setting', () => {
   expect(mig).toContain('alter table pipeline.website_sync_items add column if not exists item jsonb;')
   expect(mig).toContain("update pipeline.website_sync_items set hash = h, item = v, ref_id = r.ref_id, seq = nextval('pipeline.website_sync_seq'), seq_at = now() where entity = e and item_key = r.item_key;")

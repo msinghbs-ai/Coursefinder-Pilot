@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
-const mig = fs.readFileSync('supabase/migrations/20261104180000_cf247_identity_check_issue_values.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261104180000_cf247_identity_check_issue_values.sql', 'utf8')
 
 test('the identity check writes its issues with values the integration queue accepts', () => {
   expect(mig).toContain(`'root_cause_class', 'data_drift', 'workstream', 'A10',`)

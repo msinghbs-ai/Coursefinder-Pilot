@@ -9,7 +9,7 @@ import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { migrationNames } from './support/migration-files.mjs'
 
-const MIG = 'supabase/migrations/20261112060000_cf247_aer_qualification_first.sql'
+const MIG = 'supabase/migrations-archive/20261112060000_cf247_aer_qualification_first.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 async function load() {

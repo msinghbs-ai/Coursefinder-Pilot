@@ -9,7 +9,7 @@ DB=${PDRF_DB:-g_pdesc_retry}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 FX=tests/fixtures/provider-description-autonomy
-MIG=supabase/migrations/20261108140000_cf247_pdesc_retry_on_new_evidence_and_funnel.sql
+MIG=supabase/migrations-archive/20261108140000_cf247_pdesc_retry_on_new_evidence_and_funnel.sql
 q() { psql -X -d "$DB" -Atc "$1"; }
 [ -n "${PDRF_KEEP:-}" ] || trap 'dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
 dropdb --if-exists "$DB"; createdb "$DB"
@@ -17,7 +17,7 @@ psql -q -d "$DB" -c "alter database $DB set jit=off; alter database $DB set work
 sql() { { echo 'set check_function_bodies=off;'; cat "$@"; } | $P; }
 sql tests/fixtures/p1-provider-descriptions/stubs.sql
 for f in tests/fixtures/p1-provider-descriptions/live-before/*.sql; do sql "$f"; done
-sql supabase/migrations/20261102090000_cf247_p1_provider_descriptions.sql
+sql supabase/migrations-archive/20261102090000_cf247_p1_provider_descriptions.sql
 node "$FX/parity.mjs" | $P
 for f in identity roles role-flags diagnostics; do $P < "$FX/$f.sql"; done
 node "$FX/knowledge-parity.mjs" | $P
@@ -27,10 +27,10 @@ for f in helpers website-sync; do $P < "$FX/$f.sql"; done
 node "$FX/zoho-parity.mjs" | $P
 for f in lineage manual-column-guard triggers indexes knowledge-triggers zoho-triggers zoho-grants; do $P < "$FX/$f.sql"; done
 node "$FX/grants.mjs" | $P
-HOTFIX=supabase/migrations/20261104640000_cf247_run_now_outcome_code.sql
+HOTFIX=supabase/migrations-archive/20261104640000_cf247_run_now_outcome_code.sql
 [ -f "$HOTFIX" ] || { echo 'Current-main outcome-code correction is required; rebase onto main first' >&2; exit 1; }
 { echo 'set check_function_bodies=off;'; cat "$HOTFIX"; } | $P -1
-sql supabase/migrations/20261106200000_cf247_provider_description_autonomy.sql
+sql supabase/migrations-archive/20261106200000_cf247_provider_description_autonomy.sql
 # the edited function is the live one (md5 of pg_get_functiondef read 8 Nov 2026, project fxcwkweaxjtknorudmwp)
 [ "$(q "select md5(pg_get_functiondef('security.provider_description_selection_v1(jsonb)'::regprocedure))")" = 6b43ea62758a2c6fac80affba14b12d5 ] || { echo "the loaded selection function differs from live"; exit 1; }
 $P < "$FX/seed.sql"

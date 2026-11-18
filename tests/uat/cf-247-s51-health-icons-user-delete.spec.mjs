@@ -8,8 +8,8 @@ import fs from 'node:fs'
 import { readFileSync as __rf } from 'node:fs'
 const EDGE_LIST = Object.entries(JSON.parse(__rf('.github/edge-functions.json', 'utf8')).functions).map(([k, v]) => `\n[${k}]=${v}`).join('') // CF-247 Phase 3: the allow-list moved to .github/edge-functions.json
 
-const health = fs.readFileSync('supabase/migrations/20261016070000_cf247_health_and_scholarship_reads.sql', 'utf8')
-const del = fs.readFileSync('supabase/migrations/20261016080000_cf247_user_delete.sql', 'utf8')
+const health = fs.readFileSync('supabase/migrations-archive/20261016070000_cf247_health_and_scholarship_reads.sql', 'utf8')
+const del = fs.readFileSync('supabase/migrations-archive/20261016080000_cf247_user_delete.sql', 'utf8')
 const fn = fs.readFileSync('supabase/functions/admin-user-management/index.ts', 'utf8')
 const ui = fs.readFileSync('src/access-roles-entry.jsx', 'utf8')
 const dash = fs.readFileSync('src/Dashboard.jsx', 'utf8')
@@ -66,7 +66,7 @@ test.describe('mocked browser', () => {
 })
 
 test('the spend check lets a requested scholarship read past the per-university cap (day share and allowance still apply)', () => {
-  const spend = fs.readFileSync('supabase/migrations/20261016090000_cf247_requested_scholarship_reads_spend.sql', 'utf8')
+  const spend = fs.readFileSync('supabase/migrations-archive/20261016090000_cf247_requested_scholarship_reads_spend.sql', 'utf8')
   expect(spend).toContain("and not (p_purpose = 'sch_scrape' and exists (select 1 from pipeline.scholarship_pages sp join scholarship.scholarships s on s.id = sp.scholarship_id")
   expect(spend).toContain("if security.fc_budget_left_v1(p_purpose) < p_units then")
 })

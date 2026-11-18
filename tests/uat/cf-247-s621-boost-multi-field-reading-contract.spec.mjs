@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { build } from 'esbuild'
 
-const code = fs.readFileSync('supabase/migrations/20261118121500_cf247_boost_multi_field_reading.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+const code = fs.readFileSync('supabase/migrations-archive/20261118121500_cf247_boost_multi_field_reading.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const mode = IX.slice(IX.indexOf('if (mode === "boost_fields") {'), IX.indexOf('if (mode === "register_replay") {'))
 let B, F

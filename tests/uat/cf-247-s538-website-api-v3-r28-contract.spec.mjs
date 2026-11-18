@@ -4,7 +4,7 @@ import fs from 'node:fs'
 
 const v2 = fs.readFileSync('supabase/functions/website-api-v2/index.ts', 'utf8')
 const v3 = fs.readFileSync('supabase/functions/website-api-v3/index.ts', 'utf8')
-const mig = fs.readFileSync('supabase/migrations/20261113180000_cf247_website_api_v3_r28.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261113180000_cf247_website_api_v3_r28.sql', 'utf8')
 const STATUSES = ['known', 'no_official_calendar', 'month_only', 'not_on_course_page', 'course_page_not_verified', 'next_year_calendar_pending',
   'not_yet_read', 'own_calendar', 'conflicting_evidence', 'held_for_review', 'rolling']
 

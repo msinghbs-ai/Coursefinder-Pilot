@@ -11,8 +11,8 @@ case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 C=tests/fixtures/aer-discovery-campaign
 F=tests/fixtures/aer-discovery-spare
-M0=supabase/migrations/20261112040000_cf247_aer_discovery_campaign.sql
-M=${ADS_MIG:-supabase/migrations/20261112103900_cf247_aer_discovery_spare.sql}
+M0=supabase/migrations-archive/20261112040000_cf247_aer_discovery_campaign.sql
+M=${ADS_MIG:-supabase/migrations-archive/20261112103900_cf247_aer_discovery_spare.sql}
 R=${ADS_REC:-supabase/held/aer_discovery_spare_forward_recovery.sql}
 U='security.aer_discovery_campaign_used_v1(bigint)'; SP='public.svc_fc_spend(numeric,text,uuid,text)'; AD='public.admin_aer_discovery(jsonb)'
 B="2b1e2ec802e29f873fe0a77c85fe7150 c9d616fa35a278103121416ce73e0295 2f26aa2679d98904bb310bc97857857c"

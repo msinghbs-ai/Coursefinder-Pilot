@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113053100_cf247_aer_v2_step0_labels_and_coverage.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113053100_cf247_aer_v2_step0_labels_and_coverage.sql', 'utf8')
 
 test('the labelled set is a view over decided rows: accepted, left out by Approve except, rejected; machine and person kept apart', () => {
   expect(m).toContain('create or replace view pipeline.aer_labelled_rows_v1 with (security_invoker = true)')

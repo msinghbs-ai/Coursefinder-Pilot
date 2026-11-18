@@ -7,7 +7,7 @@ cd "$(dirname "$0")/../../.."
 export LC_ALL=C # fixed: one byte order for sort and comm
 DB=${CRT_DB:-g_cdesc_recovery}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
-M=supabase/migrations/20261113280000_cf247_cdesc_recovery_throughput.sql
+M=supabase/migrations-archive/20261113280000_cf247_cdesc_recovery_throughput.sql
 HELD=supabase/held/cdesc_recovery_throughput_forward_recovery.sql
 F=tests/fixtures/cdesc-recovery
 SIG='security.cdesc_subset_plan_v1(uuid,uuid,jsonb)'; BEFORE=1350a9c8f46331a5469cabbd60acf660; AFTER=3c263a1984a33a133a331883cc6f8eae

@@ -1,7 +1,7 @@
 // Guards: CF-247 AER operations workspace server (Platform Admin mandate 29 Oct 2026 08:06; admin docs/platform/AER-OPERATIONS-WORKSPACE-DECISION-2026-10-29.md W3-W14): one governed RPC; reads for every role, bounded and filtered on the server with whitelisted sorting; writes for Curator and above with a reason, the row as read (stale refused), source-supported values, no identity collision, no hard delete, one history entry per changed field; proposed AI rows never edited or activated; restore only after a workspace withdrawal or quarantine; re-read Platform Admin only, one source, never past a terminal hold; the resolver and consumer API untouched
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029010000_cf247_aer_workspace.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029010000_cf247_aer_workspace.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('one RPC for signed-in roles only; reads bounded at 100 a page; filters and sorting on the server from a fixed list', () => {

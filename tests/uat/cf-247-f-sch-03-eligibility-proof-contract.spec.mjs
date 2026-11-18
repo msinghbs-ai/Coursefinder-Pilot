@@ -31,7 +31,7 @@ test('worker v0.76.0 applies the proof to every eligibility answer (page and lin
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('return eligibilityProof(judgeScholarshipRecheck(ans.a, `${title} ${h1} ${text}`));')
   expect(w).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.76\.0"; |\/\/ was v0\.76\.0 )\/\/ v0\.76\.0 \(12 Nov 2026, CF-247 F-SCH\.01 shadow review/)
-  const m = fs.readFileSync('supabase/migrations/20261113050000_cf247_sch_eligibility_proof.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261113050000_cf247_sch_eligibility_proof.sql', 'utf8')
   expect(m).toContain("where outcome = 'proven' and result->>'audience' in ('international', 'both')")
   expect(m).not.toMatch(/update pipeline\.platform_toolset_settings/i) // no switch changes: the reader stays in shadow
 })

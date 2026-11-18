@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261109233000_cf247_pdesc_lease_record_timeouts.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261109233000_cf247_pdesc_lease_record_timeouts.sql', 'utf8')
 const CODE = MIG.split('\n').filter((l) => !l.trimStart().startsWith('--')).join('\n')   // the statements, without the comments
 const HARNESS = fs.readFileSync('tests/fixtures/pdesc-lease-record-timeouts/run.sh', 'utf8')
 const SCEN = fs.readFileSync('tests/fixtures/pdesc-lease-record-timeouts/scenarios.sql', 'utf8')

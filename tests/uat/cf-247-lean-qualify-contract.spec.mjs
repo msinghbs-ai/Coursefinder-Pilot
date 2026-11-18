@@ -8,7 +8,7 @@ import { BLOCKS_LINE, FEE_CANDIDATE_PROMPT, INTAKE_CANDIDATE_PROMPT, INTAKE_PROM
 import { FEE_AI_PROMPT, feeAiRequest } from '../../supabase/functions/coverage-sweep/fees.ts'
 
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const MIG = fs.readFileSync('supabase/migrations/20261114091500_cf247_lean_qualify_fees_intakes.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261114091500_cf247_lean_qualify_fees_intakes.sql', 'utf8')
 const body = IX.slice(IX.indexOf('if (mode === "lean_qualify")'), IX.indexOf('if (mode === "lean_sections_eval")'))
 
 test('both arms send the same instructions and context; the candidate adds only the blocks line; the intakes baseline is the live prompt sentence for sentence', () => {

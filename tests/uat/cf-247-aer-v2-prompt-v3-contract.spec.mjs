@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import { leanText } from '../../supabase/functions/coverage-sweep/lean-input.ts'
 import { AER_V3_CONTRACT, AER_V3_INPUT, AER_V3_SCHEMA, aerV2Refs, aerV3Blocks, aerV3Check, aerV3Request, aerV3User, aerV3Verify } from '../../supabase/functions/coverage-sweep/aer-v2.ts'
 
-const M = fs.readFileSync('supabase/migrations/20261114011500_cf247_aer_v2_prompt_v3.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261114011500_cf247_aer_v2_prompt_v3.sql', 'utf8')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 
 const page = '<html><nav>Menu</nav><main>' + '<p>About this course and its graduates.</p>'.repeat(50) +

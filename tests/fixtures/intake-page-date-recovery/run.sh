@@ -9,7 +9,7 @@ cd "$(dirname "$0")/../../.."
 export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's locale
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/run/postgresql) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 BASE=${PR_BASE:-intake_self_driving_fixtures}; DB=${PR_DB:-intake_page_date_recovery_fixtures}; RF=${DB}_refuse; F=tests/fixtures/intake-page-date-recovery
-M=supabase/migrations/20261110170000_cf247_intake_page_date_recovery.sql
+M=supabase/migrations-archive/20261110170000_cf247_intake_page_date_recovery.sql
 R=supabase/held/intake_page_date_recovery_forward_recovery.sql
 PLAN='security.intake_dates_plan_v3(uuid[],integer)'; PD='security.intake_page_date_v1(uuid,uuid,uuid,uuid,text,integer,integer,jsonb,date,integer)'; HINT='security.intake_page_date_hint_v1(uuid,uuid,text)'
 PLAN_BEFORE=0d11bc5dfc4b0705f0722a1aa7905db6; PLAN_AFTER=06255497ef431b0ae0d9fca6460c6cb5
@@ -85,7 +85,7 @@ echo "md5 $PLAN $PLAN_AFTER"; echo "md5 $PD $PD_AFTER"; echo "md5 $HINT $HINT_AF
 
 # Data Delivery (20261110171000): the stream's intake counts. The fixture has no Data Delivery, so the live function (body md5 849453412a8b9a448118e7b87362752a, read 10 Nov 2026) is loaded from the text the earlier held recovery restores.
 # Three streams edit security.data_delivery_v1 (pdesc, aer in #989, int here), so this edit is ONE ANCHORED LINE applied once to whatever body is live; it is proved on the live body, on the body #989 leaves, in both orders, and when the anchor is gone.
-M2=supabase/migrations/20261110171000_cf247_dd_intake_delivery.sql; R2=supabase/held/dd_intake_delivery_forward_recovery.sql
+M2=supabase/migrations-archive/20261110171000_cf247_dd_intake_delivery.sql; R2=supabase/held/dd_intake_delivery_forward_recovery.sql
 DDV='security.data_delivery_v1()'; DDI='security.data_delivery_intake_v1()'
 DD_LIVE=849453412a8b9a448118e7b87362752a; DD_AER=04b560cfb6b79758e2b694c96771be33; DD_AFTER=630f8696c18ff05703bb9798ed6fe8fa; DDI_AFTER=ed0361e1ab65cf4525836f4fdd055287
 sed -n '/^CREATE OR REPLACE FUNCTION security.data_delivery_v1()/,/^\$function\$;$/p' supabase/held/dd_provider_ai_allowance_forward_recovery.sql > "$W/dd-b67.sql"

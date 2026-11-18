@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const M = fs.readFileSync('supabase/migrations/20261116040000_cf247_settings_hub.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261116040000_cf247_settings_hub.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const UI = fs.readFileSync('src/SettingsRegister.jsx', 'utf8')
 

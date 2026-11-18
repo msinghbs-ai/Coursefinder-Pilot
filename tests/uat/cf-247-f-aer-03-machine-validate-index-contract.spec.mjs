@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { migrationNames } from './support/migration-files.mjs'
 
-const MIG = 'supabase/migrations/20261111235000_cf247_aer_machine_validate_index.sql'
+const MIG = 'supabase/migrations-archive/20261111235000_cf247_aer_machine_validate_index.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
@@ -20,7 +20,7 @@ test('the version is used by no other migration', () => {
   expect(migrationNames().filter((f) => f.startsWith('20261111235000_'))).toEqual(['20261111235000_cf247_aer_machine_validate_index.sql'])
 })
 
-const ENA = 'supabase/migrations/20261112001700_cf247_aer_machine_enable.sql'
+const ENA = 'supabase/migrations-archive/20261112001700_cf247_aer_machine_enable.sql'
 const e = fs.readFileSync(ENA, 'utf8')
 const ecode = e.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 

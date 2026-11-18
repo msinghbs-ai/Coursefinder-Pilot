@@ -1,0 +1,2 @@
+# Canonical baseline (squash 19 Nov 2026): the schema dump is kept byte for byte, carriage returns included (7 consumer API functions hold them; G3 md5s)
+supabase/live-capture/baseline/*.sql -text

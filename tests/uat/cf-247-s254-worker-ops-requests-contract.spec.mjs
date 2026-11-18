@@ -13,7 +13,7 @@ import { linkQueryKey, linkSearchGroups, linkSearchShareOn } from '../../supabas
 import { entryGlobalQualification, entryMatrixParsed, entryNonCountryShape, entryRangeLower, entrySubjectRows } from '../../supabase/functions/coverage-sweep/entry.ts'
 
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const MIG = 'supabase/migrations/20261104110000_cf247_ops_worker_requests.sql'
+const MIG = 'supabase/migrations-archive/20261104110000_cf247_ops_worker_requests.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/ops-worker-requests'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')

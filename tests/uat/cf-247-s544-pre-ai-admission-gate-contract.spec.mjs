@@ -10,8 +10,8 @@ import { gzipSync } from 'node:zlib'
 import * as G from '../../supabase/functions/coverage-sweep/admission-gate.ts'
 
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const MIG = fs.readFileSync('supabase/migrations/20261114101500_cf247_pre_ai_admission_shadow.sql', 'utf8')
-const BUCKET = fs.readFileSync('supabase/migrations/20261114103000_cf247_adapter_captures_bucket_hardening.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261114101500_cf247_pre_ai_admission_shadow.sql', 'utf8')
+const BUCKET = fs.readFileSync('supabase/migrations-archive/20261114103000_cf247_adapter_captures_bucket_hardening.sql', 'utf8')
 const sha = (b) => createHash('sha256').update(b).digest('hex')
 const page = (title, body) => `<!doctype html><html><head><title>${title}</title></head><body><nav>Home</nav><main><h1>${title}</h1>${body}</main><footer>Privacy</footer></body></html>`
 const para = (s, n = 1) => `<p>${s}</p>`.repeat(n)

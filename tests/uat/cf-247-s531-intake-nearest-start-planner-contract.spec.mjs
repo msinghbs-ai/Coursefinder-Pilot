@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261111130000_cf247_intake_nearest_start_planner.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261111130000_cf247_intake_nearest_start_planner.sql', 'utf8')
 const helper = MIG.slice(MIG.indexOf('create or replace function security.intake_nearest_start_v1'), MIG.indexOf('revoke all on function security.intake_nearest_start_v1'))
 
 test('the planner edit is md5-guarded both ways and applies each edit exactly once', () => {
@@ -41,7 +41,7 @@ test('nothing is switched on: the list ships empty and the unique-month containm
 })
 
 test('the provider list can be emptied on the settings screen (the stop), and says empty means none', async () => {
-  const M2 = fs.readFileSync('supabase/migrations/20261111140000_cf247_nearest_start_list_can_be_empty.sql', 'utf8')
+  const M2 = fs.readFileSync('supabase/migrations-archive/20261111140000_cf247_nearest_start_list_can_be_empty.sql', 'utf8')
   expect(M2).toMatch(/set min_value = 0,[\s\S]*where toolset_key = 'pipeline' and key = 'intake_dates\.nearest_start_providers';/)
   expect(M2).not.toMatch(/set value/)
   const { listPlaceholder, listValid } = await import('../../src/lib/settings-list.js')
@@ -52,7 +52,7 @@ test('the provider list can be emptied on the settings screen (the stop), and sa
 })
 
 test('hotfix 20261111160000: the page day numbers are integers (int[]), md5-guarded both ways', () => {
-  const H = fs.readFileSync('supabase/migrations/20261111160000_cf247_nearest_start_page_day_type.sql', 'utf8')
+  const H = fs.readFileSync('supabase/migrations-archive/20261111160000_cf247_nearest_start_page_day_type.sql', 'utf8')
   expect(H).toContain("'517f2986c5142c5d075f243fb8b0fc22', 'a99b42c7007436a78860a386652f81a9',")
   expect(H).toContain('array[$o$v_pd date[];$o$], array[$n$v_pd int[];$n$]')
 })

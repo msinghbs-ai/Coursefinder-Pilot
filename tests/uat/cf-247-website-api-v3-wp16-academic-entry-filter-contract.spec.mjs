@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113230000_cf247_website_api_v3_academic_entry_filter.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113230000_cf247_website_api_v3_academic_entry_filter.sql', 'utf8')
 
 test('the v3 search core is the live v2 search (md5-guarded) with the filter added, every edit applied exactly once', () => {
   expect(m).toContain("select pg_temp.copy_with_edits('public.website_v2_course_search(jsonb,integer,integer,text)', 'dcefed12a1e879aa1cc0f69e72d91428', array[")

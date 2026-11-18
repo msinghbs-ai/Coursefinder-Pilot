@@ -9,9 +9,9 @@ import { AER_V3_INPUT, aerV3Blocks } from '../../supabase/functions/coverage-swe
 import { leanText } from '../../supabase/functions/coverage-sweep/lean-input.ts'
 
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const MIG = fs.readFileSync('supabase/migrations/20261114031500_cf247_lean_sections_eval.sql', 'utf8')
-const MIGB = fs.readFileSync('supabase/migrations/20261114051500_cf247_lean_sections_eval_run_b.sql', 'utf8')
-const MIGC = fs.readFileSync('supabase/migrations/20261114071500_cf247_lean_selection_shadow.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261114031500_cf247_lean_sections_eval.sql', 'utf8')
+const MIGB = fs.readFileSync('supabase/migrations-archive/20261114051500_cf247_lean_sections_eval_run_b.sql', 'utf8')
+const MIGC = fs.readFileSync('supabase/migrations-archive/20261114071500_cf247_lean_selection_shadow.sql', 'utf8')
 const SEL = fs.readFileSync('supabase/functions/coverage-sweep/lean-sections.ts', 'utf8')
 const filler = '<p>' + 'Graduates work across many industries and roles. '.repeat(12) + '</p>'
 const page = `<html><header>Site menu Apply now</header><body><main><h1>Bachelor of Science</h1><p>The Bachelor of Science builds skills in research.</p>` +

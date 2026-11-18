@@ -3,8 +3,8 @@ name: Destination editions importer and guard integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261115190000_api_v3_additive_schema.sql'
-      - 'supabase/migrations/20261115230000_cf247_destination_importer_guard.sql'
+      - 'supabase/migrations-archive/20261115190000_api_v3_additive_schema.sql'
+      - 'supabase/migrations-archive/20261115230000_cf247_destination_importer_guard.sql'
       - 'tests/fixtures/destination-editions/**'
       - '.github/workflows/destination-editions-test.yml'
   workflow_dispatch:

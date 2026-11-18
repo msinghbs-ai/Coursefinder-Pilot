@@ -4,12 +4,12 @@
 // approved, additive only).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const mig = fs.readFileSync('supabase/migrations/20261019040000_cf247_zoho_counsellor_reports.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261019040000_cf247_zoho_counsellor_reports.sql', 'utf8')
 const fn = fs.readFileSync('supabase/functions/zoho-api-v2/index.ts', 'utf8')
 const nav = fs.readFileSync('src/nav-map.js', 'utf8')
 // v2.15.300 (Platform Admin, 20 Oct 2026, "Counsellor reports tab"): the tab retired; reports are closed in Layer 4 › Inbox
 const ui = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8')
-const l23 = fs.readFileSync('supabase/migrations/20261020060000_cf247_layer23_operations.sql', 'utf8')
+const l23 = fs.readFileSync('supabase/migrations-archive/20261020060000_cf247_layer23_operations.sql', 'utf8')
 
 test('the change is approved and additive: no consumer API function is replaced or the baseline re-taken', () => {
   expect(mig).toMatch(/^-- Consumer API change approved: Platform Admin, 19 Oct 2026 14:51/m)

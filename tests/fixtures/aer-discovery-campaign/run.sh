@@ -10,7 +10,7 @@ DB=${ADC_DB:-g_aer_discovery_campaign}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 F=tests/fixtures/aer-discovery-campaign
-M=supabase/migrations/20261112040000_cf247_aer_discovery_campaign.sql
+M=supabase/migrations-archive/20261112040000_cf247_aer_discovery_campaign.sql
 R=supabase/held/aer_discovery_campaign_forward_recovery.sql
 SP='public.svc_fc_spend(numeric,text,uuid,text)'; DI='security.aer_source_discover_v1(boolean)'
 SP_B=39075b66a1d8ff15246b8c82ffa0c590; DI_B=f818e6bb2500c5cc63c361970c73d1e3; SP_A=c9d616fa35a278103121416ce73e0295; DI_A=16e04c3ffe38a38f3b6f23df7bd0e0a1

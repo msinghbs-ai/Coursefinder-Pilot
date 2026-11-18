@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const code = fs.readFileSync('supabase/migrations/20261118101500_cf247_boost_route_call_cap.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+const code = fs.readFileSync('supabase/migrations-archive/20261118101500_cf247_boost_route_call_cap.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('the call cap is raised, the spend cap and the pinned model are not changed', () => {
   expect(code).toContain("update pipeline.ai_service_routes set daily_calls_cap = 15000, prompt_source = 'worker code: boost.ts (boost-study-load-v4)', changed_at = now(),")

@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const m = fs.readFileSync('supabase/migrations/20261104440000_cf247_l4_inbox_paging.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261104440000_cf247_l4_inbox_paging.sql', 'utf8')
 const fx = fs.readFileSync('tests/fixtures/l4-inbox-perf/fixtures.sql', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 const screenFn = code(m.slice(m.indexOf("CREATE OR REPLACE FUNCTION public.admin_layer4_inbox"), m.indexOf("-- 7 component register")))

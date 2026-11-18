@@ -3,7 +3,7 @@
 // the consumer API is not touched; nothing is ended when the register edition looks truncated.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261026004000_cf247_au_register_end_dates.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261026004000_cf247_au_register_end_dates.sql', 'utf8')
 const fn = m.slice(m.indexOf('create or replace function security.layer1_register_end_dates_v1('), m.indexOf('comment on function security.layer1_register_end_dates_v1('))
 const el = m.slice(m.indexOf('create or replace function security.au_publish_eligibility_v1()'), m.indexOf('comment on function security.au_publish_eligibility_v1()'))
 

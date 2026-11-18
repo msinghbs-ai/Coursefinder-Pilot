@@ -4,8 +4,8 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118220000_cf247_aer_shared_page_hand_bound.sql', 'utf8')
-const PREV = fs.readFileSync('supabase/migrations/20261108030000_cf247_aer_shared_page_rejected_binding.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118220000_cf247_aer_shared_page_hand_bound.sql', 'utf8')
+const PREV = fs.readFileSync('supabase/migrations-archive/20261108030000_cf247_aer_shared_page_rejected_binding.sql', 'utf8')
 const run = fs.readFileSync('tests/fixtures/aer-hand-bound/run.sh', 'utf8')
 const sc = fs.readFileSync('tests/fixtures/aer-hand-bound/scenarios.sql', 'utf8')
 const data = fs.readFileSync('tests/fixtures/aer-hand-bound/data.sql', 'utf8')
@@ -63,7 +63,7 @@ test('the database scenarios run on an isolated PostgreSQL only, twice-applied, 
   expect(run).toContain('DB=${AHB_DB:-g_aer_hand_bound}')
   expect(run).toContain('applied twice; the second run changed nothing')
   expect(code(run + sc + data)).not.toMatch(/openrouter|firecrawl|api\.anthropic|curl /i)
-  expect(wf).toContain('supabase/migrations/20261118220000_cf247_aer_shared_page_hand_bound.sql')
+  expect(wf).toContain('supabase/migrations-archive/20261118220000_cf247_aer_shared_page_hand_bound.sql')
   expect(wf).toContain('tests/fixtures/aer-hand-bound/**')
   expect(wf).toContain('bash tests/fixtures/aer-hand-bound/run.sh')
   expect(wf).toContain('postgres:16-alpine')

@@ -2,8 +2,8 @@
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
-const M1 = fs.readFileSync('supabase/migrations/20261110170000_cf247_intake_page_date_recovery.sql', 'utf8')
-const M2 = fs.readFileSync('supabase/migrations/20261110171000_cf247_dd_intake_delivery.sql', 'utf8')
+const M1 = fs.readFileSync('supabase/migrations-archive/20261110170000_cf247_intake_page_date_recovery.sql', 'utf8')
+const M2 = fs.readFileSync('supabase/migrations-archive/20261110171000_cf247_dd_intake_delivery.sql', 'utf8')
 const R1 = fs.readFileSync('supabase/held/intake_page_date_recovery_forward_recovery.sql', 'utf8')
 const R2 = fs.readFileSync('supabase/held/dd_intake_delivery_forward_recovery.sql', 'utf8')
 const WF = fs.readFileSync('.github/workflows/intake-run-validate-test.yml', 'utf8')

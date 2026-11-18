@@ -11,7 +11,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 DB=${OPSC_DB:-ops_coverage_sch_aer_fixtures}
 ROOT=../../..
-MIG=$ROOT/supabase/migrations/20261104040000_cf247_ops_c_scholarship_aer_coverage.sql
+MIG=$ROOT/supabase/migrations-archive/20261104040000_cf247_ops_c_scholarship_aer_coverage.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 md5of() { $P -d $DB -Atc "select md5(pg_get_functiondef('$1'::regprocedure))"; }
@@ -27,7 +27,7 @@ $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/n
 [ -n "${OPSC_KEEP:-}" ] || trap '$P -d postgres -c "drop database if exists $DB" >/dev/null 2>&1' EXIT
 $P -d $DB -f ../aer-phase-b/stubs.sql >/dev/null
 (cd $ROOT && node tests/fixtures/aer-phase-b/before.mjs) | $P -d $DB -o /dev/null
-$P -d $DB -1 -o /dev/null -f $ROOT/supabase/migrations/20261102110000_cf247_aer_phase_b_assurance.sql 2>/dev/null
+$P -d $DB -1 -o /dev/null -f $ROOT/supabase/migrations-archive/20261102110000_cf247_aer_phase_b_assurance.sql 2>/dev/null
 $P -d $DB -f stubs.sql >/dev/null
 node load-iq.mjs | $P -d $DB -o /dev/null
 $P -d $DB -f fc-sch-eligible-live.sql >/dev/null 2>&1

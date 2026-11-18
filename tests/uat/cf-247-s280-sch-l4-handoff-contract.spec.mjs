@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
 
-const MIG = 'supabase/migrations/20261104480000_cf247_sch_l4_handoff.sql'
+const MIG = 'supabase/migrations-archive/20261104480000_cf247_sch_l4_handoff.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/sch-l4-handoff'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')

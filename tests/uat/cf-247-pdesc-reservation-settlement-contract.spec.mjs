@@ -3,8 +3,8 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M1 = fs.readFileSync('supabase/migrations/20261110140000_cf247_pdesc_reservation_settlement.sql', 'utf8')
-const M2 = fs.readFileSync('supabase/migrations/20261110141000_cf247_pdesc_upgrade_lane_gate.sql', 'utf8')
+const M1 = fs.readFileSync('supabase/migrations-archive/20261110140000_cf247_pdesc_reservation_settlement.sql', 'utf8')
+const M2 = fs.readFileSync('supabase/migrations-archive/20261110141000_cf247_pdesc_upgrade_lane_gate.sql', 'utf8')
 const code = (m) => m.split('\n').filter((l) => !l.trimStart().startsWith('--')).join('\n')   // the statements, without the comment lines
 const C1 = code(M1), C2 = code(M2)
 const R1 = fs.readFileSync('supabase/held/pdesc_reservation_settlement_forward_recovery.sql', 'utf8')

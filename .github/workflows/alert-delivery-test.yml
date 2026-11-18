@@ -4,7 +4,7 @@ name: Alert delivery lifecycle integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261107030000_cf247_alert_delivery_lifecycle.sql'
+      - 'supabase/migrations-archive/20261107030000_cf247_alert_delivery_lifecycle.sql'
       - 'tests/fixtures/alert-delivery/**'
       - '.github/workflows/alert-delivery-test.yml'
   workflow_dispatch:

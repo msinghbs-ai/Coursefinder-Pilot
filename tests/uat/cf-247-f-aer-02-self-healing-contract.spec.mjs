@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { migrationNames } from './support/migration-files.mjs'
 
-const MIG = 'supabase/migrations/20261111220000_cf247_aer_self_healing_corrections.sql'
+const MIG = 'supabase/migrations-archive/20261111220000_cf247_aer_self_healing_corrections.sql'
 const REC = 'supabase/held/aer_self_healing_corrections_forward_recovery.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')

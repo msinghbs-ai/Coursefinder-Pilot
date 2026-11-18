@@ -20,7 +20,7 @@ echo "job map: 157 jobs = live md5"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null 2>&1
 [ -n "${OPS_DRY_KEEP:-}" ] || trap '$P -d postgres -c "drop database if exists $DB" >/dev/null 2>&1' EXIT
 $P -d $DB -f tests/fixtures/integration-queue/stubs.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261102120000_cf247_integration_queue.sql 2>/dev/null
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102120000_cf247_integration_queue.sql 2>/dev/null
 $P -d $DB -f $FX/stubs-extra.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261104010000_cf247_ops_controller.sql 2>/dev/null
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261104010000_cf247_ops_controller.sql 2>/dev/null
 $P -d $DB -f $FX/dryrun.sql

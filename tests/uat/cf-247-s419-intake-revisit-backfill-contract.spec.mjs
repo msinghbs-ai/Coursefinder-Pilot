@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261109170000_cf247_intake_revisit_backfill.sql'
+const MIG = 'supabase/migrations-archive/20261109170000_cf247_intake_revisit_backfill.sql'
 const FX = 'tests/fixtures/intake-revisit-backfill'
 const sql = fs.readFileSync(MIG, 'utf8')
 const body = sql.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
@@ -37,7 +37,7 @@ test('switch first and no self-enabling: nothing is done unless intake_dates.rev
 
 test('same rows as the original backfill, never more, and only next_revisit_at from null', () => {
   const flat = (x) => x.replace(/\s+/g, ' ')
-  const orig = flat(fs.readFileSync('supabase/migrations/20261109040000_cf247_intake_revisit_page_fingerprint.sql', 'utf8'))
+  const orig = flat(fs.readFileSync('supabase/migrations-archive/20261109040000_cf247_intake_revisit_page_fingerprint.sql', 'utf8'))
   const mine = flat(backfill)
   // the same predicate, the same helper, the same spread formula as step 6 of the released migration
   for (const t of ["i.status = 'active' and c.lifecycle_status = 'active' and (i.intake_year is null or i.start_date is null or i.application_deadline is null)", 'd.next_revisit_at is null', 'security.intake_revisit_stored_inputs_v1(d.next_action)',

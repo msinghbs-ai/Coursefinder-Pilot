@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { listMin, listValid, listError, listPlaceholder, parseList, listShown } from '../../src/lib/settings-list.js'
 
-const M2 = fs.readFileSync('supabase/migrations/20261109020000_cf247_pdesc_machine_admission.sql', 'utf8')
-const M3 = fs.readFileSync('supabase/migrations/20261109030000_cf247_pdesc_whole_platform_queue.sql', 'utf8')
+const M2 = fs.readFileSync('supabase/migrations-archive/20261109020000_cf247_pdesc_machine_admission.sql', 'utf8')
+const M3 = fs.readFileSync('supabase/migrations-archive/20261109030000_cf247_pdesc_whole_platform_queue.sql', 'utf8')
 const code = (t) => t.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 const C2 = code(M2)
 const C3 = code(M3)

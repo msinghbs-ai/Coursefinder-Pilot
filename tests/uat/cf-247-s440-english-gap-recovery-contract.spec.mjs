@@ -2,9 +2,9 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const A = fs.readFileSync('supabase/migrations/20261108120000_cf247_eng_gap_funnel.sql', 'utf8')
-const B = fs.readFileSync('supabase/migrations/20261108121000_cf247_eng_default_after_withdrawn_reading.sql', 'utf8')
-const C = fs.readFileSync('supabase/migrations/20261108122000_cf247_plan_stalled_onboarding_hold.sql', 'utf8')
+const A = fs.readFileSync('supabase/migrations-archive/20261108120000_cf247_eng_gap_funnel.sql', 'utf8')
+const B = fs.readFileSync('supabase/migrations-archive/20261108121000_cf247_eng_default_after_withdrawn_reading.sql', 'utf8')
+const C = fs.readFileSync('supabase/migrations-archive/20261108122000_cf247_plan_stalled_onboarding_hold.sql', 'utf8')
 const run = fs.readFileSync('tests/fixtures/eng-gap-recovery/run.sh', 'utf8')
 const funnelTests = fs.readFileSync('tests/fixtures/eng-gap-recovery/funnel-tests.sql', 'utf8')
 const planTests = fs.readFileSync('tests/fixtures/eng-gap-recovery/plan-tests.sql', 'utf8')

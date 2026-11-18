@@ -8,7 +8,7 @@ cd "$(dirname "$0")/../../.."
 DB=${ADP_DB:-g_aer_delivery_progress}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-F=tests/fixtures/aer-delivery-progress; M=supabase/migrations/20261112133700_cf247_aer_delivery_progress.sql
+F=tests/fixtures/aer-delivery-progress; M=supabase/migrations-archive/20261112133700_cf247_aer_delivery_progress.sql
 q() { psql -X -d "$DB" -Atc "$1"; }
 trap '[ -n "${ADP_KEEP:-}" ] || dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
 dropdb --if-exists $DB >/dev/null 2>&1; createdb $DB

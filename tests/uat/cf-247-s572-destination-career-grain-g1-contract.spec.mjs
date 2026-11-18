@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const code = fs.readFileSync('supabase/migrations/20261117060000_cf247_destination_career_grain_g1.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+const code = fs.readFileSync('supabase/migrations-archive/20261117060000_cf247_destination_career_grain_g1.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('the new key and the area rule; the old key is dropped only inside the constraint block and only while the table is empty', () => {
   expect(code).toContain('add constraint career_outcomes_area_key unique nulls not distinct\n        (edition_id, country_id, occupation_scheme, occupation_code, geography_level, state_code, locality_id);')

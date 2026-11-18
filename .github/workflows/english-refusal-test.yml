@@ -4,7 +4,7 @@ name: Refusal is not a try integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261107060000_cf247_refusal_is_not_a_try.sql'
+      - 'supabase/migrations-archive/20261107060000_cf247_refusal_is_not_a_try.sql'
       - 'tests/fixtures/english-refusal/**'
       - 'tests/fixtures/english-requirements/manifests/**'
       - 'scripts/prod-parity-capture.mjs'

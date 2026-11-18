@@ -8,7 +8,7 @@ cd "$(dirname "$0")/../../.."
 export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's locale
 DB=${CSG_DB:-g_cdesc_source_grounded}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
-M=supabase/migrations/20261112170000_cf247_cdesc_source_grounded_v1.sql
+M=supabase/migrations-archive/20261112170000_cf247_cdesc_source_grounded_v1.sql
 HELD=supabase/held/cdesc_source_grounded_forward_recovery.sql
 F=tests/fixtures/cdesc-source-grounded
 q() { psql -X -d "$1" -Atc "$2"; }

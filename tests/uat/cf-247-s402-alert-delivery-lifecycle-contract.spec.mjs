@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261107030000_cf247_alert_delivery_lifecycle.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261107030000_cf247_alert_delivery_lifecycle.sql', 'utf8')
 const wf = fs.readFileSync('.github/workflows/alert-delivery-test.yml', 'utf8')
 const code = (s) => s.replace(/--[^\n]*/g, '')
 const fn = (a, b) => m.slice(m.indexOf(`function security.${a}`), b ? m.indexOf(`function security.${b}`) : undefined)

@@ -1,7 +1,7 @@
 // Guards: CF-247 AER programme holds are recorded, never a silent skip (Platform Admin consolidated mandate 28 Oct 2026 23:22): an entry-matrix read whose lease ran out on its last try is closed as failed with the tries and last error named, by the existing fire job; nothing re-read, nothing spent, nothing dropped
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029006000_cf247_aer_exhausted_lease_closed.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029006000_cf247_aer_exhausted_lease_closed.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('md5-guarded edit of the fire job; only expired leases with no tries left are closed, the reason named', () => {

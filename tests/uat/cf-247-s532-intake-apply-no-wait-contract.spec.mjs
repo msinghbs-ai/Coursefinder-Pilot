@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261111150000_cf247_intake_apply_never_waits_for_search.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261111150000_cf247_intake_apply_never_waits_for_search.sql', 'utf8')
 
 test('one md5-guarded edit: try the writer lock, else queue the refresh', () => {
   expect(MIG).toContain("select pg_temp.edit_all('security.intake_dates_apply_v1(integer,uuid[])', '0cb3cd422f99ac0d520deef99ea0ee36', '8eb3fa7f92cc6953faf0234715dfee2e',")

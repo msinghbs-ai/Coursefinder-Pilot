@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { plainError, scrubInternals, rawFirstLine } from '../../src/lib/errors.js'
 const shell = fs.readFileSync('src/mature-main.jsx', 'utf8')
-const m = fs.readFileSync('supabase/migrations/20261024006000_cf247_ui_audit_phase0.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261024006000_cf247_ui_audit_phase0.sql', 'utf8')
 
 test('plainError: known errors become sentences; raw Postgres wording, function signatures, vendor names and ids never reach the screen', () => {
   const raw = 'ERROR:  the link must be a full https:// web address\nCONTEXT:  PL/pgSQL function layer4_course_link_apply_impl(uuid,uuid,jsonb,text) line 10 at RAISE\nSQL statement "SELECT security.layer4_course_link_apply_impl(v_sys, v_item, …)"'

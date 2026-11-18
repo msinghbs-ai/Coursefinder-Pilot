@@ -2,7 +2,7 @@
 // CF-247 zero-yield page re-acquisition (Platform Admin 24 Oct 2026 07:43). Contracts on the migration source.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261024003000_cf247_zero_yield_reacquisition.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261024003000_cf247_zero_yield_reacquisition.sql', 'utf8')
 
 test('negative evidence and snapshots: tables commented, RLS on; settings with ranges; automatic reset off by default', () => {
   expect(m).toMatch(/^-- Replaces: /m); expect(m).toMatch(/^-- Retires: /m); expect(m).not.toMatch(/^\s*(drop|truncate|delete\s+from)\b/im)

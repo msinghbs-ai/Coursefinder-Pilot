@@ -7,7 +7,7 @@ const read = f => fs.readFileSync(f, 'utf8')
 const housekeeping = m => { expect(m).toMatch(/^-- Replaces: /m); expect(m).toMatch(/^-- Retires: /m); expect(m).not.toMatch(/^\s*(drop|truncate|delete\s+from)\b/im) }
 
 test('item 1: transition register with a Government source per row, a daily re-check job and settings', () => {
-  const m = read('supabase/migrations/20261023023000_cf247_nz_provider_transitions.sql')
+  const m = read('supabase/migrations-archive/20261023023000_cf247_nz_provider_transitions.sql')
   housekeeping(m)
   expect(m).toContain("risk text not null check (risk in ('none', 're_established_2026', 'standalone_from_2027', 'operations_transfer_2027', 'nzist_federation_until_2027', 'nzist_entity'))")
   expect(m).toContain("source_url text not null check (source_url ~* '^https://')")
@@ -17,7 +17,7 @@ test('item 1: transition register with a Government source per row, a daily re-c
   expect(m.indexOf("insert into pipeline.automation_catalogue(jobname")).toBeLessThan(m.indexOf("select cron.schedule('transition-recheck'"))
   expect(m).toContain("select cron.schedule('transition-recheck', '41 3 * * *', $$select security.transition_recheck_v1()$$);")
   expect(m).toContain("coalesce(t.recheck_days, security.pipeline_num_v1('transition.recheck_days', 30)::int)")
-  const seed = read('supabase/migrations/20261023024000_cf247_nz_provider_transitions_seed.sql')
+  const seed = read('supabase/migrations-archive/20261023024000_cf247_nz_provider_transitions_seed.sql')
   housekeeping(seed)
   for (const code of ['6006', '6007', '6011', '6015', '6025', '6019', '6004', '6010', '6013', '6009', '6022', '6012', '6017', '6014', '6024', '6683', '6044']) expect(seed).toContain(`('${code}', `)
   expect(seed).toContain("('6022', 're_established_2026', 'anchor of the federation'")
@@ -28,7 +28,7 @@ test('item 1: transition register with a Government source per row, a daily re-c
 })
 
 test('item 2: domain-moved action keeps the proof, reads first in line, refuses the same host (N5)', () => {
-  const m = read('supabase/migrations/20261023025000_cf247_provider_domain_moved.sql')
+  const m = read('supabase/migrations-archive/20261023025000_cf247_provider_domain_moved.sql')
   housekeeping(m)
   expect(m).toContain("if v_old = v_new then raise exception 'the website already is %: nothing to move', v_old; end if;")
   expect(m).toContain("and g.status in ('bound', 'ambiguous') and g.url ~* v_rx;")
@@ -40,7 +40,7 @@ test('item 2: domain-moved action keeps the proof, reads first in line, refuses 
 })
 
 test('item 4: fee floor per country quarantines at the one admission path; C4 pass is NZ-only (F2); settings UI', () => {
-  const m = read('supabase/migrations/20261023026000_cf247_fee_floor.sql')
+  const m = read('supabase/migrations-archive/20261023026000_cf247_fee_floor.sql')
   housekeeping(m)
   expect(m).toContain("alter table pipeline.coverage_admission_countries add column min_annual_international numeric check (min_annual_international > 0);")
   expect(m).toContain("where c.id = p_course_id and p_basis in ('annual', 'indicative_annual') and a.min_annual_international is not null and p_amount < a.min_annual_international")

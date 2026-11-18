@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const sql = fs.readFileSync('supabase/migrations/20261116100000_cf247_aer_v3_bench_r2.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261116100000_cf247_aer_v3_bench_r2.sql', 'utf8')
 const code = sql.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('four pinned candidates of the unchanged prompt on the frozen set; Gemini 2.5 Flash is an allowed model; no GPT and no Gemini 3', () => {

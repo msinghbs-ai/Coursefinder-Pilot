@@ -40,7 +40,7 @@ AI diagnostics remain unavailable: no approved existing pinned-model read-only d
 
 ## Exact database dependencies and changed functions
 
-New migration: `supabase/migrations/20261105000000_intake_run_validate_bridge.sql`. Generated with Supabase CLI and ordered after `20261104610000`, `20261104630000` and the incorporated `20261104640000_cf247_run_now_outcome_code.sql` from draft PR #874 (`8ca549d1`). No release/version files from #874 are included. Claude may reconcile the filename with the integrated migration sequence before deployment. The bridge changes no existing reader, consumer API, scheduler, job command or switch. Apply the incorporated PR #874 outcome-code correction first; it changes only the existing Run Now task-outcome expressions.
+New migration: `supabase/migrations-archive/20261105000000_intake_run_validate_bridge.sql`. Generated with Supabase CLI and ordered after `20261104610000`, `20261104630000` and the incorporated `20261104640000_cf247_run_now_outcome_code.sql` from draft PR #874 (`8ca549d1`). No release/version files from #874 are included. Claude may reconcile the filename with the integrated migration sequence before deployment. The bridge changes no existing reader, consumer API, scheduler, job command or switch. Apply the incorporated PR #874 outcome-code correction first; it changes only the existing Run Now task-outcome expressions.
 
 New functions:
 

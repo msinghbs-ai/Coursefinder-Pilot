@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261117010000_cf247_rm1a3_register_end_dates_pending.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261117010000_cf247_rm1a3_register_end_dates_pending.sql', 'utf8')
 const code = m.split('\n').filter(l => !l.startsWith('--')).join('\n')
 
 test('pending edition items count as listed in the guard, the ended step, the restored step and both provider steps', () => {

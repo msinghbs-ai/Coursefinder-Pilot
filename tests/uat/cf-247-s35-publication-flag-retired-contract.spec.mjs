@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 test('the publish preview no longer reads or prints the automatic publication flag', () => {
-  const mig = fs.readFileSync('supabase/migrations/20261014013400_cf247_publication_preview_stops_reading_flag.sql', 'utf8')
+  const mig = fs.readFileSync('supabase/migrations-archive/20261014013400_cf247_publication_preview_stops_reading_flag.sql', 'utf8')
   const fn = mig.slice(mig.indexOf('CREATE OR REPLACE FUNCTION l4_api.publication_control_preview('))
   expect(fn).not.toContain('publication_control_settings')
   expect(fn).not.toContain("'auto_publication_enabled'")

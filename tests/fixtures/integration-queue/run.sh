@@ -14,7 +14,7 @@ case "${PGHOSTADDR:-}" in ''|127.0.0.1|::1) ;; *) echo "refused: remote PGHOSTAD
 [ -z "${PGSERVICE:-}" ] || { echo "refused: service-selected database connection" >&2; exit 1; }
 [[ "$DB" =~ ^integration_queue_fixtures[a-z0-9_]*$ ]] || { echo "refused: unsafe fixture database name" >&2; exit 1; }
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261102120000_cf247_integration_queue.sql
+MIG=supabase/migrations-archive/20261102120000_cf247_integration_queue.sql
 FX=tests/fixtures/integration-queue
 TMP=$(mktemp -d)
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
@@ -22,7 +22,7 @@ trap 'rm -rf "$TMP"; $P -d postgres -c "drop database if exists $DB" >/dev/null'
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 $P -d $DB -f $FX/stubs.sql
 node -e '
-const s = require("fs").readFileSync("supabase/migrations/20261031091000_cf247_ss014_operational_automation.sql", "utf8")
+const s = require("fs").readFileSync("supabase/migrations-archive/20261031091000_cf247_ss014_operational_automation.sql", "utf8")
 for (const n of ["security.platform_alerts_add_v1(", "security.platform_alerts_evaluate_v1(", "security.platform_alerts_take_v1(", "security.platform_alerts_confirm_v1(", "public.admin_platform_alerts("]) {
   const a = s.indexOf("create or replace function " + n)
   if (a < 0) throw new Error(`missing repository alert function: ${n}`)

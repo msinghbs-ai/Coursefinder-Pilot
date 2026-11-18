@@ -2,7 +2,7 @@
 // CF-247 (S65) relink of refused course pages (Platform Admin 18 Oct 2026 22:44 "Lets start on point 5"; choice "A+B, then D (Recommended)").
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const sql = fs.readFileSync('supabase/migrations/20261018150000_cf247_course_relink.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations-archive/20261018150000_cf247_course_relink.sql', 'utf8')
 
 test('candidates come from the address pattern, the stored lists and another course\'s refused page; the reader decides', () => {
   expect(sql).toContain("select replace(v_tpl, '{slug}', r.slug), 'url_pattern', 2")

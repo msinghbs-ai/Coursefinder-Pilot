@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const raw = fs.readFileSync('supabase/migrations/20261118213000_cf247_held_scholarship_settle_pdesc_prompt_v5.sql', 'utf8')
+const raw = fs.readFileSync('supabase/migrations-archive/20261118213000_cf247_held_scholarship_settle_pdesc_prompt_v5.sql', 'utf8')
 const code = raw.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const fn = (name, end = '$function$;') => { const i = code.indexOf(`create or replace function ${name}(`); return code.slice(i, code.indexOf(end, i)) }
 

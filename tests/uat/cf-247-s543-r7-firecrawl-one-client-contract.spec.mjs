@@ -10,7 +10,7 @@ import { execFileSync } from 'node:child_process'
 
 const DIR = 'supabase/functions/coverage-sweep'
 const ix = fs.readFileSync(`${DIR}/index.ts`, 'utf8')
-const mig = fs.readFileSync('supabase/migrations/20261114193000_cf247_r7_firecrawl_page_status.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261114193000_cf247_r7_firecrawl_page_status.sql', 'utf8')
 
 async function loadFc() {
   const out = path.join(os.tmpdir(), `firecrawl-s543-${process.pid}.mjs`)

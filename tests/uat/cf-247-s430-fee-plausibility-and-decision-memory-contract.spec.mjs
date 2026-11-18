@@ -2,8 +2,8 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const G = fs.readFileSync('supabase/migrations/20261108110000_cf247_fee_plausibility_guard.sql', 'utf8')
-const D = fs.readFileSync('supabase/migrations/20261108111000_cf247_fee_decision_memory.sql', 'utf8')
+const G = fs.readFileSync('supabase/migrations-archive/20261108110000_cf247_fee_plausibility_guard.sql', 'utf8')
+const D = fs.readFileSync('supabase/migrations-archive/20261108111000_cf247_fee_decision_memory.sql', 'utf8')
 const run = fs.readFileSync('tests/fixtures/fee-lane/run.sh', 'utf8')
 const fx = fs.readFileSync('tests/fixtures/fee-lane/fixtures.sql', 'utf8')
 const p1 = fs.readFileSync('tests/fixtures/paste/FEE-20261108-withdraw-year-as-fee-lacite.md', 'utf8')

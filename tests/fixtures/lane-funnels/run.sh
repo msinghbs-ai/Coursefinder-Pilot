@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${LF_DB:-g_ops_ui_lane_funnels}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261108170000_cf247_lane_funnels.sql
+MIG=supabase/migrations-archive/20261108170000_cf247_lane_funnels.sql
 [ -n "${LF_KEEP:-}" ] || trap '$P -d postgres -c "drop database if exists '$DB'" >/dev/null 2>&1' EXIT
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 $P -d $DB -f tests/fixtures/lane-funnels/schema.sql >/dev/null

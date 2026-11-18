@@ -8,8 +8,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 CE=../course-enrichment
 DB=${IQ53_DB:-iq53_fixtures}
-RELB=../../../supabase/migrations/20261103210000_cf247_release_b_course_enrichment.sql
-MIG=../../../supabase/migrations/20261108190000_cf247_iq53_expired_lease_refire.sql
+RELB=../../../supabase/migrations-archive/20261103210000_cf247_release_b_course_enrichment.sql
+MIG=../../../supabase/migrations-archive/20261108190000_cf247_iq53_expired_lease_refire.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null

@@ -1,7 +1,7 @@
 // Guards: CF-247 AER programme switch-on of Steps B and C and Wave J (Platform Admin consolidated mandate 28 Oct 2026 23:22; admin docs/platform/ENTRY-REQUIREMENTS-PROGRAMME-DECISION-2026-10-28.md P1, P4, P5; the 28 Oct deploy-order lesson): switched on only in a change of its own after worker v0.50.0 is live, guarded on the live scope, RMIT kept out, the planned JavaScript-only sources seeded and count-guarded, and only reads stopped by fixed faults given their tries back, bounded
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029003000_cf247_aer_switch_on_pdf_and_rendered.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029003000_cf247_aer_switch_on_pdf_and_rendered.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('a change of its own: settings only, guarded on what is live, no reader code', () => {

@@ -26,8 +26,8 @@ $P -d "$DB" -f "$WORK/register.sql"
 $P -d "$DB" -f "$WORK/fixture.sql"
 $P -d "$DB" -f $PAR/settings.sql
 $P -d "$DB" -f $PAR/publication.sql
-$P -d "$DB" -1 -f $ROOT/supabase/migrations/20261106500000_cf247_course_descriptions_complete.sql 2>&1 | sed -n 's/^.*\(WARNING\|ERROR\):  /\1 /p'
-MIG=$ROOT/supabase/migrations/20261107120000_cf247_course_description_promote_held.sql
+$P -d "$DB" -1 -f $ROOT/supabase/migrations-archive/20261106500000_cf247_course_descriptions_complete.sql 2>&1 | sed -n 's/^.*\(WARNING\|ERROR\):  /\1 /p'
+MIG=$ROOT/supabase/migrations-archive/20261107120000_cf247_course_description_promote_held.sql
 $P -d "$DB" -1 -f $MIG
 $P -d "$DB" -1 -f $MIG
 echo 'migration 20261107120000 applied twice without error'

@@ -3,10 +3,10 @@ name: Destination admin UI integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261115190000_api_v3_additive_schema.sql'
-      - 'supabase/migrations/20261115230000_cf247_destination_importer_guard.sql'
-      - 'supabase/migrations/20261117040000_cf247_rm_destination_schema_pack.sql'
-      - 'supabase/migrations/20261117131500_cf247_rm0f_destination_admin_ui.sql'
+      - 'supabase/migrations-archive/20261115190000_api_v3_additive_schema.sql'
+      - 'supabase/migrations-archive/20261115230000_cf247_destination_importer_guard.sql'
+      - 'supabase/migrations-archive/20261117040000_cf247_rm_destination_schema_pack.sql'
+      - 'supabase/migrations-archive/20261117131500_cf247_rm0f_destination_admin_ui.sql'
       - 'tests/fixtures/destination-schema-pack/stubs.sql'
       - 'tests/fixtures/destination-editions/stubs.sql'
       - 'tests/fixtures/destination-admin-ui/**'

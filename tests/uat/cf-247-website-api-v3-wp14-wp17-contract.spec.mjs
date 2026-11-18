@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261113210000_cf247_website_api_v3_r31_excerpt.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261113210000_cf247_website_api_v3_r31_excerpt.sql', 'utf8')
 
 test('R31: provider scholarships_page_url and scholarships_last_reviewed_at from the listing page the platform reads; R23 kept', () => {
   expect(m).toContain("where lp.provider_id = v_provider and lp.active and lp.status = 'read' and lp.read_at is not null")

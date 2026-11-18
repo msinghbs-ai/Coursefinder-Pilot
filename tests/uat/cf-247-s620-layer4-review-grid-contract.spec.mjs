@@ -1,10 +1,10 @@
 // Guards: UI/UX audit Phase 5 first slice (Platform Admin 18 Nov 2026 10:09 "Start & Merge Phase 5 First Slice Immediately"; admin docs/platform/ui-audit/ui-ux-settings-audit-2026-11-15.md §4.2, §5, §7.3): Layer 4 › Inbox › Grid with saved views (three shared views, changed by a Platform Admin only, checked on the server), server paging, a bounded CSV export (layer4.grid_export_max_rows) and the Source Quote vs Extracted Value drawer; decisions still go only through admin_layer4_inbox, and no view changes the AER audit sample or the course-address rules.
-// CF-247 S620. supabase/migrations/20261118120000_cf247_phase5_review_grid_saved_views.sql, src/Layer4Grid.jsx, src/lib/layer4-grid.js, src/Layer4Inbox.jsx.
+// CF-247 S620. supabase/migrations-archive/20261118120000_cf247_phase5_review_grid_saved_views.sql, src/Layer4Grid.jsx, src/lib/layer4-grid.js, src/Layer4Inbox.jsx.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { GRID_COLUMNS, DEFAULT_COLS, toCsv, quoteValuePairs, urlOf } from '../../src/lib/layer4-grid.js'
 
-const M = fs.readFileSync('supabase/migrations/20261118120000_cf247_phase5_review_grid_saved_views.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118120000_cf247_phase5_review_grid_saved_views.sql', 'utf8')
 const G = fs.readFileSync('src/Layer4Grid.jsx', 'utf8')
 const I = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8')
 

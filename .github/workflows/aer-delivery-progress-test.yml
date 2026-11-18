@@ -3,7 +3,7 @@ name: AER delivery progress integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261112133700_cf247_aer_delivery_progress.sql'
+      - 'supabase/migrations-archive/20261112133700_cf247_aer_delivery_progress.sql'
       - 'tests/fixtures/aer-delivery-progress/**'
       - '.github/workflows/aer-delivery-progress-test.yml'
   workflow_dispatch:

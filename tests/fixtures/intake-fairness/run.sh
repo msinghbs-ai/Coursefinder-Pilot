@@ -6,10 +6,10 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/run/postgresql) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 BASE=intake_recovery_final_fixtures; DB=intake_fairness_fixtures; F=tests/fixtures/intake-fairness
-MIG=supabase/migrations/20261105060000_cf247_intake_fairness_precedence.sql
-MIG2=supabase/migrations/20261105070000_cf247_intake_withdraw_provenance.sql
-MIG3=supabase/migrations/20261105080000_cf247_intake_focus_rounds.sql
-MIG4=supabase/migrations/20261105090000_cf247_intake_pilot_share.sql
+MIG=supabase/migrations-archive/20261105060000_cf247_intake_fairness_precedence.sql
+MIG2=supabase/migrations-archive/20261105070000_cf247_intake_withdraw_provenance.sql
+MIG3=supabase/migrations-archive/20261105080000_cf247_intake_focus_rounds.sql
+MIG4=supabase/migrations-archive/20261105090000_cf247_intake_pilot_share.sql
 P=(psql -X -q -v ON_ERROR_STOP=1)
 if [ -z "${INTAKE_FAIR_REUSE:-}" ] || ! "${P[@]}" -d postgres -Atc "select 1 from pg_database where datname = '$BASE'" | grep -q 1; then
   INTAKE_RF_KEEP=1 bash tests/fixtures/intake-recovery-final/run.sh > /dev/null

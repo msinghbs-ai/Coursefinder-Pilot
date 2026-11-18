@@ -80,7 +80,7 @@ test.describe('mocked browser', () => {
 })
 
 test('migration 20261012010100: the 10 Layer 3 jobs are paused (not deleted) and the pending intake, English and fee Layer 4 items closed', () => {
-  const s = fs.readFileSync('supabase/migrations/20261012010100_cf247_layer3_retired_pause.sql', 'utf8')
+  const s = fs.readFileSync('supabase/migrations-archive/20261012010100_cf247_layer3_retired_pause.sql', 'utf8')
   expect(s).toContain('perform cron.alter_job(v.jobid, active := false);')
   expect(s).toContain("if v_n <> 10 then raise exception 'expected 10 Layer 3 jobs, found %', v_n; end if;")
   expect(s).toContain("field_code in ('course_intake', 'course_english', 'provider_current_tuition_validation')")

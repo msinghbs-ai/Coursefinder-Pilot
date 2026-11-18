@@ -9,7 +9,7 @@ import { PAGES, LEGACY, resolveTarget } from '../../src/nav-map.js'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 const read = (p) => fs.readFileSync(p, 'utf8')
-const MIG = 'supabase/migrations/20261104510000_cf247_ss020_followup_layer1_schedule.sql'
+const MIG = 'supabase/migrations-archive/20261104510000_cf247_ss020_followup_layer1_schedule.sql'
 const m = read(MIG)
 const FX = 'tests/fixtures/ss020-followup'
 const run = read(`${FX}/run.sh`)

@@ -8,7 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 case "${PGHOST:-127.0.0.1}" in 127.0.0.1|localhost|/tmp|/var/run/postgresql) ;; *) echo 'Refusing a remote database: use isolated local PostgreSQL' >&2; exit 1;; esac
 BASE=intake_self_driving_fixtures; DB=${CQ_DB:-intake_calendar_qualify_fixtures}; DB2=${DB}_refusal; F=tests/fixtures/intake-calendar-qualify
-MIG=${CQ_MIG:-supabase/migrations/20261109060000_cf247_intake_calendar_qualify.sql}
+MIG=${CQ_MIG:-supabase/migrations-archive/20261109060000_cf247_intake_calendar_qualify.sql}
 P=(psql -X -q -v ON_ERROR_STOP=1)
 if [ -z "${CQ_REUSE:-}" ] || ! "${P[@]}" -d postgres -Atc "select 1 from pg_database where datname = '$BASE'" | grep -q 1; then
   SD_REUSE=${SD_REUSE:-} SD_KEEP=1 bash tests/fixtures/intake-self-driving/run.sh > /dev/null

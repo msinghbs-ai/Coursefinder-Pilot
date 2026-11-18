@@ -7,7 +7,7 @@ import { loadParser } from '../fixtures/english-requirements/baseline.mjs'
 import { PAGES } from '../fixtures/english-requirements/compat-pages.mjs'
 import { FACULTY_TABLE } from '../fixtures/english-requirements/groups.mjs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261106550000_cf247_english_requirements_complete.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261106550000_cf247_english_requirements_complete.sql', 'utf8')
 const CODE = MIG.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 const OLD = JSON.parse(fs.readFileSync('tests/fixtures/english-requirements/parser-v025-outputs.json', 'utf8'))
 const WORKER = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')

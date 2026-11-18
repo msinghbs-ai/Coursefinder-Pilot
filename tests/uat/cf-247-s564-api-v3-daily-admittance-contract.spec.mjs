@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261116170000_cf247_api_v3_daily_admittance.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261116170000_cf247_api_v3_daily_admittance.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('the existing writer gains one union branch through an md5-guarded edit', () => {

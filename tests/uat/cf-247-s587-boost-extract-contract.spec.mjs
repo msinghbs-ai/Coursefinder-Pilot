@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { build } from 'esbuild'
 
-const M = fs.readFileSync('supabase/migrations/20261117235000_cf247_boost_extract.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261117235000_cf247_boost_extract.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const mode = IX.slice(IX.indexOf('if (mode === "boost_extract") {'), IX.indexOf('// v1.0.11 (18 Nov 2026, CF-247 S2 - BOOST, Platform Admin 17 Nov 2026 22:05 and 22:45): the Boost model benchmark.'))

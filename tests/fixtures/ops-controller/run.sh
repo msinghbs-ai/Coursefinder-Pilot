@@ -9,7 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${OPS_DB:-ops_controller_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104010000_cf247_ops_controller.sql
+MIG=supabase/migrations-archive/20261104010000_cf247_ops_controller.sql
 FX=tests/fixtures/ops-controller
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }
@@ -20,7 +20,7 @@ echo "stub-ops-contract.sql = the migration's contract section"
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null 2>&1
 [ -n "${OPS_KEEP:-}" ] || trap '$P -d postgres -c "drop database if exists $DB" >/dev/null 2>&1' EXIT
 $P -d $DB -f tests/fixtures/integration-queue/stubs.sql
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261102120000_cf247_integration_queue.sql 2>&1 | show
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102120000_cf247_integration_queue.sql 2>&1 | show
 $P -d $DB -f $FX/stubs-extra.sql
 declare -A LIVE=(
   ["security.integration_issue_upsert_v1(jsonb,text)"]=f292f65689a35e213a3d12a539c11b1d

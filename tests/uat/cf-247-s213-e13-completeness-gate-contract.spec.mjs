@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = 'supabase/migrations/20261102010000_cf247_e13_entry_completeness_gate.sql'
+const MIG = 'supabase/migrations-archive/20261102010000_cf247_e13_entry_completeness_gate.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/e13-completeness-gate'

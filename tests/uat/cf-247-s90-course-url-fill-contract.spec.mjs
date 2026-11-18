@@ -3,7 +3,7 @@
 // proven course-page binding, with the four guards. Contracts on the migration source.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261024001000_cf247_course_url_fill.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261024001000_cf247_course_url_fill.sql', 'utf8')
 
 test('register, settings with ranges, catalogue row before the schedule, component register', () => {
   expect(m).toMatch(/^-- Replaces: /m); expect(m).toMatch(/^-- Retires: /m); expect(m).not.toMatch(/^\s*(drop|truncate|delete\s+from)\b/im)

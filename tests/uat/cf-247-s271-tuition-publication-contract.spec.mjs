@@ -7,7 +7,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = fs.readFileSync('supabase/migrations/20261104380000_cf247_tuition_publication.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261104380000_cf247_tuition_publication.sql', 'utf8')
 const FX = 'tests/fixtures/tuition-publication'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')
 const before = fs.readFileSync(`${FX}/fixtures-before.sql`, 'utf8')

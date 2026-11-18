@@ -1,9 +1,9 @@
 // Guards: 28-destination schema lock (Platform Admin 18 Nov 2026 12:21): national quality ratings and employment-by-industry series are stored in the existing canonical tables by additive columns and checks only (no new table, consumer API unchanged at 75 functions and 48 relations, nothing dropped); the CHECK replacements go to the Platform Admin as a paste file.
-// CF-247 S632. supabase/migrations/20261118150000_cf247_28_destination_additive_columns.sql.
+// CF-247 S632. supabase/migrations-archive/20261118150000_cf247_28_destination_additive_columns.sql.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118150000_cf247_28_destination_additive_columns.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118150000_cf247_28_destination_additive_columns.sql', 'utf8')
 
 test('ratings and industry series are additive columns on existing tables', () => {
   for (const c of ['rating', 'rating_period']) expect(M).toContain(`alter table catalogue.provider_accreditations add column if not exists ${c} text;`)

@@ -5,7 +5,7 @@ on:
   pull_request:
     paths:
       - 'supabase/functions/coverage-sweep/policy.ts'
-      - 'supabase/migrations/20261106550000_cf247_english_requirements_complete.sql'
+      - 'supabase/migrations-archive/20261106550000_cf247_english_requirements_complete.sql'
       - 'tests/fixtures/english-requirements/**'
       - 'scripts/prod-parity-capture.mjs'
       - '.github/workflows/english-requirements-test.yml'

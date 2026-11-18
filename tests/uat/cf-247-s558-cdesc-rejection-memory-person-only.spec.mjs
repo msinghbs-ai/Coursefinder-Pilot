@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261116080000_cf247_cdesc_rejection_memory_person_only.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261116080000_cf247_cdesc_rejection_memory_person_only.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const edits = [...code.matchAll(/select pg_temp\.edit_all\('([^']+)', '([0-9a-f]{32})', '([0-9a-f]{32})',/g)].map((m) => ({ sig: m[1], before: m[2], after: m[3] }))
 

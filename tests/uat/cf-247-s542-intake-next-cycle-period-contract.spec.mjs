@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261113331500_cf247_intake_next_cycle_period.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261113331500_cf247_intake_next_cycle_period.sql', 'utf8')
 
 test('scoped by a setting naming only Canterbury and Massey; empty means off', () => {
   expect(mig).toContain("'intake_dates.next_cycle_period_providers'")

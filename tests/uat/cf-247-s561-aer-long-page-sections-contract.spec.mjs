@@ -7,7 +7,7 @@ import { aerV3Blocks, aerV3User } from '../../supabase/functions/coverage-sweep/
 import { longPageWindow, LEAN_SECTIONS } from '../../supabase/functions/coverage-sweep/lean-sections.ts'
 
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const M = fs.readFileSync('supabase/migrations/20261116130000_cf247_aer_v2_long_page_sections.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261116130000_cf247_aer_v2_long_page_sections.sql', 'utf8')
 
 // a synthetic page: a long run of unrelated paragraphs, then an entry requirements section
 const filler = 'This paragraph describes the campus gardens, the library opening hours and the student clubs in some detail for visitors. '.repeat(4)

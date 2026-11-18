@@ -12,7 +12,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${L4LC_DB:-l4_action_lifecycle_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261104540000_cf247_l4_action_lifecycle.sql
+MIG=supabase/migrations-archive/20261104540000_cf247_l4_action_lifecycle.sql
 FX=tests/fixtures/l4-action-lifecycle
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 q() { $P -d $DB -Atc "$1"; }
@@ -22,7 +22,7 @@ after() { grep -F -- "--   $1 " $MIG | head -1 | sed 's/.*-> *\([0-9a-f]*\).*/\1
 
 # 1 the live Layer 4 functions
 HAR_KEEP=1 HAR_DB=$DB bash tests/fixtures/human-assisted-recovery/run.sh > /dev/null
-$P -d $DB -1 -At -f supabase/migrations/20261104440000_cf247_l4_inbox_paging.sql > /dev/null
+$P -d $DB -1 -At -f supabase/migrations-archive/20261104440000_cf247_l4_inbox_paging.sql > /dev/null
 declare -A LIVE=(
   ["security.layer4_aer_recovery_detail_v1(text)"]=636c1764788b008fb7456365d600b452
   ["security.layer4_aer_recovery_decide_v1(text,text,text,text)"]=841234cb4826983b3297d39a34cb0978

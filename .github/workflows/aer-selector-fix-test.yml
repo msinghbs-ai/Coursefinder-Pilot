@@ -3,9 +3,9 @@ name: AER selector fix integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261109150000_cf247_aer_selector_fix.sql'
-      - 'supabase/migrations/20261107130100_cf247_aer_row_limit_rule.sql'
-      - 'supabase/migrations/20261106400000_cf247_intake_automation_progress.sql'
+      - 'supabase/migrations-archive/20261109150000_cf247_aer_selector_fix.sql'
+      - 'supabase/migrations-archive/20261107130100_cf247_aer_row_limit_rule.sql'
+      - 'supabase/migrations-archive/20261106400000_cf247_intake_automation_progress.sql'
       - 'tests/fixtures/aer-selector-fix/**'
       - 'tests/fixtures/aer-recovery-selector/**'
       - '.github/workflows/aer-selector-fix-test.yml'

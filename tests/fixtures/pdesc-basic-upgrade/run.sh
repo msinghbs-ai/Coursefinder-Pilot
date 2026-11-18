@@ -9,7 +9,7 @@ export LC_ALL=C # fixed: one byte order for sort and comm, whatever the runner's
 DB=${PDBU_DB:-g_pdesc_basicupg}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-MIG=supabase/migrations/20261110040000_cf247_pdesc_basic_profile_upgrade.sql
+MIG=supabase/migrations-archive/20261110040000_cf247_pdesc_basic_profile_upgrade.sql
 REC=supabase/held/pdesc_basic_profile_upgrade_forward_recovery.sql
 F=tests/fixtures/pdesc-basic-upgrade
 q() { psql -X -d "$DB" -Atc "$1"; }

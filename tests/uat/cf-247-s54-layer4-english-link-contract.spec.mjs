@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261017050000_cf247_layer4_english_and_link_approve.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261017050000_cf247_layer4_english_and_link_approve.sql', 'utf8')
 
 test('English decisions write the requirement and lock it as a person\'s decision; links read url or course_url; md5-guarded', () => {
   expect(mig).toContain("elsif v_item.field_code='course_english' then")
@@ -19,7 +19,7 @@ test('English decisions write the requirement and lock it as a person\'s decisio
 })
 
 // Decision 263: course page rules run automatically; a decided proposal is never raised again ("Yes, automate", 17 Oct 2026)
-const rules = fs.readFileSync('supabase/migrations/20261017060000_cf247_layer4_course_page_rules.sql', 'utf8')
+const rules = fs.readFileSync('supabase/migrations-archive/20261017060000_cf247_layer4_course_page_rules.sql', 'utf8')
 test('Decision 263: decided proposals are not raised again; course page rules decide under the system account with the rule as reason', () => {
   expect(rules).toContain("<> '9667b916c5a9bfce01409b1668b2558c' then")
   expect(rules).toContain("and i.status in ('rejected','approved','edited_approved')")

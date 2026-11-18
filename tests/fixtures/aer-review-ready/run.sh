@@ -12,8 +12,8 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${AERR_DB:-aer_review_ready_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261108040000_cf247_aer_review_ready_single_definition.sql
-AD=supabase/migrations/20261104320000_cf247_work_continuity_adopt.sql
+MIG=supabase/migrations-archive/20261108040000_cf247_aer_review_ready_single_definition.sql
+AD=supabase/migrations-archive/20261104320000_cf247_work_continuity_adopt.sql
 FX=tests/fixtures/aer-review-ready
 q() { $P -d $DB -Atc "$1"; }
 md5of() { q "select md5(pg_get_functiondef('$1'::regprocedure))"; }

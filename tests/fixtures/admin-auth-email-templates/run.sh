@@ -9,7 +9,7 @@ cd "$(dirname "$0")/../../.."
 DB=${AET_DB:-g_admin_auth_email_templates}
 case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
-M=supabase/migrations/20261117152700_cf247_admin_auth_email_templates.sql
+M=supabase/migrations-archive/20261117152700_cf247_admin_auth_email_templates.sql
 trap '[ -n "${AET_KEEP:-}" ] || dropdb --if-exists '$DB' >/dev/null 2>&1' EXIT
 dropdb --if-exists $DB >/dev/null 2>&1; createdb $DB
 psql -X -q -d postgres -c "do \$\$ begin if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if; if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if; if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role; end if; end \$\$"
@@ -28,9 +28,9 @@ create function vault.update_secret(secret_id uuid, new_secret text default null
 create function security.current_role_rank() returns int language sql stable as $$ select nullif(current_setting('fixture.rank', true), '')::int $$;
 SQL
 $P -1 -f $M >/dev/null; $P -1 -f $M >/dev/null
-G=supabase/migrations/20261117163000_cf247_golive_auth_custom_smtp.sql
+G=supabase/migrations-archive/20261117163000_cf247_golive_auth_custom_smtp.sql
 $P -1 -f $G >/dev/null; $P -1 -f $G >/dev/null
-D=supabase/migrations/20261117170000_cf247_admin_email_delivery_resend.sql
+D=supabase/migrations-archive/20261117170000_cf247_admin_email_delivery_resend.sql
 $P -1 -f $D >/dev/null; $P -1 -f $D >/dev/null
 echo "migrations: each applied twice without error (post-checks included)"
 $P <<'SQL'

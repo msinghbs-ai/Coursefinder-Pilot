@@ -10,7 +10,7 @@ const read = p => fs.readFileSync(p, 'utf8')
 const noDrops = sql => { expect(sql).not.toMatch(/^(drop|delete|truncate)\b/im); expect(sql).not.toMatch(/^alter table .* drop /im) }
 
 test('Fix 7: consumer course searches look up the blocked list by hash; nothing else changes', () => {
-  const sql = read('supabase/migrations/20261011009300_cf247_consumer_search_blocked_once.sql')
+  const sql = read('supabase/migrations-archive/20261011009300_cf247_consumer_search_blocked_once.sql')
   expect(sql.replace(/--[^\n]*/g, '')).not.toContain('not exists (select 1 from security.layer4_search_blocked_courses')
   expect((sql.match(/not in \(select \w+\.course_id from security\.layer4_search_blocked_courses \w+ where \w+\.course_id is not null\)/g) || []).length).toBe(22)
   for (const md5 of ['973c0ef77272b00b33ff4921c7c88c41', 'f04c4f546b2e7d2605ba957e2c05214e', 'eda3f7c0ad78d5014a24e24501969134']) expect(sql).toContain(md5)
@@ -23,7 +23,7 @@ test('Fix 1: no style name in the app starts with "ad-" (ad blockers hide them)'
 })
 
 test('Fix 3 and Features 2-4: websites adopted, every provider searched, central pages found, two task types', () => {
-  const sql = read('supabase/migrations/20261011009400_cf247_provider_websites_central_pages_tasks.sql')
+  const sql = read('supabase/migrations-archive/20261011009400_cf247_provider_websites_central_pages_tasks.sql')
   expect(sql).toContain('create or replace function security.provider_website_adopt_v1')
   expect(sql).toContain("l.field = 'website'") // never over a website entered by hand
   expect(sql).toContain('create table if not exists pipeline.provider_central_search')
@@ -42,9 +42,9 @@ test('Fix 3 and Features 2-4: websites adopted, every provider searched, central
   expect(c).toContain('export function centralCandidates')
   const x = read('supabase/functions/coverage-sweep/extract.ts')
   expect(x).toContain('guelphhumber.ca is not Humber College')
-  const f = read('supabase/migrations/20261011009500_cf247_site_rule_humber_task_scope.sql')
+  const f = read('supabase/migrations-archive/20261011009500_cf247_site_rule_humber_task_scope.sql')
   expect(f).toContain("'scope', v_pid::text);")
-  expect(read('supabase/migrations/20261011009600_cf247_central_find_record_fix.sql')).toContain("then s.found else p_found end")
+  expect(read('supabase/migrations-archive/20261011009600_cf247_central_find_record_fix.sql')).toContain("then s.found else p_found end")
 })
 
 test('Fix 4: a cut-off proposal is asked again once with a larger limit, and every attempt is recorded', () => {

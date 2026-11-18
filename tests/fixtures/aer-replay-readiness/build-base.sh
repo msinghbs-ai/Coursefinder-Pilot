@@ -10,11 +10,11 @@ $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/n
 $P -d $DB -f tests/fixtures/e13-completeness-gate/stubs.sql >/dev/null
 $P -d $DB -f tests/fixtures/aer-dr2-dr3/stubs.sql >/dev/null
 node tests/fixtures/e13-completeness-gate/before.mjs | $P -d $DB -o /dev/null
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261102010000_cf247_e13_entry_completeness_gate.sql
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261102010000_cf247_e13_entry_completeness_gate.sql
 node tests/fixtures/aer-dr2-dr3/before.mjs | $P -d $DB -o /dev/null
-$P -d $DB -1 -o /dev/null -f supabase/migrations/20261103070000_cf247_aer_dr2_dr3_supersede_and_matrix_gate.sql
+$P -d $DB -1 -o /dev/null -f supabase/migrations-archive/20261103070000_cf247_aer_dr2_dr3_supersede_and_matrix_gate.sql
 $P -d $DB -f $FX/stubs-extra.sql >/dev/null
 $P -d $DB -f $FX/seed.sql >/dev/null
 $P -d $DB -o /dev/null -f $FX/fixtures.sql 2>&1 | grep -E "ERROR|FAIL" && exit 1 || true
-$P -d $DB -At -f supabase/migrations/20261107130000_cf247_aer_stored_read_recovery.sql >/dev/null
-$P -d $DB -At -f supabase/migrations/20261107170000_cf247_aer_replay_job_actor.sql >/dev/null
+$P -d $DB -At -f supabase/migrations-archive/20261107130000_cf247_aer_stored_read_recovery.sql >/dev/null
+$P -d $DB -At -f supabase/migrations-archive/20261107170000_cf247_aer_replay_job_actor.sql >/dev/null

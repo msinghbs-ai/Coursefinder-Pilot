@@ -3,7 +3,7 @@ name: Admin reference tables integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261118005000_cf247_admin_reference_tables_read.sql'
+      - 'supabase/migrations-archive/20261118005000_cf247_admin_reference_tables_read.sql'
       - 'tests/fixtures/admin-reference-tables/**'
       - '.github/workflows/admin-reference-tables-test.yml'
   workflow_dispatch:

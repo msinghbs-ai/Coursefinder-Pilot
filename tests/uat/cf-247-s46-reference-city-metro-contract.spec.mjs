@@ -4,7 +4,7 @@
 // state when its address names it.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const mig = fs.readFileSync('supabase/migrations/20261015090000_cf247_reference_city_metro.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261015090000_cf247_reference_city_metro.sql', 'utf8')
 test('most common metro area per city; the address decides a state the register got wrong; post-check on Sydney', () => {
   expect(mig).toContain('mode() within group (order by rc.metro_area) metro')
   expect(mig).not.toContain('min(rc.metro_area) metro')

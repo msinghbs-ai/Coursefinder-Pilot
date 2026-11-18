@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
 
-const M = fs.readFileSync('supabase/migrations/20261118243000_cf247_s674_aer_prompt_v3_1_round5.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118243000_cf247_s674_aer_prompt_v3_1_round5.sql', 'utf8')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const R = fs.readFileSync('scripts/aer-v3-replay.mjs', 'utf8')
 const V = fs.readFileSync('scripts/aer-validation-renew.mjs', 'utf8')

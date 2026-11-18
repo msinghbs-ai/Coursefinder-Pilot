@@ -13,12 +13,12 @@ const read = p => fs.readFileSync(p, 'utf8')
 const noDrops = sql => { expect(sql).not.toMatch(/^(drop|delete|truncate)\b/im); expect(sql).not.toMatch(/^alter table .* drop /im) }
 
 test('migrations: task board, jobs per run, noisy-register rule, retired registers, fast Automations, add source', () => {
-  const a = read('supabase/migrations/20261011009800_cf247_task_board_jobs_runs_register_reruns.sql')
+  const a = read('supabase/migrations-archive/20261011009800_cf247_task_board_jobs_runs_register_reruns.sql')
   for (const s of ['layer1_auto_ingest_tick_v1()', "'recent_jobs'", "'recent_calls'", "'credits_15m'", "'ai_15m'", "'queues'", "'uncatalogued'", 'create or replace function security.layer1_run_for_job_v1', "'run', security.layer1_run_for_job_v1(v_id)"]) expect(a).toContain(s)
   for (const id of ['17a7d379-9448-41ca-bca5-bb7537ffff4b', 'a9443687-678b-436f-9c16-62fcb800af14', '717432c7-32f9-47c3-9111-7f75fd79c128']) expect(a).toContain(id)
   noDrops(a)
-  expect(read('supabase/migrations/20261011009900_cf247_automations_read_last_once.sql')).toContain('last as materialized')
-  const c = read('supabase/migrations/20261011010000_cf247_layer1_add_source.sql')
+  expect(read('supabase/migrations-archive/20261011009900_cf247_automations_read_last_once.sql')).toContain('last as materialized')
+  const c = read('supabase/migrations-archive/20261011010000_cf247_layer1_add_source.sql')
   expect(c).toContain('create or replace function public.admin_layer1_add_source(p_args jsonb)')
   expect(c).toContain("security.current_role_rank() < 6")
   expect(c).toContain("'needs_reader', true")

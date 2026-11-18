@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261018060000_cf247_logo_screen_cleanup.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261018060000_cf247_logo_screen_cleanup.sql', 'utf8')
 const fnBody = mig.slice(mig.indexOf('CREATE OR REPLACE FUNCTION security.admin_provider_asset_read'), mig.indexOf('$function$;') )
 
 test('the logo screen read is guarded and no longer reads the retired candidates', () => {

@@ -1,7 +1,7 @@
 // Guards: CF-247 AER v1.1 schema (Platform Admin 26 Oct 2026 21:39 / 21:50): six additive columns, three indexes and the row identity on catalogue.provider_entry_matrix; nothing dropped, renamed or modified
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261026007000_cf247_aer_v11_entry_matrix_columns.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261026007000_cf247_aer_v11_entry_matrix_columns.sql', 'utf8')
 const sql = m.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 
 test('additive only: exactly the six approved columns, no drop / rename / delete / truncate / data update', () => {

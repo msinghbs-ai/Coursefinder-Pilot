@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import { draftEditions } from '../../src/lib/destination-drafts.js'
 
 const read = (p) => fs.readFileSync(p, 'utf8')
-const m = read('supabase/migrations/20261118090707_cf247_destination_localities_bulk_approve.sql')
+const m = read('supabase/migrations-archive/20261118090707_cf247_destination_localities_bulk_approve.sql')
 const c = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const screen = read('src/DestinationData.jsx')
 
@@ -48,7 +48,7 @@ test('the screen: the button is the Platform Admin\'s, asks one reason and calls
 })
 
 // City figures and the ILEP note (Platform Admin 18 Nov 2026 10:05, migration 20261118110707)
-const m2 = read('supabase/migrations/20261118110707_cf247_destination_figures_bulk_approve.sql')
+const m2 = read('supabase/migrations-archive/20261118110707_cf247_destination_figures_bulk_approve.sql')
 const c2 = m2.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('figures: one more function with the same rules; it changes draft figures and the control log only', () => {

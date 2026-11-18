@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const mig = fs.readFileSync('supabase/migrations/20261020020000_cf247_layer4_link_approve.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261020020000_cf247_layer4_link_approve.sql', 'utf8')
 
 test('the desk recognises a proposed page stored as course_url', () => {
   expect(mig).toContain("(b.proposed_value ? ''url'' or b.proposed_value ? ''course_url'')")

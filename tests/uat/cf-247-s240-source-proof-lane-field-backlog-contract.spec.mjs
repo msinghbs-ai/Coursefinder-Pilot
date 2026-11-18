@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = 'supabase/migrations/20261103190000_cf247_source_proof_lane_field_backlog.sql'
+const MIG = 'supabase/migrations-archive/20261103190000_cf247_source_proof_lane_field_backlog.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/source-proof'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')

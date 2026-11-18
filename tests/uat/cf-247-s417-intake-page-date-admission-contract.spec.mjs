@@ -3,8 +3,8 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M41 = 'supabase/migrations/20261109041000_cf247_intake_applicability_month_year.sql'
-const M42 = 'supabase/migrations/20261109042000_cf247_intake_page_date_admission.sql'
+const M41 = 'supabase/migrations-archive/20261109041000_cf247_intake_applicability_month_year.sql'
+const M42 = 'supabase/migrations-archive/20261109042000_cf247_intake_page_date_admission.sql'
 const FX = 'tests/fixtures/intake-self-driving'
 const read = (f) => fs.readFileSync(`${FX}/${f}`, 'utf8')
 const sql41 = fs.readFileSync(M41, 'utf8')
@@ -113,7 +113,7 @@ test('fixture: production-shaped cases (Federation P1, Canberra P2, Macquarie an
   expect(a).toContain("e.outcome = 'filled' and e.rule = 'page-date-v1'")
   expect(a).toContain("count(*) filter (where e.outcome = 'withdrawn')")
   const run = read('run.sh')
-  expect(run).toContain('MIG3=supabase/migrations/20261109042000_cf247_intake_page_date_admission.sql')
+  expect(run).toContain('MIG3=supabase/migrations-archive/20261109042000_cf247_intake_page_date_admission.sql')
   expect(run).toContain('PASS migration 20261109042000 applied twice without change')
   expect(run).toContain('PASS consumer API frozen after 20261109042000')
   expect(run).toContain("'security.intake_course_applicability_v1(text,integer,integer,jsonb,boolean,text[],text) d3789be9c8dee10f31868700b11abf89'")

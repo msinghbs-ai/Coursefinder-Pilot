@@ -7,11 +7,11 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${DD_DB:-g_fops03a_data_delivery}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261110000100_cf247_fops03a_data_delivery.sql
+MIG=supabase/migrations-archive/20261110000100_cf247_fops03a_data_delivery.sql
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"; [ -n "${DD_KEEP:-}" ] || $P -d postgres -c "drop database if exists '$DB'" >/dev/null 2>&1' EXIT
 $P -d postgres -c "drop database if exists $DB" -c "create database $DB" >/dev/null
 $P -d $DB -f tests/fixtures/lane-funnels/schema.sql >/dev/null
-$P -d $DB -f supabase/migrations/20261108170000_cf247_lane_funnels.sql >/dev/null
+$P -d $DB -f supabase/migrations-archive/20261108170000_cf247_lane_funnels.sql >/dev/null
 $P -d $DB -f tests/fixtures/fops03a-data-delivery/schema.sql >/dev/null
 live_before=$(grep -o "body b1d08c144078fce71ba2cd3762a00b0f" $MIG | head -1 | awk '{print $2}')
 live_after=$(grep -o "pg_temp.edit_one('public.admin_layer23(text,jsonb)', '[0-9a-f]*', '[0-9a-f]*'" $MIG | sed "s/.*', '\([0-9a-f]*\)', '\([0-9a-f]*\)'/\2/")
@@ -36,7 +36,7 @@ echo "$out" | grep 'NOTICE:  ok:' | sed 's/^[^N]*NOTICE:  //'
 echo "assertions passed: $(echo "$out" | grep -c 'NOTICE:  ok:')"
 # 20261110100000 (course description stages in Data Delivery): applied twice; this database holds no course description ledger, so the count cannot be made and the stream shows it as such (known false with the error)
 # while every other stream, and the read itself, are unchanged. The counts themselves are proved on the course description fixture (tests/fixtures/cdesc-machine).
-CDV=supabase/migrations/20261110100000_cf247_cdesc_visible_results.sql
+CDV=supabase/migrations-archive/20261110100000_cf247_cdesc_visible_results.sql
 $P -d $DB -f $CDV >/dev/null; $P -d $DB -f $CDV >/dev/null
 res=$($P -d $DB -Atc "select (select count(*) from jsonb_array_elements(j->'streams')) || '|' || (select count(*) from jsonb_array_elements(j->'streams') s where s->>'stream' <> 'cdesc' and jsonb_typeof(s->'stages') <> 'null')
   || '|' || (select s->'stages'->>'known' || '/' || left(s->'stages'->>'reason', 34) from jsonb_array_elements(j->'streams') s where s->>'stream' = 'cdesc') from (select security.data_delivery_v1() j) z")

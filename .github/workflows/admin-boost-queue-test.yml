@@ -3,7 +3,7 @@ name: Admin boost queue integration
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261118083707_cf247_admin_boost_queue_read.sql'
+      - 'supabase/migrations-archive/20261118083707_cf247_admin_boost_queue_read.sql'
       - 'tests/fixtures/admin-boost-queue/**'
       - '.github/workflows/admin-boost-queue-test.yml'
   workflow_dispatch:

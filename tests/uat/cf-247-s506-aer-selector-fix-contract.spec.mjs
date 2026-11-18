@@ -43,7 +43,7 @@ test('two live functions are edited under their live md5s (read 9 Nov 2026) with
   expect(run).toContain('["security.aer_recovery_rule_v1(uuid)"]=35281a190b1465699ef3cc7eccaf6d41')
   expect(fixtures).toContain("'35281a190b1465699ef3cc7eccaf6d41'")
   // the measure's after md5 is the one the intake migration (20261106400000) told this change to expect
-  expect(fs.readFileSync('supabase/migrations/20261106400000_cf247_intake_automation_progress.sql', 'utf8')).toContain('before e758d1c2d36f8f523c3fdbcc1b9dff2f, after b5fc7aae44039565dc85644352f0c719')
+  expect(fs.readFileSync('supabase/migrations-archive/20261106400000_cf247_intake_automation_progress.sql', 'utf8')).toContain('before e758d1c2d36f8f523c3fdbcc1b9dff2f, after b5fc7aae44039565dc85644352f0c719')
 })
 
 test('the held step scans what the rule last made eligible first and keeps its own filters; the measure counts corrected reads, not lane bookkeeping', () => {
@@ -68,7 +68,7 @@ test('scope: no cap, spending limit, switch, setting, job or enqueue changes, an
 })
 
 test('the PostgreSQL fixture rebuilds live (rule 35281a19, measure e758d1c2), reproduces both defects before, and proves the row-limit regression, the order, the filters, the measure and the guard', () => {
-  for (const t of ['RULE=supabase/migrations/20261107130100_cf247_aer_row_limit_rule.sql', 'INTAKE=supabase/migrations/20261106400000_cf247_intake_automation_progress.sql',
+  for (const t of ['RULE=supabase/migrations-archive/20261107130100_cf247_aer_row_limit_rule.sql', 'INTAKE=supabase/migrations-archive/20261106400000_cf247_intake_automation_progress.sql',
                    'e758d1c2d36f8f523c3fdbcc1b9dff2f', 'the migration changed a function it does not declare', 'the second run was not a no-op', 'aer-selector-fix fixtures: passed'])
     expect(run).toContain(t)
   // negative and positive, on both sides of the migration
@@ -87,6 +87,6 @@ test('CI runs the fixture on an isolated PostgreSQL 16 and nothing else', () => 
   expect(wf).toMatch(/^# Guards: .+/m)
   expect(wf).toContain('postgres:16')
   expect(wf).toContain('bash tests/fixtures/aer-selector-fix/run.sh')
-  expect(wf).toContain("'supabase/migrations/20261109150000_cf247_aer_selector_fix.sql'")
+  expect(wf).toContain("'supabase/migrations-archive/20261109150000_cf247_aer_selector_fix.sql'")
   expect(wf).not.toMatch(/SUPABASE_|supabase\.co|secrets\./)
 })

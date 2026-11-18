@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261108130000_cf247_cdesc_review_pack_capacity_backpressure.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations-archive/20261108130000_cf247_cdesc_review_pack_capacity_backpressure.sql', 'utf8')
 const code = MIG.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/course-description-backpressure'
 const fn = (name) => { const a = code.indexOf(`function ${name}`); return code.slice(a, code.indexOf('$function$;', code.indexOf('$function$', a + 10) + 10)) }

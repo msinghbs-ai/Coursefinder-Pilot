@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261117200000_cf247_staging_retention_and_ops_telemetry.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261117200000_cf247_staging_retention_and_ops_telemetry.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const between = (a, b) => code.slice(code.indexOf(a), code.indexOf(b, code.indexOf(a)))
 const ret = between('create or replace function security.staging_retention_v1', 'revoke all on function security.staging_retention_v1')

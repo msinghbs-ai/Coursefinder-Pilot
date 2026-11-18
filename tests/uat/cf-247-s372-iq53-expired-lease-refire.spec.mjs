@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261108190000_cf247_iq53_expired_lease_refire.sql'
+const MIG = 'supabase/migrations-archive/20261108190000_cf247_iq53_expired_lease_refire.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/iq-00053-lease-refire'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')

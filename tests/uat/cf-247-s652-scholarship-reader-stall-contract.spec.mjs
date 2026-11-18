@@ -1,9 +1,9 @@
 // Guards: scholarship detail fill (Platform Admin 18 Nov 2026 13:02 and 15:32): the existing reader fills award values and closing dates from the stored official page, no overwrite, no new review kind; a dead lease at the attempt cap never blocks the idle fill.
-// CF-247 S652. supabase/migrations/20261118184000_cf247_scholarship_reader_stall_fix.sql.
+// CF-247 S652. supabase/migrations-archive/20261118184000_cf247_scholarship_reader_stall_fix.sql.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118184000_cf247_scholarship_reader_stall_fix.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118184000_cf247_scholarship_reader_stall_fix.sql', 'utf8')
 
 test('the idle fill counts only what the picker can take', () => {
   expect(M).toContain("select pg_temp.cf_edit('security.scholarship_ai_fire_v1()'::regprocedure, '127e679f0a07e2d97814e5d4e94a0b14',")

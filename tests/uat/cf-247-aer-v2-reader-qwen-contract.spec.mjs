@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261113391500_cf247_aer_v2_reader_qwen.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261113391500_cf247_aer_v2_reader_qwen.sql', 'utf8')
 
 test('prompt v2 is pinned to the chosen model, with the quote rules the v1 trial failed on', () => {
   expect(M).toContain("'aer-v2-course-v2', 'course_page', t, encode(sha256(convert_to(t, 'UTF8')), 'hex'), 'qwen/qwen3-30b-a3b-instruct-2507', 300, 'trial', 'migration 20261113391500'")

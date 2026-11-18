@@ -1,7 +1,7 @@
 // Guards: CF-247 AER NZ course-level identity (Platform Admin mandate 29 Oct 2026 12:23 B4): NZ course pages are read only with an already-approved strong NZ identity proof and a stored official page; title-only refused; AU rules unchanged; no new lane
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029080000_cf247_aer_nz_course_identity.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029080000_cf247_aer_nz_course_identity.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const TITLE_ONLY = ['adapter_title', 'exact_title', 'title_level', 'degree_name', 'title_match', 'host_page']
 

@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261117223000_cf247_boost_matrix_settings_and_admitted_count.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261117223000_cf247_boost_matrix_settings_and_admitted_count.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const pairs = (re) => Object.fromEntries([...code.matchAll(re)].map((m) => [m[1], Number(m[2])]))
 const country = pairs(/\('([A-Z]{2})', '[A-Za-z ]+', (\d+), \d\)/g)

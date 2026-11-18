@@ -7,7 +7,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 import { parseDelimited, parseSample } from '../../src/lib/sample-parse.js'
 
 const read = (p) => fs.readFileSync(p, 'utf8')
-const m = read('supabase/migrations/20261117193000_cf247_layer1_induction_wizard.sql')
+const m = read('supabase/migrations-archive/20261117193000_cf247_layer1_induction_wizard.sql')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const wizard = read('src/Layer1InductionWizard.jsx'), report = read('src/CompletenessReport.jsx'), l1 = read('src/layer1-operations-entry.jsx'), main = read('src/mature-main.jsx')
 
@@ -90,7 +90,7 @@ test('mocked browser: the report shows fill by country and category, a figure op
 })
 
 test('addenda: the parser table and functions add beside what exists; the four induction functions are replaced only from their known definitions', () => {
-  const n = read('supabase/migrations/20261117203000_cf247_layer1_parser_line_items.sql')
+  const n = read('supabase/migrations-archive/20261117203000_cf247_layer1_parser_line_items.sql')
   const c = n.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
   expect(n).toContain('-- Replaces: nothing (four induction functions extended in place).'); expect(n).toContain('-- Retires: nothing.')
   for (const l of n.split('\n')) expect(l).not.toMatch(/^(drop|delete|truncate)\b|^alter table .* drop /i)
@@ -117,7 +117,7 @@ test('addenda: the Layer 1 line shows the parser badge and Re-infer Parser Spec;
 })
 
 test('decisions: one category list is published, retention lives in the retention table, and the role gates are 3 to open and draft, 4 to re-infer, 6 to activate', () => {
-  const u = read('supabase/migrations/20261117213000_cf247_wave2_unify_categories_retention_roles.sql')
+  const u = read('supabase/migrations-archive/20261117213000_cf247_wave2_unify_categories_retention_roles.sql')
   const c = u.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
   expect(u).toContain('-- Retires: nothing.'); expect(u).toMatch(/^-- Replaces: the wizard's own per-source retention values/m)
   for (const l of u.split('\n')) expect(l).not.toMatch(/^(drop|delete|truncate)\b|^alter table .* drop /i)
@@ -176,7 +176,7 @@ test('mocked browser: evidence captures and Layer 4 review items are two columns
 })
 
 test('Wave 2 register drafts (Platform Admin 17 Nov 2026 23:02): nine drafts are pre-staged; a draft is not a source, and the live IRCC list is not drafted again', () => {
-  const w = read('supabase/migrations/20261118004000_cf247_wave2_register_drafts.sql')
+  const w = read('supabase/migrations-archive/20261118004000_cf247_wave2_register_drafts.sql')
   const c = w.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
   expect(w).toMatch(/^-- Replaces: nothing$/m); expect(w).toMatch(/^-- Retires: nothing$/m)
   for (const l of w.split('\n')) expect(l).not.toMatch(/^(drop|delete|truncate|update)\b|^alter table .* drop /i)

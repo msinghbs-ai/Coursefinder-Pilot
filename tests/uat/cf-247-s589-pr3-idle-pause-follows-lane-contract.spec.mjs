@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261118001000_cf247_pr3_idle_pause_follows_lane.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261118001000_cf247_pr3_idle_pause_follows_lane.sql', 'utf8')
 
 test('a live lane is held and released on the lane; a retiring job is never switched on', () => {
   expect(mig).toContain("create or replace function security.job_switch_v1(p_jobid bigint, p_job text, p_on boolean)")

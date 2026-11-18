@@ -10,7 +10,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 DB=${PLANHOLD_DB:-plan_step_lane_hold_fixtures}
-MIG=../../../supabase/migrations/20261103200000_cf247_plan_step_lane_hold.sql
+MIG=../../../supabase/migrations-archive/20261103200000_cf247_plan_step_lane_hold.sql
 P="psql -v ON_ERROR_STOP=1 -q -X"
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }
 md5of() { $P -d $1 -Atc "select md5(pg_get_functiondef('$2'::regprocedure))"; }

@@ -11,7 +11,7 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
 
-const MIG = 'supabase/migrations/20261103050000_cf247_scholarship_recovery.sql'
+const MIG = 'supabase/migrations-archive/20261103050000_cf247_scholarship_recovery.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/scholarship-recovery'
 const fx = (f) => fs.readFileSync(`${FX}/${f}`, 'utf8')

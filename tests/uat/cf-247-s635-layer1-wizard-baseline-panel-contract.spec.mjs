@@ -5,7 +5,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 
 const P = fs.readFileSync('src/Layer1BaselinePreview.jsx', 'utf8')
 const W = fs.readFileSync('src/Layer1InductionWizard.jsx', 'utf8')
-const M = fs.readFileSync('supabase/migrations/20261118124000_cf247_layer1_induction_v3_fields_baseline.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261118124000_cf247_layer1_induction_v3_fields_baseline.sql', 'utf8')
 
 test('every record type the Layer 1 parser targets name has a panel entry', () => {
   for (const t of ['course_register', 'provider_register', 'campuses', 'provider_accreditations', 'grade_scale_conversions']) {

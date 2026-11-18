@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 test('migration 20261113062000 returns the reader to shadow and withdraws only its live admissions through the existing rule', () => {
-  const m = fs.readFileSync('supabase/migrations/20261113062000_cf247_sch_eligibility_pause.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261113062000_cf247_sch_eligibility_pause.sql', 'utf8')
   expect(m).toContain("where toolset_key = 'pipeline' and key = 'sch_elig.apply_on' and value is distinct from to_jsonb(0)")
   expect(m.match(/update pipeline\.platform_toolset_settings/g)).toHaveLength(1)
   expect(m).toContain('select security.scholarship_admission_withdraw_v1(c.admitted_scholarship_id,')

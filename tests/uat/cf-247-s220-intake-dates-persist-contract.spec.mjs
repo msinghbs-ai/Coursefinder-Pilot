@@ -12,7 +12,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 
-const MIG = 'supabase/migrations/20261102080000_cf247_intake_dates_persist.sql'
+const MIG = 'supabase/migrations-archive/20261102080000_cf247_intake_dates_persist.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const FX = 'tests/fixtures/intake-dates'
@@ -121,10 +121,10 @@ test('the re-apply is governed, idempotent, batched and off by default; nothing 
 
 test('the consumer API reads the same three fields through the existing projection: a value change, not a shape change', () => {
   // projection: catalogue.course_intakes -> search.course_documents.intake_options (live after E16, md5 checked by run.sh)
-  const proj = fs.readFileSync('supabase/migrations/20261016010000_cf247_api_data_fixes.sql', 'utf8')
+  const proj = fs.readFileSync('supabase/migrations-archive/20261016010000_cf247_api_data_fixes.sql', 'utf8')
   expect(proj).toContain("jsonb_build_object('year',i.intake_year,'label',i.intake_label,'start_date',i.start_date,'application_deadline',i.application_deadline,'campus_id',i.campus_id)")
   // consumer API: api.website_v2_course_item builds intakes[] from intake_options; the fixtures run this exact expression (live md5 8f2a0ac9...)
-  const api = fs.readFileSync('supabase/migrations/20261010006800_cf247_r4_published_gate.sql', 'utf8')
+  const api = fs.readFileSync('supabase/migrations-archive/20261010006800_cf247_r4_published_gate.sql', 'utf8')
   const expr = "jsonb_agg(distinct jsonb_build_object('label', i->>'label', 'month', api.website_v2_label_month(i->>'label'), 'year', i->'year',\n                  'start_date', i->'start_date', 'application_deadline', i->'application_deadline'))\n                 from jsonb_array_elements(coalesce(d.intake_options,'[]'::jsonb)) i where nullif(i->>'label','') is not null), '[]'::jsonb)"
   expect(api).toContain(expr)
   expect(fixtures).toContain(expr)

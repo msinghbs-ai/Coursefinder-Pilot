@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const mig = fs.readFileSync('supabase/migrations/20261113181000_cf247_e16_title_lookup_own_hosts.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261113181000_cf247_e16_title_lookup_own_hosts.sql', 'utf8')
 
 test('the variants: the address with and without its slash, and the same path on the provider\'s own hosts only', () => {
   const fn = mig.slice(mig.indexOf('create or replace function security.course_page_url_variants_v1'), mig.indexOf('comment on function security.course_page_url_variants_v1'))
@@ -27,7 +27,7 @@ test('two md5-guarded edits: the title lookup (same provider) and the identity-p
 })
 
 test('the intake wording lookup (same course) also reads the page under its variants, and the variants are taken once per call; md5-guarded', () => {
-  const w = fs.readFileSync('supabase/migrations/20261113182000_cf247_intake_wording_url_variants.sql', 'utf8')
+  const w = fs.readFileSync('supabase/migrations-archive/20261113182000_cf247_intake_wording_url_variants.sql', 'utf8')
   expect(w).toContain("pg_temp.edit_all('security.intake_page_wording_v1(uuid,uuid,text)', 'daa96acbe87de1cf0a2bec523a911c7a', 'eb380f591dc17bf536c94d999f4f1b26'")
   // speed: the variants come once per call from the function's own arguments, never per scanned page
   const once = "or g.url = any ((select security.course_page_url_variants_v1(co.provider_id, p_url) from catalogue.courses co where co.id = p_course)::text[]))"

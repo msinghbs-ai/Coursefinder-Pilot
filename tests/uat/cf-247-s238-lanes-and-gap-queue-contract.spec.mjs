@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = 'supabase/migrations/20261103160000_cf247_lanes_and_gap_queue.sql'
+const MIG = 'supabase/migrations-archive/20261103160000_cf247_lanes_and_gap_queue.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const FX = 'tests/fixtures/lanes-gap-queue'
 const run = fs.readFileSync(`${FX}/run.sh`, 'utf8')

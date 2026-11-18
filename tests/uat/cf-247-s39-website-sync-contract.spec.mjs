@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const mig = fs.readFileSync('supabase/migrations/20261014110000_cf247_website_sync_and_display_terms.sql', 'utf8')
+const mig = fs.readFileSync('supabase/migrations-archive/20261014110000_cf247_website_sync_and_display_terms.sql', 'utf8')
 const edge = fs.readFileSync('supabase/functions/wix-course-api/index.ts', 'utf8')
 
 test('display terms come from two Yes/No settings, not a fixed value in five functions', () => {
@@ -31,7 +31,7 @@ test('sync: full load by pages, then only changes with removals, by an opaque cu
   expect(mig).toContain("values ('website-sync-check', 'Search and API', 40,")
   expect(mig).toContain("grant execute on function public.website_v2_sync(text, boolean, text[], integer) to service_role;")
   // fix: checked_through stays null until every chosen entity has finished a pass
-  expect(fs.readFileSync('supabase/migrations/20261014111500_cf247_website_sync_checked_through.sql', 'utf8')).toContain("'checked_through', (select case when bool_or(s.last_cycle_at is null) then null else min(s.last_cycle_at) end")
+  expect(fs.readFileSync('supabase/migrations-archive/20261014111500_cf247_website_sync_checked_through.sql', 'utf8')).toContain("'checked_through', (select case when bool_or(s.last_cycle_at is null) then null else min(s.last_cycle_at) end")
 })
 
 test('edge: sync is added at the end of the actions; logo link validity is read from the setting', () => {
@@ -73,7 +73,7 @@ test.describe('mocked browser', () => {
 
 // 15 Oct 2026: reference passed the API's 8 s statement limit under load; it now returns a copy built every 15 minutes
 test('reference: answered from a copy built every 15 minutes (catalogued job); live build only when no copy exists', () => {
-  const m = fs.readFileSync('supabase/migrations/20261015000200_cf247_website_reference_cache.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261015000200_cf247_website_reference_cache.sql', 'utf8')
   expect(m).toContain("select coalesce((select c.payload - 'generated_at' || jsonb_build_object('generated_at', c.built_at) from pipeline.website_reference_cache c where c.id = 1),")
   expect(m).toContain("select cron.schedule('website-reference-cache', '2-59/15 * * * *', 'select security.website_reference_cache_refresh_v1()');")
   expect(m).toContain("values ('website-reference-cache', 'Search and API', 41,")
@@ -82,9 +82,9 @@ test('reference: answered from a copy built every 15 minutes (catalogued job); l
 
 // 15 Oct 2026: a sync page of 50 provider details passed the 8 s limit; pages are filled by build cost
 test('sync: a page is filled by build cost (provider 8, scholarship 2, other 1) up to page_size; has_more when rows are left', () => {
-  const m = fs.readFileSync('supabase/migrations/20261015000300_cf247_website_sync_page_by_cost.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261015000300_cf247_website_sync_page_by_cost.sql', 'utf8')
   expect(m).toContain("filter (where x.rn = 1 or x.cw <= v_size)")
   expect(m).toContain("when y.entity = 'scholarship' then 2 else 1 end")
-  expect(fs.readFileSync('supabase/migrations/20261015000400_cf247_website_sync_provider_weight.sql', 'utf8')).toContain("when y.entity = 'provider' then 16 when")
+  expect(fs.readFileSync('supabase/migrations-archive/20261015000400_cf247_website_sync_provider_weight.sql', 'utf8')).toContain("when y.entity = 'provider' then 16 when")
   expect(m).toContain('v_more := jsonb_array_length(v_rows) < v_n;')
 })

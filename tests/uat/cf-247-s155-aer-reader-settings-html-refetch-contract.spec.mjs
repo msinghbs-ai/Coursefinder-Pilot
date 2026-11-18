@@ -1,7 +1,7 @@
 // Guards: CF-247 AER programme Platform Admin decision 29 Oct 2026 09:57 item 1 (parked reader settings and HTML refetch approved; admin docs/platform/AER-OPERATIONS-WORKSPACE-DECISION-2026-10-29.md W12): slices read at once and slice size are settings with a label, range, unit and used_by; the worker is told through svc_entry_matrix_next (md5-guarded); Read again is one mechanism (security.aer_reread_v1, owner only) behind the Platform Admin check, which fetches a markdown-stored web page again as HTML after superseding its proposed rows and pending item, and keeps every earlier refusal; nothing dropped, no job, status or consumer API change
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261029020000_cf247_aer_reader_settings_html_refetch.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261029020000_cf247_aer_reader_settings_html_refetch.sql', 'utf8')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('settings: slices read at once (6, range 1-12) and slice size 8,000, each labelled with unit, range and used_by; the worker is told (md5-guarded)', () => {

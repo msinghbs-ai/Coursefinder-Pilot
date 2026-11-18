@@ -9,7 +9,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('migration: a start needs no reason except Admit; Coverage rows carry the CRICOS code', () => {
-  const sql = read('supabase/migrations/20261011010100_cf247_task_start_without_reason_provider_codes.sql')
+  const sql = read('supabase/migrations-archive/20261011010100_cf247_task_start_without_reason_provider_codes.sql')
   expect(sql).toContain("if p_action = 'start' and coalesce(p_args->>'kind', '') <> 'admit_qualified' then")
   expect(sql).toContain("v_reason := 'Started from ' || coalesce(nullif(btrim(p_args->>'from'), ''), 'the app');")
   expect(sql).toContain("jsonb_build_object('code', x.code)")

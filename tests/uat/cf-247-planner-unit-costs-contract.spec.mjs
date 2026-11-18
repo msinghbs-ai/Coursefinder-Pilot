@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 
-const M = fs.readFileSync('supabase/migrations/20261110200000_cf247_planner_unit_costs.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations-archive/20261110200000_cf247_planner_unit_costs.sql', 'utf8')
 const R = fs.readFileSync('supabase/held/planner_unit_costs_forward_recovery.sql', 'utf8')
 const BEFORE = 'f10198f02de958119baefd490931c258'
 const AFTER = '00d1b42bc96af737982c3ba77a384036'

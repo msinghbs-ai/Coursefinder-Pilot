@@ -14,7 +14,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 DB=${ALA_DB:-aer_lock_agreement_fixtures}
 P="psql -v ON_ERROR_STOP=1 -q -X"
-MIG=supabase/migrations/20261109190000_cf247_aer_rule_lock_agreement.sql
+MIG=supabase/migrations-archive/20261109190000_cf247_aer_rule_lock_agreement.sql
 FX=tests/fixtures/aer-lock-agreement
 q() { $P -d $DB -Atc "$1"; }
 show() { sed -n 's/^.*\(NOTICE\|ERROR\):  /\1 /p'; }

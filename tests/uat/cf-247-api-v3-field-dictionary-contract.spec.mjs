@@ -6,8 +6,8 @@ import { load, validate, compact, embedded } from '../../scripts/api-v3-field-di
 import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
 // the sync and drift functions live in 20261116110000; each later reviewed list is loaded by its own sync migration, the newest of which must embed the file
-const MIG = 'supabase/migrations/20261116110000_cf247_api_field_dictionary_sync.sql'
-const LIST = 'supabase/migrations/20261118135707_cf247_api_field_dictionary_v3_gaps.sql'
+const MIG = 'supabase/migrations-archive/20261116110000_cf247_api_field_dictionary_sync.sql'
+const LIST = 'supabase/migrations-archive/20261118135707_cf247_api_field_dictionary_v3_gaps.sql'
 const sql = fs.readFileSync(MIG, 'utf8')
 const listSql = fs.readFileSync(LIST, 'utf8')
 const code = sql.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')

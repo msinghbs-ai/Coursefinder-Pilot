@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261113311500_cf247_sch_ai_pick_window.sql'
+const MIG = 'supabase/migrations-archive/20261113311500_cf247_sch_ai_pick_window.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 
 test('one md5-guarded edit of the live picker, four edits each applied exactly once', () => {

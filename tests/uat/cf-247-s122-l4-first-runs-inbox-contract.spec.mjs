@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const m = fs.readFileSync('supabase/migrations/20261026003000_cf247_hotfix_l4_first_runs_inbox.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations-archive/20261026003000_cf247_hotfix_l4_first_runs_inbox.sql', 'utf8')
 
 test('migration: first runs take their university and own kinds; decide routes to layer4_review_decide; md5-guarded', () => {
   expect(m).toMatch(/pg_temp\.edit_n\('security\.layer4_inbox_items_v1\(\)', 'c5f4f34cd2ea79b3a3aff8ef3617b4a6'/)
