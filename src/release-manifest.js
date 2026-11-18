@@ -1,21 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.43'
-export const PACKAGE_VERSION='0.1.465'
+export const UI_VERSION='2.16.44'
+export const PACKAGE_VERSION='0.1.466'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'18 Nov 2026',
-  title:'Layer 4 clusters; City metrics fit a narrow pane',
+  title:'Around this course and provider; metric type pills; Preview as',
   changes:[
-    'Layer 4 Review › Inbox › Grid › Clusters: choose a kind and the waiting items are grouped by university, reason and the same quote (numbers, spacing and links ignored). Open a cluster to see its items, export the clusters, or tick clusters and settle them with one choice, one reason and a typed confirmation. Each item is decided exactly as on its own card, at the rank it needs, and logged.',
-    'Entry requirements, campus localities, provider departures and Human input needed are inspect only in Clusters: they are decided one at a time. A choice that needs a value or a page is never offered for a whole cluster.',
-    'A cluster that keeps coming back is the case for a Boost or reader rule: export it so the rule can be written into the worker and tested.'
+    'Course detail: a new read-only "Around this course" block. Location & weather shows each campus city with its summer and winter means, annual rainfall and climate icon (BOM) and the city population (ABS), with the attribution beside them. Career pathway shows occupations, growth, median salary and shortage status (JSA), or says plainly that the figures are still loading. Visa & living-cost snapshot shows the work limit, post-study work rights, the financial-capacity benchmark, visa charges and health cover (Home Affairs). Entry requirements & scholarships shows the first entry rows and published scholarships.',
+    'Provider detail: a new read-only "Around this provider" block with Rankings (QS, THE and ARWU latest and previous editions, and any subject ranks), Campus city profiles (weather and population for each campus city) and Scholarships & accreditations.',
+    'Destination data › City metrics & costs: Metric type pills (All, Climate & Weather (BOM), Population & Demographics (ABS), Careers, Jobs & Salaries (JSA), Study Rules & Living Costs (Home Affairs)). Careers and Study rules open their own lists in place, with living-cost city figures beside the rules.',
+    'Viewers and Counsellors see student-facing values only in the Course and Provider detail: automated and entered-by-hand tags, rule ids, match shares, edition and approval status, Layer 4 state, AI read details and raw quotes are hidden. Editors and Platform Admins keep them, and can use "Preview as: Admin | Counsellor | Viewer" in the detail header to see a lower role\'s view.'
   ],
-  bugFixes:[
-    'Destination data › City metrics & costs: a long measure name (climate_annual_rainfall_mm) now wraps, so the table fits a narrow window without scrolling sideways.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

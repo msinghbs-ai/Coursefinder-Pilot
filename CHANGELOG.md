@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.466 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.44** (Platform Admin 18 Nov 2026 21:23). No migration (zero schema in S1-RM-Design). New `src/lib/correlation-adapters.js` (CARD_SPEC column and field list; campus to locality, city profile, career outlook, visa snapshot and ranking snapshot joins), `src/CorrelatedBlade.jsx` (Course and Provider correlated sections, Preview as) over the existing reads `admin_provider_destination_read`, `admin_course_destination_read`, `admin_destination_review` (Curator and above), `admin_entry_requirements` and `admin_read` `provider_ranking_history`. New `src/lib/destination-metric-types.js` (Metric type pills on Destination data › City metrics & costs) and `src/lib/field-visibility.js` (role tiers, field audiences, the student-view CSS). Specs s694, s695 and s696.
+
 ## 0.1.465 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.43** (Platform Admin 18 Nov 2026 19:20). No migration (no schema change in S1-RM-Design). New `src/lib/layer4-clusters.js` (normalise reason and quote, cluster by kind, university, reason and quote, settleable choices) and `src/Layer4Clusters.jsx` on Layer 4 › Inbox › Grid › Clusters: reads `admin_layer4_inbox` items and detail page by page, decides each item through `admin_layer4_inbox` 'decide'. `src/DestinationData.jsx`: the measure cell wraps. Spec s693.
