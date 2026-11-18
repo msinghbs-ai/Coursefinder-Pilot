@@ -1,10 +1,10 @@
 // Guards: destination page facts (Platform Admin 18 Nov 2026 17:55): Home Affairs pages read rendered through Firecrawl /v1/scrape (JS rendering, onlyMainContent), spent and logged through the database; JSA Table 1 mapped from its real headings; Fair Work and QILT untouched; Run now without a migration.
-// CF-247 S690. supabase/migrations/20261118220000_cf247_destination_page_facts_rendered_read.sql, layer1-destination-geo-loader v1.3.0, .github/workflows/destination-run-now.yml.
+// CF-247 S690. supabase/migrations/20261118223000_cf247_destination_page_facts_rendered_read.sql, layer1-destination-geo-loader v1.3.0, .github/workflows/destination-run-now.yml.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { firecrawlScrapeBody, headerSample, isEarnings, isEmployed, parseOccupationGrid } from '../../supabase/functions/_shared/cf247-page-facts.js'
 
-const M = fs.readFileSync('supabase/migrations/20261118220000_cf247_destination_page_facts_rendered_read.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261118223000_cf247_destination_page_facts_rendered_read.sql', 'utf8')
 const E = fs.readFileSync('supabase/functions/layer1-destination-geo-loader/index.ts', 'utf8')
 const W = fs.readFileSync('.github/workflows/destination-run-now.yml', 'utf8')
 

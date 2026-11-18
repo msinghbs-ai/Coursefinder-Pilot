@@ -49,7 +49,7 @@ begin
 end $c$;
 comment on column destination.page_facts.read_mode is 'static: the page is read directly; rendered: through Firecrawl /v1/scrape with JS rendering and onlyMainContent (pages whose content the browser builds). Set by a Platform Admin.';
 update destination.page_facts set read_mode = 'rendered', updated_at = now(),
-       note = coalesce(note || '; ', '') || 'read rendered from 18 Nov 2026 (20261118220000): the static page holds almost no visible text'
+       note = coalesce(note || '; ', '') || 'read rendered from 18 Nov 2026 (20261118223000): the static page holds almost no visible text'
  where status = 'active' and page_url like 'https://immi.homeaffairs.gov.au/%' and read_mode <> 'rendered';
 
 -- 2. the loader is told each fact's read mode
@@ -61,8 +61,8 @@ select pg_temp.cf_edit('public.svc_destination_page_facts_v1()'::regprocedure, '
 -- 3. the earnings period the workbook states
 select pg_temp.cf_edit('security.destination_page_facts_load_v1(jsonb)'::regprocedure, 'fefa5c5a27511fe2ca015e9f3c3992d8',
   $o$'AUD', 'weekly',$o$,
-  $n$'AUD', coalesce(nullif(j->'header'->>'earnings_period', ''), 'weekly'),  -- 20261118220000: the period the workbook heading states$n$,
-  '20261118220000: the period the workbook heading states');
+  $n$'AUD', coalesce(nullif(j->'header'->>'earnings_period', ''), 'weekly'),  -- 20261118223000: the period the workbook heading states$n$,
+  '20261118223000: the period the workbook heading states');
 
 -- 4. post-checks
 do $$
