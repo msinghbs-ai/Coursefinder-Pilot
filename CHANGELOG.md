@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.460 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.38** (Platform Admin 18 Nov 2026 10:31, 10:33 and 12:21). No migration. New `src/Layer1BaselinePreview.jsx`: Layer 1 › + Add source, step 1, shows What this source will create for the chosen target record type (baseline records from S2-Build #1258 and #1263, their rules, and the API v3 fields filled). It calls nothing. Spec s635. Admin SOP 2.63.
+
 ## 0.1.459 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.37** (Platform Admin 18 Nov 2026 12:23, hotfix ref ZDUFMC). No migration. `src/AuthEmailTemplates.jsx`: the `lastTest` memo added in v2.16.35 sat below the early returns, so the render after the settings loaded called one more hook (React error #310); it now sits above them. Render guard s634 opens Links & Email Templates and steps through Create user.

@@ -10,6 +10,7 @@ import{supabase}from'./lib/supabase'
 import{plainError}from'./lib/errors'
 import{parseSample}from'./lib/sample-parse.js'
 import'./layer1-induction.css'
+import Layer1BaselinePreview from'./Layer1BaselinePreview'
 
 export const STEPS=[['scheme','Country & scheme'],['source','Source & licence'],['mapping','Field mapping'],['cadence','Cadence & retention'],['dry_run','Dry-run preview'],['activate','Activation']]
 export const MAPPER='layer1-ai-induction-mapper'
@@ -108,6 +109,8 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
       <label>Native field-of-study scheme<select value={f.field_scheme} onChange={set('field_scheme')} disabled={closed||!schemes.length} data-l1i-field-scheme><option value="">None or not known</option>{schemes.filter(s=>s.kind==='field_of_study').map(s=><option key={s.scheme} value={s.scheme}>{s.label||s.scheme}</option>)}</select></label>
       <label>Target record type<select value={f.target_record_type} onChange={e=>setF(x=>({...x,target_record_type:e.target.value,parser_spec:null}))} disabled={closed} data-l1i-record-type><option value="">Choose…</option>{(o.record_types||[]).map(t=><option key={t.key} value={t.key}>{t.label}</option>)}</select>
         <small>{(o.record_types||[]).find(t=>t.key===f.target_record_type)?.help||'What each row of this source becomes. The AI mapper builds the parser spec for this type.'}</small></label>
+      {/* v2.16.37 (Platform Admin 18 Nov 2026 10:31, 12:21): what an apply run of this source will create, and the API v3 fields it fills */}
+      {f.target_record_type&&<Layer1BaselinePreview type={f.target_record_type} countryName={(o.countries||[]).find(c=>c.code===f.country_code)?.name||f.country_code}/>}
       {f.country_code&&!schemes.length&&<p className="l1i-warn" data-l1i-no-scheme>No registration scheme is registered for {f.country_code} yet. {rank>=6?'Register it below (it is added as planned), then choose it here.':'A Platform Admin registers it here first (it is added as planned); then this source can be set up.'}</p>}
       {f.country_code&&!closed&&rank>=6&&<SchemeRegister country={f.country_code} rpc={rpc} onDone={async()=>{await open(id)}}/>}
     </div>,
