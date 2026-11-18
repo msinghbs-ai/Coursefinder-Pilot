@@ -198,6 +198,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -qx '.github/cf-080-provider-contacts-candidate'; then
             targeted=(tests/uat/cf-080-provider-contacts-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -qx '.github/s2-boost-live-counts-candidate'; then
+            targeted=(tests/uat/cf-247-s728-pim-admin-live-counts-deployed.spec.mjs)
+          fi
           if printf '%s\n' "$changed" | grep -qx '.github/m2-4-hard-gate-candidate'; then
             targeted=(
               tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
