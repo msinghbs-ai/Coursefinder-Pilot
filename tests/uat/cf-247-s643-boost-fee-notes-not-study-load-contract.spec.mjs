@@ -1,10 +1,10 @@
 // Guards: Boost learnings promoted into the reader (Platform Admin 18 Nov 2026 14:29 item 1): a domestic fee note (EFTSL, Commonwealth supported places, a fee calculated on a standard full-time load) is never sent to the model, never counts as a statement for international students and is refused as a study load quote; the pages behind refused readings are read again; newly waiting scholarships are decided by the scope rule every hour
-// CF-247 S643. Migration 20261118170000_cf247_boost_study_load_v5_fee_notes, worker coverage-sweep v1.0.17 (boost.ts prompt boost-study-load-v5, selector study-load-windows-v4). The fee notes below are quoted from live refused readings of 18 Nov 2026. G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
+// CF-247 S643. Migration 20261118171000_cf247_boost_study_load_v5_fee_notes, worker coverage-sweep v1.0.17 (boost.ts prompt boost-study-load-v5, selector study-load-windows-v4). The fee notes below are quoted from live refused readings of 18 Nov 2026. G1, G2, G3 and housekeeping are guarded centrally by s42, s32 and s57.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { build } from 'esbuild'
 
-const M = fs.readFileSync('supabase/migrations/20261118170000_cf247_boost_study_load_v5_fee_notes.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261118171000_cf247_boost_study_load_v5_fee_notes.sql', 'utf8')
 const code = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 let B
 test.beforeAll(async () => {

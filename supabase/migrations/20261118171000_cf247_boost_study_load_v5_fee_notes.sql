@@ -75,8 +75,8 @@ select cron.schedule('scholarship-scope-auto', '19 * * * *',
 where not exists (select 1 from cron.job where jobname = 'scholarship-scope-auto');
 
 insert into pipeline.component_register (kind, name, layer, area, purpose, status, replaces, introduced_in) values
-  ('job', 'scholarship-scope-auto', 'Layer 4', 'Scholarships', 'Scholarship course links decided by rule every hour', 'active', '{}', '20261118170000'),
-  ('function', 'security.scholarship_scope_auto_tick_v1', 'Layer 4', 'Scholarships', 'One run of the scholarship scope rule over waiting scholarships', 'active', '{}', '20261118170000')
+  ('job', 'scholarship-scope-auto', 'Layer 4', 'Scholarships', 'Scholarship course links decided by rule every hour', 'active', '{}', '20261118171000'),
+  ('function', 'security.scholarship_scope_auto_tick_v1', 'Layer 4', 'Scholarships', 'One run of the scholarship scope rule over waiting scholarships', 'active', '{}', '20261118171000')
 on conflict do nothing;
 
 -- 4. Post-checks
