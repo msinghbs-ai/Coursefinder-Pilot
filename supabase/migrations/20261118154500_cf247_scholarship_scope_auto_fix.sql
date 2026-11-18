@@ -128,7 +128,7 @@ begin
   return jsonb_build_object('scholarship_id', p_scholarship_id, 'filter', v_filter, 'levels', to_jsonb(v_levels), 'subjects', to_jsonb(v_titles), 'candidates', v_cand, 'matched', v_match);
 end $function$;
 revoke all on function security.scholarship_scope_suggest_v1(uuid) from public, anon, authenticated;
-comment on function security.scholarship_scope_suggest_v1(uuid) is 'CF-247 (Platform Admin 18 Nov 2026 11:57 and 13:06): works out the rule-based course scope suggested for a waiting scholarship from its own name (its "in ..." phrase, subject words, degree codes), then its description (also when the name's subjects keep no course), and how many of its proposed courses that scope keeps.';
+comment on function security.scholarship_scope_suggest_v1(uuid) is 'CF-247 (Platform Admin 18 Nov 2026 11:57 and 13:06): works out the rule-based course scope suggested for a waiting scholarship from its own name (its "in ..." phrase, subject words, degree codes), then its description (also when the name''s subjects keep no course), and how many of its proposed courses that scope keeps.';
 
 create or replace function security.scholarship_scope_auto_decide_v1(p_scholarship_id uuid, p_apply boolean default false)
 returns jsonb language plpgsql security definer set search_path to '' as $function$
