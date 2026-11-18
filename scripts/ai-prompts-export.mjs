@@ -15,7 +15,7 @@ const sha = (s) => crypto.createHash('sha256').update(s, 'utf8').digest('hex')
 
 export async function build() {
   const { build: esbuild } = await import('esbuild')
-  const mods = ['index', 'course-text', 'course-entry', 'entry', 'fees', 'calendar', 'pageid', 'builder', 'description', 'eligibility', 'induction', 'boost']
+  const mods = ['index', 'course-text', 'course-entry', 'entry', 'fees', 'calendar', 'pageid', 'builder', 'description', 'eligibility', 'induction', 'boost', 'boost-fields']
   // every import that is not a file of the worker (npm:, jsr:, https:) is an empty stand-in: the request builders do not use them
   const stub = { name: 'stub', setup(b) {
     b.onResolve({ filter: /^(npm:|jsr:|https?:)/ }, (a) => ({ path: a.path, namespace: 'stub' }))
@@ -84,6 +84,7 @@ export async function build() {
     layer1_induction_map: [p('field mapping and parser spec', 'induction.ts INDUCTION_SYSTEM', w.induction.INDUCTION_PROMPT_VERSION, sys(w.induction.inductionRequest('m', w.induction.inductionInput({}), 100)))],
     boost_extract: [p('study load', 'boost.ts BOOST_STUDY_LOAD_SYSTEM', w.boost.BOOST_STUDY_LOAD_PROMPT_VERSION, sys(w.boost.boostStudyLoadRequest('m', '', '', 100)))],
     boost_extract_benchmark: [p('study load (benchmark: the same request, asked of each candidate model)', 'boost.ts BOOST_STUDY_LOAD_SYSTEM', w.boost.BOOST_STUDY_LOAD_PROMPT_VERSION, sys(w.boost.boostStudyLoadRequest('m', '', '', 100)))],
+    boost_fields_extract: [p('Boost gap fields in one pass (description, delivery mode, intakes, tuition fee, entry requirements)', 'boost-fields.ts BOOST_FIELDS_SYSTEM', w.boost_fields.BOOST_FIELDS_PROMPT_VERSION, sys(w.boost_fields.boostFieldsRequest('m', '', ['course_description'], '', 100)))],
     scholarship_eligibility: [p('eligibility check', 'index.ts scholarshipRecheckRequest', null, sys(w.index.scholarshipRecheckRequest('m', { name: '', provider: '', url: '', title: '', h1: '', text: '' })), { note: 'a note naming the page a link was followed from is added for a linked page (eligibility.ts linkedPageNote)' })],
     scholarship_extraction: [p('recheck', 'index.ts scholarshipRecheckRequest', null, sys(w.index.scholarshipRecheckRequest('m', { name: '', provider: '', url: '', title: '', h1: '', text: '' })), { note: 'the extraction prompt itself is held in the database (pipeline.scholarship_ai_prompts) and is given whole by the page read' })],
     provider_description: [p('fallback when no database prompt is active', 'description.ts DESCRIPTION_SYSTEM', w.description.DESCRIPTION_PROMPT_VERSION, w.description.DESCRIPTION_SYSTEM, { note: 'the prompt in use is held in the database (pipeline.provider_description_prompts) and is given whole by the page read' })],
