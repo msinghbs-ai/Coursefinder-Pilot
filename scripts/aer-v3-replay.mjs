@@ -10,7 +10,7 @@
 //      error rate at most 10 points, no false positives;
 //   5. whatever happened, turns the three switches back to 0 and closes the window, reporting the actual use and the credit left.
 // Nothing is qualified or switched on: qualification evidence is written as pending at most, and a qualification is the Platform Admin's decision.
-import { need, read, lit, worker, summary } from './boost-live-lib.mjs'
+import { need, read, lit, summary } from './boost-live-lib.mjs'
 need()
 const ROUND = String(process.argv[2] || 'r4').replace(/[^a-z0-9]/gi, '').slice(0, 8)
 const MAX_MIN = Math.max(10, Math.min(110, Number(process.argv[3]) || 100))
@@ -45,13 +45,21 @@ try {
   const counts = async () => Object.fromEntries((await read(`select a.run_id, count(*) n from pipeline.ai_eval_answers a join pipeline.ai_eval_runs x on x.id = a.run_id
      join pipeline.ai_improvement_proposals p on p.id = x.proposal_id where p.code like ${lit(CODE)} group by a.run_id`)).map((r) => [String(r.run_id), Number(r.n)]))
   let calls = 0
+  const direct = async () => {
+    const [{ n }] = await write(`select public.svc_pilot_issue_nonce('coverage-sweep') as n`)
+    const r = await fetch(`https://${REF}.supabase.co/functions/v1/coverage-sweep`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-cf-run-nonce': String(n) },
+      body: JSON.stringify({ mode: 'aer_v3_eval', stream: true }), signal: AbortSignal.timeout(420000) })  // fixed: longer than the worker's 400 s wall clock
+    const t = await r.text()
+    try { return JSON.parse(t) } catch { return { error: `HTTP ${r.status}: ${t.trim().slice(0, 200)}` } }
+  }
   while (Date.now() < until) {
     const left = (await runs()).filter((r) => r.state === 'queued' || r.state === 'answering')
     if (!left.length) break
     // s674 (worker v1.0.19): each call leases one run and answers it in a background task (up to 180 s a model call inside 360 s), replying 202 at once;
     // one call per open run, in parallel, then wait until each leased run has recorded its answers (or the task's wall clock has surely ended)
     const before = await counts()
-    const res = await Promise.all(left.map(() => worker(`jsonb_build_object('mode', 'aer_v3_eval')`, 300000).catch((e) => ({ error: String(e.message || e) }))))
+    // s674 (22:15): each call goes straight to the worker with a one-time nonce and reads the streamed answer (no pg_net, no background task)
+    const res = await Promise.all(left.map(() => direct().catch((e) => ({ error: String(e.message || e) }))))
     calls += res.length
     for (const r of res) console.log(`call: run ${r.run ?? '-'} ${r.why ?? ''} ${r.error ?? ''} ${JSON.stringify({ background: r.background, call_ms: r.call_ms, answered: r.recorded, cost: r.cost_usd }).slice(0, 300)}`)
     const why = res.find((r) => !r.run && r.why)
@@ -60,7 +68,8 @@ try {
     if (!leased.length && !res.some((r) => r.error)) { await new Promise((r) => setTimeout(r, 20000)); continue }  // nothing leasable this moment
     // a call whose reply was lost may still be answering a run in the background: the wait below covers its wall clock before any lease is released
     const t = Date.now()
-    while (Date.now() - t < 410000 && Date.now() < until) {  // fixed: longer than the 400 s wall clock of the background task
+    // a streamed call that came back has finished its work; only a lost call can still be running, so only then is there a wait
+    while (res.some((r) => r.error) && Date.now() - t < 410000 && Date.now() < until) {  // fixed: longer than the 400 s wall clock of the background task
       await new Promise((r) => setTimeout(r, 15000))
       const now = await counts()
       if (leased.length && !res.some((r) => r.error) && res.filter((r) => r.run).every((r) => (now[String(r.run)] || 0) >= (before[String(r.run)] || 0) + (Number(r.examples) || 1))) break  // s674: every example the task started has its answer

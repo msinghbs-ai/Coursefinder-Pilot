@@ -545,7 +545,7 @@ Deno.serve(async (req) => {
       await ct.rpc("svc_ai_model_answered_v1", { p_source: null, p_source_id: null, p_model: null, p_attempts: attempts, p_worker: WORKER });
     }
   } catch { /* the trace never fails a call */ }
-  if (modeOf) {
+  if (modeOf && res.headers.get("x-cf-stream") !== "1") {  // s674: a streamed answer is not read here (reading it would hold the stream back)
     try {
       const body = await res.clone().json().catch(() => null);
       if (body && typeof body === "object") {
@@ -2510,7 +2510,7 @@ async function handle(req: Request): Promise<Response> {
       if (!key) return j({ ok: false, mode, run: w.run, error: "OpenRouter credential unavailable", worker: WORKER }, 503);
       // v1.0.19 (s674, Platform Admin 18 Nov 2026 20:53): the run is answered in a background task (EdgeRuntime.waitUntil) so a call may wait up to
       // AER_V3_EVAL_CALL_MS (180 s) inside AER_V3_EVAL_BUDGET_MS; the caller gets 202 at once and reads the run's recorded answers. Without EdgeRuntime it answers inline.
-      const edge = (globalThis as any).EdgeRuntime, bg = !!edge?.waitUntil;
+      const streamed = body?.stream === true, edge = (globalThis as any).EdgeRuntime, bg = !streamed && !!edge?.waitUntil;
       const work = async () => {
         const refs = aerV2Refs(w?.countries, w?.qualifications), quals = (Array.isArray(w?.qualifications) ? w.qualifications : []).map((q: any) => ({ code: String(q.code), name: String(q.name) }));
         const pageChars = wsNum("reading.aer_v2_page_chars", 60000), maxTokens = wsNum("reading.aer_v2_max_tokens", 6000), gapMax = wsNum("reading.aer_v3_lead_in_max_blocks", 3);
@@ -2518,7 +2518,7 @@ async function handle(req: Request): Promise<Response> {
         const quoteMax = Number(spec.quote_max_chars) || 300;  // fixed: the prompt's own quote limit when the version has none
         const routing = spec.routing && typeof spec.routing === "object" ? spec.routing : null, params = spec.params && typeof spec.params === "object" ? spec.params : null;
         const cap = Number(w?.budget?.cap_usd) || 0; let spent = Number(w?.budget?.spent_usd) || 0;
-        const examples: any[] = (Array.isArray(w?.examples) ? w.examples : []).slice(0, bg ? AER_V3_EVAL_TASK_MAX : undefined), answers: any[] = [], ors = orStats(), tally: Record<string, number> = {};
+        const examples: any[] = (Array.isArray(w?.examples) ? w.examples : []).slice(0, bg || streamed ? AER_V3_EVAL_TASK_MAX : undefined), answers: any[] = [], ors = orStats(), tally: Record<string, number> = {};
         const late = () => Date.now() - t0 > AER_V3_EVAL_BUDGET_MS - 25000;  // fixed: time left for the last call and the record
         await pool(examples, Math.max(1, Math.min(wsNum("reading.aer_v2_concurrency", 4), 8)), async (x: any) => {  // fixed: the setting's upper bound (reading.aer_v2_concurrency)
           if (late()) { tally.time_budget = (tally.time_budget || 0) + 1; return }  // not answered: the run is leased again
@@ -2568,6 +2568,18 @@ async function handle(req: Request): Promise<Response> {
         return j({ ok: true, mode, run: w.run, version: ver.version, model, examples: examples.length, tally, recorded: rec, cost_usd: answers.reduce((t, a) => t + (Number(a.cost_usd) || 0), 0),
           spent_usd: spent, cap_usd: cap, openrouter: ors.summary(), ms: Date.now() - t0, worker: WORKER });
       };
+      // s674 (22:15 AEDT): a background task is dropped by the runtime (EarlyDrop) while it waits on a slow model, so a caller that asks for stream: true
+      // gets the answer as a stream: a space every 10 s keeps the request active (no 150 s idle time-out, no early drop), then the result as JSON
+      if (streamed) {
+        const enc = new TextEncoder();
+        const stream = new ReadableStream({ async start(ctl) {
+          const tick = setInterval(() => { try { ctl.enqueue(enc.encode(" ")) } catch { /* closed */ } }, 10000);  // fixed: keep-alive below the 150 s request idle time-out
+          try { const r = await work(); ctl.enqueue(enc.encode(await r.text())) }
+          catch (e) { ctl.enqueue(enc.encode(JSON.stringify({ ok: false, mode, run: w.run, error: (e instanceof Error ? e.message : String(e)).slice(0, 300), worker: WORKER }))) }
+          finally { clearInterval(tick); try { ctl.close() } catch { /* closed */ } }
+        } });
+        return new Response(stream, { status: 200, headers: { "content-type": "application/json", "x-cf-stream": "1" } });
+      }
       if (bg) {
         edge.waitUntil(work().catch((e: unknown) => console.error("aer_v3_eval background", e instanceof Error ? e.message : String(e))));
         return j({ ok: true, mode, run: w.run, version: ver.version, model, background: true, examples: Math.min(AER_V3_EVAL_TASK_MAX, Array.isArray(w?.examples) ? w.examples.length : 0), budget_ms: AER_V3_EVAL_BUDGET_MS, call_ms: AER_V3_EVAL_CALL_MS, worker: WORKER }, 202);
