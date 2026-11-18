@@ -24,7 +24,10 @@
 --      b. a successor edition's attribution adds the attribution of every other registered destination source a fact of this run came from
 --         (here LIN 19/198, CC BY 4.0) to the edition's own;
 --      c. a rule updated from a second page names that page (source_url), so quote, evidence and page always agree;
---      d. two official sources for one rule that give different values are both held ("a person decides"); neither writes the rule.
+--      d. two official sources for one rule that give different values are both held ("a person decides"); neither writes the rule;
+--      e. every rule of the edition written gets one proven country applicability (a national authority's rule applies to every course of its
+--         country), citing the rule's page and quote: until now no rule had one, so Around this course showed no visa or living-cost rule.
+--   4. The five rules of the published Home Affairs edition get the same country applicability (backfill).
 -- Nothing is dropped or deleted.
 -- Replaces: the main-content read of the Home Affairs living-cost fact (now the Step by step tab, read whole).
 -- Retires: nothing.
@@ -101,7 +104,14 @@ select pg_temp.cf_edit_many('security.destination_page_facts_load_v1(jsonb)'::re
     $o2$          values (e.country_id, e.domain, v_label, current_date, 'draft', e.source_url, e.source_owner, e.attribution_text, e.terms_status, now())$o2$,
     $o3$          update destination.study_rules set numeric_threshold = v_val, quote_on_page = fd->>'quote', evidence_id = coalesce(nullif(fd->>'evidence_id', '')::uuid, evidence_id),$o3$,
     $o4$        select * into f from destination.page_facts where id = (fd->>'fact_id')::uuid;
-        v_val := nullif(fd->>'value', '')::numeric; v_read := (fd->>'read_at')::timestamptz;$o4$
+        v_val := nullif(fd->>'value', '')::numeric; v_read := (fd->>'read_at')::timestamptz;$o4$,
+    $o5$          v_unchanged := v_unchanged + 1;
+        end if;
+      end loop;
+    end loop;
+  end if;
+
+  -- the JSA OSCA occupation workbook$o5$
   ],
   array[
     $n1$        -- 20261119075000 (s719): one read date in a successor's label, and a time when a second successor opens on the same day
@@ -130,9 +140,30 @@ select pg_temp.cf_edit_many('security.destination_page_facts_load_v1(jsonb)'::re
            where id = f.id;
           v_differs := v_differs + 1;
           continue;
-        end if;$n4$
+        end if;$n4$,
+    $n5$          v_unchanged := v_unchanged + 1;
+        end if;
+      end loop;
+      -- 20261119075000 (s719): a national authority's rule applies to every course of its country: one proven country applicability per rule
+      insert into destination.rule_applicability(rule_id, entity_type, entity_id, entity_code, applicability_status, evidence_url, quote_on_page, verified_at)
+      select r.id, 'country', r.country_id, (select c.iso_alpha2 from ref.countries c where c.id = r.country_id), 'proven', r.source_url, r.quote_on_page,
+             coalesce(r.last_checked_at, now())
+        from destination.study_rules r
+       where r.edition_id = e.id and r.country_id is not null and r.approval_status in ('draft', 'approved')
+         and not exists (select 1 from destination.rule_applicability a where a.rule_id = r.id and a.entity_type = 'country');
+    end loop;
+  end if;
+
+  -- the JSA OSCA occupation workbook$n5$
   ],
   '20261119075000 (s719)');
+
+-- 4. country applicability for the rules of the published Home Affairs edition (backfill; the load writes it from now on)
+insert into destination.rule_applicability(rule_id, entity_type, entity_id, entity_code, applicability_status, evidence_url, quote_on_page, verified_at)
+select r.id, 'country', r.country_id, c.iso_alpha2, 'proven', r.source_url, r.quote_on_page, coalesce(r.last_checked_at, now())
+  from destination.study_rules r join destination.editions e on e.id = r.edition_id join ref.countries c on c.id = r.country_id
+ where e.domain = 'study_rules' and e.status = 'published' and r.approval_status = 'approved'
+   and not exists (select 1 from destination.rule_applicability a where a.rule_id = r.id and a.entity_type = 'country');
 
 -- post-checks (rolled back with the dry run if any fails)
 do $chk$
@@ -146,6 +177,11 @@ begin
   if v_n <> 2 then raise exception 'post-check: expected the instrument fact and the Step by step fact (%)', v_n; end if;
   if (select count(*) from pg_proc where prosrc like '%20261119075000 (s719)%' and oid = 'security.destination_page_facts_load_v1(jsonb)'::regprocedure) <> 1 then
     raise exception 'post-check: the load function was not edited';
+  end if;
+  if exists (select 1 from destination.study_rules r join destination.editions e on e.id = r.edition_id
+              where e.domain = 'study_rules' and e.status = 'published' and r.approval_status = 'approved'
+                and not exists (select 1 from destination.rule_applicability a where a.rule_id = r.id and a.entity_type = 'country')) then
+    raise exception 'post-check: a published study rule has no country applicability';
   end if;
   v_drift := security.consumer_api_check_v1();
   if jsonb_typeof(v_drift) = 'array' then

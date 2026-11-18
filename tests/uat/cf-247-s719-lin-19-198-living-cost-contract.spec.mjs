@@ -1,4 +1,4 @@
-// Guards: Home Affairs financial-capacity living cost (Platform Admin 19 Nov 2026 06:41 and 06:45): LIN 19/198 is registered in the Layer 1 Register under Australia before it is read, its fact and the Home Affairs Step by step tab state the same rule, two sources that disagree are held for a person, a successor edition carries one read date and every source's attribution, and a tab page is read whole.
+// Guards: Home Affairs financial-capacity living cost (Platform Admin 19 Nov 2026 06:41, 06:45 and 06:50): LIN 19/198 is registered in the Layer 1 Register under Australia before it is read, its fact and the Home Affairs Step by step tab state the same rule, two sources that disagree are held for a person, a successor edition carries one read date and every source's attribution, a tab page is read whole, and every study rule applies to its country (proven) so Around this course shows it.
 // CF-247 S719. supabase/migrations/20261119075000_cf247_lin_19_198_living_cost.sql, supabase/functions/_shared/cf247-page-facts.js (loader v1.5.0).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -36,6 +36,12 @@ test('the load function: one read date, merged attribution, the rule names its p
   expect(M).toContain("coalesce(src.metadata->>'attribution', '') <> ''")
   expect(M).toContain("source_url = fd->>'page_url',")
   expect(M).toContain("last_status = 'held', last_reason = 'Two official sources for this rule give different values; a person decides'")
+})
+
+test('every written rule and every published rule applies to its country, proven by its page and quote', () => {
+  expect(M).toContain("select r.id, 'country', r.country_id, (select c.iso_alpha2 from ref.countries c where c.id = r.country_id), 'proven', r.source_url, r.quote_on_page,")
+  expect(M).toContain("where e.domain = 'study_rules' and e.status = 'published' and r.approval_status = 'approved'")
+  expect(M).toContain("raise exception 'post-check: a published study rule has no country applicability'")
 })
 
 test('no new table or function; nothing dropped or deleted; consumer API checked', () => {
