@@ -12,6 +12,7 @@ import{Button,StatusChip,EmptyInline,Metric,fmtDate,fmtDateTime,fmtNumber}from'.
 import{supabase}from'./lib/supabase'
 import{plainError}from'./lib/errors'
 import{draftEditions}from'./lib/destination-drafts'
+import{METRIC_TYPES,filterMetrics,countByType,readTypeParam}from'./lib/destination-metric-types.js' // s695, 18 Nov 2026 21:23
 import'./destination-data.css'
 
 const TONE={approved:'success',published:'success',draft:'neutral',in_review:'warning',pending:'warning',restricted:'danger',withdrawn:'danger',superseded:'neutral'}
@@ -117,16 +118,29 @@ function Localities({rpc,rank,run,tick,share}){
   </div>
 }
 
+// Metric type pills (Platform Admin 18 Nov 2026 21:23): one per source family; careers and study rules show their own lists here
+const MetricTypePills=({value,onChange,counts})=><div className="pg-views dst-types" role="toolbar" aria-label="Metric type" data-dst-metric-types>{METRIC_TYPES.map(t=>
+  <button key={t.key} type="button" className={`pg-view${value===t.key?' is-on':''}`} aria-pressed={value===t.key} data-dst-metric-type={t.key} title={t.source||undefined} onClick={()=>onChange(t.key)}>{t.label}{counts?.[t.key]!=null&&!t.kind?<small className="dst-count"> {fmtNumber(counts[t.key])}</small>:null}</button>)}</div>
 function Metrics({rpc,rank,run,tick}){
+  const[type,setType]=useState(readTypeParam)
+  return <div className="dst-stack" data-dst-tab="metrics" data-dst-metric-type-on={type}>
+    {type==='careers'?<><MetricTypePills value={type} onChange={setType}/><Careers rpc={rpc} rank={rank} run={run} tick={tick}/></>
+    :type==='rules'?<><MetricTypePills value={type} onChange={setType}/><Rules rpc={rpc} rank={rank} run={run} tick={tick}/><CityFigures rpc={rpc} rank={rank} run={run} tick={tick} type="rules" title="Living-cost city figures"/></>
+    :<CityFigures rpc={rpc} rank={rank} run={run} tick={tick} type={type} pills={<MetricTypePills value={type} onChange={setType}/>} withCounts setType={setType}/>}
+  </div>
+}
+function CityFigures({rpc,rank,run,tick,type='all',pills=null,title='City figures',withCounts=false,setType}){
   const[status,setStatus]=useState('')
-  const m=useList(rpc,'locality_metric',status,tick)
+  const all=useList(rpc,'locality_metric',status,tick)
+  const m={...all,rows:all.rows?filterMetrics(all.rows,type):all.rows}
+  const counts=withCounts&&all.rows?countByType(all.rows):null
   const first=(m.rows||[]).find(x=>x.metric_category==='population')||(m.rows||[])[0]
-  return <div className="dst-stack" data-dst-tab="metrics">
-    <section className="m-panel"><h3>City figures</h3>
+  return <>{pills&&(counts?<MetricTypePills value={type} onChange={setType} counts={counts}/>:pills)}
+    <section className="m-panel" data-dst-city-figures={type}><h3>{title}</h3>
       <p className="sl-sub">Population, climate and living-cost figures for each locality, one value per measure, period and dataset edition. Every figure carries its source and the attribution the website must show beside it.</p>
       <StatusFilter value={status} onChange={setStatus} options={['draft','in_review','approved','published','withdrawn']}/>
       <BulkApprove rows={m.rows||[]} rank={rank} run={run} kind="figure"/>
-      <Wait {...m} empty="No city figure is loaded yet. Population arrives with the ABS load; climate and living costs follow once their sources are approved.">
+      <Wait {...m} empty={type!=='all'?`No ${(METRIC_TYPES.find(t=>t.key===type)||{}).label||'such'} figure is loaded yet.`:"No city figure is loaded yet. Population arrives with the ABS load; climate and living costs follow once their sources are approved."}>
         <div className="dst-scroll"><table className="cf-table" data-dst-metrics><thead><tr><th>Locality</th><th>Category</th><th>Measure</th><th>Value</th><th>Period</th><th>Edition</th><th>Source</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>{(m.rows||[]).map(x=><tr key={x.id} data-dst-metric={x.id}><td>{x.locality_name}<small className="dst-sub">{x.country_code}</small></td><td>{String(x.metric_category).replace('_',' ')}</td><td className="dst-measure"><ClimateMark row={x}/>{x.metric_key}</td>
             <td className="num">{x.currency_code?`${x.currency_code} `:''}{fmtNumber(x.numeric_value)} {x.unit}</td><td>{x.reference_period}</td><td>{x.dataset_edition}</td><td><Src url={x.source_url}/></td><td><Status v={x.status}/></td>
@@ -135,7 +149,7 @@ function Metrics({rpc,rank,run,tick}){
         {first&&<div className="dst-preview" data-dst-attribution-preview><small>Attribution preview: what the website shows beside the figure</small>
           <p><strong>{first.currency_code?`${first.currency_code} `:''}{fmtNumber(first.numeric_value)}</strong> {first.unit} · {first.locality_name} · {first.reference_period}. <span>{first.attribution_text}</span></p></div>}
       </Wait></section>
-  </div>
+  </>
 }
 
 function Rules({rpc,rank,run,tick}){

@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.28; reviewed-release=2.16.43; source-commit=74614397f4b5+local; content-sha256=b210df82ffef9b5ff4faf42c294c72faf83865689a5016524eddbf57f43a2c32 -->
+<!-- sop-export: id=operator-sop; version=2.29; reviewed-release=2.16.44; source-commit=a4a0ae720073+local; content-sha256=98c45b9aeb5a54f3a4f2561a5cf3c4c44b8b0cbff11383f92eb2a63a43992ea4 -->
 # StudySearch – Operator SOP
 
-**Version:** 2.28 (reviewed for platform release v2.16.43)  
+**Version:** 2.29 (reviewed for platform release v2.16.44)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -116,6 +116,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.29 | 18 Nov 2026 | v2.16.44 | Course and Provider detail show the campus city weather and population, careers, visa and living-cost rules, rankings and scholarships in a read-only block. Use Preview as (Editors and above) to see the Counsellor view. |
 | 2.28 | 18 Nov 2026 | v2.16.43 | Layer 4 › Inbox › Grid › Clusters shows items that share a university, a reason and a quote. Settle a cluster only when every item in it truly takes the same decision; open it first. |
 | 2.27 | 18 Nov 2026 | v2.16.42 | Coverage & completeness › Courses › Coverage now: read Readiness by country and the fields with the lowest share; Enrich fields keeps the stalled-field controls. |
 | 2.26 | 18 Nov 2026 | v2.16.41 | Scheduled jobs › Automations: the Dispatchers panel at the top shows whether the three dispatchers and their lanes are running; a failure there is the first thing to report. Retired legacy jobs are hidden unless you tick Show retired legacy jobs. Evidence: Where evidence comes from filters by what wrote the page, and opens the Audit trail. Open issues links now say Queues & yield. |
