@@ -2,7 +2,7 @@
 # Guards: S741 AER matrix machine row rules (Platform Admin 19 Nov 2026 05:42, session S2-BOOST-AER): completion rows read without the English-language clause; course rows linked by
 # printed title or printed award, never a stream, two candidates, a twin or a label a person decided has no catalogue course; both switches at 0 restore 18 Nov exactly.
 # Real isolated PostgreSQL only (never a Supabase project). Loads the live helper functions and security.aer_matrix_machine_exclusions_v1 copied from the canonical baseline
-# (md5 checked against the live definition of 19 Nov 2026), records every case before the change, applies the settings and the exclusions edit of migration 20261119075000 twice,
+# (md5 checked against the live definition of 19 Nov 2026), records every case before the change, applies the settings and the exclusions edit of migration 20261119052500 twice,
 # and runs scenarios.sql. Every SQL error fails the run. No AI call, no network.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -28,7 +28,7 @@ EXM=$($P -d $DB -Atc "select md5(pg_get_functiondef('security.aer_matrix_machine
 [ "$EXM" = 51e0eb454501a4b87e419b1125bcf8c3 ] || { echo "exclusions_v1 differs from live: $EXM"; exit 1; }
 echo 'before: security.aer_matrix_machine_exclusions_v1 is the live definition of 19 Nov 2026 (md5 checked)'
 $P -d $DB -f data.sql
-M=$ROOT/supabase/migrations/20261119075000_cf247_s741_aer_matrix_completion_clauses_course_link.sql
+M=$ROOT/supabase/migrations/20261119052500_cf247_s741_aer_matrix_completion_clauses_course_link.sql
 # the settings and the exclusions edit of the migration, byte for byte (the check and admit edits and the validation need the live schema: rolled-back live dry run)
 { sed -n '/^-- 1 settings (G2)/,/^-- 2 the edits/p' "$M"; sed -n '/^do \$ex\$$/,/^end \$ex\$;$/p' "$M"; } > "$WORK/part.sql"
 grep -q 'on conflict (toolset_key, key) do nothing' "$WORK/part.sql" && grep -q '^end \$ex\$;$' "$WORK/part.sql" || { echo 'could not take the settings and the exclusions edit from the migration'; exit 1; }

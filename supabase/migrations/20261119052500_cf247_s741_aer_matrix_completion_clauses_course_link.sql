@@ -202,14 +202,14 @@ insert into pipeline.admin_control_events(area, action, target, detail)
 select 'aer', 'matrix_machine_rules', 'security.aer_matrix_machine_exclusions_v1',
        jsonb_build_object('change', 'completion rows read without the English clause; course rows linked by printed title or printed award; twins never linked',
                           'settings', jsonb_build_array('aer.matrix_completion_clauses_on', 'aer.matrix_course_link_rules_on', 'aer.matrix_course_link_awards'),
-                          'authority', 'Platform Admin 19 Nov 2026 05:42 (S2-BOOST-AER)', 'migration', '20261119075000')
- where not exists (select 1 from pipeline.admin_control_events e where e.area = 'aer' and e.action = 'matrix_machine_rules' and e.detail->>'migration' = '20261119075000');
+                          'authority', 'Platform Admin 19 Nov 2026 05:42 (S2-BOOST-AER)', 'migration', '20261119052500')
+ where not exists (select 1 from pipeline.admin_control_events e where e.area = 'aer' and e.action = 'matrix_machine_rules' and e.detail->>'migration' = '20261119052500');
 
 -- 4 the matrix validation on the edited rule (it must pass; the mode is not touched) -------------------------------------------------------------
 do $val$
 declare v jsonb; vid bigint; t timestamptz := clock_timestamp();
 begin
-  if exists (select 1 from pipeline.admin_control_events e where e.area = 'aer' and e.action = 'matrix_machine_validate' and e.detail->>'migration' = '20261119075000') then
+  if exists (select 1 from pipeline.admin_control_events e where e.area = 'aer' and e.action = 'matrix_machine_validate' and e.detail->>'migration' = '20261119052500') then
     raise notice 'S741: validation already recorded'; return; end if;
   v := security.aer_matrix_machine_validate_v1();
   if not coalesce((v->>'passed')::boolean, false) then raise exception 'S741: the matrix validation did not pass on the edited rule: %', left(v::text, 600); end if;
@@ -217,7 +217,7 @@ begin
   insert into pipeline.admin_control_events(area, action, target, detail)
   values ('aer', 'matrix_machine_validate', 'aer.matrix_machine_mode', (v - 'history') || jsonb_build_object('validation_id', vid,
           'history', (v->'history') - 'disagreements', 'secs', round(extract(epoch from clock_timestamp() - t)::numeric, 1),
-          'authority', 'Platform Admin 19 Nov 2026 05:42 (S2-BOOST-AER)', 'by', 'Integration Controller', 'migration', '20261119075000'));
+          'authority', 'Platform Admin 19 Nov 2026 05:42 (S2-BOOST-AER)', 'by', 'Integration Controller', 'migration', '20261119052500'));
   raise notice 'S741: matrix validation % passed', vid;
 end $val$;
 

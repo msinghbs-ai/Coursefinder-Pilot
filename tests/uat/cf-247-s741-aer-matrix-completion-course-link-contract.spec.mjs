@@ -1,10 +1,10 @@
 // Guards: S741 AER matrix machine row rules (Platform Admin 19 Nov 2026 05:42 AEDT, session S2-BOOST-AER, item 2): a completion requirement is read without the English-language clause the reader carried into its quote (an age, a duration in weeks, a CRICOS or training package code is not a score); a course row links to exactly one active course by printed title or printed award, never a stream, two candidates, a twin (Decision 276) or a label a person decided has no catalogue course; no AER v1 threshold changes.
-// CF-247 S741. Migration 20261119075000_cf247_s741_aer_matrix_completion_clauses_course_link; database scenarios tests/fixtures/aer-matrix-s741 (workflow aer-matrix-s741-test.yml).
+// CF-247 S741. Migration 20261119052500_cf247_s741_aer_matrix_completion_clauses_course_link; database scenarios tests/fixtures/aer-matrix-s741 (workflow aer-matrix-s741-test.yml).
 // G2, G3 and housekeeping are guarded centrally by s32, s57 and s42.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261119075000_cf247_s741_aer_matrix_completion_clauses_course_link.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261119052500_cf247_s741_aer_matrix_completion_clauses_course_link.sql', 'utf8')
 const run = fs.readFileSync('tests/fixtures/aer-matrix-s741/run.sh', 'utf8')
 const sc = fs.readFileSync('tests/fixtures/aer-matrix-s741/scenarios.sql', 'utf8')
 const live = fs.readFileSync('tests/fixtures/aer-matrix-s741/live-functions.sql', 'utf8')
@@ -76,7 +76,7 @@ test('the database scenarios run on an isolated PostgreSQL in CI, taking the set
   expect(run).toContain("sed -n '/^do \\$ex\\$$/,/^end \\$ex\\$;$/p'")
   expect(run).toContain('exclusions edit applied twice')
   expect(code(run + sc)).not.toMatch(/openrouter|firecrawl|curl /i)
-  expect(wf).toContain('supabase/migrations/20261119075000_cf247_s741_aer_matrix_completion_clauses_course_link.sql')
+  expect(wf).toContain('supabase/migrations/20261119052500_cf247_s741_aer_matrix_completion_clauses_course_link.sql')
   expect(wf).toContain('tests/fixtures/aer-matrix-s741/**')
   expect(wf).toContain('bash tests/fixtures/aer-matrix-s741/run.sh')
   expect(wf).toContain('postgres:16-alpine')
