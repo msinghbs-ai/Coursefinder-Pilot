@@ -18,6 +18,7 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
   const search=page.locator('.m-searchbox input').first();await search.fill('RMIT University')
   const row=page.locator('.m-table tbody tr').filter({hasText:'RMIT University (RMIT)'}).first();await expect(row).toBeVisible()
   await row.click();const ci=await openMore(page,page.locator('aside.m-drawer-provider [data-provider-more]'),'provider_insights')
+  await page.locator('aside.m-drawer-provider [data-ci-fold] > summary').click() // s698: Related insights & funding is folded by default
   expect(Number(ci?.student_outcomes?.total||0)).toBeGreaterThan(0)
   expect(ci?.student_outcomes?.source_label).toBe('QILT')
   expect(ci?.student_outcomes?.granularity).toBe('provider')
@@ -38,13 +39,14 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
   const search=page.locator('.m-searchbox input').first();await search.fill('Advanced Diploma of Accounting')
   const row=page.locator('.m-table tbody tr').filter({hasText:'Advanced Diploma of Accounting'}).filter({hasText:'RMIT University (RMIT)'}).first();await expect(row).toBeVisible()
   await row.click();const ci=await openMore(page,page.locator('.m-drawer-course [data-course-more]'),'course_insights')
+  await page.locator('.m-drawer-course [data-ci-fold] > summary').click() // s698: Related insights & funding is folded by default
   expect(ci?.student_outcomes?.granularity).toBe('provider_context')
   expect(Number(ci?.student_outcomes?.total||0)).toBeGreaterThan(0)
   expect(['not_mapped','regional_context','regional_field_context','direct_course']).toContain(ci?.student_flow?.relationship_state)
   expect(Number(ci?.scholarships?.total||0)).toBeGreaterThanOrEqual(3)
   expect((ci?.scholarships?.items||[]).every(x=>x.granularity==='contextual_eligibility'||x.granularity==='course')).toBeTruthy()
   await expect(page.getByRole('heading',{name:'Related insights & funding'})).toBeVisible()
-  await expect(page.getByText(/Governed scope · exclusions override broad inclusion/i)).toBeVisible()
+  await expect(page.locator('.m-drawer-course .ci-scholarships')).toHaveCount(0) // s698: scholarships are shown once, in the course's Scholarships section
   await expect(page.getByText(/Provider\/regional statistics retain their actual granularity and are not Course facts/i)).toBeVisible()
   await expect(page.locator('.ci-outcome-card').first()).toBeVisible()
   await expect(page.locator('.ci-benchmark-copy').first()).toBeVisible() // a national benchmark is shown only where the source holds one; otherwise the collection years

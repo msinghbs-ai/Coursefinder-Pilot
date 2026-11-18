@@ -1,20 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.45'
-export const PACKAGE_VERSION='0.1.467'
+export const UI_VERSION='2.16.46'
+export const PACKAGE_VERSION='0.1.468'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'18 Nov 2026',
-  title:'Course and Provider detail: Preview as, role views and scholarship lists fixed',
+  date:'19 Nov 2026',
+  title:'Course detail: shorter and role-aware',
   changes:[
-    'Course detail, for Counsellors and Viewers (and Preview as Counsellor or Viewer): only approved entry requirements are shown, or one line saying none is published yet. The Read / refresh entry requirements now panel, its pipeline steps and its links are for Editors and Platform Admins.',
-    'Course and Provider detail: scholarship lists show the first three, then Show all (N) scholarships and Show less, instead of a long list.'
+    'Course detail: the Description pipeline is folded by default for Editors and Platform Admins (open it to see the stages, checks, runs and Tasks that held this course). Counsellors and Viewers do not see it.',
+    'Course detail: Related insights & funding (QILT and PRISMS context) is folded by default for everyone; open it when you need it.',
+    'Course detail: scholarships are shown once, in the course\'s Scholarships section (three, then Show all (N) scholarships). The second Scholarships & funding card in the insights is gone; the Provider detail keeps its own.'
   ],
   bugFixes:[
-    'Course and Provider detail header: the Preview as pills (Admin, Counsellor, Viewer) show their full labels at every pane width; they were clipped to small squares.',
-    'Course detail: Archive course and the Read with AI bar are hidden for Counsellors and Viewers, and in Preview as Counsellor or Viewer.'
+    'Course detail: Check scholarships for this course and other task buttons are hidden for Counsellors and Viewers, and in Preview as Counsellor or Viewer.'
   ]
 }
 

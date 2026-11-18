@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.70; reviewed-release=2.16.45; source-commit=099711ee940c+local; content-sha256=531082170e4179f8d235db681317f023507af8ea09b74bdac82ef7f74886b1e0 -->
+<!-- sop-export: id=admin-sop; version=2.71; reviewed-release=2.16.46; source-commit=e9fb78471eac+local; content-sha256=123550cc2e77b718554a3ea3bdd8312cc835bad2ee5a68212e5eb38a78b47ba9 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.70 (reviewed for platform release v2.16.45)  
+**Version:** 2.71 (reviewed for platform release v2.16.46)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -139,6 +139,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.71 | 19 Nov 2026 | v2.16.46 | Course detail: open the Description pipeline fold to see stages, runs and Tasks that held this course; Related insights & funding (QILT, PRISMS) is also folded. Scholarships are listed once, in the Scholarships section. Counsellors and Viewers do not see the pipeline or task buttons (check with Preview as). |
 | 2.70 | 18 Nov 2026 | v2.16.45 | Course detail: check a Counsellor or Viewer view with Preview as. Archive course, Read with AI and the Read / refresh entry requirements now panel are hidden there; only approved entry requirements show. Scholarship lists show three, then Show all (N) scholarships. |
 | 2.69 | 18 Nov 2026 | v2.16.44 | Course and Provider detail carry read-only correlated blocks (Around this course, Around this provider). Viewers and Counsellors see student-facing values only; use Preview as in the detail header to check what a Counsellor or Viewer sees. Destination data › City metrics & costs has Metric type pills. |
 | 2.68 | 18 Nov 2026 | v2.16.43 | Layer 4 › Inbox › Grid › Clusters: when the same refusal on the same words appears for many items of one university, settle the cluster here with one reason, then export it and ask for the rule to be written into the Boost worker or the reader (with a test), so it stops coming back. |
