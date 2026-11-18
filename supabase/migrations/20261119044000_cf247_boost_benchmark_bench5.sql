@@ -5,7 +5,7 @@
 -- study load per country. Job boost-benchmark (every 2 minutes) works through it. Nothing a benchmark answers is staged or admitted; results
 -- stay in pipeline.boost_benchmark_items. A result never qualifies or switches on anything by itself (Qwen3 30B stays the only qualified
 -- model; Platform Admin 18 Nov 2026 11:57: no Mistral route).
--- Numbered 20261118273000: above the post-squash live head (20261118272000) and below the open Pilot #1314 (20261118275000), so that PR stays above the head.
+-- Numbered 20261119044000: above the live head (20261119043000, after Pilot #1328).
 -- Replaces: the benchmark run label bench-4 (prompt v4) with bench-5
 -- Retires: nothing
 
