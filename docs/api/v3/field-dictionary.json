@@ -639,7 +639,7 @@
    "api_surface": "website",
    "endpoint": "search",
    "field_path": "items[].provider.university_groups",
-   "data_type": "array<string>",
+   "data_type": "array<object>",
    "is_nullable": false,
    "description": "University groups the provider belongs to."
   },
@@ -19225,6 +19225,338 @@
    "req_ids": [
     "REQ-57"
    ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].provider.university_groups[].code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Group code.",
+   "allowed_values": [
+    "go8",
+    "atn",
+    "iru",
+    "run"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].provider.university_groups[].name",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Group name."
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Field-of-study codes of the course from the national register (O28), best first: ASCED for Australia today. Empty when none is held; never inferred or crosswalked.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].scheme",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The code scheme, for example ASCED.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].level",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The level of the code in its scheme (for example broad, narrow or detailed).",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The code as the register publishes it.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].name",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The name of the code in its scheme.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].rank",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Order of the codes, 1 first.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].source_url",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The register page the code was read from.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].evidence_date",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the code was read from the register.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Field-of-study codes of the course from the national register (O28), best first: ASCED for Australia today. Empty when none is held; never inferred or crosswalked.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].scheme",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The code scheme, for example ASCED.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].level",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The level of the code in its scheme (for example broad, narrow or detailed).",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "The code as the register publishes it.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].name",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The name of the code in its scheme.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].rank",
+   "data_type": "number",
+   "is_nullable": true,
+   "description": "Order of the codes, 1 first.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].source_url",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The register page the code was read from.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.field_of_study_codes[].evidence_date",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "When the code was read from the register.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition",
+   "data_type": "array<object>",
+   "is_nullable": false,
+   "description": "Official registrations of the course (O29). CRICOS for Australia; empty when none is held."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition[].authority",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The body that keeps the register."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition[].checked_on",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "Date StudySearch last checked the register."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition[].code",
+   "data_type": "string",
+   "is_nullable": false,
+   "description": "Code on the register."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition[].evidence_date",
+   "data_type": "date",
+   "is_nullable": true,
+   "description": "Date of the register evidence."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition[].scheme",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Register, for example CRICOS."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition[].source_url",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The register page."
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.recognition[].status",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Status on the register.",
+   "allowed_values": [
+    "registered"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "filters.country_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The country code the request filtered by.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "filters.section",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The section the request asked for: localities, study_rules or career_outcomes.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "filters.postcode",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The postcode the request filtered by.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "destination",
+   "field_path": "filters.locality_id",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The locality the request filtered by.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "filters.country_code",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The country code the request filtered by.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "filters.section",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The section the request asked for: localities, study_rules or career_outcomes.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "filters.postcode",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The postcode the request filtered by.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "destination",
+   "field_path": "filters.locality_id",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The locality the request filtered by.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "contract_version",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The contract the database function answered with (for example website-search-v2), beside api_version.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "contract_version",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The contract the database function answered with (for example website-search-v2), beside api_version.",
+   "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "contract_version",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The contract the database function answered with (for example website-search-v2), beside api_version.",
+   "req_ids": []
   }
  ],
  "pending_fields": [
