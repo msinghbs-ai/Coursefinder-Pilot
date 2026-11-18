@@ -3,6 +3,8 @@
 import { test, expect } from '@playwright/test'
 import { mockAdmin } from './support/admin-mock.mjs'
 import { mockOnDemand } from './support/cdesc-on-demand-mock.mjs'
+// s698 (Platform Admin 18 Nov 2026 23:51): the Description pipeline is folded by default; open it before reading it
+const openPipeline = async (p) => { await p.locator('[data-cdod-fold] > summary').click() }
 
 const COURSE = '0b1fb6d4-c02f-47c7-98d0-9f0d57240fd5'
 const PHONE_MAX = 480, TAP_MIN = 24
@@ -44,6 +46,7 @@ test.describe('Fill / Recheck description on a phone @responsive', () => {
     const w = atPhoneWidth(page)
     await mockOnDemand(page)
     await page.goto(`/#courses?id=${COURSE}`)
+    await openPipeline(page)
     const block = page.locator('[data-cdod-block]')
     await block.scrollIntoViewIfNeeded()
     await expect(block).toBeVisible()
@@ -60,6 +63,7 @@ test.describe('Fill / Recheck description on a phone @responsive', () => {
     const w = atPhoneWidth(page)
     await mockOnDemand(page, { forceState: 'held' })
     await page.goto(`/#courses?id=${COURSE}`)
+    await openPipeline(page)
     const block = page.locator('[data-cdod-block]')
     await block.scrollIntoViewIfNeeded()
     const primary = block.getByRole('button', { name: 'Fill / refresh course description now' })
@@ -82,6 +86,7 @@ test.describe('Fill / Recheck description on a phone @responsive', () => {
     const w = atPhoneWidth(page)
     const calls = await mockOnDemand(page, { forceState: 'machine_admitted' })
     await page.goto(`/#courses?id=${COURSE}`)
+    await openPipeline(page)
     const block = page.locator('[data-cdod-block]')
     await block.scrollIntoViewIfNeeded()
     const open = await tap(block.getByRole('button', { name: 'Withdraw machine description' }), 'Withdraw machine description')

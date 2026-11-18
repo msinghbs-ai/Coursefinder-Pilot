@@ -30,6 +30,8 @@ export const FIELD_VISIBILITY = [
   { field: 'archive_actions', label: 'Course status with Archive course and Restore course', audience: 'internal', selector: '.re-manage, [data-vis="archive_actions"]' },
   { field: 'read_with_ai', label: 'Read with AI trigger bar', audience: 'internal', selector: '[data-course-read-ai]' },
   { field: 'entry_pipeline', label: 'Read / refresh entry requirements now and the entry pipeline (sources, AI candidates, reviewer packet, Layer 4, links)', audience: 'internal', selector: '[data-course-entry], [data-aer-read-now], [data-vis="entry_pipeline"]' },
+  { field: 'description_pipeline', label: 'Description pipeline (stored page, AI reading, checks, decision, source, next retry, run, Fill / refresh, Check the feeds, Fill or Recheck only) and Tasks that held this course', audience: 'internal', selector: '[data-cdod-block], .cdod-tasks-fold' },
+  { field: 'task_triggers', label: 'Scraper and task triggers (Check scholarships for this course and other task buttons)', audience: 'internal', selector: '[data-scholarship-actions], [data-job-button], [data-vis="task_triggers"]' },
   { field: 'unapproved_entry', label: 'Entry requirement rows not yet approved', audience: 'internal', selector: '[data-vis="unapproved_entry"]' },
   { field: 'value', label: 'The value itself (fee, intake, figure, rank)', audience: 'student' },
   { field: 'source_link', label: 'Source page link', audience: 'student' },

@@ -232,8 +232,9 @@ export function CourseDescriptionBlock({courseId,rank,onError}){
   const s=st.map[String(courseId)]
   async function verify(){setVerBusy(true);setVerErr('');try{const d=await call('verify',{course_ids:[String(courseId)]});setVer((d?.courses||[])[0]||{missing:true})}catch(e){setVerErr(errText(e))}finally{setVerBusy(false)}}
   const gain=!s?null:s.has_description?(s.last_state==='filled'?'The last task filled this description.':'A description is in the catalogue (not filled by this pipeline).'):'No description yet.'
+  // s698 (Platform Admin 18 Nov 2026 23:51): folded by default so it does not fill the Course detail; Counsellors and Viewers never see it
   return <section className="m-detail-section cdod-block" data-cdod-block aria-label="Description pipeline">
-    <div className="cdod-block-head"><h3>Description pipeline</h3>{s&&<DescriptionStateChip state={s.state}/>}</div>
+    <details className="cdod-fold" data-cdod-fold><summary className="cdod-block-head"><h3>Description pipeline</h3>{s&&<DescriptionStateChip state={s.state}/>}</summary>
     {!s&&!st.err&&<Loading compact label="Reading the description state…"/>}
     {st.err&&<p className="cdod-error" role="alert">{st.err}</p>}
     {s&&<>
@@ -268,6 +269,7 @@ export function CourseDescriptionBlock({courseId,rank,onError}){
     </dl>}
     {ver?.missing&&<p className="cdod-muted">The course was not found for the check.</p>}
     <details className="cdod-tasks-fold"><summary>Tasks that held this course</summary><DescriptionTasks courseIds={[String(courseId)]} refresh={refresh} onError={onError}/></details>
+    </details>
   </section>
 }
 function FeedState(x,extra){const d=FEED_STATE[x?.state];return <span data-feed-state={x?.state||'unknown'}>{d?<StatusChip tone={d[1]} label={d[0]}/>:<StatusChip tone="neutral" label="Unknown"/>}{extra?<span className="cdod-muted"> {extra}</span>:null}{x?.note?<span className="cdod-muted"> {x.note}</span>:null}</span>}

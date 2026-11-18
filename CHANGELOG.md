@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.468 — 19 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.46** (Platform Admin 18 Nov 2026 23:51). No migration (zero schema in S1-RM-Design). `src/CourseDescriptionOnDemand.jsx`: the Description pipeline in a fold, closed by default. `src/ContextualInsights.jsx`: Related insights & funding in a fold, closed by default; no Scholarships & funding card on a course. `src/lib/field-visibility.js`: `description_pipeline` (`[data-cdod-block]`) and `task_triggers` (`[data-scholarship-actions]`, `[data-job-button]`) are internal. Spec s698; `cf-247-f-cdesc-06-on-demand` (desktop and phone), `s697` and the deployed `a12-contextual-insights` open the new folds.
+
 ## 0.1.467 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.45** (Platform Admin 18 Nov 2026 23:02). No migration (zero schema in S1-RM-Design). `src/correlated-blade.css`: the Preview as pills override the drawer header's 32px icon-button rule. `src/lib/field-visibility.js`: internal entries for Archive course (`.re-manage`), Read with AI (`[data-course-read-ai]`), the entry pipeline (`[data-course-entry]`, `[data-aer-read-now]`) and unapproved entry rows; `src/field-visibility.css` shows student-only blocks in a student view. `src/EntryRequirements.jsx`: approved rows or one empty-state line for Counsellors and Viewers. New `src/ShowAllToggle.jsx` on the course scholarships, the correlated card and the scholarship insight panel. Spec s697.
