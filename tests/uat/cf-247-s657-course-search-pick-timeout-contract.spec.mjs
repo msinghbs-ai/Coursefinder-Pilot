@@ -1,10 +1,10 @@
 // Guards: Course-link search pick stays inside a worker call (Platform Admin 18 Nov 2026 17:02 item 2): public.svc_course_link_search_next cuts the providers with a queued search to those the pass can take, not hidden and on the target list, before it runs the provider-level functions; every later condition of the pick is kept
-// CF-247 S657. Migration 20261118201000_cf247_course_search_pick_timeout. G2, G3 and housekeeping are guarded centrally by s32, s57 and s42.
+// CF-247 S657. Migration 20261118210000_cf247_course_search_pick_timeout. G2, G3 and housekeeping are guarded centrally by s32, s57 and s42.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { migrationPath } from './support/migration-files.mjs'
 
-const code = fs.readFileSync(migrationPath('20261118201000_cf247_course_search_pick_timeout.sql'), 'utf8').split('\n').filter((l) => !/^\s*--(?! 18 Nov 2026 \(S657\))/.test(l)).join('\n')
+const code = fs.readFileSync(migrationPath('20261118210000_cf247_course_search_pick_timeout.sql'), 'utf8').split('\n').filter((l) => !/^\s*--(?! 18 Nov 2026 \(S657\))/.test(l)).join('\n')
 const edit = code.slice(code.indexOf('v_new text := $n$'), code.indexOf('$n$;'))
 
 test('the edit is md5-guarded, applies exactly once and is not repeated', () => {
