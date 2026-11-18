@@ -36,8 +36,10 @@
 --   5. svc_evidence_link_index_next_v1 walks ranked providers in order and stops at the limit (keyset; 3.9 s measured, was 9.5 s).
 --   6. security.enrich_plan_auto_v1 first releases automatic plans with no job movement for plans.auto_stall_hours (default 2) or whose held
 --      steps all wait on budget windows that have ended (state cancelled, outcome released_stalled, detail kept), then counts its room.
--- Nothing is dropped. Replaces: the full rebuild of course_attribute_coverage, the blocking writer-lock wait in the coverage admission, the
--- 20-25-row snapshot reads and the global sort of the evidence index. Retires: nothing.
+-- Nothing is dropped.
+-- Replaces: the full rebuild of course_attribute_coverage, the blocking writer-lock wait in the coverage admission, the 20-25-row snapshot
+-- reads and the global sort of the evidence index.
+-- Retires: nothing.
 
 -- settings (G2)
 insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason)
@@ -177,9 +179,7 @@ select pg_temp.cf_edit_many('security.course_coverage_build_v1()'::regprocedure,
       select country_code, attribute, state, tier, count(*)::int from pipeline.course_attribute_coverage where provider_id = any(v_chunk) group by 1,2,3,4) d
      group by 2,3,4,5
     on conflict (snapshot_date,country_code,attribute,state,tier) do update set courses = pipeline.course_coverage_daily_by_country.courses + excluded.courses, computed_at = now();
-  end if;
-  -- the Australian daily counts are the Australian rows of the counts by country
-  delete from pipeline.course_coverage_daily where snapshot_date=current_date;
+  end if; delete from pipeline.course_coverage_daily where snapshot_date=current_date;  -- the Australian daily counts are the Australian rows of the counts by country
   insert into pipeline.course_coverage_daily(snapshot_date,attribute,state,tier,courses)
   select current_date, attribute, state, tier, courses from pipeline.course_coverage_daily_by_country
    where snapshot_date = current_date and country_code = 'AU' and courses <> 0;$n$,
