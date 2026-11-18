@@ -1,9 +1,9 @@
 // Guards: destination editions are fixed once published (security.destination_row_guard_v1) and page facts are read monthly (Platform Admin 18 Nov 2026 15:32 and 17:55): a published edition is never written to; a new fact or a changed value goes into a complete successor edition; an unchanged JSA file loads nothing.
-// CF-247 S692. supabase/migrations/20261118234000_cf247_destination_page_facts_successor_editions.sql.
+// CF-247 S692. supabase/migrations/20261118256000_cf247_destination_page_facts_successor_editions.sql.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261118234000_cf247_destination_page_facts_successor_editions.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261118256000_cf247_destination_page_facts_successor_editions.sql', 'utf8')
 
 test('pass 1 reads every fact and writes no rule; pass 2 decides per edition', () => {
   const p1 = M.slice(M.indexOf('-- pass 1'), M.indexOf('-- pass 2'))
