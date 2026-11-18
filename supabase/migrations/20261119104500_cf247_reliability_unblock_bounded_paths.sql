@@ -17,8 +17,10 @@
 -- What it changes (CREATE OR REPLACE of existing functions, md5-guarded; settings rows; one rollup target's schedule; no new table or function;
 -- the frozen consumer API is only read, never changed; G3 75/48):
 --   1. security.course_coverage_build_v1 is provider-chunked: each run rebuilds the providers whose coverage rows are oldest, up to
---      batch.course_coverage_courses courses (default 1,500); every per-course scan, the AER covered set included, is restricted to the chunk;
---      country tiers still come from every provider. The whole table (36,031 courses) is refreshed about every 24 runs (2 hours); course-coverage-build runs every 5 minutes.
+--      batch.course_coverage_courses courses (default 800); every per-course scan, the AER covered set included, is restricted to the chunk;
+--      country tiers still come from every provider. The whole table (36,031 courses) is refreshed about every 45 runs (2 to 2.5 hours); course-coverage-build runs every 3 minutes.
+--      Measured in rolled-back dry runs: 1,031 courses in 10.1 s on a quiet database and 22 s under load; the write of the chunk's rows (four
+--      indexes) is the largest part, so the chunk is kept small rather than the run made longer.
 --      The chunk's statistics are taken before its reads (a temporary table has none), the Enrich state is read course by course (index) and the
 --      open absences by a join (measured on 2,900 courses: 4.8 s and 0.6 s became 0.5 s and 0.2 s); the chunk order walks the provider index
 --      instead of grouping every coverage row (1.1 s), and the chunk's tables have statistics before the write.
@@ -41,7 +43,7 @@
 insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason)
 values
   ('pipeline', 'batch.course_coverage_courses', 'Coverage build: courses per run', 'Each run rebuilds the providers whose coverage rows are oldest, up to this many active courses.',
-   'number', to_jsonb(1500), 200, 40000, 'courses', 101, 'Job sizes', 'security.course_coverage_build_v1', 'CF-247 s720 (Platform Admin 19 Nov 2026 08:17, IQ-00609): bounded coverage build'),
+   'number', to_jsonb(800), 100, 40000, 'courses', 101, 'Job sizes', 'security.course_coverage_build_v1', 'CF-247 s720 (Platform Admin 19 Nov 2026 08:17, IQ-00609): bounded coverage build'),
   ('pipeline', 'admit.consumer_snapshot_page_size', 'Admission evidence: consumer API rows read', 'Rows each consumer API read returns in the before/after evidence snapshot of an admission batch.',
    'number', to_jsonb(5), 1, 25, 'rows', 641, 'Admission checks', 'security.consumer_api_snapshot_v1', 'CF-247 s720 (IQ-00594/IQ-00588): bounded admission evidence snapshot'),
   ('pipeline', 'admit.consumer_snapshot_budget_ms', 'Admission evidence: snapshot time budget', 'The evidence snapshot stops after this long and marks the reads it skipped.',
@@ -95,7 +97,7 @@ select pg_temp.cf_edit_many('security.course_coverage_build_v1()'::regprocedure,
   ],
   array[
     $n$declare v_n int; v_t0 timestamptz:=clock_timestamp();
-        v_batch int := greatest(1, security.pipeline_num_v1('batch.course_coverage_courses', 1500)::int); v_chunk uuid[]; v_gone uuid[]; v_full boolean := false;  -- 20261119104500 (s720)$n$,
+        v_batch int := greatest(1, security.pipeline_num_v1('batch.course_coverage_courses', 800)::int); v_chunk uuid[]; v_gone uuid[]; v_full boolean := false;  -- 20261119104500 (s720)$n$,
     $n$  -- 20261119104500 (s720): provider-chunked. Every provider with active courses and its country; the chunk is the providers whose coverage rows
   -- are oldest (never built first), up to batch.course_coverage_courses courses (always at least one provider)
   create temp table _pc on commit drop as
@@ -185,8 +187,8 @@ select pg_temp.cf_edit_many('security.course_coverage_build_v1()'::regprocedure,
   ],
   '20261119104500 (s720)');
 
-update pipeline.rollup_targets set schedule = '2-59/5 * * * *', expected_ms = 8000, updated_at = now(),  -- fixed: the target's own schedule; batch size is the setting
-       note = coalesce(note, '') || ' | 19 Nov 2026 (20261119104500, s720): provider-chunked (batch.course_coverage_courses), every 5 minutes; the whole table is refreshed about every 2 hours'
+update pipeline.rollup_targets set schedule = '1-59/3 * * * *', expected_ms = 6000, updated_at = now(),  -- fixed: the target's own schedule; batch size is the setting
+       note = coalesce(note, '') || ' | 19 Nov 2026 (20261119104500, s720): provider-chunked (batch.course_coverage_courses), every 3 minutes; the whole table is refreshed about every 2 to 2.5 hours'
  where target_code = 'course-coverage-build';
 
 -- 2. bounded consumer API evidence snapshot (same frozen reads, smaller pages, a time budget)
