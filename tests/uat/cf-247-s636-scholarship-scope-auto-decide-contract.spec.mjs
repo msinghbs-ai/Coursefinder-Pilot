@@ -43,8 +43,8 @@ test('post-checks: nothing left waiting, an audit row per decision, the Inbox em
   expect(code).not.toMatch(/\bdrop\s+(table|function|trigger|index|view)\b|\bdelete\s+from\b|\btruncate\b/i)
 })
 
-test('correction 20261118154500: not-course-specific wording read in the name only; description words added when the name keeps no course; only rule decisions redone', () => {
-  const fix = fs.readFileSync('supabase/migrations/20261118154500_cf247_scholarship_scope_auto_fix.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+test('correction 20261118163000: not-course-specific wording read in the name only; description words added when the name keeps no course; only rule decisions redone', () => {
+  const fix = fs.readFileSync('supabase/migrations/20261118163000_cf247_scholarship_scope_auto_fix.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
   const f = (name) => { const i = fix.indexOf(`create or replace function ${name}(`); return fix.slice(i, fix.indexOf('$function$;', i)) }
   expect(f('security.scholarship_scope_auto_decide_v1')).toContain("where position(lower(p) in lower(s.name)) > 0 limit 1;")
   expect(f('security.scholarship_scope_suggest_v1')).toContain("if v_match = 0 and cardinality(v_subj) > 0 and not v_name_code then")
