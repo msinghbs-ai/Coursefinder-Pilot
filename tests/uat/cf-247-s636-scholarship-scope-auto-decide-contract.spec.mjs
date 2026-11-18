@@ -42,3 +42,14 @@ test('post-checks: nothing left waiting, an audit row per decision, the Inbox em
   expect(code).toMatch(/if v <> '[0-9a-f]{32}' then raise exception 'security\.scholarship_scope_suggest_v1 is not the definition/)
   expect(code).not.toMatch(/\bdrop\s+(table|function|trigger|index|view)\b|\bdelete\s+from\b|\btruncate\b/i)
 })
+
+test('correction 20261118163000: not-course-specific wording read in the name only; description words added when the name keeps no course; only rule decisions redone', () => {
+  const fix = fs.readFileSync('supabase/migrations/20261118163000_cf247_scholarship_scope_auto_fix.sql', 'utf8').split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+  const f = (name) => { const i = fix.indexOf(`create or replace function ${name}(`); return fix.slice(i, fix.indexOf('$function$;', i)) }
+  expect(f('security.scholarship_scope_auto_decide_v1')).toContain("where position(lower(p) in lower(s.name)) > 0 limit 1;")
+  expect(f('security.scholarship_scope_suggest_v1')).toContain("if v_match = 0 and cardinality(v_subj) > 0 and not v_name_code then")
+  expect(f('security.scholarship_scope_suggest_v1')).toContain("c.status <> 'superseded' and co.provider_id = sc.provider_id")
+  expect(fix).toContain("where d.decided_by = security.system_actor_id() and d.reason like 'Auto-applied deterministic title/description scope rule:%';")
+  expect(fix).toContain("raise exception 'post-check: a corrected scholarship still keeps no course';")
+  expect(fix).not.toMatch(/\bdrop\s+(table|function|trigger|index|view)\b|\bdelete\s+from\b|\btruncate\b/i)
+})
