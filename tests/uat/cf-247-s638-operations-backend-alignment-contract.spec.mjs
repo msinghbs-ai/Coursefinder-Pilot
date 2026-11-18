@@ -1,5 +1,5 @@
 // Guards: Operations backend alignment (Platform Admin 18 Nov 2026 12:49): Task manager reads within the statement time-out, tasks stranded on a held AI route are closed with their reason, health checks follow the dispatchers and recorded pauses (no false alarms), Platform health checks Dispatchers, Boost, Layer 4 backlog and Guardrails, Storage & retention shows staging figures and Evidence shows an audit trail.
-// CF-247 S636. supabase/migrations/20261118160000_cf247_operations_backend_alignment.sql, src/RetentionScreen.jsx, src/EvidenceAuditTrail.jsx.
+// CF-247 S638. supabase/migrations/20261118160000_cf247_operations_backend_alignment.sql, src/RetentionScreen.jsx, src/EvidenceAuditTrail.jsx.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
