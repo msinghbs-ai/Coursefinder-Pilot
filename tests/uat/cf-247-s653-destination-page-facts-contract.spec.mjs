@@ -6,6 +6,7 @@ import { anchorWindows, extractFact, htmlToText, linkWords, parseOccupationGrid,
 
 const M = fs.readFileSync('supabase/migrations/20261118185000_cf247_destination_page_facts.sql', 'utf8')
 const R = fs.readFileSync('supabase/migrations/20261118191000_cf247_destination_page_facts_reader_fix.sql', 'utf8')
+const S = fs.readFileSync('supabase/migrations/20261118194000_cf247_destination_page_facts_second_load.sql', 'utf8')
 const F = fs.readFileSync('supabase/migrations/20261118186000_cf247_destination_page_facts_first_load.sql', 'utf8')
 const E = fs.readFileSync('supabase/functions/layer1-destination-geo-loader/index.ts', 'utf8')
 
@@ -96,6 +97,9 @@ test('the first load is asked for only after the loader that knows mode facts is
   expect(F).toContain("raise exception 'the page-facts load (20261118185000) is not applied';")
   expect(F).toContain("v_run := security.destination_job_run_now_v1('destination-page-facts-load',")
   expect(F).not.toMatch(/^\s*(delete from|drop |truncate )/im)
+  expect(S).toContain("raise exception 'the page-facts reader fix (20261118191000) is not applied';")
+  expect(S).toContain("v_run := security.destination_job_run_now_v1('destination-page-facts-load',")
+  expect(S).not.toMatch(/^\s*(delete from|drop |truncate )/im)
 })
 
 test('regression (first live run, 18 Nov 2026): a self-closing tag never swallows the page, and JSA download routes are found', () => {
