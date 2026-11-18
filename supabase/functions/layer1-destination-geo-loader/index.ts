@@ -24,7 +24,12 @@ import { anchorWindows, extractFact, firecrawlScrapeBody, headerSample, htmlToTe
 // first (svc_fc_spend, purpose destination_page_facts, the "other" daily share and the monthly plan limit), every call is logged
 // (svc_fc_call_log), and the rendered HTML is stored as the evidence. The JSA Table 1 headings are read over two rows.
 // v1.3.1 (18 Nov 2026, third live run): a table cell ends with a bar in the page text, so a quote keeps a row label with its value.
-const VERSION = "layer1-destination-geo-loader-v1.3.1";
+// v1.4.0 (Platform Admin 18 Nov 2026 22:04, s694): every destination source is a Layer 1 Register source (pipeline.sources, source system
+// DESTINATION). The standard Layer 1 scheduler (layer1-operations-scheduled) and the register's Run now (layer1-operations-control) call this
+// loader with the internal service key, the source's mode and, for the page facts, its scope (pages or workbook); every artifact is stored in
+// Supabase Storage and recorded as evidence of that source (security.destination_source_evidence_v1); the response carries the Layer 1
+// count and content hash (candidateObservations, fileSha256).
+const VERSION = "layer1-destination-geo-loader-v1.4.0";
 const FUNCTION_NAME = "layer1-destination-geo-loader";
 const EDITION = {
   source_url: "https://www.abs.gov.au/statistics/people/population/regional-population/2024-25/32180DS0004_2001-25.xlsx",
@@ -52,7 +57,9 @@ async function rpc(client: any, name: string, args: Record<string, unknown> = {}
   return data;
 }
 
-async function authorize(req: Request, service: any, url: string, anon: string) {
+async function authorize(req: Request, service: any, url: string, anon: string, key: string) {
+  const internal = clean(req.headers.get("x-cf-layer1-service-key"));
+  if (internal && internal === key) return "layer1";
   const nonce = clean(req.headers.get("x-cf-run-nonce"));
   if (nonce) {
     if (await rpc(service, "svc_pilot_consume_nonce", { p_function: FUNCTION_NAME, p_nonce: nonce }) !== true) throw new Error("invalid_run_nonce");
@@ -133,12 +140,19 @@ async function climate(service: any, runId: string | null, trigger: string, star
       }
     }
     const result = await rpc(service, "svc_destination_climate_load_v1", { p_payload: { run_id: runId, trigger, stations: out } });
-    return json({ ok: true, version: VERSION, mode: "climate", trigger, run_id: runId, ms: Date.now() - started, result });
+    const l1 = await layer1Summary(out.reduce((n, o) => n + (o.statistics ? Object.keys(o.statistics).length : 0), 0), out.map((o) => o.sha256));
+    return json({ ok: true, version: VERSION, mode: "climate", trigger, run_id: runId, ms: Date.now() - started, result, ...l1 });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     try { await rpc(service, "svc_destination_climate_load_v1", { p_payload: { error: `${VERSION}: ${message}`, run_id: runId, trigger } }); } catch { /* recorded below */ }
     return json({ ok: false, version: VERSION, mode: "climate", error: message }, 500);
   }
+}
+
+// the Layer 1 count and content hash of a run: the hash of the artifacts' hashes, in order
+async function layer1Summary(count: number, hashes: string[]) {
+  const joined = hashes.filter(Boolean).join("|");
+  return { candidateObservations: count, observationsSeen: count, fileSha256: joined ? await sha256(new TextEncoder().encode(joined)) : "", workerVersion: VERSION };
 }
 
 // RM1C/RM1H/RM1I: one rendered read through Firecrawl, spent and logged through the database like every other Firecrawl call
@@ -176,14 +190,14 @@ async function renderedRead(service: any, pageUrl: string, runId: string | null)
 }
 
 // RM1I / RM1C / RM1H / RM1D: official pages read in turn; a page or workbook that fails is reported and the others still load
-async function facts(service: any, runId: string | null, trigger: string, started: number) {
+async function facts(service: any, runId: string | null, trigger: string, started: number, scope = "") {
   try {
     const cfg = await rpc(service, "svc_destination_page_facts_v1");
     const specs: any[] = Array.isArray(cfg?.facts) ? cfg.facts : [];
     const byPage = new Map<string, any[]>();
     for (const f of specs) byPage.set(f.page_url, [...(byPage.get(f.page_url) || []), f]);
     const pages: any[] = [];
-    for (const [pageUrl, list] of byPage) {
+    for (const [pageUrl, list] of (scope === "workbook" ? new Map<string, any[]>() : byPage)) {
       try {
         const rendered = list.some((f) => f.read_mode === "rendered");
         const got = rendered ? await renderedRead(service, pageUrl, runId) : null;
@@ -204,7 +218,7 @@ async function facts(service: any, runId: string | null, trigger: string, starte
       }
     }
     let jsa: any = null;
-    if (cfg?.jsa?.page_url) {
+    if (cfg?.jsa?.page_url && scope !== "pages") {
       try {
         const html = new TextDecoder("utf-8").decode(await download(cfg.jsa.page_url));
         const re = new RegExp(cfg.jsa.link_pattern, "i");
@@ -236,7 +250,9 @@ async function facts(service: any, runId: string | null, trigger: string, starte
       }
     }
     const result = await rpc(service, "svc_destination_page_facts_load_v1", { p_payload: { run_id: runId, trigger, pages, jsa } });
-    return json({ ok: true, version: VERSION, mode: "facts", trigger, run_id: runId, ms: Date.now() - started, result });
+    const found = pages.reduce((n, p) => n + (p.facts || []).filter((f: any) => f.found).length, 0) + (jsa?.rows?.length || 0);
+    const l1 = await layer1Summary(found, [...pages.map((p) => p.sha256), jsa?.sha256]);
+    return json({ ok: true, version: VERSION, mode: "facts", scope: scope || "all", trigger, run_id: runId, ms: Date.now() - started, result, ...l1 });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     try { await rpc(service, "svc_destination_page_facts_load_v1", { p_payload: { error: `${VERSION}: ${message}`, run_id: runId, trigger } }); } catch { /* recorded below */ }
@@ -253,13 +269,13 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { body = {}; }
   const runId = clean(body.run_id) || null, trigger = clean(body.trigger) || "manual";
   try {
-    await authorize(req, service, url, anon);
+    await authorize(req, service, url, anon, key);
   } catch (e) {
     return json({ ok: false, error: e instanceof Error ? e.message : String(e) }, 401);
   }
   const started = Date.now();
   if (clean(body.mode) === "climate") return await climate(service, runId, trigger, started);
-  if (clean(body.mode) === "facts") return await facts(service, runId, trigger, started);
+  if (clean(body.mode) === "facts") return await facts(service, runId, trigger, started, clean(body.scope));
   try {
     const bytes = await download(EDITION.source_url);
     const hash = await sha256(bytes);
@@ -280,7 +296,7 @@ Deno.serve(async (req) => {
       },
     });
     return json({ ok: true, version: VERSION, trigger, run_id: runId, sha256: hash, storage: up.error ? `not stored: ${up.error.message}` : path,
-      ms: Date.now() - started, result });
+      ms: Date.now() - started, result, candidateObservations: parsed.rows.length, observationsSeen: parsed.rows.length, fileSha256: hash, workerVersion: VERSION });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     try { await rpc(service, "svc_destination_abs_load_v1", { p_payload: { error: `${VERSION}: ${message}`, run_id: runId, trigger } }); } catch { /* recorded below */ }
