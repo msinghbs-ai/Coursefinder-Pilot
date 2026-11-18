@@ -22,6 +22,19 @@ function Detail({c}){
   return null
 }
 
+// v2.16.39 (S2-Build, Platform Admin 18 Nov 2026 12:49): staging tables and the nightly staging retention (dry run until switched on)
+function Staging({s}){
+  if(!s)return null
+  const p=s.prune||{}
+  return <section className="m-panel" data-retention-staging><div className="m-workspace-head"><div><h3 className="sl-h4">Staging tables</h3><p>Rows waiting between a reader and admission. The nightly staging retention (job housekeeping-daily) {p.on?'removes':'only reports'} applied Layer 1 staging rows older than {fmtNumber(p.keep_days)} days and settled Boost rows that were not admitted older than {fmtNumber(p.boost_keep_days)} days, at most {fmtNumber(p.rows_per_run)} a night, keeping a hash of each for {fmtNumber(p.raw_hash_keep_years)} years. Switch: Settings › Pipeline settings › Staging retention ({p.on?'prune':'dry run'}).</p></div></div>
+    <div className="cf-table-wrap"><table className="cf-table" data-retention-staging-tables><thead><tr><th>Table</th><th>Rows</th><th>Size</th></tr></thead><tbody>
+      {(s.staging||[]).map(t=><tr key={t.table}><td>{t.table}</td><td>{fmtNumber(t.rows)}</td><td>{mb(t.bytes)}</td></tr>)}
+    </tbody></table></div>
+    <p className="sl-sub" data-retention-staging-would>Would go at the next night: {fmtNumber(p.would_go_staging)} Layer 1 staging rows · {fmtNumber(p.would_go_boost)} Boost staging rows ({p.on?'removed':'reported only'}). Hashes kept: {fmtNumber(p.ledger_rows)}. Boost staging: {Object.entries(s.boost_states||{}).map(([k,v])=>`${k} ${fmtNumber(v)}`).join(' · ')||'—'}.</p>
+    {(p.last_runs||[]).length>0&&<ul className="tn-list">{p.last_runs.map((r,i)=><li key={i}><small className="sl-sub">{when(r.at)} · {String(r.action||'').replace(/_/g,' ')}{r.detail?.would_remove!=null?` · would remove ${fmtNumber(r.detail.would_remove)}`:''}{r.detail?.removed!=null?` · removed ${fmtNumber(r.detail.removed)}`:''}</small></li>)}</ul>}
+  </section>
+}
+
 export default function RetentionScreen({onError}){
   const[r,setR]=useState(null),[busy,setBusy]=useState(''),[open,setOpen]=useState('')
   const load=async()=>{try{const{data,error}=await supabase.rpc('admin_retention',{p_action:'read',p_args:{}});if(error)throw error;setR(data)}catch(e){onError?.(errText(e))}}
@@ -53,6 +66,7 @@ export default function RetentionScreen({onError}){
           {open===c.key&&<tr data-retention-preview={c.key}><td colSpan={6}><Detail c={c}/><small className="sl-sub"> Counts are measured in the background (hourly) and again when a purge starts; a preview changes nothing.</small></td></tr>}
         </React.Fragment>})}
       </tbody></table></div></section>
+    <Staging s={r.storage}/>
     <section className="m-panel"><h3 className="sl-h4">Runs</h3>{(r.runs||[]).length?<div className="cf-table-wrap"><table className="cf-table" data-retention-runs><thead><tr><th>When</th><th>Category</th><th>Status</th><th>Removed</th><th>Reason</th></tr></thead><tbody>
       {r.runs.map(x=><tr key={x.id}><td>{when(x.created_at)}</td><td>{x.category.replace(/_/g,' ')}</td><td><span className={`cf-chip ${TONE[x.status]||'tone-neutral'}`}>{x.status}</span></td><td>{fmtNumber(x.removed)}{x.bytes?` · ${mb(x.bytes)}`:''}</td><td><small className="sl-sub">{x.reason}</small></td></tr>)}
     </tbody></table></div>:<Empty text="No purge or audit has run yet."/>}</section>
