@@ -5,6 +5,7 @@
 // Changes: a row's status and an edition's terms and publication are the Platform Admin's (rank 6) and always carry a reason; settling a postcode
 // is Curator and above, also with a reason. A control a role cannot use is shown disabled and says which role it needs; the server is the check.
 // Nothing here loads data: loads are scheduled jobs (Platform health › Data delivery › Destination loads).
+import{CLIMATE_ICONS,climateIcon}from'./lib/climate-icons.js'
 import React,{useCallback,useEffect,useState}from'react'
 import{ExternalLink,RefreshCw}from'lucide-react'
 import{Button,StatusChip,EmptyInline,Metric,fmtDate,fmtDateTime,fmtNumber}from'./ui-kit'
@@ -127,7 +128,7 @@ function Metrics({rpc,rank,run,tick}){
       <BulkApprove rows={m.rows||[]} rank={rank} run={run} kind="figure"/>
       <Wait {...m} empty="No city figure is loaded yet. Population arrives with the ABS load; climate and living costs follow once their sources are approved.">
         <div className="dst-scroll"><table className="cf-table" data-dst-metrics><thead><tr><th>Locality</th><th>Category</th><th>Measure</th><th>Value</th><th>Period</th><th>Edition</th><th>Source</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>{(m.rows||[]).map(x=><tr key={x.id} data-dst-metric={x.id}><td>{x.locality_name}<small className="dst-sub">{x.country_code}</small></td><td>{String(x.metric_category).replace('_',' ')}</td><td>{x.metric_key}</td>
+          <tbody>{(m.rows||[]).map(x=><tr key={x.id} data-dst-metric={x.id}><td>{x.locality_name}<small className="dst-sub">{x.country_code}</small></td><td>{String(x.metric_category).replace('_',' ')}</td><td><ClimateMark row={x}/>{x.metric_key}</td>
             <td className="num">{x.currency_code?`${x.currency_code} `:''}{fmtNumber(x.numeric_value)} {x.unit}</td><td>{x.reference_period}</td><td>{x.dataset_edition}</td><td><Src url={x.source_url}/></td><td><Status v={x.status}/></td>
             <td><span className="dst-actions">{!['approved','published'].includes(x.status)&&<Act label="Approve" need={6} rank={rank} primary data="metric-approve" onRun={()=>{const r=ask(`Approve ${x.metric_key} for ${x.locality_name}`);if(r)run('admin_destination_set_status',{p_kind:'locality_metric',p_id:x.id,p_status:'approved',p_reason:r})}}/>}
               {x.status!=='withdrawn'&&<Act label="Withdraw" need={6} rank={rank} data="metric-withdraw" onRun={()=>{const r=ask(`Withdraw ${x.metric_key} for ${x.locality_name}`);if(r)run('admin_destination_set_status',{p_kind:'locality_metric',p_id:x.id,p_status:'withdrawn',p_reason:r})}}/>}</span></td></tr>)}</tbody></table></div>
@@ -182,6 +183,10 @@ function Careers({rpc,rank,run,tick}){
       </Wait></section>
   </div>
 }
+
+// v2.16.42 (Platform Admin 18 Nov 2026 14:23): a climate figure shows the icon the website is given in the developer guide (src/lib/climate-icons.js)
+function ClimateMark({row}){if(row.metric_category!=='climate')return null;const k=climateIcon(row.metric_key,row.numeric_value);if(!k)return null;const[I,label]=CLIMATE_ICONS[k]
+  return <span className="dst-climate" data-dst-climate={k} title={`${label} (long-term average, not a forecast)`}><I size={14} aria-hidden="true"/><span className="sr-only">{label}: </span></span>}
 
 export default function DestinationData({tab='overview',rank=0,onError,client=null}){
   const rpc=client||((fn,args)=>supabase.rpc(fn,args))

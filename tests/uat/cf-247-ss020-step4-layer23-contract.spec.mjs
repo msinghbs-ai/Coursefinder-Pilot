@@ -29,7 +29,9 @@ test('LEGACY: Progress and Build adapter addresses open their new homes, with th
 
 test('source: no control drawn twice; same reads; the Inbox change is one header line', () => {
   const fc = read('src/FieldCoverage.jsx')
-  expect(fc).toContain('<StalledFields scope={scope} readOnly onChanged={load} onError={onError}/>')
+  // v2.16.42 (Platform Admin 18 Nov 2026 12:19): the Stalled fields counters left Attributes; Enrich fields keeps the controls
+  expect(fc).not.toContain('<StalledFields scope={scope} readOnly')
+  expect(fc).toContain('<StalledFields scope={scope} focus={field} onChanged={load} onError={onError}/>')
   expect(fc).toContain("if(part==='pdesc')return <ProviderDescriptions")
   const main = read('src/mature-main.jsx')
   expect(main).toContain('<FieldCoverage part="run" rank={rank}')
@@ -40,7 +42,7 @@ test('source: no control drawn twice; same reads; the Inbox change is one header
   expect(read('src/Layer4Inbox.jsx').match(/SS-020/g)).toHaveLength(1)
 })
 
-test('browser: Attributes is read only and links each stalled field to Enrich fields; Enrich fields has the controls', async ({ page }) => {
+test('browser: Attributes is read only (no stalled field counters since 18 Nov 2026); Enrich fields has the controls', async ({ page }) => {
   await mockAdmin(page)
   await page.goto('/#coverage?tab=attributes')
   await expect(page.locator('[data-field-coverage]').first()).toBeVisible()

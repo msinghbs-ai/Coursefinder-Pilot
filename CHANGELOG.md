@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.464 — 18 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.42** (Platform Admin 18 Nov 2026 12:19 and 14:23). No migration (no schema change in this lane from 14:23). New `src/CoverageTelemetry.jsx`: reads `admin_coverage_telemetry_v1` when live, otherwise `admin_completeness_report` (every recorded field by country, grouped into five domains); the 7-attribute score bands, the portal rows and the read-only Stalled fields counters removed. New `src/lib/climate-icons.js` (lucide, ISC) on Destination data › City metrics & costs. New `src/guide/entityModel.js` and Platform guide › How the data connects. Specs s650 and s651; `cf-247-course-links-contract`, `cf-247-ss020-step4`, `cf-247-course-coverage-contract` and `cf-247-s82` follow the retired screens.
+
 ## 0.1.463 — 18 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.41** (Platform Admin 18 Nov 2026 12:50, Operations screens aligned with the consolidated dispatchers; S1-RM-Design, beside S2-Build's backend v2.16.39; v2.16.40 was S2-Build's Layer 4 grouped decisions). No migration. Automations: Dispatchers panel (rollup-scheduler, admission-rule-runner, coverage-lane-dispatch) and retired legacy jobs behind Show retired legacy jobs. Platform health: Open issues and check links named from the menu (Work queues became Queues & yield). Storage & retention: new `src/StagingRetention.jsx` (Storage now). Evidence: Where evidence comes from, linked to the Audit trail. Layer 4 › Inbox opens `?view=grid` and `?view=decided`. Spec s640; s203, s206, s209 and the control sweep tick Show retired legacy jobs (guards unchanged). Admin SOP 2.65, Operator SOP 2.26.

@@ -43,12 +43,6 @@ export default function LinkRefresh(){
         <td>{can&&(p.country||p.provider_id)&&<Button compact variant="danger" onClick={()=>edit('remove_policy',{id:p.id},'Remove this schedule? Its courses follow the all-countries schedule again.')} aria-label="Remove schedule"><Trash2 size={13}/></Button>}</td>
       </tr>)}</tbody></table></div>
 
-    <h4 className="lr-sub">Portals that supply course links</h4>
-    <div className="cf-table-wrap"><table className="cf-table" data-portals><thead><tr><th>Portal</th><th>Country</th><th>Kind</th><th>For</th><th>Every</th><th>On</th></tr></thead>
-      <tbody>{(data.portals||[]).map(p=><tr key={p.code} data-portal={p.code}>
-        <td><a href={p.base_url} target="_blank" rel="noreferrer" className="cf-link">{p.label}</a>{p.notes&&<small className="sd-desc">{p.notes}</small>}</td>
-        <td>{p.country||'—'}</td><td>{KIND[p.kind]||p.kind}</td><td>{APPLICANT[p.applicant]||p.applicant}</td><td>{p.every_days} days</td>
-        <td>{can?<input type="checkbox" checked={Boolean(p.active)} onChange={e=>edit('portal',{code:p.code,active:e.target.checked},e.target.checked?`Switch on ${p.label}? Its links are only used after the reader confirms each course's page.`:null)} aria-label={`${p.label} on`}/>:<StatusChip value={p.active?'on':'off'} tone={p.active?'success':'neutral'} label={p.active?'On':'Off'}/>}</td>
-      </tr>)}</tbody></table></div>
+    {/* v2.16.42 (Platform Admin 18 Nov 2026 12:19): the portals that supply course links are retired from this screen; Coverage now links to Layer 4 or Queues & yield only where a field is below target */}
   </section>
 }

@@ -180,14 +180,7 @@ export function CoverageView({view='all',onScope,belowFilters}={}){
     </section>
     </>}
 
-    {view!=='attributes'&&<>
-    <section className="cc-panel">
-      <header><div><h2>Courses by attributes admitted</h2><p>How many of each course's {fmtNumber(score?.attributes||7)} attributes are admitted. The completeness score is the average of these shares.</p></div></header>
-      <div className="cc-bands">{(score?.by_admitted||[]).map(b=>{const n=Number(b.courses||0);return <div className="cc-band" key={b.admitted}>
-        <span>{fmtNumber(b.admitted)} of {fmtNumber(score?.attributes||7)}</span><i><b style={{width:`${Math.max(1,n/maxBand*100)}%`}}/></i><em>{fmtNumber(n)} <small>{fmtShare(n,score?.courses)}</small></em></div>})}
-        {!busy&&!(score?.by_admitted||[]).length&&<div className="cf-empty">No completeness build yet.</div>}</div>
-    </section>
-    </>}
+    {/* v2.16.42: Courses by attributes admitted (7 hardcoded attributes) moved to Coverage now as Courses by fields admitted, 0 of N to N of N (CoverageTelemetry.jsx) */}
 
     {view!=='courses'&&<>
     <section className="cc-panel">

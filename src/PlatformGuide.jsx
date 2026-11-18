@@ -1,6 +1,7 @@
 // Help › Platform guide (Decision 209): the operator and Platform Admin walkthrough, inside the app. Its words live in
 // src/guide/platformGuide.js, reviewed every release (contract test: reviewed version = UI version; every menu page
 // has an entry). Each screen links straight to itself, so the guide never relies on screenshots that go stale.
+import{ENTITY_LINKS,ENTITY_RULES}from'./guide/entityModel.js'
 import React,{useState}from'react'
 import{Archive,ArrowRight,BellRing,BookOpen,CalendarCheck,Compass,Gauge,ListChecks,ShieldCheck,Siren,Sparkles,Users,Workflow}from'lucide-react'
 import{PAGES,SECTIONS,canOpen,refusedTab,roleName}from'./nav-map'
@@ -67,6 +68,10 @@ export default function PlatformGuide({rank=1,navigate}){
         <tbody>{SIGNALS.map(s=><tr key={s.see}><td>{s.see}</td><td>{s.where}</td><td>{s.means}</td><td>{s.act}</td><td>{s.who}</td></tr>)}</tbody></table></div></section>
 
     {/* SS-016 UR-17 (Platform Admin 1 Nov 2026 20:08): task links to the specialist guides, with role, source, saved evidence and escalation */}
+    {/* v2.16.42 (Platform Admin 18 Nov 2026 14:23): how destinations, providers, courses, rules and outcomes connect in the API */}
+    <section className="m-panel" id="pg-model" data-guide-model><h2>How the data connects</h2><p>What the website (Wix) and Zoho read joins in one direction: a destination, its providers and their campuses, each course, and the rules and outcomes that apply where the course is taught. The paths are Website API v3 fields; Zoho reads the same shapes.</p>
+      <ol className="pg-model">{ENTITY_LINKS.map(l=><li key={l.from+l.to} data-guide-model-link={l.to}><b>{l.from} → {l.to}</b> <span className="pg-meta">joined on {l.key}</span><p>{l.how}</p><ul>{l.paths.map(x=><li key={x}><code>{x}</code></li>)}</ul></li>)}</ol>
+      <ul className="pg-model-rules">{ENTITY_RULES.map(r=><li key={r}>{r}</li>)}</ul></section>
     <section className="m-panel" id="pg-tasks" data-guide-tasks><h2>Specialist tasks</h2><p>Find your task: the lowest role that does it, the source it needs, what is saved and who takes it next. The full steps are in the document named (admin repository).</p>
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Task</th><th>Lowest role</th><th>Source needed</th><th>Saved evidence</th><th>Escalate to</th><th>Guide</th></tr></thead>
         <tbody>{SPECIALIST_TASKS.map(x=><tr key={x.task} data-guide-task><td><b>{x.task}</b>{x.choices&&<small className="pg-meta" data-guide-choices> Choices: {x.choices}</small>}<OpenBtn page={x.page} tab={x.tab}/></td><td>{x.role}</td><td>{x.source}</td><td>{x.evidence}</td><td>{x.escalate}</td><td className="pg-meta">{x.doc}</td></tr>)}</tbody></table></div></section>

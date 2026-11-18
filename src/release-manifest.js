@@ -1,22 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.41'
-export const PACKAGE_VERSION='0.1.463'
+export const UI_VERSION='2.16.42'
+export const PACKAGE_VERSION='0.1.464'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'18 Nov 2026',
-  title:'Operations screens: dispatchers first, storage now, evidence by origin',
+  title:'Coverage now, climate icons and how the data connects',
   changes:[
-    'Scheduled jobs › Automations starts with the three dispatchers (Reports and caches, Admission rules, Coverage lanes): their lanes, runs and failures in 24 hours, last run, and how many legacy jobs each replaced.',
-    'Retired legacy jobs are hidden from Automations and its counts until you tick Show retired legacy jobs.',
-    'Platform health › Storage & retention starts with Storage now: database size and its 7-day change, staging growth in 7 days, whether nightly staging retention prunes or only reports, and its last run.',
-    'Evidence starts with Where evidence comes from: each type in plain words under what writes it (coverage lanes, Boost page text, scholarships, registers, earlier Layer 2 reads); one click filters to it. Dispatcher runs and Layer 4 audit opens the Audit trail or the audit samples grid.'
+    'Coverage & completeness › Courses starts with Coverage now: readiness by country (AU, NZ, CA, UK, IE, US by Courses, Providers & campuses, AER & grade scales, Scholarships, Destination editions) and every recorded field with its share. No field list is fixed in the screen: a newly recorded field appears by itself, marked Not labelled until it has a label.',
+    'Targets, the 7-day change, trend lines and Courses by fields admitted (0 of N to N of N) appear when the coverage read is live; its database change is with S2-Build. Until then the screen says so.',
+    'The portals that supply course links and the Stalled fields counters are retired from Coverage; Enrich fields keeps its stalled-field controls.',
+    'Destination data › City metrics & costs: each climate figure shows an icon (sunny, partly cloudy, rain, heavy rain, storm, snow, wind) chosen by one rule. The figures are long-term averages, not forecasts; the developer guide gives the website the same rule.',
+    'Guides › Platform guide › How the data connects: how destinations, providers and their campuses, courses (study load, empty reason, entry requirements, scholarships), study rules and career outcomes join, with the API v3 paths the website and Zoho read.'
   ],
-  bugFixes:[
-    'Platform health › Open issues: links named Work queues now say Queues & yield, the tab they open. Every issue and check link is named from the menu.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

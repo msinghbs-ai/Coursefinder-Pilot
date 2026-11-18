@@ -945,3 +945,9 @@
 .au-dispatcher dd{margin:0;font-weight:600}
 .au-dispatcher small{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
 .au-retired-toggle{display:inline-flex;align-items:center;gap:4px;font-size:var(--cf-fs-sm)}
+/* v2.16.42: Platform guide › How the data connects */
+.pg .pg-model{display:grid;gap:10px;padding-left:20px;margin:8px 0}
+.pg .pg-model>li p{margin:2px 0 4px}
+.pg .pg-model ul{margin:0;padding-left:16px}
+.pg .pg-model code{font-size:var(--cf-fs-xs);overflow-wrap:anywhere}
+.pg .pg-model-rules{margin:6px 0 0;padding-left:18px;color:var(--cf-text-2);font-size:var(--cf-fs-sm)}
