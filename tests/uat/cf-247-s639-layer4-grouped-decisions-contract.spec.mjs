@@ -1,14 +1,16 @@
 // Guards: grouped Layer 4 decisions (Platform Admin 18 Nov 2026 13:02): only AER items held for a shared stored page (by provider and page) and refused study loads with the same quote (by provider) are grouped; the AER audit sample, identity and page problems, campus postcodes and other kinds are never grouped; each item is decided through admin_layer4_inbox at the single item's rank, with one reason, a typed confirmation and a refusal when the group changed.
-// CF-247 S639. supabase/migrations/20261118162000_cf247_layer4_grouped_decisions.sql, src/Layer4GroupDecide.jsx.
+// CF-247 S639. supabase/migrations/20261118162000_cf247_layer4_grouped_decisions.sql (study-load groups fixed in 20261118164000), src/Layer4GroupDecide.jsx.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const M = fs.readFileSync('supabase/migrations/20261118162000_cf247_layer4_grouped_decisions.sql', 'utf8')
+const F = fs.readFileSync('supabase/migrations/20261118164000_cf247_layer4_grouped_decisions_study_load_fix.sql', 'utf8')
 
 test('groups: shared-page AER items by provider and page, study loads by provider and quote; audit samples and identity problems never', () => {
   expect(M).toContain("and security.aer_e13_class_v1(x.gate) = 'shared_page'")
   expect(M).toContain("where coalesce(l.reason_code, '') not in ('audit_sample', 'identity_not_admitted', 'no_bound_page'))  -- never grouped")
-  expect(M).toContain("group by r.provider_id, lower(btrim(r.answer->>'quote'))")
+  expect(F).toContain("group by o.provider_id, o.q")
+  expect(F).toContain("perform count(*) from security.layer4_decision_groups_v1('boost_study_load');")
   expect(M).toContain("raise exception 'an AER audit sample was grouped';")
   expect(M).toContain("if v_kind not in ('aer_review', 'boost_study_load') then raise exception 'this kind is decided one item at a time'; end if;")
 })
