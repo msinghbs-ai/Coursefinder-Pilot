@@ -24,7 +24,7 @@ import { anchorWindows, extractFact, firecrawlScrapeBody, headerSample, htmlToTe
 // first (svc_fc_spend, purpose destination_page_facts, the "other" daily share and the monthly plan limit), every call is logged
 // (svc_fc_call_log), and the rendered HTML is stored as the evidence. The JSA Table 1 headings are read over two rows.
 // v1.3.1 (18 Nov 2026, third live run): a table cell ends with a bar in the page text, so a quote keeps a row label with its value.
-// v1.4.0 (Platform Admin 18 Nov 2026 22:04, s693): every destination source is a Layer 1 Register source (pipeline.sources, source system
+// v1.4.0 (Platform Admin 18 Nov 2026 22:04, s694): every destination source is a Layer 1 Register source (pipeline.sources, source system
 // DESTINATION). The standard Layer 1 scheduler (layer1-operations-scheduled) and the register's Run now (layer1-operations-control) call this
 // loader with the internal service key, the source's mode and, for the page facts, its scope (pages or workbook); every artifact is stored in
 // Supabase Storage and recorded as evidence of that source (security.destination_source_evidence_v1); the response carries the Layer 1

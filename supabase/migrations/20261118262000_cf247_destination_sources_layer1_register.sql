@@ -1,4 +1,4 @@
--- CF-247 s693: every destination data source is a Layer 1 Register source (S2-Build; Platform Admin 18 Nov 2026 22:04, Architectural Alignment
+-- CF-247 s694: every destination data source is a Layer 1 Register source (S2-Build; Platform Admin 18 Nov 2026 22:04, Architectural Alignment
 -- Directive: "Register All Destination Data Sources in Layer 1 Register ... Route All Destination Downloads Through Standard Layer 1 Schedule,
 -- Supabase Storage & Evidence Records").
 --
@@ -46,7 +46,7 @@ select v.source_type, (select id from au), v.url, v.label, 1, 'active',
        jsonb_strip_nulls(jsonb_build_object('layer', 'layer1', 'source_system', 'DESTINATION', 'dataset_class', v.dataset_class, 'destination_mode', v.mode,
          'destination_scope', v.scope, 'parser', v.parser, 'publisher', v.publisher, 'licence', v.licence, 'destination_edition', v.edition,
          'operational_surface', 'Destination data', 'schedule_day_sydney', v.sydney_day,
-         'decision', 'Platform Admin 18 Nov 2026 22:04 (S2-Build, s693): destination data sources are Layer 1 Register sources'))
+         'decision', 'Platform Admin 18 Nov 2026 22:04 (S2-Build, s694): destination data sources are Layer 1 Register sources'))
   from v
  where not exists (select 1 from pipeline.sources s where s.label = v.label and s.country_id = (select id from au) and s.metadata->>'source_system' = 'DESTINATION');
 
@@ -56,7 +56,7 @@ select s.id, s.metadata->>'publisher', d.domains, d.fmt, d.kind, true, d.paused,
        case when d.paused then null else
          ((date_trunc('month', now() at time zone 'Australia/Sydney') + interval '1 month' + make_interval(days => (s.metadata->>'schedule_day_sydney')::int - 1, hours => 5, mins => 30))
            at time zone 'Australia/Sydney') end,
-       'Registered 18 Nov 2026 (20261118262000, s693): destination data source in the Layer 1 Register'
+       'Registered 18 Nov 2026 (20261118262000, s694): destination data source in the Layer 1 Register'
   from pipeline.sources s
   join (values
     ('ABS Regional Population', array['abs.gov.au', 'www.abs.gov.au'], 'ABS Regional population XLSX workbook (Table 2)', 'localities', false),
@@ -86,7 +86,7 @@ as $function$
 declare v_id uuid; v_src uuid; v_licence text;
 begin
   if coalesce(btrim(p_url), '') = '' or coalesce(btrim(p_hash), '') = '' then raise exception 'source link and file hash are required'; end if;
-  -- 20261118262000 (s693): the evidence names its Layer 1 source (the caller's, or the registered destination source whose authority domains
+  -- 20261118262000 (s694): the evidence names its Layer 1 source (the caller's, or the registered destination source whose authority domains
   -- hold the artifact's host), with fetched_at and licence_terms
   select s.id, s.metadata->>'licence' into v_src, v_licence
     from pipeline.sources s join pipeline.layer1_source_operations o on o.source_id = s.id
@@ -138,7 +138,7 @@ insert into pipeline.admin_control_events(area, action, target, detail, actor)
 values ('layer1', 'destination_sources_registered', 'Layer 1 Register / AU',
         jsonb_build_object('sources', (select jsonb_agg(s.label order by s.label) from pipeline.sources s where s.metadata->>'source_system' = 'DESTINATION'),
           'side_jobs_off', jsonb_build_array('destination-abs-load', 'destination-climate-load', 'destination-page-facts-load'),
-          'reason', 'Platform Admin 18 Nov 2026 22:04 (S2-Build, s693): register every destination data source in the Layer 1 Register by country; ingest via the standard Layer 1 schedule, Supabase Storage artifact, Layer 1 evidence record and destination edition',
+          'reason', 'Platform Admin 18 Nov 2026 22:04 (S2-Build, s694): register every destination data source in the Layer 1 Register by country; ingest via the standard Layer 1 schedule, Supabase Storage artifact, Layer 1 evidence record and destination edition',
           'by', 'migration 20261118262000'), '63ba56cb-48d4-4169-98c2-7c4d1f72925b');
 
 -- 4. post-checks

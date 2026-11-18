@@ -31,7 +31,7 @@ test('nothing dropped or deleted, a dry run writes nothing, the consumer API unt
 
 test('regression (fifth live run): no SQL alias shares the loop variable fd, and pass 2 is exercised by a rolled-back post-check', () => {
   const F = fs.readFileSync('supabase/migrations/20261118265000_cf247_destination_page_facts_alias_fix.sql', 'utf8')
-  expect(F).not.toMatch(/jsonb_array_elements\(v_found\) fd\b/)
+  expect(F.replace(/--[^\n]*/g, '')).not.toMatch(/jsonb_array_elements\(v_found\) fd\b/)  // code only, not the header that tells the story
   expect(F).toContain("raise exception 'post-check rollback' using errcode = 'P0001';")
   expect(F).not.toMatch(/^\s*(delete from|drop |truncate )/im)
 })

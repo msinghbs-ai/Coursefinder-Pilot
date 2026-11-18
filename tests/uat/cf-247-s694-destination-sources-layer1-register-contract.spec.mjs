@@ -1,5 +1,5 @@
-// Guards: destination data sources are Layer 1 Register sources (Platform Admin 18 Nov 2026 22:04, s693): registered by country, run by the standard Layer 1 scheduler and Run now, every artifact in Supabase Storage with a Layer 1 evidence record (source, storage path, SHA-256, fetched_at, licence terms), drafts into destination editions; no side cron.
-// CF-247 S693. supabase/migrations/20261118262000_cf247_destination_sources_layer1_register.sql; layer1-destination-geo-loader v1.4.0; layer1-operations-scheduled v1.6.0; layer1-operations-control v1.11.0.
+// Guards: destination data sources are Layer 1 Register sources (Platform Admin 18 Nov 2026 22:04, s694): registered by country, run by the standard Layer 1 scheduler and Run now, every artifact in Supabase Storage with a Layer 1 evidence record (source, storage path, SHA-256, fetched_at, licence terms), drafts into destination editions; no side cron.
+// CF-247 S694. supabase/migrations/20261118262000_cf247_destination_sources_layer1_register.sql; layer1-destination-geo-loader v1.4.0; layer1-operations-scheduled v1.6.0; layer1-operations-control v1.11.0.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
