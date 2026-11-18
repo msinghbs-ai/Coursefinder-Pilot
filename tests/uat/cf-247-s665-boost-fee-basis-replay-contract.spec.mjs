@@ -20,16 +20,16 @@ test('the gold query holds the fee basis: provider annual bases are "year", prov
 test('an answer is compared with held fees of its own basis only', () => {
   expect(S).toContain("const cls = f.value?.period === 'year' ? 'year' : f.value?.period === 'total' ? 'total' : null")
   expect(S).toContain("if (!cls) { bump(lane, 'gold_not_comparable'); continue }")
-  expect(S).toContain('const same = p.fees.filter((g) => g.period === cls)')
+  expect(S).toContain('let same = p.fees.filter((g) => g.period === cls && g.currency === cur)')  // s724 (19 Nov 2026): same basis and currency, then the same fee year
   expect(S).toContain("if (!same.length) { bump(lane, `gold_no_${cls}_fee`); continue }")
   expect(S).toContain("bump(lane, `${cls}_${agree ? 'agree' : 'disagree'}`)")
   // the old comparison, any held amount against any answer, is gone
   expect(S).not.toContain('agree = p.fees.some(')
 })
 
-test('intakes: an answer that lists every held month and more is counted, so the intake question can be asked', () => {
-  expect(S).toContain("bump(lane, 'gold_superset')")
-  expect(S).toContain('the S2-Intakes question')
+test('intakes: the page\'s announced months that contain the held primary intake are counted (the S2-Intakes question settled by s723)', () => {
+  expect(S).toContain("bump(lane, 'gold_primary_subset')")
+  expect(S).toContain('s723: the page\'s months are all its announced starts')
 })
 
 test('the report shows each basis on its own row and says what was not compared', () => {
@@ -43,6 +43,6 @@ test('offline: the replay writes and qualifies nothing, and runs only by hand th
   expect(S).not.toMatch(/boost_model_qualifications|boost_promote_v1|ai_route_qualifications|insert into|update catalogue|update pipeline/i)
   expect(S).toContain("'mode', 'boost_fields_replay'")
   expect(W).toMatch(/on:\s+workflow_dispatch:/)
-  expect(W).toContain('node scripts/boost-fields-replay.mjs "$PER" "$LABEL"')
+  expect(W).toContain('node scripts/boost-fields-replay.mjs "$PER" "$LABEL" "$MAX_COST"')  // s724: the run's spend limit
   expect(W).not.toMatch(/\bschedule:|\bpush:|pull_request/)
 })

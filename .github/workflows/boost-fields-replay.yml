@@ -9,9 +9,13 @@ on:
   workflow_dispatch:
     inputs:
       per_stratum:
-        description: "Pages per field (4 to 120)"
+        description: "Pages per stratum: a number, or pairs such as intakes=60,course_fees=160,course_fees_total=60,course_description=40,application_deadlines=40 (each at most 200)"
         required: true
         default: "40"
+      max_cost:
+        description: "Stop before this spend in US$ (default 0.15)"
+        required: false
+        default: "0.15"
       label:
         description: "Run label (fixes the sample, so a run can be repeated)"
         required: true
@@ -30,13 +34,14 @@ jobs:
       REF: ${{ vars.SUPABASE_PROJECT_REF }}
       PER: ${{ inputs.per_stratum }}
       LABEL: ${{ inputs.label }}
+      MAX_COST: ${{ inputs.max_cost }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Replay the gold set
-        run: node scripts/boost-fields-replay.mjs "$PER" "$LABEL"
+        run: node scripts/boost-fields-replay.mjs "$PER" "$LABEL" "$MAX_COST"
       - uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:

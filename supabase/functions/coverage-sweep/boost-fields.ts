@@ -6,13 +6,13 @@
 import { boostFlat } from "./boost.ts";
 
 export const BOOST_FIELDS_PROMPT_ID = "boost-fields";
-export const BOOST_FIELDS_PROMPT_VERSION = "boost-fields-v1";
+export const BOOST_FIELDS_PROMPT_VERSION = "boost-fields-v2";  // v2 (19 Nov 2026, Platform Admin 05:40, s723 and s726): intakes are every start month the page announces; application deadlines asked with the intake they belong to. v1: 18 Nov 2026.
 export const BOOST_FIELDS_SELECTOR = "boost-fields-windows-v1";
 // The page check has its own version: it can be hardened without a new prompt (the route's qualification row follows the prompt).
 // v2 (18 Nov 2026, S2 - BOOST, replay of the first 3,300 Qwen3 30B answers): see the notes above verifyBoostField.
-export const BOOST_FIELDS_CHECK_VERSION = "boost-fields-check-v2";
+export const BOOST_FIELDS_CHECK_VERSION = "boost-fields-check-v3";  // v3 (19 Nov 2026, s726): the application deadline check. v2: see the notes above verifyBoostField.
 export const BOOST_REPLAY_MAX_PAGES = 24, BOOST_REPLAY_QUOTE_CHARS = 400;  // fixed: diagnostic caps of one replay call (pages; characters of a quote returned)
-export const BOOST_FIELD_LANES = ["course_description", "delivery_mode", "intakes", "course_fees", "aer_entry"] as const;
+export const BOOST_FIELD_LANES = ["course_description", "delivery_mode", "intakes", "course_fees", "aer_entry", "application_deadlines"] as const;  // application_deadlines (s726) is asked only where named: live reading asks the lanes of setting boost.fields_lanes
 export type BoostFieldLane = typeof BOOST_FIELD_LANES[number];
 export const BOOST_DELIVERY_MODES = ["on_campus", "online", "blended", "on_campus_and_online"];
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
@@ -22,7 +22,8 @@ export const BOOST_FIELDS_SYSTEM = [
   "Fields (answer only the ones listed in the request; leave the others out):",
   "- course_description: {\"quote\": the page's own overview of the course, copied exactly, one to three sentences}.",
   "- delivery_mode: {\"value\": \"on_campus\" | \"online\" | \"blended\" | \"on_campus_and_online\", \"quote\"}. \"blended\" only when the page says the course mixes online and on-campus study; \"on_campus_and_online\" when it is offered either way.",
-  "- intakes: {\"months\": [month names in English, for example \"February\", \"July\"], \"quote\"}. Only months the page states as start or intake months.",
+  "- intakes: {\"months\": [month names in English, for example \"March\", \"July\", \"November\"], \"quote\"}. Every month the page announces as a start or intake month for this course, all of them, not only the next one. Never a month that is only an application, census or orientation date.",
+  "- application_deadlines: {\"deadlines\": [{\"date\": \"YYYY-MM-DD\", or \"MM-DD\" when the page gives no year, \"intake\": the intake it is for as the page names it (for example \"July 2026\", \"Semester 1\") or null}], \"quote\"}. Only dates the page gives as the last day to apply (applications close, apply by, deadline). Never a census, orientation, fee payment or start date.",
   "- course_fees: {\"amount\": number, \"currency\": three-letter code, \"period\": \"year\" | \"total\" | \"semester\" | \"trimester\" | \"credit_point\" | \"unit\", \"audience\": \"international\" | \"domestic\" | null, \"year\": four-digit year or null, \"quote\"}. Prefer the international student fee when the page gives one.",
   "- aer_entry: {\"quote\": the page's academic entry requirement for the course, copied exactly}. Prefer the requirement for international students when the page gives one.",
   "- Every quote is copied exactly from the page text you are given and contains the words that support the value.",
@@ -39,6 +40,7 @@ const WORDS: Record<BoostFieldLane, RegExp> = {
   intakes: /\bintakes?\b|\bcommenc|\bstart (date|dates|in)\b|\bstarts? in\b|\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/gi,
   course_fees: /\bfees?\b|\btuition\b|(A|NZ|C|US)?\$\s?\d|\b(AUD|NZD|CAD|USD|GBP|EUR)\b|\bper (year|annum|semester|trimester|credit point|unit)\b/gi,
   aer_entry: /entry requirements?|admission requirements?|\bprerequisites?\b|\bATAR\b|minimum (grade|score|gpa|entry)|\beligib/gi,
+  application_deadlines: /\bdeadlines?\b|applications? (close|closes|closing|due|open until)|\bapply by\b|\bclosing date\b|last day to apply/gi,
 };
 const WINDOW = 350, HEAD = 1500;  // fixed: characters around a keyword and the page head for the overview; the total is the setting reading.boost_fields_section_chars
 
@@ -119,6 +121,32 @@ export function monthIsAnIntake(quote: string, month: string): boolean {
   for (const hit of q.matchAll(after)) { const at = hit.index || 0; if (!DEADLINE_CUE.test(q.slice(Math.max(0, at - 45), at)) && !DEADLINE_BETWEEN.test(hit[0])) return true }
   return false;
 }
+// s726 (19 Nov 2026, Platform Admin 05:40): an application deadline counts only where the quote gives that day and month (and the year when the
+// answer gives one) as the last day to apply, next to a deadline word, and not as a census, orientation, fee or start date; an intake named
+// with it must be in the quote too.
+const DEADLINE_WORDS = /\bdeadlines?\b|\bapplications?\b[^.;\n]{0,60}?\b(close|closes|closing|are due|due|open until|must be (received|submitted) by)\b|\bapply (by|before)\b|\bclosing date\b|\blast day to apply\b|\bsubmit (your application )?by\b/i;
+const NOT_A_DEADLINE = /\bcensus\b|\borientation\b|\b(fees?|payment|tuition) (is |are )?(due|payable)\b|\bclasses (start|begin|commence)\b|\bcommencement\b/i;
+const DEADLINE_NEAR = 80;  // fixed: width of the reading rule, characters between the date and its deadline word
+function deadlineProblems(d: any, quote: string): string[] {
+  const m = /^(?:(\d{4})-)?(\d{2})-(\d{2})$/.exec(String(d?.date || "").trim());
+  if (!m) return [`deadline date ${JSON.stringify(d?.date)} is not YYYY-MM-DD or MM-DD`];
+  const [, year, mm, dd] = m, mi = Number(mm) - 1, day = Number(dd);
+  if (mi < 0 || mi > 11 || day < 1 || day > 31) return [`deadline date ${d.date} is not a date`];
+  const name = MONTHS[mi], q = String(quote || "");
+  const dateRe = new RegExp(`\\b(?:0?${day}(?:st|nd|rd|th)?\\s+(?:of\\s+)?(?:${name}|${name.slice(0, 3)})\\b|(?:${name}|${name.slice(0, 3)})\\.?\\s+0?${day}(?:st|nd|rd|th)?\\b|${year || "\\d{4}"}-${mm}-${dd}\\b|0?${day}/0?${Number(mm)}/(?:${year || "\\d{4}"}|${year ? year.slice(2) : "\\d{2}"})\\b)`, "i");
+  const hit = dateRe.exec(q);
+  if (!hit) return [`${d.date} is not in the quote`];
+  const out: string[] = [];
+  if (year && !new RegExp(`(^|[^0-9])${year}([^0-9]|$)`).test(q)) out.push(`the year ${year} is not in the quote`);
+  const around = q.slice(Math.max(0, hit.index - DEADLINE_NEAR), hit.index + hit[0].length + DEADLINE_NEAR);
+  if (!DEADLINE_WORDS.test(around)) out.push(`the quote does not give ${d.date} as the last day to apply`);
+  if (NOT_A_DEADLINE.test(around) && !DEADLINE_WORDS.test(around)) out.push(`${d.date} is a census, orientation, fee or start date, not a deadline`);
+  if (d?.intake !== null && d?.intake !== undefined && String(d.intake).trim()) {
+    const words = String(d.intake).toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3 || /^\d+$/.test(w));
+    if (!words.length || !words.every((w) => q.toLowerCase().includes(w))) out.push(`the intake ${JSON.stringify(d.intake)} is not in the quote`);
+  }
+  return out;
+}
 // Which currencies a text names. A bare "$" names none.
 const CURRENCY_MARKS: [string, RegExp][] = [
   ["AUD", /\bAUD\b|\bAU?\$|\bAustralian dollars?\b/i], ["NZD", /\bNZD\b|\bNZ\s?\$|\bNew Zealand dollars?\b/i], ["CAD", /\bCAD\b|\bCA?\$|\bCDN\s?\$|\bCanadian dollars?\b/i],
@@ -139,7 +167,7 @@ export function verifyBoostField(lane: string, a: any, pageFlat: string, page = 
   const empty = (x: unknown) => x === null || x === undefined || (Array.isArray(x) && x.length === 0) || x === "";
   const v = (status: BoostFieldVerdict["status"], value: unknown, problems: string[] = []): BoostFieldVerdict => ({ lane, status, value, quote, problems });
   if (!a || typeof a !== "object" || Array.isArray(a)) return v("rejected", null, ["answer is not an object"]);
-  const value = lane === "course_description" || lane === "aer_entry" ? quote : lane === "intakes" ? a.months : lane === "course_fees" ? (empty(a.amount) ? null : a) : a.value;
+  const value = lane === "course_description" || lane === "aer_entry" ? quote : lane === "intakes" ? a.months : lane === "course_fees" ? (empty(a.amount) ? null : a) : lane === "application_deadlines" ? a.deadlines : a.value;
   if (empty(value)) return quote ? v("rejected", null, ["a quote without a value"]) : v("not_stated", null);
   if (!quote) return v("rejected", value, ["quote missing"]);
   const problems: string[] = [];
@@ -192,6 +220,9 @@ export function verifyBoostField(lane: string, a: any, pageFlat: string, page = 
     if (!/\bfees?\b|\btuition\b|\bcost\b|\$|\b(AUD|NZD|CAD|USD|GBP|EUR)\b/i.test(quote)) problems.push("the quote does not speak of a fee");
   } else if (lane === "aer_entry") {
     if (!/requirement|prerequisite|\bATAR\b|\bminimum\b|\bcompleted?\b|\bgpa\b|\bdegree\b|\bdiploma\b|\bsecondary\b|\bcertificate\b|\bequivalent\b|\bscore\b|\bgrade\b/i.test(quote)) problems.push("the quote does not state an entry requirement");
+  } else if (lane === "application_deadlines") {
+    if (!Array.isArray(value)) problems.push("deadlines is not a list");
+    else for (const d of value) problems.push(...deadlineProblems(d, quote));
   } else problems.push(`lane ${lane} is not a Boost field lane`);
   return problems.length ? v("rejected", value, problems) : v("verified", value);
 }

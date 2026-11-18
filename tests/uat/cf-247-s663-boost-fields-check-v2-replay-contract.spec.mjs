@@ -14,8 +14,8 @@ test.beforeAll(async () => {
 const check = (lane, a, page) => F.verifyBoostField(lane, a, B.boostFlat(page ?? a.quote), page ?? a.quote)
 
 test('the check has its own version and the prompt is unchanged, so the route qualification row is untouched', () => {
-  expect(F.BOOST_FIELDS_CHECK_VERSION).toBe('boost-fields-check-v2')
-  expect(F.BOOST_FIELDS_PROMPT_VERSION).toBe('boost-fields-v1')
+  expect(F.BOOST_FIELDS_CHECK_VERSION).toBe('boost-fields-check-v3')  // v3 from s726
+  expect(F.BOOST_FIELDS_PROMPT_VERSION).toBe('boost-fields-v2')  // v2 from s723 and s726
   expect(IX).toContain('fields = lanes.map((l) => verifyBoostField(l, (ra as any).a?.[l], flat, page))')
   expect(IX).toContain('selector, check_version: BOOST_FIELDS_CHECK_VERSION, status, note, fields,')
 })
