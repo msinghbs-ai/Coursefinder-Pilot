@@ -13,7 +13,7 @@ on:
       max_per_tick:
         description: "Items a tick (at most 250)"
         required: true
-        default: "100"
+        default: "40"
       confirm_project:
         description: "Type the Pilot project ref to confirm"
         required: true
