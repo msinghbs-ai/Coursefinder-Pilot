@@ -9,6 +9,7 @@
 // Pure functions only (no network), so the contract spec can read them.
 import { htmlToText } from "./extract.ts";
 import { callCost } from "./answer.ts";
+import { stripHiddenContent } from "./untrusted.ts";  // s810; the prompt wording is registry-governed (s553), so the text is cleaned here and the template is unchanged
 
 export const DESCRIPTION_PROMPT_VERSION = "provider-description-v2";  // v2 (v0.58.0): the length limits are stated to the model
 
@@ -62,7 +63,7 @@ export function aboutLinks(html: string, baseUrl: string, hosts: string[], patte
 
 // the page text the model reads: main text without navigation, header, footer and asides, at most pageChars characters
 export function descriptionPageText(html: string, pageChars: number): string {
-  let h = String(html || "");
+  let h = stripHiddenContent(String(html || ""));  // s810: comments and hidden elements never reach the model
   const main = h.match(/<main[\s\S]*?<\/main>/i);
   if (main && main[0].length > 1500) h = main[0];
   h = h.replace(/<(nav|header|footer|aside)\b[\s\S]*?<\/\1>/gi, " ");

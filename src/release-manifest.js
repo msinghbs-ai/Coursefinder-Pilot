@@ -1,16 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.60'
-export const PACKAGE_VERSION='0.1.482'
+export const UI_VERSION='2.16.61'
+export const PACKAGE_VERSION='0.1.483'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'20 Nov 2026',
-  title:'Course intake Run & Validate: any provider by page, hand-picked courses and stage history',
+  title:"Completeness bars, Missing field pills, provider bulk bar and provenance panel; security headers and CI gates",
   changes:[
-    'Course intake Run & Validate (Layer 2/3 operations): Scope type chooses the approved top Australian universities (as before), one provider page by page (every active Australian, New Zealand or Canadian provider, 200 courses a page, a Pipeline setting), or hand-picked courses found by title or course code (up to the cohort limit).',
-    'Course intake Run & Validate: each cohort keeps its stage counts. Fetched, parsed and extracted are counted from the stored evidence when the cohort is fixed; verified, admitted and held after each Run Now, with its run ID. Verify shows them under Stage history.'
+    "Catalogue \u203a Courses and Providers: a Completeness bar on every row. Courses draw the existing six-signal score (registration, structure, fee, intake, English, description); Providers show the share of nine tracked fields held. The bar is a progress bar with the percentage as its label, with no colour bands.",
+    "Catalogue \u203a Courses and Providers: a Missing field pill bar. Courses: Fee, Intake, English, Scholarship, Description and Study load narrow the list on the server through filters the list already had. Providers: the nine tracked fields (description, website, city, state or region, type, phone, email, address, established year); several pills keep providers that lack every field chosen, and Export CSV, total and rows agree.",
+    "Catalogue \u203a Providers: tick providers to get a bulk bar with Fill fields (description only), Export selected (CSV, with each provider's completeness and missing fields) and Clear.",
+    "Catalogue \u203a Providers detail drawer: a Completeness and provenance panel showing the nine fields as Held or Missing and the description's source as Register, AI verified or Human input \u00b7 Locked. Other fields do not record their source per field yet, and the panel says so.",
+    "Guides: the Counsellor, Curator and Platform Admin role guides (version 1.1) and the Courses and Providers page guides describe completeness, Missing field pills, the bulk bar and provenance, Intake Run & Validate and Layer 1 country preparation.",
+    "Security: the Cloudflare Worker now sends a Content-Security-Policy, Strict-Transport-Security, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy and Permissions-Policy. Page text read from a site is fenced as untrusted, with hidden markup removed, before any model sees it. Website API v3 no longer forwards any database message to the caller. Pull requests run a secret scan, a dependency audit and a CycloneDX SBOM."
   ],
   bugFixes:[]
 }
