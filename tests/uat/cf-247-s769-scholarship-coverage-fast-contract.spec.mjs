@@ -90,3 +90,24 @@ test('Coverage pages through providers 50 at a time', async ({ page }) => {
   expect(calls.every((b) => Number(b.p_limit) === 50)).toBe(true)
   expect(calls.map((b) => Number(b.p_offset))).toEqual(expect.arrayContaining([0, 50, 100]))
 })
+
+// Part 2 (migration 20261119144500): the provider drawer and the Publish action read the publishing checks for that provider or scholarship only.
+const m2 = fs.readFileSync(migrationPath('20261119144500_cf247_s769_coverage_drawer_scoped_checks.sql'), 'utf8')
+const c2 = m2.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+
+test('part 2: each function is changed by one fragment of its md5-checked live definition', () => {
+  expect(c2).toContain("if md5(v_def) <> 'f985f7798729801cf172b70641947ee7' then")
+  expect(c2).toContain("if md5(v_def) <> 'f11d5963a6518b917871a75f53d15738' then")
+  expect(c2.match(/if array_length\(string_to_array\(v_def, v_old\), 1\) <> 2 then raise exception/g)).toHaveLength(2)
+  expect(c2.match(/execute replace\(v_def, v_old, v_new\);/g)).toHaveLength(2)
+  expect(m2).toMatch(/^-- Replaces: /m); expect(m2).toMatch(/^-- Retires: nothing/m)
+  expect(c2).not.toMatch(/\b(create\s+(temp\w*\s+|unlogged\s+)?table|drop|truncate|delete\s+from|alter\s+table|create\s+(unique\s+)?index)\b/i)
+})
+
+test('part 2: the drawer and Publish read scoped checks, proven equal to the full read', () => {
+  expect(c2).toContain("v_new := 'pub as (select * from security.scholarship_publishability_for_v1(array(select s.id from scholarship.scholarships s where s.provider_id = p_provider_id))),';")
+  expect(c2).toContain("v_new := 'if not coalesce((select x.publishable from security.scholarship_publishability_for_v1(array[v_sid]) x where x.scholarship_id = v_sid), false) then';")
+  expect(c2).toContain("raise exception 'post-check: a Coverage function still reads every scholarship''s publishing checks'")
+  expect(c2).toContain("raise exception 'post-check: the scoped publishing read differs from the full read on % rows'")
+  expect(c2).toContain("raise exception 'post-check: the scoped publishing read took % ms'")
+})
