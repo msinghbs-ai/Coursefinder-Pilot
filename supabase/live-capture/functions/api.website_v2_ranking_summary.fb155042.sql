@@ -15,6 +15,6 @@ AS $function$
   )
   select case when count(*) = 0 then null else jsonb_object_agg(r.code, jsonb_build_object(
     'edition_year', r.edition_year, 'rank_display', r.rank_display, 'rank_low', coalesce(r.rank_low, r.rank_exact),
-    'terms_status', 'management_decision_pending')) end
+    'terms_status', security.website_terms_status_v1('rankings'))) end
   from r
 $function$

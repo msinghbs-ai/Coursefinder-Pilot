@@ -29,6 +29,7 @@ begin
     join ranking.observation_provider_links l on l.observation_id=o.id
     join catalogue.providers p on p.id=l.provider_id join ref.countries c on c.id=p.country_id
     where (v_countries is null or trim(c.iso_alpha2::text) = any(v_countries))
+      and not exists (select 1 from security.layer4_search_blocked_providers b where b.provider_id = p.id)  -- v2.15.236
       and (v_providers is null or p.stable_key = any(v_providers))
       and (v_rank_max is null or coalesce(o.rank_low,o.rank_exact) <= v_rank_max)
     order by ed.id, l.provider_id, l.is_primary desc nulls last
@@ -41,7 +42,7 @@ begin
                      from ranking.indicator_observations io where io.observation_id=o.obs_id),
       'methodology_url', o.methodology_url, 'source_url', o.source_url,
       'attribution', o.publisher_name || ', ' || o.ranking_name || ' ' || o.edition_year,
-      'terms_status', 'management_decision_pending') order by o.rn) filter (where o.rn > (v_page-1)*v_size and o.rn <= v_page*v_size), '[]'::jsonb)
+      'terms_status', security.website_terms_status_v1('rankings')) order by o.rn) filter (where o.rn > (v_page-1)*v_size and o.rn <= v_page*v_size), '[]'::jsonb)
   into v_total, v_items from ordered o;
   return jsonb_build_object('contract_version','website-search-v2','total',v_total,'page',v_page,'page_size',v_size,'filters_not_applied',v_not_applied,'items',v_items);
 end $function$

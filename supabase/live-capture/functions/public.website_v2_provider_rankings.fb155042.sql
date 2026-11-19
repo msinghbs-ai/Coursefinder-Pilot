@@ -12,7 +12,7 @@ AS $function$
                      from ranking.indicator_observations io where io.observation_id=o.id),
       'methodology_url', e.methodology_url, 'source_url', coalesce(e.source_url, s.official_url),
       'attribution', s.publisher_name || ', ' || s.ranking_name || ' ' || e.edition_year,
-      'terms_status', 'management_decision_pending')
+      'terms_status', security.website_terms_status_v1('rankings'))
     order by s.code, e.edition_year desc), '[]'::jsonb)
   from (select distinct on (o2.edition_id) o2.* from ranking.observation_provider_links l join ranking.observations o2 on o2.id=l.observation_id
         where l.provider_id=p_provider_id order by o2.edition_id, l.is_primary desc nulls last) o
