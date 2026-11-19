@@ -91,8 +91,8 @@ test('Coverage pages through providers 50 at a time', async ({ page }) => {
   expect(calls.map((b) => Number(b.p_offset))).toEqual(expect.arrayContaining([0, 50, 100]))
 })
 
-// Part 2 (migration 20261119141500): the provider drawer and the Publish action read the publishing checks for that provider or scholarship only.
-const m2 = fs.readFileSync(migrationPath('20261119141500_cf247_s769_coverage_drawer_scoped_checks.sql'), 'utf8')
+// Part 2 (migration 20261119144500): the provider drawer and the Publish action read the publishing checks for that provider or scholarship only.
+const m2 = fs.readFileSync(migrationPath('20261119144500_cf247_s769_coverage_drawer_scoped_checks.sql'), 'utf8')
 const c2 = m2.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('part 2: each function is changed by one fragment of its md5-checked live definition', () => {
