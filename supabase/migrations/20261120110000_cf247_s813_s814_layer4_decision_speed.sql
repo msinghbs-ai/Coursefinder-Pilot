@@ -22,14 +22,14 @@ create index if not exists field_enrich_items_desc_held_idx on pipeline.field_en
 create index if not exists course_fees_layer4_decision_note_idx on catalogue.course_fees (substr(notes, 1, 80))  -- fixed: 80 = the note head "…review item <uuid>;"
   where notes like 'CF-247 Layer 4 human decision;%' and status = 'active';
 
-create or replace function pg_temp.cf_edit_def(p_sig regprocedure, p_md5 text, p_old text[], p_new text[])
+create or replace function pg_temp.cf_edit_def(p_sig regprocedure, p_md5 text, p_old text[], p_new text[], p_counts int[] default null)
 returns void language plpgsql as $f$
 declare v_def text := replace(pg_get_functiondef(p_sig), chr(13), ''); v_c int; i int;
 begin
   if md5(v_def) <> p_md5 then raise exception 'pre-check: % changed since it was read (definition md5 %)', p_sig, md5(v_def); end if;
   for i in 1 .. array_length(p_old, 1) loop
     v_c := (length(v_def) - length(replace(v_def, p_old[i], ''))) / length(p_old[i]);
-    if v_c <> 1 then raise exception 'pre-check: %: fragment % must occur exactly once (found %)', p_sig, i, v_c; end if;
+    if v_c <> coalesce(p_counts[i], 1) then raise exception 'pre-check: %: fragment % must occur % time(s) (found %)', p_sig, i, coalesce(p_counts[i], 1), v_c; end if;
     v_def := replace(v_def, p_old[i], p_new[i]);
   end loop;
   execute v_def;
@@ -52,6 +52,31 @@ select pg_temp.cf_edit_def('security.layer4_decision_outcome_v1(text,text,jsonb)
   array[$o$       where f.notes like 'CF-247 Layer 4 human decision; review item ' || (p_result->>'review_item_id') || ';%' and f.status = 'active'$o$],
   array[$n$       where f.notes like 'CF-247 Layer 4 human decision;%' and f.status = 'active'  -- s814: the note head (indexed) names the review item
          and substr(f.notes, 1, 80) = 'CF-247 Layer 4 human decision; review item ' || (p_result->>'review_item_id') || ';'$n$]);
+
+
+-- every decision reads its item twice through security.layer4_inbox_items_v2 (the detail, then whether it still waits): about 110 ms. The item's
+-- own id is now also matched as its type, so each source finds it by its key instead of reading every waiting row (the text match stays).
+create or replace function security.l4_key_uuids_v1(p_keys text[]) returns uuid[] language sql immutable parallel safe set search_path to '' as $f$
+  select coalesce(array_agg(split_part(k, ':', 2)::uuid), '{}') from unnest(p_keys) k
+   where split_part(k, ':', 2) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+$f$;
+create or replace function security.l4_key_bigints_v1(p_keys text[]) returns bigint[] language sql immutable parallel safe set search_path to '' as $f$
+  select coalesce(array_agg(split_part(k, ':', 2)::bigint), '{}') from unnest(p_keys) k where split_part(k, ':', 2) ~ '^[0-9]{1,18}$'
+$f$;
+revoke all on function security.l4_key_uuids_v1(text[]) from public, anon, authenticated;
+revoke all on function security.l4_key_bigints_v1(text[]) from public, anon, authenticated;
+comment on function security.l4_key_uuids_v1(text[]) is 'CF-247 s814: the uuid refs of Layer 4 item keys (kind:ref), so an item source can find its rows by id.';
+comment on function security.l4_key_bigints_v1(text[]) is 'CF-247 s814: the numeric refs of Layer 4 item keys (kind:ref), so an item source can find its rows by id.';
+select pg_temp.cf_edit_def('security.layer4_inbox_items_v2(uuid,text,text[],boolean)'::regprocedure, '26283b7b330d74a86122307e2ab8b7f7',
+  array[$o$(p_keys is null or z.k || ':' || r.id::text = any (p_keys))$o$,
+        $o$(p_keys is null or 'held_scholarship:' || r.id::text = any (p_keys))$o$,
+        $o$(p_keys is null or z.k || ':' || f.id::text = any (p_keys))$o$,
+        $o$(p_keys is null or 'course_page_needed:' || n.course_id::text = any (p_keys))$o$],
+  array[$n$(p_keys is null or (r.id = any (security.l4_key_uuids_v1(p_keys)) and z.k || ':' || r.id::text = any (p_keys)))$n$,
+        $n$(p_keys is null or (r.id = any (security.l4_key_bigints_v1(p_keys)) and 'held_scholarship:' || r.id::text = any (p_keys)))$n$,
+        $n$(p_keys is null or (f.id = any (security.l4_key_bigints_v1(p_keys)) and z.k || ':' || f.id::text = any (p_keys)))$n$,
+        $n$(p_keys is null or (n.course_id = any (security.l4_key_uuids_v1(p_keys)) and 'course_page_needed:' || n.course_id::text = any (p_keys)))$n$],
+  array[1, 1, 2, 1]);
 
 -- post-checks, as a signed-in Platform Admin, on real items, each decision rolled back; the times are reported (cf.diag)
 do $$
@@ -84,6 +109,17 @@ begin
       if sqlerrm <> 'cf-s813-undo' then v_o := v_o || pr[1] || '/' || pr[2] || ' refused by its own rule (' || left(sqlerrm, 60) || '); '; end if;
     end;
   end loop;
+  -- the keyed read finds exactly what the full read finds, for a page of items of every kind
+  if exists (with k as (select array_agg(x.kind || ':' || x.ref) ks from (select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, null, false) i order by i.kind, i.created_at limit 400) x)
+             (select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, (select ks from k), false) i
+              except select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, null, false) i where i.kind || ':' || i.ref = any ((select ks from k)))
+             union all
+             (select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, null, false) i where i.kind || ':' || i.ref = any ((select ks from k))
+              except select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, (select ks from k), false) i)) then
+    raise exception 'post-check: the keyed read differs from the full read'; end if;
+  t0 := clock_timestamp();
+  perform 1 from security.layer4_inbox_items_v2(null, 'course_link', array['course_link:' || (select r2.id::text from pipeline.layer4_review_items r2 where r2.status = 'pending' limit 1)], true);
+  v_o := v_o || 'keyed read ' || round(extract(epoch from clock_timestamp() - t0) * 1000) || 'ms; ';
   perform set_config('request.jwt.claims', '', true);
   if v_hs is null then raise exception 'post-check: no held scholarship was decided'; end if;
   if v_hs > 1000 then raise exception 'post-check: a held scholarship decision took % ms', v_hs; end if;
