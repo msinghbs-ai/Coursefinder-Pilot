@@ -72,7 +72,7 @@ jobs:
           node scripts/migration-history-sync.mjs out/history.jsonl --scan --write | tail -1
           git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           b="db-history-sync/${{ github.run_id }}"; git checkout -q -b "$b"
-          git add -A supabase/migrations-archive supabase/migration-history
+          git add -A supabase/migration-history
           git commit -q -m "Production migration history written to the repository (run ${{ github.run_id }})"
           git push -q origin "$b"; echo "branch $b" | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4

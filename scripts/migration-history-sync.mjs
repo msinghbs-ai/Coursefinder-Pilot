@@ -3,10 +3,11 @@
 // file for every version in production's supabase_migrations.schema_migrations, with the exact text that was applied.
 // Input: a JSON-lines export of the history (version, name, statements), read only through the Management API by the export workflow.
 // For each history version:
-//   - a file of that version already in supabase/migrations, supabase/migrations-archive or supabase/held: kept as it is; its content is
-//     compared (carriage returns and trailing newlines ignored) and the result is written to the manifest;
-//   - no file of that version: the applied text is written to supabase/migrations-archive/<version>_<name>.sql (statements joined by a newline,
-//     exactly as stored; the archive is never applied, Deploy on merge reads supabase/migrations only).
+//   - a file of that version already in supabase/migrations, supabase/migrations-archive or supabase/held with the same text (carriage
+//     returns and trailing newlines ignored): nothing to write;
+//   - otherwise (no file of that version, or a file whose text differs from what was applied): the applied text is written to
+//     supabase/migration-history/applied/<version>_<name>.sql (statements joined by a newline, exactly as stored). That folder is a record:
+//     nothing applies it (Deploy on merge reads supabase/migrations only) and no spec or fixture reads it. Existing files are never changed.
 // Files that have no history version are left where they are and listed in the manifest (with the history version holding the same text, if any).
 // Nothing in the database is changed. --scan refuses to write when an applied text looks like it holds a key or password (the repository is public).
 // Usage: node scripts/migration-history-sync.mjs <history.jsonl> [--write] [--scan]
@@ -41,22 +42,23 @@ for (const r of rows) {
   const v = String(r.version), text = (r.statements || []).join('\n'), h = md5(text)
   seen.add(v)
   const have = files.get(v)
-  if (have) { out.push([v, have.map((x) => x.path).join(' '), h, have.some((x) => x.md5 === h) ? 'same-version-same-text' : 'same-version-text-differs']); continue }
+  if (have && have.some((x) => x.md5 === h)) { out.push([v, have.map((x) => x.path).join(' '), h, 'same-version-same-text']); continue }
   if (scan) for (const re of SECRETS) if (re.test(text)) hits.push(`${v} ${re.source.slice(0, 24)}`)
   const safe = String(r.name || 'applied').toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 90) || 'applied'
-  const p = `supabase/migrations-archive/${v}_${safe}.sql`
+  const p = `supabase/migration-history/applied/${v}_${safe}.sql`
   add.push([p, text.endsWith('\n') ? text : text + '\n'])
-  out.push([v, p, h, (byMd5.get(h) ? `added-from-history (same text as ${byMd5.get(h).join(' ')})` : 'added-from-history')])
+  if (have) out.push([v, p, h, `applied-text-differs-from ${have.map((x) => x.path).join(' ')}`])
+  else out.push([v, p, h, (byMd5.get(h) ? `no-file-of-this-version (same text as ${byMd5.get(h).join(' ')})` : 'no-file-of-this-version')])
 }
 const orphans = []
 for (const [v, list] of files) if (!seen.has(v)) for (const x of list) orphans.push([v, x.path, x.md5, 'file-without-history-version'])
 const tally = (k) => out.filter((x) => x[3].startsWith(k)).length
-console.log(`history rows ${rows.length}; already in the repository with the same text ${tally('same-version-same-text')}; same version, different text ${tally('same-version-text-differs')}; written from history ${add.length}; repository files with no history version ${orphans.length}`)
+console.log(`history rows ${rows.length}; already in the repository with the same text ${tally('same-version-same-text')}; applied text differs from the file ${tally('applied-text-differs')}; no file of that version ${tally('no-file-of-this-version')}; written to supabase/migration-history/applied ${add.length}; repository files with no history version ${orphans.length}`)
 if (hits.length) { console.log(`REFUSED: ${hits.length} applied texts look like they hold a key or password:\n${hits.join('\n')}`); process.exit(3) }
 if (write) {
+  fs.mkdirSync('supabase/migration-history/applied', { recursive: true })
   for (const [p, t] of add) fs.writeFileSync(p, t)
   const head = 'version\tpath\ttext_md5\tstatus\n'
-  fs.mkdirSync('supabase/migration-history', { recursive: true })
   fs.writeFileSync('supabase/migration-history/MANIFEST.tsv', head + [...out, ...orphans].sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1])).map((x) => x.join('\t')).join('\n') + '\n')
   console.log(`wrote ${add.length} files and supabase/migration-history/MANIFEST.tsv`)
 }
