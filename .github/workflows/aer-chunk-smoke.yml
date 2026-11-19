@@ -26,6 +26,10 @@ on:
         description: "Source ids to inspect only (row chunks, no model call, no spend, no window); blank runs the test"
         required: false
         default: ""
+      prompt_version:
+        description: "Prompt version: aer-v2-matrix-chunk-v1 or aer-v2-matrix-chunk-v2"
+        required: true
+        default: "aer-v2-matrix-chunk-v1"
       confirm_project:
         description: "Type the Pilot project ref to confirm"
         required: true
@@ -46,6 +50,7 @@ jobs:
       ROWS: ${{ inputs.rows_per_call }}
       TABLES: ${{ inputs.tables }}
       INSPECT: ${{ inputs.inspect }}
+      PV: ${{ inputs.prompt_version }}
       CONFIRM: ${{ inputs.confirm_project }}
     steps:
       - uses: actions/checkout@v4
@@ -56,4 +61,4 @@ jobs:
         run: |
           if [ -z "$REF" ] || [ "$CONFIRM" != "$REF" ]; then echo "::error::Refused: the typed project ref does not match the Pilot"; exit 1; fi
       - name: Run the smoke test
-        run: node scripts/aer-chunk-smoke.mjs "$MAXUSD" "$MODEL" "$ROWS" "$TABLES" "$INSPECT"
+        run: node scripts/aer-chunk-smoke.mjs "$MAXUSD" "$MODEL" "$ROWS" "$TABLES" "$INSPECT" "$PV"

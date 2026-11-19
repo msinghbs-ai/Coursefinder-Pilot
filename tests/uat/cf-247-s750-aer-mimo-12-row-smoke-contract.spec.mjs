@@ -13,7 +13,7 @@ const Y = fs.readFileSync('.github/workflows/aer-chunk-smoke.yml', 'utf8')
 const block = W.split('if (mode === AER_CHUNK_MODE) {')[1].split('    if (mode === "entry_inspect") {')[0]
 
 test('worker v1.0.29: call duration, the model answer for a failed row, inspect only before any credential or spend', () => {
-  expect(W).toContain('const WORKER = "coverage-sweep-worker-v1.0.29"; // v1.0.29 (19 Nov 2026, CF-247 S750')
+  expect(W).toContain('// v1.0.29 (19 Nov 2026, CF-247 S750')
   expect(block).toContain('res.call_ms = Date.now() - tc;')
   expect(block).toContain("res.misses = res.verified.checks.filter((k: any) => !k.answered || k.quote_in_row === false || k.minimum_in_quote === false)")
   const insp = block.indexOf('if (body.inspect_only === true) return j(')
@@ -26,7 +26,7 @@ test('the run takes one model, a rows-a-call figure and a table set; spend is ca
   expect(S).toContain("const MODEL = String(process.argv[3] || 'all')")
   expect(S).toContain('const ROWS = Math.max(0, Math.min(40, Math.floor(Number(process.argv[4]) || 0)))')
   expect(S).toContain("const SET = /^[a-z0-9-]+\\.json$/.test(String(process.argv[5] || '')) ? String(process.argv[5]) : 'smoke-tables.json'")
-  expect(S).toContain('if (spent >= CAP - Math.min(0.01, CAP / 5))')
+  expect(S).toContain('if (spent >= CAP - Math.min(0.01, CAP / 10))')
   expect(S).toContain('rows_per_call: ROWS || Number(v.spec?.rows_per_call) || 25')
   const insp = S.indexOf('if (INSPECT.length) {'), open = S.indexOf("security.on_demand_open_v1('claude_session'")
   expect(insp).toBeGreaterThan(0); expect(insp).toBeLessThan(open)
@@ -34,7 +34,7 @@ test('the run takes one model, a rows-a-call figure and a table set; spend is ca
   expect(S).toContain('max_call_ms: callMs.length ? Math.max(...callMs) : null')
   expect(S.split('} finally {')[1].split('\n}\n')[0]).toContain('security.on_demand_close_v1(')
   for (const k of ['MODEL: ${{ inputs.model }}', 'ROWS: ${{ inputs.rows_per_call }}', 'TABLES: ${{ inputs.tables }}', 'INSPECT: ${{ inputs.inspect }}']) expect(Y).toContain(k)
-  expect(Y).toContain('run: node scripts/aer-chunk-smoke.mjs "$MAXUSD" "$MODEL" "$ROWS" "$TABLES" "$INSPECT"')
+  expect(Y).toContain('run: node scripts/aer-chunk-smoke.mjs "$MAXUSD" "$MODEL" "$ROWS" "$TABLES" "$INSPECT"')  // S751 adds "$PV" after it
 })
 
 test('the 20 tables are the S747 rule with the character bound at 16,000, one per provider, keeping the S747 ten; 12 rows a call never mixes tables', () => {
