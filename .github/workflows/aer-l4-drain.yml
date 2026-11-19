@@ -1,0 +1,44 @@
+# AER Layer 4 triage and bounded drain (CF-247 S753, session S2-BOOST-AER; Platform Admin 19 Nov 2026 15:59 AEDT: "triage and drain the AER items
+# stuck in Layer 4 ... zero migrations, zero AI/Firecrawl spend"). Through the Management API with no prompt: every pending AER item through its rule's
+# read-only check; in drain mode the items that pass go to the cron's own admission functions, at most max_per_tick a tick (FOR UPDATE SKIP LOCKED).
+# No rule, threshold, switch, lock or hold changes; recorded as one control event.
+name: AER Layer 4 triage and drain
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "triage (read only) or drain"
+        required: true
+        default: "triage"
+      max_per_tick:
+        description: "Items a tick (at most 250)"
+        required: true
+        default: "100"
+      confirm_project:
+        description: "Type the Pilot project ref to confirm"
+        required: true
+concurrency:
+  group: aer-l4-drain
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      MODE: ${{ inputs.mode }}
+      MAX: ${{ inputs.max_per_tick }}
+      CONFIRM: ${{ inputs.confirm_project }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Refuse another project
+        run: |
+          if [ -z "$REF" ] || [ "$CONFIRM" != "$REF" ]; then echo "::error::Refused: the typed project ref does not match the Pilot"; exit 1; fi
+      - name: Triage and drain
+        run: node scripts/aer-l4-drain.mjs "$MODE" "$MAX"
