@@ -42,3 +42,15 @@ test('no new table or function; nothing dropped; the claim is not called by the 
   expect(M).toMatch(/^-- Replaces: /m)
   expect(M).toMatch(/^-- Retires: /m)
 })
+
+// 19 Nov 2026 15:30 (20261119153000): IQ-00606 closes through security.integration_issue_close_v1 only if no page_text run failed after the change.
+const C = fs.readFileSync('supabase/migrations/20261119153000_cf247_s772_close_iq_00606.sql', 'utf8')
+
+test('IQ-00606 closes with passed evidence only when no page_text run failed after 20261119150000', () => {
+  expect(C).toContain("raise exception 'a page_text run failed after 20261119150000; IQ-00606 stays open'")
+  expect(C).toContain("perform security.integration_issue_close_v1(v_id,")
+  expect(C).toContain("jsonb_build_object('outcome', 'passed',")
+  const cc = C.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
+  expect(cc).not.toMatch(/create (table|or replace|function)|^\s*(drop|delete|truncate|update)\b/im)
+  expect(C).toMatch(/^-- Replaces: /m)
+})
