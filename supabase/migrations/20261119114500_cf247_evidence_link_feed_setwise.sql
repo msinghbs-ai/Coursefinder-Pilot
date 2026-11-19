@@ -8,9 +8,10 @@
 --     before finding that, so an empty queue is the slowest case. The same artifacts read as one anti-join take 0.45 s.
 -- What it changes (CREATE OR REPLACE of the existing function, guarded by its live body md5; same signature, same rows; no table or function;
 -- the consumer API is not touched, G3 75/48):
---   public.svc_evidence_link_index_next_v1 reads the ranked providers' eligible artifacts as one set (the partial index
---   evidence_artifacts_link_queue_idx), drops those already indexed (or in error for less than 6 hours) with one anti-join, and orders only what
---   is left by provider rank and capture time. It stops itself at 4 s (statement_timeout), inside the 8 s gateway limit.
+--   public.svc_evidence_link_index_next_v1 finds the ranked providers' unindexed artifact ids from the queue index alone (index-only scan of the
+--   partial index evidence_artifacts_link_queue_idx and one anti-join against the index state; 0.19 s measured on the empty queue, against 8.9 s
+--   for the same set read row by row), keeps the best-ranked five per item asked, reads each by its id and orders them by provider rank and
+--   capture time. It stops itself at 4 s (statement_timeout), inside the 8 s gateway limit.
 -- Replaces: the per-provider keyset walk of 20261119104500.
 -- Retires: nothing.
 
@@ -28,21 +29,29 @@ create or replace function public.svc_evidence_link_index_next_v1(p_limit intege
  set search_path to 'pg_catalog', 'pipeline'
  set statement_timeout to '4s'  -- fixed: a query time-out inside the 8 s gateway limit, so a slow read fails fast instead of at the gateway
 as $function$
-  -- 20261119114500 (s720, IQ-00348): the ranked providers' eligible artifacts as one set, those already indexed dropped by one anti-join, and only
-  -- what is left ordered by provider rank and capture time (an empty queue is now the fastest case; was a per-provider sort, 9.5 s)
-  select coalesce(jsonb_agg(jsonb_build_object('id',x.id,'path',x.storage_path,'mime',x.mime_type,'url',x.source_url,'type',x.evidence_type)
-                            order by x.rank_no, x.captured_at desc nulls last),'[]'::jsonb)
-  from (select e.id, e.storage_path, e.mime_type, e.source_url, e.evidence_type, e.captured_at, o.rank_no
-          from pipeline.layer2_onboarding_snapshot o
-          join pipeline.sources s on s.provider_id = o.provider_id
-          join pipeline.evidence_artifacts e on e.source_id = s.id
-         where e.storage_path is not null and e.storage_path !~ '^[a-z-]+://'
-           and e.evidence_type = any (array['layer2_html_snapshot','layer2_extraction_input','source_snapshot','provider_contact_html_snapshot'])
-           and (e.mime_type ~~* '%html%' or e.mime_type ~~* '%json%')
-           and not exists (select 1 from pipeline.evidence_link_index_state st
-                            where st.evidence_id = e.id and not (st.status = 'error' and st.indexed_at < now() - interval '6 hours'))  -- fixed: the retry wait the function had
-         order by o.rank_no, e.captured_at desc nulls last
-         limit greatest(1, least(coalesce(p_limit, 60), 200))) x
+  -- 20261119114500 (s720, IQ-00348): the ranked providers' unindexed artifact ids from the queue index alone (index-only scan and one anti-join;
+  -- an empty queue is now the fastest case, 0.19 s measured), the best-ranked few kept, then each one read by its id and ordered by provider rank
+  -- and capture time (was a per-provider walk reading every artifact row, 9.4 s)
+  with cand as materialized (
+    select e.id, o.rank_no
+      from pipeline.layer2_onboarding_snapshot o
+      join pipeline.sources s on s.provider_id = o.provider_id
+      join pipeline.evidence_artifacts e on e.source_id = s.id
+     where e.storage_path is not null and e.storage_path !~ '^[a-z-]+://'
+       and e.evidence_type = any (array['layer2_html_snapshot','layer2_extraction_input','source_snapshot','provider_contact_html_snapshot'])
+       and (e.mime_type ~~* '%html%' or e.mime_type ~~* '%json%')
+       and not exists (select 1 from pipeline.evidence_link_index_state st
+                        where st.evidence_id = e.id and not (st.status = 'error' and st.indexed_at < now() - interval '6 hours'))  -- fixed: the retry wait the function had
+     order by o.rank_no
+     limit 5 * greatest(1, least(coalesce(p_limit, 60), 200))),  -- fixed: candidates read by id, five per item asked
+  pick as (
+    select a.id, a.storage_path, a.mime_type, a.source_url, a.evidence_type, a.captured_at, c.rank_no
+      from cand c cross join lateral (select x.* from pipeline.evidence_artifacts x where x.id = c.id) a
+     order by c.rank_no, a.captured_at desc nulls last
+     limit greatest(1, least(coalesce(p_limit, 60), 200)))
+  select coalesce(jsonb_agg(jsonb_build_object('id',p.id,'path',p.storage_path,'mime',p.mime_type,'url',p.source_url,'type',p.evidence_type)
+                            order by p.rank_no, p.captured_at desc nulls last),'[]'::jsonb)
+  from pick p
 $function$;
 
 -- post-checks
