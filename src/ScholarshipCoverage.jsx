@@ -6,7 +6,7 @@
 // (value, who it is for, linked courses, why it is held) with the actions to publish, hold, confirm international or sign off.
 // Scholarships published automatically are listed at the top for review. Settings and jobs are under "Settings and jobs".
 // Read: admin_scholarship_coverage_read / admin_scholarship_coverage_provider. Write: admin_scholarship_coverage_write.
-import React,{useEffect,useState}from'react'
+import React,{useEffect,useRef,useState}from'react'
 import{CheckCircle2,ExternalLink,Eye,EyeOff,Plus,RefreshCw,Search,ShieldCheck,X}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Loading,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
@@ -20,6 +20,7 @@ const STATE={no_listing:['No listing page','neutral'],waiting:['Reading','info']
 const PUB={published:['Published','success'],unpublished:['Not published','neutral'],withdrawn:['Withdrawn','warning']}
 const HOLD_REASONS=['Not for international students','Not a scholarship (a sponsorship or general page)','Wrong provider','Value or details wrong on our record','Closed or no longer offered','Duplicate of another record']
 function value(r){if(!r)return'—';if(r.value_type==='percentage'&&r.percentage!=null)return `${Number(r.percentage)}% of tuition${r.value_is_maximum?' (maximum)':''}`;if(r.value_type==='fixed_amount'&&r.amount!=null)return `${r.currency||''} ${fmtNumber(r.amount)}${r.value_is_maximum?' (maximum)':''}`.trim();return 'Not read'}
+const COV_PAGE=50 // the most providers admin_scholarship_coverage_read returns in one page (s769)
 const host=u=>{try{return new URL(u).hostname.replace(/^www\./,'')}catch{return u}}
 
 export default function ScholarshipCoverage({rank=3,onError,navigate}){
@@ -31,9 +32,12 @@ export default function ScholarshipCoverage({rank=3,onError,navigate}){
   const readFinding=async()=>{try{const{data:d,error}=await supabase.rpc('admin_jobs',{p_action:'read',p_args:{}});if(error)throw error;const ids=new Set();for(const j of d?.jobs||[])if(j.kind==='scholarship_provider_scan')for(const id of (j.args?.providers||j.args?.provider_ids||[]))ids.add(String(id));setFinding(prev=>{if(prev.size&&!ids.size)load();return ids})}catch{}}
   useEffect(()=>{if(!canRun)return;readFinding();const t=setInterval(()=>{if(document.visibilityState==='visible')readFinding()},finding.size?8000:30000);return()=>clearInterval(t)},[canRun,finding.size])
   useEffect(()=>{const t=setTimeout(()=>setQ(query.trim()),280);return()=>clearTimeout(t)},[query])
-  const load=async()=>{if(scope==='providers')return;setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_scholarship_coverage_read',{p_scope:scope,p_query:q||null,p_limit:300,p_offset:0});if(error)throw error;setData(d)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
-  useEffect(()=>{load()},[scope,q])
-  const t=data?.totals||{},ap=data?.auto_publish||{},rows=data?.rows||[]
+  // v2.16.51 (s769, ref 8XEY7B): 50 providers a page; Previous and Next under the table page through the rest
+  const[pageNo,setPageNo]=useState(0),pageRef=useRef(0)
+  const load=async()=>{if(scope==='providers')return;setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_scholarship_coverage_read',{p_scope:scope,p_query:q||null,p_limit:COV_PAGE,p_offset:pageRef.current*COV_PAGE});if(error)throw error;setData(d)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  useEffect(()=>{pageRef.current=0;setPageNo(0);load()},[scope,q])
+  const goPage=pg=>{pageRef.current=pg;setPageNo(pg);load()}
+  const t=data?.totals||{},ap=data?.auto_publish||{},rows=data?.rows||[],total=Number(data?.total||0),from=total?pageNo*COV_PAGE+1:0,to=Math.min(total,pageNo*COV_PAGE+rows.length)
   return <div className="m-page-stack sc-cov" data-scholarship-coverage>
     <section className="m-panel">
       <div className="m-workspace-head"><div><h2>Coverage</h2><p>Each provider measured against its own scholarship listing page: what it lists, what we hold and publish, what is missing.</p></div>
@@ -67,6 +71,9 @@ export default function ScholarshipCoverage({rank=3,onError,navigate}){
           <td className="num">{fmtNumber(r.extra)}</td>
           <td>{finding.has(String(r.provider_id))?<StatusChip value="running" tone="info" label="Finding…"/>:<StatusChip value={r.state} tone={st} label={sl}/>}{r.suggested_pages&&!r.listing_pages?<small className="sc-sub"> suggestion</small>:null}</td></tr>})}</tbody>
       </table></div>}
+      {scope!=='providers'&&total>COV_PAGE&&<div className="sc-pager" data-cov-pager><span>Showing {fmtNumber(from)}–{fmtNumber(to)} of {fmtNumber(total)} providers</span>
+        <Button compact disabled={busy||pageNo===0} onClick={()=>goPage(pageNo-1)} data-cov-prev>Previous</Button>
+        <Button compact disabled={busy||to>=total} onClick={()=>goPage(pageNo+1)} data-cov-next>Next</Button></div>}
     </section>
     {open&&<ProviderCoverage providerId={open} rank={rank} onClose={()=>setOpen(null)} onError={onError} onChanged={load}/>}
     {/* SS-020 step 4 (Decision 269, 3 Nov 2026): the "Settings and jobs" fold moved to Layer 2/3 › Scholarships (ScholarshipSettings below) */}
