@@ -80,7 +80,7 @@ select pg_temp.cf_edit_def('security.layer4_inbox_items_v2(uuid,text,text[],bool
 
 -- post-checks, as a signed-in Platform Admin, on real items, each decision rolled back; the times are reported (cf.diag)
 do $$
-declare v_admin uuid; v_o text := ''; s jsonb; r jsonb; it jsonb; pr text[]; t0 timestamptz; ms int; v_hs int; v_val text;
+declare v_admin uuid; v_o text := ''; v_ks text[]; s jsonb; r jsonb; it jsonb; pr text[]; t0 timestamptz; ms int; v_hs int; v_val text;
 begin
   select ur.user_id into v_admin from security.user_roles ur join security.roles ro on ro.code = ur.role_code
    where ro.status = 'active' and ro.rank >= 6 and (ur.expires_at is null or ur.expires_at > now()) order by ur.user_id limit 1;
@@ -110,12 +110,12 @@ begin
     end;
   end loop;
   -- the keyed read finds exactly what the full read finds, for a page of items of every kind
-  if exists (with k as (select array_agg(x.kind || ':' || x.ref) ks from (select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, null, false) i order by i.kind, i.created_at limit 400) x)
-             (select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, (select ks from k), false) i
-              except select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, null, false) i where i.kind || ':' || i.ref = any ((select ks from k)))
+  select array_agg(x.kind || ':' || x.ref) into v_ks from (select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, null, false) i order by i.kind, i.created_at limit 400) x;
+  if exists ((select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, v_ks, false) i
+              except select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, null, false) i where i.kind || ':' || i.ref = any (v_ks))
              union all
-             (select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, null, false) i where i.kind || ':' || i.ref = any ((select ks from k))
-              except select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, (select ks from k), false) i)) then
+             (select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, null, false) i where i.kind || ':' || i.ref = any (v_ks)
+              except select i.kind, i.ref from security.layer4_inbox_items_v2(null, null, v_ks, false) i)) then
     raise exception 'post-check: the keyed read differs from the full read'; end if;
   t0 := clock_timestamp();
   perform 1 from security.layer4_inbox_items_v2(null, 'course_link', array['course_link:' || (select r2.id::text from pipeline.layer4_review_items r2 where r2.status = 'pending' limit 1)], true);
