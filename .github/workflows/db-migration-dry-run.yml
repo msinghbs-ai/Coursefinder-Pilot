@@ -65,6 +65,16 @@ jobs:
           total=$(curl -sS -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data '{"query":"select count(*)::int n, max(version) m from supabase_migrations.schema_migrations","read_only":true}' "https://api.supabase.com/v1/projects/$REF/database/query")
           echo "exported $n rows; live: $total" | tee -a "$GITHUB_STEP_SUMMARY"
           wc -l out/history.jsonl; gzip -9 -k out/history.jsonl; md5sum out/history.jsonl* | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Reconcile with the repository, scan, and push the files to a branch when clean
+        run: |
+          set -euo pipefail
+          node scripts/migration-history-sync.mjs out/history.jsonl --scan | tee -a "$GITHUB_STEP_SUMMARY"
+          node scripts/migration-history-sync.mjs out/history.jsonl --scan --write | tail -1
+          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          b="db-history-sync/${{ github.run_id }}"; git checkout -q -b "$b"
+          git add -A supabase/migrations-archive supabase/migration-history
+          git commit -q -m "Production migration history written to the repository (run ${{ github.run_id }})"
+          git push -q origin "$b"; echo "branch $b" | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
           name: migration-history
