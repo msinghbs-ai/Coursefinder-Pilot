@@ -115,19 +115,21 @@ begin
   -- s799: pages already re-identified under this rule are dropped first (index), so the page check runs only on what is still due
   select coalesce(jsonb_agg(x), '[]'::jsonb) into v from (
     with due as materialized (
-      select q.course_id from pipeline.coverage_course_pages q
+      select q.course_id, q.url from pipeline.coverage_course_pages q
+        join catalogue.courses co on co.id = q.course_id and co.lifecycle_status = 'active'
        where q.status = 'mismatch' and q.read_status = 'identity_mismatch' and coalesce(q.basis, '') <> 'manual'
-         and not exists (select 1 from pipeline.coverage_reidentify_done d where d.course_id = q.course_id and d.evidence_id = q.evidence_id and d.rule = p_rule))
+         and not exists (select 1 from pipeline.coverage_reidentify_done d where d.course_id = q.course_id and d.evidence_id = q.evidence_id and d.rule = p_rule)
+         and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = q.provider_id)),  -- v2.15.237: paused while the provider is unpublished or archived
+    ok as materialized (
+      select due.course_id from due where not security.page_refused_v1(due.course_id, due.url))  /* 24 Oct 2026; S1: a rejected or blocked page is never re-bound */
     select p.course_id, p.evidence_id, e.storage_path, coalesce(nullif(p.candidates->>'final_url', ''), p.url) url, co.canonical_title title, co.course_code code,
            security.coverage_country(p.provider_id) country
-      from due
-      join pipeline.coverage_course_pages p on p.course_id = due.course_id
+      from ok
+      join pipeline.coverage_course_pages p on p.course_id = ok.course_id
       join pipeline.evidence_artifacts e on e.id = p.evidence_id
       join catalogue.courses co on co.id = p.course_id and co.lifecycle_status = 'active'
      where p.status = 'mismatch' and p.read_status = 'identity_mismatch' and coalesce(p.basis, '') <> 'manual' and e.storage_path is not null
-       and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = p.provider_id)  -- v2.15.237: paused while the provider is unpublished or archived
        and not exists (select 1 from pipeline.coverage_reidentify_done d where d.course_id = p.course_id and d.evidence_id = p.evidence_id and d.rule = p_rule)
-          and not security.page_refused_v1(p.course_id, p.url) /* 24 Oct 2026; S1: a rejected or blocked page is never re-bound */
      order by p.course_id limit greatest(1, least(coalesce(p_limit, 100), 400)) for update of p skip locked) x;  -- fixed: claim bounds
   return v;
 end $function$;
@@ -140,24 +142,19 @@ begin
   begin
     t := clock_timestamp(); v := public.svc_boost_extract_claim(security.pipeline_num_v1('batch.boost_extract', 40)::int); ms1 := round(extract(epoch from clock_timestamp() - t) * 1000); n1 := jsonb_array_length(v->'items');
     t := clock_timestamp(); v := public.svc_boost_extract_claim(40); ms1b := round(extract(epoch from clock_timestamp() - t) * 1000);
+    perform public.svc_coverage_reidentify_next(100, v_rule);   -- warm
     t := clock_timestamp(); v := public.svc_coverage_reidentify_next(100, v_rule); ms2 := round(extract(epoch from clock_timestamp() - t) * 1000); n2 := jsonb_array_length(v);
     raise exception 'cf-s799-undo';
   exception when raise_exception then if sqlerrm <> 'cf-s799-undo' then raise; end if;
   end;
-  v_o := format('boost claim %s ms (%s items), again %s ms | reidentify(100, %s) %s ms (%s rows)', ms1, n1, ms1b, v_rule, ms2, n2);
+  v_o := format('boost claim %s ms (%s items, first call), warm %s ms | reidentify(100, %s) warm %s ms (%s rows)', ms1, n1, ms1b, v_rule, ms2, n2);
   declare l text; begin
-  for l in execute format($q$explain (analyze, costs off) with due as materialized (
-      select q.course_id from pipeline.coverage_course_pages q
-       where q.status = 'mismatch' and q.read_status = 'identity_mismatch' and coalesce(q.basis, '') <> 'manual'
-         and not exists (select 1 from pipeline.coverage_reidentify_done d where d.course_id = q.course_id and d.evidence_id = q.evidence_id and d.rule = %L))
-    select p.course_id, security.coverage_country(p.provider_id) country
-      from due join pipeline.coverage_course_pages p on p.course_id = due.course_id
-      join pipeline.evidence_artifacts e on e.id = p.evidence_id
-      join catalogue.courses co on co.id = p.course_id and co.lifecycle_status = 'active'
-     where p.status = 'mismatch' and p.read_status = 'identity_mismatch' and coalesce(p.basis, '') <> 'manual' and e.storage_path is not null
-       and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = p.provider_id)
-       and not exists (select 1 from pipeline.coverage_reidentify_done d where d.course_id = p.course_id and d.evidence_id = p.evidence_id and d.rule = %L)
-       and not security.page_refused_v1(p.course_id, p.url)
-     order by p.course_id limit 100 for update of p skip locked$q$, v_rule, v_rule) loop v_o := v_o || ' | ' || l; end loop; end;
+  for l in execute $q$explain (analyze, costs off) with lp as (select distinct on (e.entity_id) e.entity_id, e.id, e.content_hash from pipeline.evidence_artifacts e
+     where e.evidence_type = 'provider_course_page_text' and e.storage_path is not null order by e.entity_id, e.captured_at desc nulls last)
+    select c.id from lp join catalogue.courses c on c.id = lp.entity_id
+     where c.lifecycle_status = 'active' and c.study_load is null
+       and not exists (select 1 from pipeline.boost_extract_items x where x.lane = 'study_load' and x.entity_id = c.id and x.evidence_id = lp.id and (x.state in ('verified', 'rejected', 'failed') or (x.state = 'claimed' and x.claimed_at > now() - interval '30 minutes')))
+       and not exists (select 1 from pipeline.evidence_artifacts h where h.content_hash = lp.content_hash and h.evidence_type = 'provider_course_page_text' and h.storage_path is not null and h.content_hash is not null and h.entity_id <> c.id)$q$
+  loop v_o := v_o || ' | ' || l; end loop; end;
   perform set_config('cf.diag', v_o, true);
 end $$;
