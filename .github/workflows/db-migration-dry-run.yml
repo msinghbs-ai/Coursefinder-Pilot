@@ -44,19 +44,29 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Dry run each new migration
+      - name: Export the production migration history (read only)
         run: |
           set -euo pipefail
-          if [ -z "$REF" ]; then echo "::error::Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            if [ "$CONFIRM" != "$REF" ]; then echo "::error::Refused: the typed project ref does not match the Pilot"; exit 1; fi
-            IFS=',' read -ra LIST <<< "$FILES_INPUT"
-          else
-            PROBE=""
-            mapfile -t LIST < <(git diff --no-renames --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA" -- 'supabase/migrations/*.sql' | xargs -r -n1 basename | sort)
-          fi
-          if [ "${#LIST[@]}" -eq 0 ]; then echo "No new migrations." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
-          for raw in "${LIST[@]}"; do
-            f="$(echo "$raw" | xargs)"
-            PROBE="$PROBE" scripts/ci/dry-run-migration.sh "$f"
+          if [ "$CONFIRM" != "$REF" ]; then echo "::error::Refused: the typed project ref does not match the Pilot"; exit 1; fi
+          mkdir -p out/files
+          last=''
+          n=0
+          while :; do
+            q="select coalesce(json_agg(json_build_object('version',version,'name',name,'statements',statements,'created_by',created_by) order by version),'[]'::json) as rows from (select * from supabase_migrations.schema_migrations where version > '$last' order by version limit 120) s"
+            jq -n --arg q "$q" '{query:$q, read_only:true}' > q.json
+            code=$(curl -sS -o r.json -w '%{http_code}' -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @q.json "https://api.supabase.com/v1/projects/$REF/database/query")
+            if [ "$code" != "200" ] && [ "$code" != "201" ]; then echo "::error::HTTP $code $(head -c 400 r.json)"; exit 1; fi
+            jq -c '.[0].rows[]' r.json >> out/history.jsonl || true
+            c=$(jq '.[0].rows | length' r.json)
+            [ "$c" -gt 0 ] || break
+            last=$(jq -r '.[0].rows[-1].version' r.json)
+            n=$((n+c)); echo "page to $last ($n rows)"
           done
+          total=$(curl -sS -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data '{"query":"select count(*)::int n, max(version) m from supabase_migrations.schema_migrations","read_only":true}' "https://api.supabase.com/v1/projects/$REF/database/query")
+          echo "exported $n rows; live: $total" | tee -a "$GITHUB_STEP_SUMMARY"
+          wc -l out/history.jsonl; gzip -9 -k out/history.jsonl; md5sum out/history.jsonl* | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: migration-history
+          path: out/history.jsonl.gz
+          retention-days: 3
