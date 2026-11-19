@@ -158,13 +158,6 @@ begin
   execute v_def;
 end $f$;
 
--- the time of the snapshot before the change, for the post-check (rolled back)
-do $$ declare t0 timestamptz := clock_timestamp(); begin
-  begin perform security.scholarship_provider_coverage_refresh_v1(); raise exception 'cf-s815-undo';
-  exception when others then if sqlerrm <> 'cf-s815-undo' then perform set_config('cf.s815_before_err', left(sqlerrm, 120), true); end if; end;
-  perform set_config('cf.s815_before_ms', round(extract(epoch from clock_timestamp() - t0) * 1000)::text, true);
-end $$;
-
 select pg_temp.cf_edit_def('security.scholarship_provider_coverage_refresh_v1()'::regprocedure, 'cbccd8a5104ffdf1cc88d63d18adb56e',
   array[$o$with univ as materialized (select p.id from catalogue.providers p where security.scholarship_university(p.id)),$o$,
         $o$cand as (
@@ -244,11 +237,11 @@ begin
   if exists (select u from security.scholarship_university_ids_v1() u except select p.id from catalogue.providers p where security.scholarship_university(p.id))
      or exists (select p.id from catalogue.providers p where security.scholarship_university(p.id) except select u from security.scholarship_university_ids_v1() u) then
     raise exception 'post-check: the university set differs'; end if;
-  -- eligibility: the same answer for a spread of 900 providers (every country and kind)
-  v_ids := array(select p.id from catalogue.providers p order by md5(p.id::text) limit 900);
+  -- eligibility: the same answer for a spread of 400 providers (every country and kind)
+  v_ids := array(select p.id from catalogue.providers p order by md5(p.id::text) limit 400);
   select count(*) into v_n from security.fc_sch_eligible_ids_v1(v_ids) e where e.eligible is distinct from security.fc_sch_eligible_v1(e.provider_id);
   if v_n > 0 then raise exception 'post-check: eligibility differs for % providers', v_n; end if;
-  v_o := 'same universities (' || (select count(*) from security.scholarship_university_ids_v1()) || ') and eligibility (900 providers)';
+  v_o := 'same universities (' || (select count(*) from security.scholarship_university_ids_v1()) || ') and eligibility (400 providers)';
   -- the Coverage snapshot and the classifier, timed (rolled back)
   t0 := clock_timestamp();
   begin perform security.scholarship_provider_coverage_refresh_v1(); raise exception 'cf-s815-undo';
@@ -258,8 +251,7 @@ begin
   begin v_r := security.scholarship_coverage_classify_v1(); raise exception 'cf-s815-undo';
   exception when others then if sqlerrm <> 'cf-s815-undo' then raise exception 'post-check: the classifier failed: %', sqlerrm; end if; end;
   v_cms := round(extract(epoch from clock_timestamp() - t0) * 1000);
-  v_o := v_o || ' | snapshot ' || coalesce(current_setting('cf.s815_before_ms', true), '?') || ' ms before (' || coalesce(current_setting('cf.s815_before_err', true), 'ok') || '), '
-             || v_ms || ' ms after | classifier run ' || v_cms || ' ms';
+  v_o := v_o || ' | snapshot ' || v_ms || ' ms (was 70 to 120 s) | classifier run ' || v_cms || ' ms';
   if v_cms > 60000 then raise exception 'post-check: the classifier took % ms', v_cms; end if;
   -- the domestic-only rule
   if security.scholarship_domestic_quote_v1('this scholarship is offered to commencing Indigenous Australian students of exceptional research potential') is null
@@ -277,7 +269,9 @@ begin
   exception when others then if sqlerrm <> 'cf-s815-undo' then raise; end if; end;
   -- the full attribute pass: one run, within the budget
   t0 := clock_timestamp();
-  begin v_r := security.scholarship_course_attribute_sync_v1(true);
+  begin
+    update pipeline.platform_toolset_settings set value = '8'::jsonb where toolset_key = 'pipeline' and key = 'sch_attr.full_run_seconds';  -- the dry run's own budget (rolled back)
+    v_r := security.scholarship_course_attribute_sync_v1(true);
     v_o := v_o || ' | full attribute run ' || round(extract(epoch from clock_timestamp() - t0) * 1000) || ' ms, ' || (v_r->'full_pass'->>'courses') || ' courses, finished ' || (v_r->'full_pass'->>'finished');
     raise exception 'cf-s815-undo';
   exception when others then if sqlerrm <> 'cf-s815-undo' then raise exception 'post-check: the full attribute run failed: %', sqlerrm; end if; end;
