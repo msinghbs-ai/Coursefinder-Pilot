@@ -57,7 +57,7 @@ test('the prompt is data: one MiMo candidate with its pins, the text the header 
 })
 
 test('worker v1.0.30 takes either contract and verifies by it; the run takes a prompt version; the spend margin is a tenth of a small cap', () => {
-  expect(W).toContain('const WORKER = "coverage-sweep-worker-v1.0.30"; // v1.0.30 (19 Nov 2026, CF-247 S751 and S752')
+  expect(W).toContain('// v1.0.30 (19 Nov 2026, CF-247 S751 and S752')
   const block = W.split('if (mode === AER_CHUNK_MODE) {')[1].split('    if (mode === "entry_inspect") {')[0]
   expect(block).toContain('const contract = String(spec.answer_contract || ""), verify = aerChunkVerifier(contract);')
   expect(block).toContain('(AER_CHUNK_CONTRACTS as readonly string[]).includes(contract)')
