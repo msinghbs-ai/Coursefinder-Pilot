@@ -85,6 +85,9 @@ begin
                                     ['aer_review', 'approve'], ['site_down', 'wait']] loop
     r := public.admin_layer4_inbox('items', jsonb_build_object('kind', pr[1], 'limit', 1)); it := r->'items'->0;
     continue when it is null;
+    -- warm once (rolled back), then time the decision (rolled back)
+    begin perform public.admin_layer4_inbox('decide', jsonb_build_object('kind', pr[1], 'ref', it->>'ref', 'choice', pr[2], 'reason', 'post-check warm (rolled back)')); raise exception 'cf-s813-undo';
+    exception when others then null; end;
     t0 := clock_timestamp();
     begin
       r := public.admin_layer4_inbox('decide', jsonb_build_object('kind', pr[1], 'ref', it->>'ref', 'choice', pr[2], 'reason', 'post-check (rolled back)'));
