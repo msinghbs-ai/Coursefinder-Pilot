@@ -7,6 +7,7 @@
 // canonical fields only, never a manually locked one). A fact the model does not prove is dropped, never guessed: unknown is not false.
 // Pure functions only (no network): tests/uat/cf-247-f-sch-04-extract-v3-contract.spec.mjs runs them.
 
+import { stripHiddenContent } from "./untrusted.ts";
 export const SCH_EXTRACT_CONTRACT = "sch-extract-v3";
 
 const strOrNull = { type: ["string", "null"] }, numOrNull = { type: ["number", "null"] };
@@ -67,12 +68,15 @@ const V2_PROPERTIES = {
 };
 const V2_REQUIRED = ["is_scholarship", "single_scholarship", "not_scholarship_reason", "name", "name_quote", "audience", "audience_quote", "offered", "offered_quote", "value", "levels", "levels_quote", "courses", "open_date", "close_date", "dates_quote"];
 
+// s810: hidden markup is removed and the source fence cannot be forged from inside the text
+const fenceBody = (t: string) => stripHiddenContent(t).replace(/<<<+/g, "< < <").replace(/>>>+/g, "> > >");
+
 export type BundlePart = { id: "page" | "linked"; url: string; title?: string; h1?: string; text: string };
 
 // The request: the governed prompt (system), and the evidence bundle as clearly fenced untrusted data (user). Source text never gives instructions.
 export function scholarshipExtractRequest(model: string, prompt: string, p: { provider: string; country: string | null; currency: string | null; scholarship?: string | null; parts: BundlePart[] }, maxTokens = 3000) {
   const parts = p.parts.filter((x) => x && x.text);
-  const body = parts.map((x) => `<<<SOURCE ${x.id} | ${x.url}${x.title ? ` | title: ${x.title}` : ""}${x.h1 ? ` | heading: ${x.h1}` : ""}>>>\n${x.text}\n<<<END SOURCE ${x.id}>>>`).join("\n\n");
+  const body = parts.map((x) => `<<<SOURCE ${x.id} | ${x.url}${x.title ? ` | title: ${x.title}` : ""}${x.h1 ? ` | heading: ${x.h1}` : ""}>>>\n${fenceBody(x.text)}\n<<<END SOURCE ${x.id}>>>`).join("\n\n");
   return {
     // v0.77.1: the same pinned model, served by its fastest provider (provider-level routing only; the model never changes): the version 3 answer is
     // long, and 125 of the first 231 reads on the default provider stopped at about 60 s with no answer

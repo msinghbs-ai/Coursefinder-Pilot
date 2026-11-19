@@ -8,7 +8,7 @@
 -- with another course" per candidate through the hash index; same rule, same output, same lease, same lock, same lanes and weights. The reidentify
 -- claim is unchanged; its index now matches its filter and order.
 -- The boost claim also keeps the s797 rule: a B7 rule value (source register, no evidence id) is still open to a reading.
--- Parity before writing (read live 20 Nov 2026 05:45 AEDT): head 20261120010000; merged after s797 (20261120093000), and above another lane's 20261120090000 (Pilot #1403), whose edit of the same function it keeps.
+-- Parity before writing (read live 20 Nov 2026 05:45 AEDT): head 20261120010000; merged after s797 (20261120093000), and above another lane's 20261120100000 (Pilot #1403), whose edit of the same function it keeps.
 -- G3: no consumer object. No spend (claims only hand out work that was already due).
 -- Replaces: the per-country course walk and content-hash grouping in security.boost_extract_claim_v1; the page check before the done check in
 --   public.svc_coverage_reidentify_next.

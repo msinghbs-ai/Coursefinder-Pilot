@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin guide
 
-**Version:** 1.0 (reviewed for platform release v2.16.35)  
+**Version:** 1.1 (reviewed for platform release v2.16.61)  
 **Role:** Platform Admin (rank 6)  
 **Change control:** CF-247  
 **Source:** generated from the Pilot `src/guide/roleGuides.js` and the menu; never edited by hand.
@@ -14,6 +14,7 @@ Own the platform: approve and publish, activate sources, set limits and settings
 - Everything every other role can.
 - Approve and publish destination data (Bulk Approve Drafts, Publish edition), activate Layer 1 sources after a dry run, approve central pages and fee schedules.
 - Change settings, models, services and limits; manage users and roles; edit the Links & Email Templates and the email delivery provider.
+- Everything a Curator does with completeness and provenance. The Missing field filter for Providers is the `missing` argument of the providers read (one list of fields); nothing in it writes to the catalogue.
 
 ## 3. What you cannot do
 
@@ -70,3 +71,4 @@ Changes to the consumer API need your recorded approval (G3); drops and deletes 
 | Version | Date | Release | Change |
 |---|---|---|---|
 | 1.0 | 18 Nov 2026 | v2.16.35 | First issue. |
+| 1.1 | 20 Nov 2026 | v2.16.61 | Completeness and provenance workflows added. |

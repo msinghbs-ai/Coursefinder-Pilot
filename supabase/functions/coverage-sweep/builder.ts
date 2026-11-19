@@ -4,6 +4,7 @@
 // proposal only fills the adapter form: saving, applying and admission stay Platform Admin actions.
 import { htmlToText, titleOf } from "./extract.ts";
 import { applyAdapter, inspectPage, pageJson, type Adapter } from "./adapters.ts";
+import { fenceUntrusted } from "./untrusted.ts";
 
 const clean = (s: string) => String(s || "").replace(/\s+/g, " ").trim();
 
@@ -80,7 +81,7 @@ export function builderRequest(model: string, draft: any) {
     response_format: { type: "json_schema", json_schema: { name: "adapter_proposal", strict: true, schema: { type: "object", additionalProperties: false, required: ["reason", "json_source", "json_paths", "patterns", "pick", "notes"],
       properties: { reason: { type: "string" }, json_source: { type: "string" }, json_paths: pairs("json_paths", "path"), patterns: pairs("patterns", "pattern"), pick: pairs("pick", "how"), notes: { type: "string" } } } } },
     messages: [{ role: "system", content: BUILDER_SYSTEM },
-      { role: "user", content: `University: ${draft.provider_name}\n\nPLATFORM ADMIN MARKS:\n${marks || "(none)"}\n\nPLATFORM ADMIN COMMENTS:\n${draft.comments || "(none)"}\n\n${samples}` }],
+      { role: "user", content: `University: ${draft.provider_name}\n\nPLATFORM ADMIN MARKS:\n${marks || "(none)"}\n\nPLATFORM ADMIN COMMENTS:\n${draft.comments || "(none)"}\n\n${fenceUntrusted("sample pages", samples)}` }],
   };
 }
 
