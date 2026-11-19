@@ -19666,6 +19666,306 @@
    "is_nullable": true,
    "description": "The contract the database function answered with (for example website-search-v2), beside api_version.",
    "req_ids": []
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.study_load_basis",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Where the study load comes from (REQ-52): provider_page (read from the provider's page), register (stated by a register), register_rule (full_time from the CRICOS registration: international students on a student visa must study full time; replaced by any reading) or manual (a person decided). Null when no study load is held.",
+   "allowed_values": [
+    "provider_page",
+    "register",
+    "register_rule",
+    "manual"
+   ],
+   "req_ids": [
+    "REQ-52"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditation_crown",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Business school accreditation label (REQ-57): triple_crown when AACSB, EQUIS and AMBA are all held now, double_crown for any two of them, null otherwise.",
+   "allowed_values": [
+    "double_crown",
+    "triple_crown"
+   ],
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.english_requirements[].score_grade",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The overall grade the provider states for the test, as held (for example an OET letter grade A, B, C+ or C); null when no grade is held. Never derived from a number.",
+   "req_ids": [
+    "REQ-34"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "course",
+   "field_path": "item.english_requirements[].subtest_grades",
+   "data_type": "object",
+   "is_nullable": true,
+   "description": "Grades the provider states for each sub-test, as held (for example OET writing B); null when none is held.",
+   "req_ids": [
+    "REQ-34"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].study_load_basis",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Where the study load comes from (REQ-52): provider_page (read from the provider's page), register (stated by a register), register_rule (full_time from the CRICOS registration: international students on a student visa must study full time; replaced by any reading) or manual (a person decided). Null when no study load is held.",
+   "allowed_values": [
+    "provider_page",
+    "register",
+    "register_rule",
+    "manual"
+   ],
+   "req_ids": [
+    "REQ-52"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditation_crown",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Business school accreditation label (REQ-57): triple_crown when AACSB, EQUIS and AMBA are all held now, double_crown for any two of them, null otherwise.",
+   "allowed_values": [
+    "double_crown",
+    "triple_crown"
+   ],
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].english_requirements[].score_grade",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The overall grade the provider states for the test, as held (for example an OET letter grade A, B, C+ or C); null when no grade is held. Never derived from a number.",
+   "req_ids": [
+    "REQ-34"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "search",
+   "field_path": "items[].english_requirements[].subtest_grades",
+   "data_type": "object",
+   "is_nullable": true,
+   "description": "Grades the provider states for each sub-test, as held (for example OET writing B); null when none is held.",
+   "req_ids": [
+    "REQ-34"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.study_load_basis",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Where the study load comes from (REQ-52): provider_page (read from the provider's page), register (stated by a register), register_rule (full_time from the CRICOS registration: international students on a student visa must study full time; replaced by any reading) or manual (a person decided). Null when no study load is held.",
+   "allowed_values": [
+    "provider_page",
+    "register",
+    "register_rule",
+    "manual"
+   ],
+   "req_ids": [
+    "REQ-52"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.provider.accreditation_crown",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Business school accreditation label (REQ-57): triple_crown when AACSB, EQUIS and AMBA are all held now, double_crown for any two of them, null otherwise.",
+   "allowed_values": [
+    "double_crown",
+    "triple_crown"
+   ],
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.english_requirements[].score_grade",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The overall grade the provider states for the test, as held (for example an OET letter grade A, B, C+ or C); null when no grade is held. Never derived from a number.",
+   "req_ids": [
+    "REQ-34"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "course",
+   "field_path": "item.english_requirements[].subtest_grades",
+   "data_type": "object",
+   "is_nullable": true,
+   "description": "Grades the provider states for each sub-test, as held (for example OET writing B); null when none is held.",
+   "req_ids": [
+    "REQ-34"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].study_load_basis",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Where the study load comes from (REQ-52): provider_page (read from the provider's page), register (stated by a register), register_rule (full_time from the CRICOS registration: international students on a student visa must study full time; replaced by any reading) or manual (a person decided). Null when no study load is held.",
+   "allowed_values": [
+    "provider_page",
+    "register",
+    "register_rule",
+    "manual"
+   ],
+   "req_ids": [
+    "REQ-52"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].provider.accreditation_crown",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Business school accreditation label (REQ-57): triple_crown when AACSB, EQUIS and AMBA are all held now, double_crown for any two of them, null otherwise.",
+   "allowed_values": [
+    "double_crown",
+    "triple_crown"
+   ],
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].english_requirements[].score_grade",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The overall grade the provider states for the test, as held (for example an OET letter grade A, B, C+ or C); null when no grade is held. Never derived from a number.",
+   "req_ids": [
+    "REQ-34"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "courses",
+   "field_path": "items[].english_requirements[].subtest_grades",
+   "data_type": "object",
+   "is_nullable": true,
+   "description": "Grades the provider states for each sub-test, as held (for example OET writing B); null when none is held.",
+   "req_ids": [
+    "REQ-34"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].study_load_basis",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Where the study load comes from (REQ-52): provider_page (read from the provider's page), register (stated by a register), register_rule (full_time from the CRICOS registration: international students on a student visa must study full time; replaced by any reading) or manual (a person decided). Null when no study load is held.",
+   "allowed_values": [
+    "provider_page",
+    "register",
+    "register_rule",
+    "manual"
+   ],
+   "req_ids": [
+    "REQ-52"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].provider.accreditation_crown",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Business school accreditation label (REQ-57): triple_crown when AACSB, EQUIS and AMBA are all held now, double_crown for any two of them, null otherwise.",
+   "allowed_values": [
+    "double_crown",
+    "triple_crown"
+   ],
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].english_requirements[].score_grade",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "The overall grade the provider states for the test, as held (for example an OET letter grade A, B, C+ or C); null when no grade is held. Never derived from a number.",
+   "req_ids": [
+    "REQ-34"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "search",
+   "field_path": "items[].english_requirements[].subtest_grades",
+   "data_type": "object",
+   "is_nullable": true,
+   "description": "Grades the provider states for each sub-test, as held (for example OET writing B); null when none is held.",
+   "req_ids": [
+    "REQ-34"
+   ]
+  },
+  {
+   "api_surface": "website",
+   "endpoint": "provider",
+   "field_path": "item.accreditation_crown",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Business school accreditation label (REQ-57): triple_crown when AACSB, EQUIS and AMBA are all held now, double_crown for any two of them, null otherwise.",
+   "allowed_values": [
+    "double_crown",
+    "triple_crown"
+   ],
+   "req_ids": [
+    "REQ-57"
+   ]
+  },
+  {
+   "api_surface": "zoho",
+   "endpoint": "provider",
+   "field_path": "item.accreditation_crown",
+   "data_type": "string",
+   "is_nullable": true,
+   "description": "Business school accreditation label (REQ-57): triple_crown when AACSB, EQUIS and AMBA are all held now, double_crown for any two of them, null otherwise.",
+   "allowed_values": [
+    "double_crown",
+    "triple_crown"
+   ],
+   "req_ids": [
+    "REQ-57"
+   ]
   }
  ],
  "pending_fields": [
