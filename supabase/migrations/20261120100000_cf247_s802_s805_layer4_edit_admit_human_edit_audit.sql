@@ -188,10 +188,10 @@ comment on function security.layer4_description_decide_v1(uuid, text, boolean, t
 -- s804/s805: Human Edits & Periodic Audit, and the held university writing path (reached through public.admin_layer4_inbox)
 create or replace function security.human_edit_admin_v1(p_action text, p_args jsonb)
 returns jsonb language plpgsql security definer set search_path to '' as $f$
-declare v_uid uuid := auth.uid(); v_rank int := coalesce(security.current_role_rank(), 0); v_ids uuid[]; v_n int := 0; r record; v_out jsonb; v_scope text;
+declare v_uid uuid := auth.uid(); v_rank int := coalesce(security.current_role_rank(), 0); v_ids uuid[]; v_n int := 0; rw record; v_out jsonb; v_scope text;
         v_lim int := least(greatest(coalesce((p_args->>'limit')::int, 50), 1), 200);  -- fixed: page bound
         v_off int := greatest(coalesce((p_args->>'offset')::int, 0), 0); v_share numeric := security.pipeline_num_v1('governance.recheck_word_share', 0.6);
-        v_cand text; v_quotes text; v_detail jsonb; v_sup numeric; v_text text; v_check jsonb; v_new uuid; v_item uuid; v_read record;
+        v_cand text; v_quotes text; v_detail jsonb; v_sup numeric; v_text text; v_check jsonb; v_new uuid; v_item uuid; v_read record; v_gone int;
 begin
   if v_uid is null then raise exception 'authentication required' using errcode = '42501'; end if;
   if p_action = 'description_rules' then
@@ -210,10 +210,10 @@ begin
   elsif p_action = 'description_held_list' then
     -- universities in scope whose last reading was held and that have no description waiting, to open for writing by hand
     if v_rank < 4 then raise exception 'Pipeline Operator role required' using errcode = '42501'; end if;
-    select jsonb_build_object('items', coalesce(jsonb_agg(to_jsonb(z) order by z.name), '[]'::jsonb), 'total', count(*) over ()) into v_out from (
+    select jsonb_build_object('items', coalesce(jsonb_agg(to_jsonb(z) order by z.name), '[]'::jsonb), 'total', count(*)) into v_out from (
       select p.id provider_id, coalesce(p.display_name, p.canonical_name) name, k.iso_alpha2 country, h.rule, h.reason, h.source_url, h.updated_at
         from catalogue.providers p join ref.countries k on k.id = p.country_id
-        join lateral (select r.* from pipeline.provider_description_reads r where r.provider_id = p.id order by r.updated_at desc limit 1) h on h.state = 'held'
+        join lateral (select rd.* from pipeline.provider_description_reads rd where rd.provider_id = p.id order by rd.updated_at desc limit 1) h on h.state = 'held'
        where p.lifecycle_status = 'active' and p.publication_status = 'published' and nullif(btrim(p.description), '') is null
          and security.provider_description_scope_v1(p.id)
          and (nullif(btrim(p_args->>'q'), '') is null or coalesce(p.display_name, p.canonical_name) ilike '%' || btrim(p_args->>'q') || '%')
@@ -222,7 +222,7 @@ begin
     return coalesce(v_out, jsonb_build_object('items', '[]'::jsonb, 'total', 0));
   elsif p_action = 'description_open_held' then
     if v_rank < 4 then raise exception 'Pipeline Operator role required' using errcode = '42501'; end if;
-    select r.* into v_read from catalogue.providers p join lateral (select x.* from pipeline.provider_description_reads x where x.provider_id = p.id order by x.updated_at desc limit 1) r on true
+    select rd.* into v_read from catalogue.providers p join lateral (select x.* from pipeline.provider_description_reads x where x.provider_id = p.id order by x.updated_at desc limit 1) rd on true
      where p.id = (p_args->>'provider_id')::uuid and p.lifecycle_status = 'active' and p.publication_status = 'published' and security.provider_description_scope_v1(p.id);
     if v_read.id is null or v_read.state <> 'held' then raise exception 'this university has no held reading to write from' using errcode = '22023'; end if;
     if exists (select 1 from pipeline.layer4_review_items i where i.entity_id = v_read.provider_id and i.field_code = 'provider_description' and i.status = 'pending') then
@@ -298,17 +298,17 @@ begin
     get diagnostics v_n = row_count;
   elsif p_action = 'human_edits_recheck' then
     -- read-only: the latest machine candidate and the stored page quotes it was read from; no reading, no AI, no Firecrawl; nothing is overwritten
-    for r in select a.* from pipeline.human_edit_audit a where a.id = any (v_ids) loop
+    for rw in select a.* from pipeline.human_edit_audit a where a.id = any (v_ids) loop
       v_cand := null; v_quotes := null;
-      if r.entity_type = 'provider' then
+      if rw.entity_type = 'provider' then
         select x.proposal->>'description', (select string_agg(s->>'quote', ' ') from jsonb_array_elements(coalesce(x.proposal->'sentences', '[]'::jsonb)) s)
           into v_cand, v_quotes from pipeline.provider_description_reads x
-         where x.provider_id = r.entity_id and nullif(btrim(coalesce(x.proposal->>'description', '')), '') is not null order by x.updated_at desc limit 1;
+         where x.provider_id = rw.entity_id and nullif(btrim(coalesce(x.proposal->>'description', '')), '') is not null order by x.updated_at desc limit 1;
       end if;
       if v_cand is null then
         select i.proposed_value->>'description', (select string_agg(s->>'quote', ' ') from jsonb_array_elements(coalesce(i.proposed_value->'sentences', '[]'::jsonb)) s)
           into v_cand, v_quotes from pipeline.layer4_review_items i
-         where i.entity_id = r.entity_id and i.field_code in ('provider_description', 'course_description_first_read')
+         where i.entity_id = rw.entity_id and i.field_code in ('provider_description', 'course_description_first_read')
            and nullif(btrim(coalesce(i.proposed_value->>'description', '')), '') is not null order by i.created_at desc limit 1;
       end if;
       select coalesce(jsonb_agg(jsonb_build_object('sentence', s, 'share', sh, 'supported', sh >= v_share) order by n), '[]'::jsonb),
@@ -316,51 +316,51 @@ begin
         into v_detail, v_sup
         from (select s, n, (select case when count(*) = 0 then 0 else round(avg(case when position(w in lower(coalesce(v_quotes, ''))) > 0 then 1 else 0 end)::numeric, 2) end
                               from regexp_split_to_table(lower(s), '[^a-z0-9]+') w where length(w) >= 4) sh
-                from regexp_split_to_table(coalesce(r.edited_text, ''), '(?<=[.!?])\s+') with ordinality t(s, n) where btrim(s) <> '') z;
+                from regexp_split_to_table(coalesce(rw.edited_text, ''), '(?<=[.!?])\s+') with ordinality t(s, n) where btrim(s) <> '') z;
       update pipeline.human_edit_audit set recheck_status = 'rechecked', recheck_at = now(), recheck_requested_by = v_uid, recheck_candidate_text = v_cand,
              recheck_support_share = v_sup, recheck_detail = jsonb_build_object('sentences', v_detail, 'quotes_held', v_quotes is not null, 'word_share', v_share,
-                                                                                'candidate_differs', v_cand is distinct from r.edited_text)
-       where id = r.id;
+                                                                                'candidate_differs', v_cand is distinct from rw.edited_text)
+       where id = rw.id;
       v_n := v_n + 1;
     end loop;
   elsif p_action = 'human_edits_edit' then
     if cardinality(v_ids) <> 1 then raise exception 'edit one description at a time' using errcode = '22023'; end if;
-    select * into r from pipeline.human_edit_audit where id = v_ids[1];
+    select * into rw from pipeline.human_edit_audit where id = v_ids[1];
     v_text := nullif(btrim(coalesce(p_args->>'text', '')), '');
     if length(btrim(coalesce(p_args->>'reason', ''))) < 5 then raise exception 'a reason is needed' using errcode = '22023'; end if;
-    v_check := security.description_text_check_v1(r.entity_type, v_text);
+    v_check := security.description_text_check_v1(rw.entity_type, v_text);
     if not (v_check->>'ok')::boolean then raise exception 'the description does not pass the checks: %', (select string_agg(x, '; ') from jsonb_array_elements_text(v_check->'problems') x) using errcode = '22023'; end if;
     perform set_config('cf.manual_edit', 'on', true);
-    if r.entity_type = 'provider' then update catalogue.providers set description = v_text, updated_at = now() where id = r.entity_id;
-    else update catalogue.courses set description = v_text, updated_at = now() where id = r.entity_id;
-      insert into search.course_refresh_requests (course_id, requested_at, requested_by) values (r.entity_id, now(), 'human_edit'); end if;
-    insert into pipeline.manual_locks (entity, entity_id, field, mode, set_by) values (r.entity_type, r.entity_id, 'description', 'value', v_uid)
+    if rw.entity_type = 'provider' then update catalogue.providers set description = v_text, updated_at = now() where id = rw.entity_id;
+    else update catalogue.courses set description = v_text, updated_at = now() where id = rw.entity_id;
+      insert into search.course_refresh_requests (course_id, requested_at, requested_by) values (rw.entity_id, now(), 'human_edit'); end if;
+    insert into pipeline.manual_locks (entity, entity_id, field, mode, set_by) values (rw.entity_type, rw.entity_id, 'description', 'value', v_uid)
     on conflict (entity, entity_id, field) do update set mode = 'value', set_by = excluded.set_by, set_at = now();
     perform set_config('cf.manual_edit', '', true);
-    update pipeline.human_edit_audit set recheck_status = 'superseded' where id = r.id;
-    v_new := security.human_edit_audit_record_v1(v_uid, r.entity_type, r.entity_id, r.review_item_id, 'human_input', true, r.edited_text, v_text, true, p_args->>'reason', r.id);
+    update pipeline.human_edit_audit set recheck_status = 'superseded' where id = rw.id;
+    v_new := security.human_edit_audit_record_v1(v_uid, rw.entity_type, rw.entity_id, rw.review_item_id, 'human_input', true, rw.edited_text, v_text, true, p_args->>'reason', rw.id);
     v_n := 1;
   elsif p_action = 'human_edits_release' then
-    for r in select a.* from pipeline.human_edit_audit a where a.id = any (v_ids) loop
-      delete from pipeline.manual_locks where entity = r.entity_type and entity_id = r.entity_id and field = 'description';
-      update pipeline.human_edit_audit set recheck_status = 'lock_released', lock_released_by = v_uid, lock_released_at = now() where id = r.id;
+    for rw in select a.* from pipeline.human_edit_audit a where a.id = any (v_ids) loop
+      with d as (delete from pipeline.manual_locks where entity = rw.entity_type and entity_id = rw.entity_id and field = 'description' returning 1) select count(*) into v_gone from d;
+      update pipeline.human_edit_audit set recheck_status = 'lock_released', lock_released_by = v_uid, lock_released_at = now() where id = rw.id;
       v_n := v_n + 1;
     end loop;
   elsif p_action = 'human_edits_accept_machine' then
     if cardinality(v_ids) <> 1 then raise exception 'accept one machine text at a time' using errcode = '22023'; end if;
-    select * into r from pipeline.human_edit_audit where id = v_ids[1];
-    v_text := nullif(btrim(coalesce(r.recheck_candidate_text, '')), '');
-    if r.recheck_status <> 'rechecked' or v_text is null then raise exception 'Re-Verify by Machine first; there is no machine text to accept' using errcode = '22023'; end if;
-    v_check := security.description_text_check_v1(r.entity_type, v_text);
+    select * into rw from pipeline.human_edit_audit where id = v_ids[1];
+    v_text := nullif(btrim(coalesce(rw.recheck_candidate_text, '')), '');
+    if rw.recheck_status <> 'rechecked' or v_text is null then raise exception 'Re-Verify by Machine first; there is no machine text to accept' using errcode = '22023'; end if;
+    v_check := security.description_text_check_v1(rw.entity_type, v_text);
     if not (v_check->>'ok')::boolean then raise exception 'the machine text does not pass the checks: %', (select string_agg(x, '; ') from jsonb_array_elements_text(v_check->'problems') x) using errcode = '22023'; end if;
     perform set_config('cf.manual_edit', 'on', true);
-    if r.entity_type = 'provider' then update catalogue.providers set description = v_text, updated_at = now() where id = r.entity_id;
-    else update catalogue.courses set description = v_text, updated_at = now() where id = r.entity_id;
-      insert into search.course_refresh_requests (course_id, requested_at, requested_by) values (r.entity_id, now(), 'human_edit'); end if;
-    delete from pipeline.manual_locks where entity = r.entity_type and entity_id = r.entity_id and field = 'description';
+    if rw.entity_type = 'provider' then update catalogue.providers set description = v_text, updated_at = now() where id = rw.entity_id;
+    else update catalogue.courses set description = v_text, updated_at = now() where id = rw.entity_id;
+      insert into search.course_refresh_requests (course_id, requested_at, requested_by) values (rw.entity_id, now(), 'human_edit'); end if;
+    with d as (delete from pipeline.manual_locks where entity = rw.entity_type and entity_id = rw.entity_id and field = 'description' returning 1) select count(*) into v_gone from d;
     perform set_config('cf.manual_edit', '', true);
-    update pipeline.human_edit_audit set recheck_status = 'machine_accepted', lock_released_by = v_uid, lock_released_at = now() where id = r.id;
-    v_new := security.human_edit_audit_record_v1(v_uid, r.entity_type, r.entity_id, r.review_item_id, 'machine_human_approved', false, r.edited_text, v_text, false, 'machine text accepted after re-verify', r.id);
+    update pipeline.human_edit_audit set recheck_status = 'machine_accepted', lock_released_by = v_uid, lock_released_at = now() where id = rw.id;
+    v_new := security.human_edit_audit_record_v1(v_uid, rw.entity_type, rw.entity_id, rw.review_item_id, 'machine_human_approved', false, rw.edited_text, v_text, false, 'machine text accepted after re-verify', rw.id);
     v_n := 1;
   else
     raise exception 'unknown action %', p_action;
