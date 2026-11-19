@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.475 — 19 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.53** (Platform Admin 19 Nov 2026 16:18, chat S1-RM-Design, s766 and s767). Two migrations. `20261119172000` (s766): table `pipeline.provider_host_owners` (host, owner, reason) with owners for Victoria University (CRICOS 00124K), RMIT University and Western Sydney University; `security.provider_description_identity_v1` honours a recorded owner (identical when none is recorded); trading-name aliases "Torrens University" and "Moore Theological College" in `catalogue.provider_aliases`; the reader's identity names (`public.svc_provider_description_next`) include trading names; one stored-page read queued for each of those two providers. `20261119173000` (s767): `public.admin_layer4_grid_read_v1` takes optional `country` and `provider_type`. `src/Layer4Grid.jsx`: Country and Provider type pills. Both migrations are md5-guarded and passed the rolled-back live dry run. Not the consumer API (75 functions, 48 tables). Specs s766 and s767.
+
 ## 0.1.473 — 19 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.51** (Platform Admin 19 Nov 2026 13:04, chat S1-Build, s769; ref 8XEY7B). Migration `20261119130000` (md5-guarded `create or replace` of `security.scholarship_listing_match_v1` and `public.admin_scholarship_coverage_read`; no table, column, index or job): the matcher works out each listed item's and each record's key, words and addresses once (materialised) instead of for every pair, and the coverage read returns at most 50 providers a page. `src/ScholarshipCoverage.jsx` pages through them (Previous, Next, Showing x–y of N). Spec s769.
