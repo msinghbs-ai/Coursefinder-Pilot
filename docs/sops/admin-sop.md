@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.75; reviewed-release=2.16.57; source-commit=03503e7165e8+local; content-sha256=0145df18f90b37afe02a6f77e697f9ef41672039869d24fb526d48da6724c74e -->
+<!-- sop-export: id=admin-sop; version=2.76; reviewed-release=2.16.58; source-commit=9e0a8720c192+local; content-sha256=54f52964f1c2beea2e84da32dd9d4d9213d5e0822dcb5614850c8081e0e1d860 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.75 (reviewed for platform release v2.16.57)  
+**Version:** 2.76 (reviewed for platform release v2.16.58)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -140,6 +140,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.76 | 19 Nov 2026 | v2.16.58 | Layer 4 Review › Grid: the Country and Provider type pills show the drawn flag, the country code and how many items wait with that pill chosen. The item drawer shows the proposed value, the verbatim quote with its source link and the exact machine hold reason side by side, with the kind's own decisions beneath; Previous and Next, or J and K, move to the next or previous item and never decide anything. |
 | 2.75 | 19 Nov 2026 | v2.16.53 | Layer 4 › Inbox › Grid: Country pills (All, Australia, New Zealand, Canada) and Provider type pills (All, University, VET / College, School, HEI) narrow the rows, the count and Export CSV. They are not saved in a view. |
 | 2.74 | 19 Nov 2026 | v2.16.50 | Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. The machine rule now admits a description whose own page proves the course (CRICOS or NZQA code, or exact title). |
 | 2.73 | 19 Nov 2026 | v2.16.49 | Course detail › Around this course: the Entry requirements card no longer carries a scholarship line. Scholarships are listed once, in the Scholarships section (three, then Show all (N) scholarships), for every role. |

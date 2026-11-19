@@ -123,3 +123,21 @@
 .l4g-pilllabel{font-size:var(--cf-fs-2xs);color:var(--cf-slate-500);min-width:88px}
 .l4g-pillrow button{min-height:28px;border:1px solid var(--cf-slate-200);border-radius:999px;background:var(--cf-white);padding:4px 10px;font-size:var(--cf-fs-xs);cursor:pointer}
 .l4g-pillrow button.on{background:var(--cf-slate-900);color:var(--cf-white);border-color:var(--cf-slate-900)}
+
+/* s767 (19 Nov 2026 19:26): pills carry a drawn flag and a live count of the items waiting with that pill chosen */
+.l4g-pillrow button{display:inline-flex;align-items:center;gap:6px}
+.l4g-pillrow button .pl-flag{box-shadow:0 0 0 1px var(--cf-slate-200)}
+.l4g-pillrow .l4g-n{font-weight:600;font-variant-numeric:tabular-nums;color:var(--cf-slate-600);background:var(--cf-slate-100);border-radius:999px;padding:0 6px;min-width:18px;text-align:center}
+.l4g-pillrow button.on .l4g-n{background:var(--cf-slate-700);color:var(--cf-white)}
+/* s768: previous and next item (K and J), and the three review columns side by side (stacked at phone width) */
+.l4g-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 16px;border-bottom:1px solid var(--cf-slate-150);font-size:var(--cf-fs-xs)}
+.l4g-nav button{min-height:28px;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--cf-slate-200);border-radius:6px;background:var(--cf-white);padding:2px 10px;cursor:pointer}
+.l4g-nav button:disabled{opacity:.5;cursor:default}
+.l4g-nav kbd{font:inherit;font-size:11px;border:1px solid var(--cf-slate-300);border-radius:4px;padding:0 5px;background:var(--cf-slate-50)}
+.l4g-review{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.l4g-rv-col{border:1px solid var(--cf-slate-150);border-radius:8px;padding:10px 12px;min-width:0;overflow-wrap:anywhere}
+.l4g-rv-val,.l4g-rv-sug{margin:0 0 6px}
+.l4g-rv-quote{display:block;font-style:italic;margin:0 0 6px}
+.l4g-rv-src{margin:6px 0 0}
+.l4g-hold-badge{display:block;margin:0 0 8px;padding:6px 10px;border-radius:8px;background:var(--cf-amber-50);border:1px solid var(--cf-amber-200);font-size:var(--cf-fs-xs);font-weight:600}
+@media (max-width:760px){.l4g-review{grid-template-columns:minmax(0,1fr)}.l4g-nav{padding:6px 12px}}

@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.57'
-export const PACKAGE_VERSION='0.1.479'
+export const UI_VERSION='2.16.58'
+export const PACKAGE_VERSION='0.1.480'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'19 Nov 2026',
-  title:'Catalogue › Providers: register codes in capitals',
+  title:'Layer 4 Review: Country and Provider type counts, side-by-side review and J / K',
   changes:[
-
+    'Layer 4 Review › Grid: the Country pills carry the drawn flags of Catalogue › Providers and show the country code (Australia (AU), New Zealand (NZ), Canada (CA)). Every Country and Provider type pill shows how many items wait with it chosen, with the other filters kept, so one click isolates for example Provider description, AU, University.',
+    'Layer 4 Review › Grid, item drawer: the proposed text or value, the verbatim source quote with its source address (a link) and the exact machine hold reason sit side by side (stacked on a phone), with the kind\'s own decisions directly beneath.',
+    'Layer 4 Review › Grid, item drawer: Previous and Next buttons, and the J (next) and K (previous) keys, move through the items of the grid. Moving never decides anything, and the keys are ignored while you type in a field.'
   ],
-  bugFixes:[
-    'Catalogue › Providers: the line under a provider\'s name shows the register in capitals (for example NZQA 8530 rather than nzqa 8530).'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

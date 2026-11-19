@@ -23,7 +23,7 @@ test('the migration is md5-guarded, filters before the page is cut, and groups t
 
 test('the grid sends both filters and offers exactly the pills the Platform Admin named', () => {
   expect(G).toContain("country:cty||undefined,provider_type:ptype||undefined")
-  expect(G).toContain("[['','All'],['AU','Australia'],['NZ','New Zealand'],['CA','Canada']]")
+  expect(G).toContain("[['','All'],['AU','Australia (AU)'],['NZ','New Zealand (NZ)'],['CA','Canada (CA)']]")
   expect(G).toContain("[['','All'],['university','University'],['vet_college','VET / College'],['school','School'],['hei','HEI']]")
   expect(G).toContain('[kind,why,sort,cty,ptype]')
 })
@@ -43,7 +43,7 @@ async function openGrid(page, calls) {
       { kind: 'provider_description', ref: 'r1', provider: 'Monash University', country: 'AU', subject: 'Provider description', why: 'audit_sample', created_at: '2026-11-10T00:00:00Z', age_days: 9 },
       { kind: 'provider_description', ref: 'r2', provider: 'Massey University', country: 'NZ', subject: 'Provider description', why: 'audit_sample', created_at: '2026-11-11T00:00:00Z', age_days: 8 }]
     const out = rows.filter((r) => !a.country || r.country === a.country)
-    return route.fulfill({ json: { total: out.length, offset: 0, limit: 200, kind: a.kind, sort: 'oldest', export: false, kind_label: 'Provider description', rank: 6, rows: out } })
+    return route.fulfill({ json: { total: out.length, offset: a.offset || 0, limit: 200, kind: a.kind, sort: 'oldest', export: false, kind_label: 'Provider description', rank: 6, rows: a.offset > 1000 ? [] : out } })
   })
   await page.goto('/#layer-4-review?view=grid')
   await expect(page.locator('[data-l4g-grid]')).toBeVisible()
@@ -54,23 +54,30 @@ async function openGrid(page, calls) {
 test.describe('mocked browser', () => {
   test('Country and Provider type pills narrow the grid: the request carries the choice, the count follows, All clears it', async ({ page }) => {
     const calls = []
+    const main = () => calls.filter((a) => !(a.offset > 1000)) // the pill counts are read with an offset past the end
     await openGrid(page, calls)
-    await expect(page.locator('[data-l4g-country-pills] button')).toHaveText(['All', 'Australia', 'New Zealand', 'Canada'])
-    await expect(page.locator('[data-l4g-ptype-pills] button')).toHaveText(['All', 'University', 'VET / College', 'School', 'HEI'])
+    // s767 (19:26): drawn flags, the country code in the label, and a live count on each pill
+    await expect(page.locator('[data-l4g-country-pills] button')).toHaveText([/^All/, /^Australia \(AU\)/, /^New Zealand \(NZ\)/, /^Canada \(CA\)/])
+    await expect(page.locator('[data-l4g-ptype-pills] button')).toHaveText([/^All/, /^University/, /^VET \/ College/, /^School/, /^HEI/])
+    for (const c of ['AU', 'NZ', 'CA']) await expect(page.locator(`[data-l4g-country="${c}"] svg.pl-flag`)).toHaveCount(1)
+    await expect(page.locator('[data-l4g-country="all"] [data-l4g-n]')).toHaveText('2')
+    await expect(page.locator('[data-l4g-country="AU"] [data-l4g-n]')).toHaveText('1')
+    await expect(page.locator('[data-l4g-country="NZ"] [data-l4g-n]')).toHaveText('1')
+    await expect(page.locator('[data-l4g-country="CA"] [data-l4g-n]')).toHaveText('0')
     await expect(page.locator('[data-l4g-country="all"]')).toHaveAttribute('aria-pressed', 'true')
     await page.locator('[data-l4g-country="NZ"]').click()
     await expect(page.locator('[data-l4g-total]')).toContainText('1 waiting')
-    expect(calls.at(-1)).toMatchObject({ kind: 'provider_description', country: 'NZ' })
-    expect(calls.at(-1).provider_type).toBeUndefined()
+    expect(main().at(-1)).toMatchObject({ kind: 'provider_description', country: 'NZ' })
+    expect(main().at(-1).provider_type).toBeUndefined()
     await page.locator('[data-l4g-ptype="vet_college"]').click()
-    await expect.poll(() => calls.at(-1).provider_type).toBe('vet_college')
-    expect(calls.at(-1)).toMatchObject({ country: 'NZ', provider_type: 'vet_college' })
+    await expect.poll(() => main().at(-1).provider_type).toBe('vet_college')
+    expect(main().at(-1)).toMatchObject({ country: 'NZ', provider_type: 'vet_college' })
     await expect(page.locator('[data-l4g-ptype="vet_college"]')).toHaveAttribute('aria-pressed', 'true')
     await page.locator('[data-l4g-country="all"]').click()
     await page.locator('[data-l4g-ptype="all"]').click()
     await expect(page.locator('[data-l4g-total]')).toContainText('2 waiting')
-    expect(calls.at(-1).country).toBeUndefined()
-    expect(calls.at(-1).provider_type).toBeUndefined()
+    expect(main().at(-1).country).toBeUndefined()
+    expect(main().at(-1).provider_type).toBeUndefined()
   })
 })
 

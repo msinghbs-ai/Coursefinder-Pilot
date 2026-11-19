@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.480 — 19 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.58** (Platform Admin 19 Nov 2026 19:26, chat S1-RM-Design, s767 and s768). No migration, no new database call: `src/Layer4Grid.jsx`, `src/layer4-inbox.css` and `src/ProviderListParts.jsx` (the drawn flag is exported alone). Layer 4 Review › Grid: flags and country codes on the Country pills, a live count on every pill (the same grid read with that pill chosen and the other filters kept, read with an offset past the end so no rows travel), and the item drawer shows the proposed value, the verbatim quote with its source link and the exact machine hold reason side by side with the kind's own decisions beneath, plus Previous / Next and the J and K keys. Specs `cf-247-s768-layer4-review-drawer-triage-contract` and an updated `cf-247-s767-layer4-grid-country-type-contract`.
+
 ## 0.1.479 — 19 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.57** (Platform Admin 19 Nov 2026 16:37, chat S1-RM-Design, s781 live check). No migration. `providerMeta` prints the registration scheme in capitals; the s781 spec covers a lower-case scheme and a row with no registration.
