@@ -1,18 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.55'
-export const PACKAGE_VERSION='0.1.477'
+export const UI_VERSION='2.16.56'
+export const PACKAGE_VERSION='0.1.478'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'19 Nov 2026',
-  title:'Users & roles: Create user fields stack cleanly',
+  title:'Catalogue › Providers: logos, flags and a tidier table',
   changes:[
-
+    'Catalogue › Providers: each row starts with the provider\'s logo, or a two-letter monogram in a calm colour when no logo is stored yet. The name is in bold with its CRICOS code (or stable key) underneath. Platform Admins can still click the logo to change it.',
+    'Five filters stay in the bar (Country, Type, Status, Description, University group). The eight technical ones (State / region, Publication, Adapter, Description quality, Description admission, Description source, Website feed, Zoho feed) are under More filters, whose button shows how many are in use.'
   ],
   bugFixes:[
-    'Users & roles › Create user (Person, Role, Sign-in and Review) and the role and edit dialogs show each field as one stack: the label on its own line, a full-width box of the same height with room on the right for browser and password-manager icons, and the help text underneath. A long email address now shows in full, and nothing is squeezed onto one line on a phone.'
+    'Country codes show a drawn flag for Australia, New Zealand and Canada beside one code pill. On Windows the flag emoji read as "AU AU" or "CA CA".',
+    'Extract / refresh description is a small refresh icon beside the name (its tooltip says so), so rows are compact again. Ticking several providers still shows Extract / refresh description now for selected.',
+    'The adapter badge (for example Switched off or Testing) reads in full, with Open adapter as an icon beside it. The Type control stays inside its column.',
+    'The page tabs under each page title (for example Providers, Campuses, Logos & assets, Archived) are easier to read when not selected.'
   ]
 }
 
