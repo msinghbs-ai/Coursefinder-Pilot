@@ -104,7 +104,7 @@ begin
   end if;
   -- the newest input when this pass started: input that arrives during the pass starts another pass
   v_pass_in := case when v_lo is null then v_in else coalesce(nullif(m.last_result->>'pass_input_at', '')::timestamptz, v_in) end;
-  select count(*), max(w.course_id) into v_n, v_hi
+  select count(*), (array_agg(w.course_id order by w.course_id desc))[1] into v_n, v_hi
     from (select p.course_id from pipeline.coverage_course_pages p
            where p.read_status = 'read' and p.candidates->>'extractor' = p_extractor and (v_lo is null or p.course_id > v_lo)
            order by p.course_id limit v_win) w;
@@ -146,7 +146,7 @@ begin
     raise exception 'post-check: setting admit.window_pages is missing';
   end if;
   -- the first window, as a run plans it
-  select max(w.course_id), count(*) into v_hi, v_n from (select p.course_id from pipeline.coverage_course_pages p
+  select (array_agg(w.course_id order by w.course_id desc))[1], count(*) into v_hi, v_n from (select p.course_id from pipeline.coverage_course_pages p
      where p.read_status = 'read' and p.candidates->>'extractor' = 'coverage-sweep-v0.5.6' order by p.course_id limit 1500) w;  -- fixed: post-check sample
   select count(*) filter (where security.layer4_entity_or_parent_blocked('course', p.course_id, 'operational')),
          count(*) filter (where exists (select 1 from security.layer4_active_blocks b where b.block_scope = 'operational'

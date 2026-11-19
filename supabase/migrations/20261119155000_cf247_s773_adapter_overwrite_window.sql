@@ -82,7 +82,7 @@ begin
   end if;
   -- the newest input when this pass started: input that arrives during the pass starts another pass
   v_pass_in := case when v_lo is null then v_in else coalesce(nullif(m.last_result->>'pass_input_at', '')::timestamptz, v_in) end;
-  select count(*), max(w.course_id) into v_n, v_hi
+  select count(*), (array_agg(w.course_id order by w.course_id desc))[1] into v_n, v_hi
     from (select pg.course_id from pipeline.coverage_course_pages pg
            where pg.read_status = 'read' and pg.identity_basis is not null and (v_lo is null or pg.course_id > v_lo)
              and (pg.candidates->>'intakes_by' = 'adapter' or pg.candidates->>'english_by' = 'adapter' or pg.candidates->>'fee_by' = 'adapter' or pg.candidates->'adapter_extra' ? 'mode' or pg.candidates->'adapter_extra' ? 'campus' or pg.candidates->'adapter_extra' ? 'location')
@@ -121,7 +121,7 @@ begin
     raise exception 'post-check: setting batch.adapter_overwrite_window is missing';
   end if;
   -- the first window, as a run reads it
-  select max(w.course_id), count(*) into v_hi, v_n from (select pg.course_id from pipeline.coverage_course_pages pg
+  select (array_agg(w.course_id order by w.course_id desc))[1], count(*) into v_hi, v_n from (select pg.course_id from pipeline.coverage_course_pages pg
      where pg.read_status = 'read' and pg.identity_basis is not null
        and (pg.candidates->>'intakes_by' = 'adapter' or pg.candidates->>'english_by' = 'adapter' or pg.candidates->>'fee_by' = 'adapter' or pg.candidates->'adapter_extra' ? 'mode' or pg.candidates->'adapter_extra' ? 'campus' or pg.candidates->'adapter_extra' ? 'location')
      order by pg.course_id limit 1000) w;  -- fixed: post-check sample
