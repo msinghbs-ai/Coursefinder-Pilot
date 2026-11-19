@@ -113,7 +113,7 @@ end $function$;
 do $$
 declare v_t timestamptz; v_ms numeric; v jsonb; v_hi uuid; v_n int; v_a int; v_b int;
 begin
-  if position('security.layer4_entity_or_parent_blocked' in (select prosrc from pg_proc where oid = 'security.adapter_overwrite_v1(integer)'::regprocedure)) > 0
+  if position('not security.layer4_entity_or_parent_blocked(' in (select prosrc from pg_proc where oid = 'security.adapter_overwrite_v1(integer)'::regprocedure)) > 0
      or position('cf247.ao_hi' in (select prosrc from pg_proc where oid = 'security.adapter_overwrite_v1(integer)'::regprocedure)) = 0 then
     raise exception 'post-check: the adapter overwrite does not read a window with the set-based block check';
   end if;

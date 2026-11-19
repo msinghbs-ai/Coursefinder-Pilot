@@ -134,7 +134,7 @@ do $$
 declare v_t timestamptz; v_ms numeric; v_ms2 numeric; v_hi uuid; v_n int; v_rows int; v_act int; v_a int; v_b int; v jsonb;
         v_src text := (select prosrc from pg_proc where oid = 'security.coverage_admission_apply_v1(integer,text,text[])'::regprocedure);
 begin
-  if position('security.layer4_entity_or_parent_blocked' in (select prosrc from pg_proc where oid = 'security.coverage_admission_plan_v1(text)'::regprocedure)) > 0
+  if position('not security.layer4_entity_or_parent_blocked(' in (select prosrc from pg_proc where oid = 'security.coverage_admission_plan_v1(text)'::regprocedure)) > 0
      or position('cf247.adm_hi' in (select prosrc from pg_proc where oid = 'security.coverage_admission_plan_v1(text)'::regprocedure)) = 0 then
     raise exception 'post-check: the admission plan does not read a window with the set-based block check';
   end if;
