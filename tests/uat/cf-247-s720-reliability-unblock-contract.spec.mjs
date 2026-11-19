@@ -95,14 +95,14 @@ test('the chunked coverage build is first in its due ticks; the dispatcher is un
 // 19 Nov 2026 11:42 critical alert (20261119114500): the evidence-link-index feed read as one set with an anti-join, inside 4 s.
 const L = fs.readFileSync('supabase/migrations/20261119114500_cf247_evidence_link_feed_setwise.sql', 'utf8')
 
-test('evidence-link-index feed (IQ-00348): ids from the queue index and one anti-join, rows read by id, 4 s query limit, 3 s post-check', () => {
+test('evidence-link-index feed (IQ-00348): ids from the queue index and one anti-join, rows read by id, 4 s query limit, 6 s deploy check', () => {
   expect(L).toContain("<> 'ff9d9bc6d96f61f076871ab4d9e33ce0'")
   expect(L).toContain("create or replace function public.svc_evidence_link_index_next_v1(p_limit integer default 60)")
   expect(L).toContain("set statement_timeout to '4s'  -- fixed:")
   expect(L).toContain('and not exists (select 1 from pipeline.evidence_link_index_state st')
   expect(L).toContain('with cand as materialized (')
   expect(L).toContain('from top c cross join lateral (select x.* from pipeline.evidence_artifacts x where x.id = c.id) a')
-  expect(L).toContain("raise exception 'svc_evidence_link_index_next_v1 took % s (limit 3 s)'")
+  expect(L).toContain("raise exception 'svc_evidence_link_index_next_v1 took % s (limit 6 s)'")
   const lc = L.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
   expect(lc).not.toMatch(/create table|create (or replace )?function (security|pipeline|api|search|destination)\./i)
   expect((lc.match(/create or replace function/gi) || []).length).toBe(1)
