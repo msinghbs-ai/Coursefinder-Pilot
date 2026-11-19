@@ -1,0 +1,47 @@
+/* s781 (Platform Admin 19 Nov 2026 16:37): Catalogue › Providers rows, country flags and the More filters popover. Colours and sizes come from tokens.css. */
+.pl-name{display:flex;align-items:center;gap:var(--cf-space-2);min-width:0}
+.pl-logo{flex:0 0 32px;width:32px;height:32px;display:grid;place-items:center;box-sizing:border-box;border-radius:var(--cf-radius-md);border:1px solid var(--cf-slate-200);background:var(--cf-white);overflow:hidden}
+.pl-logo img{display:block;width:100%;height:100%;object-fit:contain;padding:2px;box-sizing:border-box}
+.pl-mono{font-size:var(--cf-fs-xs);font-weight:700;letter-spacing:.02em;line-height:1;border-color:transparent}
+.pl-mono.tone-indigo{background:var(--cf-indigo-100);color:var(--cf-indigo-700)}
+.pl-mono.tone-blue{background:var(--cf-blue-100);color:var(--cf-blue-700)}
+.pl-mono.tone-green{background:var(--cf-green-100);color:var(--cf-green-700)}
+.pl-mono.tone-amber{background:var(--cf-amber-100);color:var(--cf-amber-700)}
+.pl-mono.tone-violet{background:var(--cf-violet-100);color:var(--cf-violet-700)}
+.pl-mono.tone-orange{background:var(--cf-orange-100);color:var(--cf-orange-700)}
+.pl-editable{cursor:pointer}.pl-editable:hover,.pl-editable:focus-visible{outline:none;border-color:var(--cf-indigo-400);box-shadow:var(--cf-focus-ring)}
+.pl-copy{display:grid;gap:1px;min-width:0;flex:1 1 auto}
+.pl-title{font-weight:600;color:var(--cf-slate-900);line-height:1.3;overflow-wrap:anywhere}
+.pl-meta{font-size:var(--cf-fs-xs);color:var(--cf-slate-500);line-height:1.3;overflow-wrap:anywhere}
+.pl-name .pff-pick{min-width:24px;min-height:28px}
+.pl-name .pff-pick input{width:18px;height:18px}
+.pl-name .pl-act{flex:0 0 28px;width:28px;height:28px;min-width:28px;min-height:28px;padding:0;display:grid;place-items:center;border:1px solid transparent;border-radius:var(--cf-radius-sm);background:transparent;color:var(--cf-slate-500);cursor:pointer}
+.pl-name .pl-act:hover{background:var(--cf-slate-100);border-color:var(--cf-slate-200);color:var(--cf-slate-900)}
+.pl-name .pl-act:focus-visible{outline:none;box-shadow:var(--cf-focus-ring)}
+.pl-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* country: one flag and one code pill */
+.pl-country{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.pl-flag{width:20px;height:10px;flex:0 0 20px;border-radius:2px;box-shadow:0 0 0 1px var(--cf-slate-200);overflow:hidden}
+.pl-cc{display:inline-block;padding:1px 6px;border-radius:var(--cf-radius-sm);background:var(--cf-slate-100);color:var(--cf-slate-700);font-size:var(--cf-fs-xs);font-weight:600;letter-spacing:.03em;line-height:1.5}
+/* the adapter cell: a readable state badge and a compact open button; in a narrow column the button wraps under the badge, never over the next column */
+.m-adapter-cell{flex-wrap:wrap;row-gap:4px;max-width:100%}
+.m-adapter-cell .m-adapter-open{flex:0 0 28px;width:28px;height:28px;padding:0;display:grid;place-items:center;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-sm);background:var(--cf-white);color:var(--cf-slate-600);cursor:pointer}
+.m-adapter-cell .m-adapter-open:hover{color:var(--cf-slate-900);border-color:var(--cf-slate-300)}
+.m-adapter-cell .m-adapter-open:focus-visible{outline:none;box-shadow:var(--cf-focus-ring)}
+.m-adapter-cell .cf-chip{white-space:nowrap;overflow:visible;text-overflow:clip;max-width:none}
+/* the institution type control stays inside its column */
+.m-type-cell{min-width:0;max-width:100%}
+.m-table .m-type-cell select,.m-type-cell select{box-sizing:border-box;width:100%;max-width:140px;min-width:0;height:28px;padding:0 24px 0 8px;font-size:var(--cf-fs-sm);border:1px solid var(--cf-slate-250);border-radius:var(--cf-radius-sm);background-color:var(--cf-white);color:var(--cf-slate-800);text-overflow:ellipsis}
+/* More filters: the technical filters in one popover, counted on the button */
+.pl-more{position:relative}
+.pl-more-btn{display:inline-flex;align-items:center;gap:6px;height:100%;min-height:38px;padding:0 12px;border:1px solid var(--cf-slate-250);border-radius:var(--cf-radius-md);background:var(--cf-white);color:var(--cf-slate-800);font:inherit;font-size:var(--cf-fs-sm);font-weight:600;cursor:pointer}
+.pl-more-btn:hover,.pl-more-btn[aria-expanded="true"]{border-color:var(--cf-indigo-400)}
+.pl-more-btn:focus-visible{outline:none;box-shadow:var(--cf-focus-ring)}
+.pl-badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--cf-indigo-600);color:var(--cf-white);font-size:var(--cf-fs-2xs);font-weight:700}
+.pl-more-panel{position:absolute;top:calc(100% + 6px);z-index:90;width:min(560px,calc(100vw - 32px));box-sizing:border-box;padding:12px;background:var(--cf-white);border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg);box-shadow:var(--cf-shadow-lg)}
+.pl-more-panel.side-left{left:0}.pl-more-panel.side-right{right:0}
+.pl-more-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 10px}
+.pl-more-head strong{font-size:var(--cf-fs-sm);color:var(--cf-slate-900)}
+.pl-more-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pl-more-grid .m-filter-select{min-width:0}
+@media(max-width:680px){.pl-more,.pl-more-btn{width:100%;justify-content:center}.pl-more-panel{position:fixed;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));top:auto;bottom:max(16px,env(safe-area-inset-bottom,0px));width:auto;max-height:75vh;overflow:auto;overscroll-behavior:contain}.pl-more-grid{grid-template-columns:1fr}}

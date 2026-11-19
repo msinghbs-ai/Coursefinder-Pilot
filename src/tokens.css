@@ -7,6 +7,8 @@
 :root{
   /* Neutral */
   --cf-white:#ffffff;
+  /* Country flags drawn on the Providers list (s781): the flags' own colours, used only by the flag icons */
+  --cf-flag-navy:#012169;--cf-flag-red:#c8102e;--cf-flag-ca-red:#d52b1e;
   --cf-slate-25:#fbfcfe;--cf-slate-50:#f8fafc;--cf-slate-75:#f4f6fa;--cf-slate-100:#f1f5f9;--cf-slate-150:#eef2f7;
   --cf-slate-175:#e8edf4;--cf-slate-200:#e2e8f0;--cf-slate-225:#dbe3ec;--cf-slate-250:#d7deea;--cf-slate-300:#cbd5e1;
   --cf-slate-350:#aab5c6;--cf-slate-400:#94a3b8;--cf-slate-450:#7c8aa0;--cf-slate-500:#64748b;--cf-slate-600:#475569;

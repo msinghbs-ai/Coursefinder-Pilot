@@ -412,6 +412,7 @@ test.describe('the Provider Catalogue', () => {
 
   test('the Description quality level filter is offered with the four groups first and is sent to the server', async ({ page }) => {
     const { filterReads } = await mountCatalogue(page)
+    await page.locator('[data-more-filters-toggle]').click() // s781: Description quality is in More filters
     const f = page.locator('.m-filter-select').filter({ has: page.locator('small', { hasText: /^Description quality$/ }) })
     await expect(f).toHaveCount(1)
     await f.locator('button.m-filter-button').click()

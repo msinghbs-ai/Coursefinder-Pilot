@@ -164,7 +164,8 @@ async function mount(page, { rank = 6, saved = null, savedCourse = null, provide
 }
 const keys = page => page.locator('table[data-table="provider"] thead th[data-col]').evaluateAll(t => t.map(th => th.dataset.col))
 const filter = (page, label) => page.locator('.m-filter-select').filter({ has: page.locator('small', { hasText: new RegExp(`^${label}$`) }) })
-const choose = async (page, label, option) => { await filter(page, label).locator('button.m-filter-button').click(); await filter(page, label).locator('.m-filter-popover button', { hasText: new RegExp(`^${option}`) }).first().click() }
+// s781: the technical filters are in More filters; open it when the filter is not in the bar
+const choose = async (page, label, option) => { if (!(await filter(page, label).isVisible()) && !(await page.locator('[data-more-filters]').isVisible())) await page.locator('[data-more-filters-toggle]').click(); await filter(page, label).locator('button.m-filter-button').click(); await filter(page, label).locator('.m-filter-popover button', { hasText: new RegExp(`^${option}`) }).first().click() }
 
 test.describe('mocked browser', () => {
   test('the default Provider table is today\'s columns; the Columns control lists all 34 in four groups, searchable and counted; hiding one saves the Provider layout and says so', async ({ page }) => {
