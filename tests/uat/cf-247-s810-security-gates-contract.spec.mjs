@@ -50,14 +50,17 @@ test('website API v3 sends the platform\'s own validation text only, never anoth
   expect(v3).not.toMatch(/error\.message[^;\n]*\}\s*,\s*request_id/)
 })
 
-test('browser security headers: CSP, HSTS, frame denial, nosniff; the one page with an inline script only lifts the policy', () => {
+test('browser security headers: CSP, HSTS, frame denial, nosniff; no page needs the policy lifted', () => {
   const h = read('public/_headers')
   for (const must of ["default-src 'self'", "script-src 'self'", "object-src 'none'", "frame-ancestors 'none'", "base-uri 'self'", 'Strict-Transport-Security: max-age=31536000', 'X-Frame-Options: DENY', 'X-Content-Type-Options: nosniff', 'Referrer-Policy:'])
     expect(h, must).toContain(must)
   expect(h).toContain('https://fxcwkweaxjtknorudmwp.supabase.co')
   expect(h).not.toContain('coursefinder-demo')
   expect(h).not.toMatch(/script-src[^;\n]*'unsafe-(inline|eval)'/)
-  expect(h).toMatch(/\/release-history\.html\n\s+! Content-Security-Policy/)
+  // the release notes page keeps its script in its own file, so no page needs the policy lifted (found live 20 Nov 2026: a detach rule did not apply and an inline script was blocked)
+  expect(read('public/release-history.html')).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>\s*\S/)
+  expect(fs.existsSync('public/release-history.js')).toBe(true)
+  expect(h).not.toContain('! Content-Security-Policy')
   // the app's own entry page has no inline script, so a script-src of 'self' does not break it
   expect(read('index.html')).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>\s*\S/)
 })

@@ -17,12 +17,4 @@ h2{font-size:17px;margin:8px 0 6px}ul{margin:4px 0 0;padding-left:20px}li{margin
 <input id="q" type="search" placeholder="Search release notes (for example: Layer 4, tuition, Evidence)" aria-label="Search release notes">
 <div id="list">Loading…</div>
 </main>
-<script>
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
-fetch('release-history.json',{cache:'no-store'}).then(r=>r.json()).then(h=>{
-  document.getElementById('sub').textContent=`${h.count} releases, newest first. Current: v${h.current}.`
-  const render=q=>{const t=q.trim().toLowerCase();const rows=h.releases.filter(r=>!t||JSON.stringify(r).toLowerCase().includes(t))
-    document.getElementById('list').innerHTML=rows.length?rows.map(r=>`<article><div class="meta"><span class="v">v${esc(r.version)}</span>${r.version===h.current?'<span class="cur">Current</span>':''}<span>${esc(r.date)}</span></div><h2>${esc(r.title)}</h2>${r.changes.length?`<ul>${r.changes.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${r.bugFixes.length?`<div class="fixes"><strong>Bug / UI fixes</strong><ul>${r.bugFixes.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}</article>`).join(''):'<p>No release notes match.</p>'}
-  render('');document.getElementById('q').addEventListener('input',e=>render(e.target.value))
-}).catch(()=>{document.getElementById('list').textContent='Release notes could not be loaded.'})
-</script></body></html>
+<script src="release-history.js"></script></body></html>

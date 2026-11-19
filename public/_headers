@@ -9,7 +9,3 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
-# The generated release history page carries its own inline script and styles; it holds no user data and makes no requests.
-# Only the policy is lifted for that one page; every other header above still applies to it.
-/release-history.html
-  ! Content-Security-Policy
