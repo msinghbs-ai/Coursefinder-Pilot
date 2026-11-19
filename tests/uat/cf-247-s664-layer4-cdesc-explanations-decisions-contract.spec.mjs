@@ -35,7 +35,8 @@ test('four decisions on a course description, in order and named for what they d
   const all = [{ key: 'approve', label: 'Approve as read' }, { key: 'reject', label: 'Reject' }, { key: 'reread', label: 'Re-read (1-2 sentences)' }, { key: 'approve_provider', label: 'Approve all verified for provider', input: 'count' }]
   expect(P.cdChoices(all, true).map((c) => c.label)).toEqual(['Approve as read', 'Re-read (1-2 sentences)', 'Approve all verified for provider', 'Reject (bad page / wrong course)'])
   expect(P.cdChoices(all, false).map((c) => c.key)).toEqual(['approve', 'reject'])
-  expect(INBOX).toContain("const cdChoiceList=it.kind==='provider_description'?cdChoices(choices,isCourseDescription(d)):choices")
+  // s802 (20 Nov 2026): Edit & Approve opens the editor; its edit_approve choice is not one of the card's listed decisions
+  expect(INBOX).toContain("const cdChoiceList=it.kind==='provider_description'?cdChoices(choices.filter(c=>c.key!=='edit_approve'),isCourseDescription(d)):choices")
   expect(INBOX).toContain('{cdChoiceList.map(c=>')
   expect(INBOX).toContain("{open.input==='count'&&<input")
   expect(code).toContain("select pg_temp.edit_all('security.layer4_inbox_kinds_v1()', '8c820d6912a240ece0e731221261e6de', 'e56cf8d360ff6413638a77dd3a34d8ac'")

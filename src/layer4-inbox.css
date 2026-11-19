@@ -158,7 +158,7 @@
 .dea-src,.dea-held{margin:0;overflow-wrap:anywhere}
 .dea-lock{display:flex;gap:6px;align-items:flex-start;font-size:var(--cf-fs-xs)}
 .dea-actions{display:flex;flex-wrap:wrap;gap:6px}
-.dea-err{margin:0;color:var(--cf-red-700,#b42318);font-size:var(--cf-fs-sm)}
+.dea-err{margin:0;color:var(--cf-red-700);font-size:var(--cf-fs-sm)}
 .dea-held-list{border:1px solid var(--m-border);border-radius:var(--cf-radius-lg);background:var(--cf-white);padding:8px 12px;display:grid;gap:6px;font-size:var(--cf-fs-sm)}
 .dea-held-list summary{cursor:pointer}
 .dea-held-list ul{list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:320px;overflow:auto}
