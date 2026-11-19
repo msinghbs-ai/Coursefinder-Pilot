@@ -86,3 +86,15 @@ test('the follow-up records the trading names the stored page headings carry, th
   expect(fcode).not.toMatch(/provider:cricos:03578m|provider:nzqa:9386/)
   expect(F).toContain("'trading_name'")
 })
+
+test('the close migration only closes the s766 on-demand window, refuses while a read is running and touches no setting, lock or description', () => {
+  const C = fs.readFileSync('supabase/migrations/20261119181000_cf247_s766_close_on_demand_window.sql', 'utf8')
+  const code = C.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
+  expect(C).toContain('-- Replaces: nothing')
+  expect(C).toContain('-- Retires: nothing')
+  expect(code).toContain("security.on_demand_close_v1(o.id)")
+  expect(code).toContain("ebcc6b09-e71d-4baa-b809-1842402d0742")
+  expect(code).toContain("r.state in ('queued', 'running')")
+  expect(code.replaceAll('on commit drop', 'on commit')).not.toMatch(/\b(update|delete|drop|truncate)\b/i)
+  expect(code).not.toMatch(/manual_locks|platform_toolset_settings|provider_aliases|create (table|function)/i)
+})
