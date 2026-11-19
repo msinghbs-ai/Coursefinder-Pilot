@@ -54,4 +54,4 @@ export function CountryTag({code}){
 }
 
 // the line under a provider's name: its registration code, or its stable key when it has none
-export function providerMeta(r){const g=r?.registration;if(g?.code)return `${g.scheme||'CRICOS'} ${g.code}`;return r?.stable_key?String(r.stable_key):''}
+export function providerMeta(r){const g=r?.registration;if(g?.code)return `${String(g.scheme||'CRICOS').toUpperCase()} ${g.code}`;return r?.stable_key?String(r.stable_key):''}

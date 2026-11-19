@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.479 — 19 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.57** (Platform Admin 19 Nov 2026 16:37, chat S1-RM-Design, s781 live check). No migration. `providerMeta` prints the registration scheme in capitals; the s781 spec covers a lower-case scheme and a row with no registration.
+
 ## 0.1.478 — 19 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.56** (Platform Admin 19 Nov 2026 16:37, chat S1-RM-Design, s781). No migration. New `src/ProviderListParts.jsx` and `src/provider-list.css`: the Providers list name cell (32 px logo through one batched `provider-asset-access` call by stable key, or a monogram whose colour is picked from the name; bold name with CRICOS code or stable key; compact Extract / refresh description icon for Curator and above), `CountryTag` (inline SVG flags for AU, NZ and CA from three new flag tokens, one code pill; replaces regional-indicator emoji in every catalogue cell), a wrapping adapter cell with a readable badge and an Open adapter icon, the Type select capped at 140 px, and More filters (eight technical provider filters in a popover with an in-use count). Inactive page tabs use slate 700. Specs: s781 (new); the Provider catalogue columns and Fill fields specs open More filters for the moved filters.
