@@ -240,5 +240,32 @@ begin
   if (select count(*) from pipeline.intake_cohort_stages) <> 0 then raise exception 'post-check: stage table is not empty at creation'; end if;
   if exists (select 1 from information_schema.role_table_grants where table_schema = 'pipeline' and table_name = 'intake_cohort_stages' and grantee in ('anon', 'authenticated')) then
     raise exception 'post-check: stage table is granted to a client role'; end if;
+  -- the read views and the stage recorder, as a signed-in Platform Admin, in a sub-block that is always rolled back (nothing kept)
+  declare v_admin uuid; v_coh uuid; u jsonb; cs jsonb; cap jsonb; st jsonb; vr jsonb;
+  begin
+    select ur.user_id into v_admin from security.user_roles ur join security.roles ro on ro.code = ur.role_code
+     where ro.status = 'active' and (ur.expires_at is null or ur.expires_at > now()) order by ro.rank desc limit 1;
+    if v_admin is null then raise exception 'post-check: no active admin role to read as'; end if;
+    perform set_config('request.jwt.claims', jsonb_build_object('sub', v_admin::text, 'role', 'authenticated')::text, true);
+    cap := public.admin_intake_run_read_v1('capabilities', '{}');
+    if (cap->>'page_courses')::int <> 200 or jsonb_array_length(cap->'scope_forms') <> 4 then raise exception 'post-check: capabilities %', left(cap::text, 200); end if;
+    u := public.admin_intake_run_read_v1('universities', jsonb_build_object('limit', 5));
+    if (u->>'total')::int < 50 or jsonb_array_length(u->'items') <> 5 then raise exception 'post-check: universities view %', left(u::text, 300); end if;
+    cs := public.admin_intake_run_read_v1('course_search', jsonb_build_object('q', 'Master of', 'limit', 5));
+    if jsonb_array_length(cs->'items') < 1 then raise exception 'post-check: course search found nothing'; end if;
+    v_o := v_o || format(' | providers %s (largest %s, %s courses, %s pages) | course search %s', u->>'total', u->'items'->0->>'name', u->'items'->0->>'active_courses', u->'items'->0->>'pages', jsonb_array_length(cs->'items'));
+    select id into v_coh from pipeline.run_now_cohorts order by created_at desc limit 1;
+    if v_coh is not null then
+      st := security.intake_cohort_stages_record_v1(v_coh, null);
+      if jsonb_array_length(st) <> 3 then raise exception 'post-check: selection stages %', st; end if;
+      st := st || security.intake_cohort_stages_record_v1(v_coh, gen_random_uuid());
+      vr := public.admin_intake_run_read_v1('verify', jsonb_build_object('cohort_id', v_coh));
+      if jsonb_array_length(vr->'stage_history') <> jsonb_array_length(st) then raise exception 'post-check: verify stage_history % vs %', vr->'stage_history', st; end if;
+      v_o := v_o || ' | latest cohort stages ' || (select string_agg((x->>'stage') || '=' || (x->>'courses') || '/' || (x->>'intakes'), ' ') from jsonb_array_elements(st) x);
+    end if;
+    raise exception 'cf-s790-undo';
+  exception when raise_exception then if sqlerrm <> 'cf-s790-undo' then raise; end if;
+  end;
+  perform set_config('request.jwt.claims', '', true);
   perform set_config('cf.diag', v_o, true);
 end $$;
