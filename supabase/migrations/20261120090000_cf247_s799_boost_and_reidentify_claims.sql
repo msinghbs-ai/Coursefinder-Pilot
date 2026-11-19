@@ -16,8 +16,11 @@
 
 create index if not exists evidence_artifacts_page_text_hash_idx on pipeline.evidence_artifacts (content_hash, entity_id)
   where evidence_type = 'provider_course_page_text' and storage_path is not null and content_hash is not null;
-create index if not exists evidence_artifacts_page_text_entity_idx on pipeline.evidence_artifacts (entity_id, captured_at desc nulls last)
+create index if not exists evidence_artifacts_page_text_entity_idx on pipeline.evidence_artifacts (entity_id, captured_at desc nulls last) include (id, content_hash)
   where evidence_type = 'provider_course_page_text' and storage_path is not null;
+create index if not exists courses_study_load_open_idx on catalogue.courses (id) include (provider_id)
+  where lifecycle_status = 'active' and (study_load is null or (study_load_source = 'register' and study_load_evidence_id is null));
+create index if not exists coverage_reidentify_done_rule_idx on pipeline.coverage_reidentify_done (rule, course_id, evidence_id);
 create index if not exists coverage_course_pages_reidentify_idx on pipeline.coverage_course_pages (course_id)
   where status = 'mismatch' and read_status = 'identity_mismatch';
 
@@ -47,24 +50,33 @@ begin
   perform pg_advisory_xact_lock(hashtext('cf247:boost_extract_claim'));
   -- s799: the pages still due are found once, set-based, for every country (each course's latest stored page text, not yet settled or leased,
   -- not shared with another course, no lock); then handed out country by country in the matrix order, as before. At most v_left per country.
-  with lp as (
-    select distinct on (e.entity_id) e.entity_id, e.id, e.storage_path, e.source_url, e.content_hash
+  with lp as materialized (
+    select distinct on (e.entity_id) e.entity_id, e.id, e.content_hash
       from pipeline.evidence_artifacts e
      where e.evidence_type = 'provider_course_page_text' and e.storage_path is not null
      order by e.entity_id, e.captured_at desc nulls last),
+  settled as materialized (
+    select x.entity_id, x.evidence_id from pipeline.boost_extract_items x
+     where x.lane = 'study_load' and (x.state in ('verified', 'rejected', 'failed') or (x.state = 'claimed' and x.claimed_at > now() - interval '30 minutes'))),  -- fixed: claim lease
+  open_courses as materialized (
+    select c.id, c.provider_id from catalogue.courses c
+     where c.lifecycle_status = 'active' and (c.study_load is null or (c.study_load_source = 'register' and c.study_load_evidence_id is null))),  -- s797
+  pick as materialized (
+    select lp.entity_id, lp.id evidence_id, lp.content_hash, oc.provider_id
+      from lp join open_courses oc on oc.id = lp.entity_id
+      left join settled st on st.entity_id = lp.entity_id and st.evidence_id = lp.id
+     where st.entity_id is null),
   due as (
-    select c.id entity_id, lp.id evidence_id, lp.storage_path, coalesce(lp.source_url, c.course_url) source_url, c.display_title, k.iso_alpha2 cc,
+    select c.id entity_id, a.id evidence_id, a.storage_path, coalesce(a.source_url, c.course_url) source_url, c.display_title, k.iso_alpha2 cc,
            row_number() over (partition by k.iso_alpha2 order by c.id) n
-      from lp
-      join catalogue.courses c on c.id = lp.entity_id
-      join catalogue.providers p on p.id = c.provider_id
+      from pick
+      join catalogue.courses c on c.id = pick.entity_id
+      join pipeline.evidence_artifacts a on a.id = pick.evidence_id
+      join catalogue.providers p on p.id = pick.provider_id
       join ref.countries k on k.id = p.country_id
-     where c.lifecycle_status = 'active' and (c.study_load is null or (c.study_load_source = 'register' and c.study_load_evidence_id is null))  -- s797
-       and not exists (select 1 from pipeline.boost_extract_items x where x.lane = 'study_load' and x.entity_id = c.id and x.evidence_id = lp.id
-                        and (x.state in ('verified', 'rejected', 'failed') or (x.state = 'claimed' and x.claimed_at > now() - interval '30 minutes')))  -- fixed: claim lease
        -- a stored page whose text is also stored for another course is a general page of the provider, not this course's page: not read
-       and not exists (select 1 from pipeline.evidence_artifacts h where h.content_hash = lp.content_hash and h.evidence_type = 'provider_course_page_text'
-                        and h.storage_path is not null and h.content_hash is not null and h.entity_id <> c.id)
+     where not exists (select 1 from pipeline.evidence_artifacts h where h.content_hash = pick.content_hash and h.evidence_type = 'provider_course_page_text'
+                        and h.storage_path is not null and h.content_hash is not null and h.entity_id <> pick.entity_id)
        and not exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = c.id and l.field in ('study_load', 'study_load_source', 'study_load_evidence_id')))
   select coalesce(jsonb_agg(to_jsonb(due)), '[]'::jsonb) into v_pool from due where n <= v_left;
   if jsonb_array_length(v_pool) = 0 then return jsonb_build_object('batch_id', v_batch, 'items', v_items); end if;
@@ -114,11 +126,13 @@ begin
   if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
   -- s799: pages already re-identified under this rule are dropped first (index), so the page check runs only on what is still due
   select coalesce(jsonb_agg(x), '[]'::jsonb) into v from (
-    with due as materialized (
+    with done as materialized (
+      select d.course_id, d.evidence_id from pipeline.coverage_reidentify_done d where d.rule = p_rule),
+    due as materialized (
       select q.course_id, q.url from pipeline.coverage_course_pages q
         join catalogue.courses co on co.id = q.course_id and co.lifecycle_status = 'active'
-       where q.status = 'mismatch' and q.read_status = 'identity_mismatch' and coalesce(q.basis, '') <> 'manual'
-         and not exists (select 1 from pipeline.coverage_reidentify_done d where d.course_id = q.course_id and d.evidence_id = q.evidence_id and d.rule = p_rule)
+        left join done on done.course_id = q.course_id and done.evidence_id = q.evidence_id
+       where q.status = 'mismatch' and q.read_status = 'identity_mismatch' and coalesce(q.basis, '') <> 'manual' and done.course_id is null
          and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = q.provider_id)),  -- v2.15.237: paused while the provider is unpublished or archived
     ok as materialized (
       select due.course_id from due where not security.page_refused_v1(due.course_id, due.url))  /* 24 Oct 2026; S1: a rejected or blocked page is never re-bound */
@@ -136,25 +150,20 @@ end $function$;
 
 -- post-checks: the same work is handed out, and both claims answer in time (timed in a sub-block that is always rolled back: nothing stays claimed)
 do $$
-declare t timestamptz; ms1 int; ms2 int; ms1b int; n1 int; n2 int; v jsonb; v_rule text; v_o text;
+declare t timestamptz; ms1 int; ms2 int; ms1b int; n1 int; n2 int; v jsonb; v_rule text; v_o text; a1 int[] := '{}'; a2 int[] := '{}'; i int;
 begin
   select max(rule) into v_rule from pipeline.coverage_reidentify_done;
   begin
     t := clock_timestamp(); v := public.svc_boost_extract_claim(security.pipeline_num_v1('batch.boost_extract', 40)::int); ms1 := round(extract(epoch from clock_timestamp() - t) * 1000); n1 := jsonb_array_length(v->'items');
-    t := clock_timestamp(); v := public.svc_boost_extract_claim(40); ms1b := round(extract(epoch from clock_timestamp() - t) * 1000);
-    perform public.svc_coverage_reidentify_next(100, v_rule);   -- warm
-    t := clock_timestamp(); v := public.svc_coverage_reidentify_next(100, v_rule); ms2 := round(extract(epoch from clock_timestamp() - t) * 1000); n2 := jsonb_array_length(v);
+    for i in 1 .. 3 loop
+      t := clock_timestamp(); perform public.svc_boost_extract_claim(40); a1 := a1 || round(extract(epoch from clock_timestamp() - t) * 1000)::int;
+      t := clock_timestamp(); v := public.svc_coverage_reidentify_next(100, v_rule); a2 := a2 || round(extract(epoch from clock_timestamp() - t) * 1000)::int; n2 := jsonb_array_length(v);
+    end loop;
+    ms1b := (select percentile_disc(0.5) within group (order by x) from unnest(a1) x); ms2 := (select percentile_disc(0.5) within group (order by x) from unnest(a2) x);
     raise exception 'cf-s799-undo';
   exception when raise_exception then if sqlerrm <> 'cf-s799-undo' then raise; end if;
   end;
-  v_o := format('boost claim %s ms (%s items, first call), warm %s ms | reidentify(100, %s) warm %s ms (%s rows)', ms1, n1, ms1b, v_rule, ms2, n2);
-  declare l text; begin
-  for l in execute $q$explain (analyze, costs off) with lp as (select distinct on (e.entity_id) e.entity_id, e.id, e.content_hash from pipeline.evidence_artifacts e
-     where e.evidence_type = 'provider_course_page_text' and e.storage_path is not null order by e.entity_id, e.captured_at desc nulls last)
-    select c.id from lp join catalogue.courses c on c.id = lp.entity_id
-     where c.lifecycle_status = 'active' and c.study_load is null
-       and not exists (select 1 from pipeline.boost_extract_items x where x.lane = 'study_load' and x.entity_id = c.id and x.evidence_id = lp.id and (x.state in ('verified', 'rejected', 'failed') or (x.state = 'claimed' and x.claimed_at > now() - interval '30 minutes')))
-       and not exists (select 1 from pipeline.evidence_artifacts h where h.content_hash = lp.content_hash and h.evidence_type = 'provider_course_page_text' and h.storage_path is not null and h.content_hash is not null and h.entity_id <> c.id)$q$
-  loop v_o := v_o || ' | ' || l; end loop; end;
+  v_o := format('boost claim first %s ms (%s items); warm median %s ms %s | reidentify(100, %s) warm median %s ms %s (%s rows)', ms1, n1, ms1b, a1, v_rule, ms2, a2, n2);
+  if ms1b > 200 or ms2 > 200 then raise exception 'post-check: a claim is still slow: %', v_o; end if;
   perform set_config('cf.diag', v_o, true);
 end $$;
