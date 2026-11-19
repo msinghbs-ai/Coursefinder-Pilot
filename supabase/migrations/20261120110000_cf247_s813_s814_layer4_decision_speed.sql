@@ -55,27 +55,22 @@ select pg_temp.cf_edit_def('security.layer4_decision_outcome_v1(text,text,jsonb)
 
 
 -- every decision reads its item twice through security.layer4_inbox_items_v2 (the detail, then whether it still waits): about 110 ms. The item's
--- own id is now also matched as its type, so each source finds it by its key instead of reading every waiting row (the text match stays).
-create or replace function security.l4_key_uuids_v1(p_keys text[]) returns uuid[] language sql immutable parallel safe set search_path to '' as $f$
-  select coalesce(array_agg(split_part(k, ':', 2)::uuid), '{}') from unnest(p_keys) k
-   where split_part(k, ':', 2) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-$f$;
-create or replace function security.l4_key_bigints_v1(p_keys text[]) returns bigint[] language sql immutable parallel safe set search_path to '' as $f$
-  select coalesce(array_agg(split_part(k, ':', 2)::bigint), '{}') from unnest(p_keys) k where split_part(k, ':', 2) ~ '^[0-9]{1,18}$'
-$f$;
-revoke all on function security.l4_key_uuids_v1(text[]) from public, anon, authenticated;
-revoke all on function security.l4_key_bigints_v1(text[]) from public, anon, authenticated;
-comment on function security.l4_key_uuids_v1(text[]) is 'CF-247 s814: the uuid refs of Layer 4 item keys (kind:ref), so an item source can find its rows by id.';
-comment on function security.l4_key_bigints_v1(text[]) is 'CF-247 s814: the numeric refs of Layer 4 item keys (kind:ref), so an item source can find its rows by id.';
+-- own id is now also matched as its type (computed once per read), so each source finds it by its key instead of reading every waiting row
+-- (the text match stays, so the rows are the same).
+do $$ declare t0 timestamptz := clock_timestamp(); begin
+  perform 1 from security.layer4_inbox_items_v2(null, 'course_link', array['course_link:' || (select r2.id::text from pipeline.layer4_review_items r2 where r2.status = 'pending' limit 1)], true);
+  perform 1 from security.layer4_inbox_items_v2(null, 'held_scholarship', array['held_scholarship:' || (select r2.id::text from pipeline.scholarship_ai_reviews r2 where r2.status = 'pending' limit 1)], true);
+  perform set_config('cf.s814_before', round(extract(epoch from clock_timestamp() - t0) * 1000)::text, true);
+end $$;
 select pg_temp.cf_edit_def('security.layer4_inbox_items_v2(uuid,text,text[],boolean)'::regprocedure, '26283b7b330d74a86122307e2ab8b7f7',
   array[$o$(p_keys is null or z.k || ':' || r.id::text = any (p_keys))$o$,
         $o$(p_keys is null or 'held_scholarship:' || r.id::text = any (p_keys))$o$,
         $o$(p_keys is null or z.k || ':' || f.id::text = any (p_keys))$o$,
         $o$(p_keys is null or 'course_page_needed:' || n.course_id::text = any (p_keys))$o$],
-  array[$n$(p_keys is null or (r.id = any (security.l4_key_uuids_v1(p_keys)) and z.k || ':' || r.id::text = any (p_keys)))$n$,
-        $n$(p_keys is null or (r.id = any (security.l4_key_bigints_v1(p_keys)) and 'held_scholarship:' || r.id::text = any (p_keys)))$n$,
-        $n$(p_keys is null or (f.id = any (security.l4_key_bigints_v1(p_keys)) and z.k || ':' || f.id::text = any (p_keys)))$n$,
-        $n$(p_keys is null or (n.course_id = any (security.l4_key_uuids_v1(p_keys)) and 'course_page_needed:' || n.course_id::text = any (p_keys)))$n$],
+  array[$n$(p_keys is null or (r.id = any (array(select split_part(k, ':', 2)::uuid from unnest(p_keys) k where split_part(k, ':', 2) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')) and z.k || ':' || r.id::text = any (p_keys)))$n$,
+        $n$(p_keys is null or (r.id = any (array(select split_part(k, ':', 2)::bigint from unnest(p_keys) k where split_part(k, ':', 2) ~ '^[0-9]{1,18}$')) and 'held_scholarship:' || r.id::text = any (p_keys)))$n$,
+        $n$(p_keys is null or (f.id = any (array(select split_part(k, ':', 2)::bigint from unnest(p_keys) k where split_part(k, ':', 2) ~ '^[0-9]{1,18}$')) and z.k || ':' || f.id::text = any (p_keys)))$n$,
+        $n$(p_keys is null or (n.course_id = any (array(select split_part(k, ':', 2)::uuid from unnest(p_keys) k where split_part(k, ':', 2) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')) and 'course_page_needed:' || n.course_id::text = any (p_keys)))$n$],
   array[1, 1, 2, 1]);
 
 -- post-checks, as a signed-in Platform Admin, on real items, each decision rolled back; the times are reported (cf.diag)
@@ -116,7 +111,8 @@ begin
     raise exception 'post-check: the keyed read differs from the full read'; end if;
   t0 := clock_timestamp();
   perform 1 from security.layer4_inbox_items_v2(null, 'course_link', array['course_link:' || (select r2.id::text from pipeline.layer4_review_items r2 where r2.status = 'pending' limit 1)], true);
-  v_o := v_o || 'keyed read ' || round(extract(epoch from clock_timestamp() - t0) * 1000) || 'ms; ';
+  perform 1 from security.layer4_inbox_items_v2(null, 'held_scholarship', array['held_scholarship:' || (select r2.id::text from pipeline.scholarship_ai_reviews r2 where r2.status = 'pending' limit 1)], true);
+  v_o := v_o || 'two keyed reads before ' || current_setting('cf.s814_before', true) || 'ms, after ' || round(extract(epoch from clock_timestamp() - t0) * 1000) || 'ms; ';
   perform set_config('request.jwt.claims', '', true);
   if v_hs is null then raise exception 'post-check: no held scholarship was decided'; end if;
   if v_hs > 1000 then raise exception 'post-check: a held scholarship decision took % ms', v_hs; end if;
