@@ -1,0 +1,1 @@
+revoke execute on function security.admin_providers_page(integer,integer,text,text,text,text,text,text,text) from authenticated; grant execute on function security.admin_providers_page(integer,integer,text,text,text,text,text,text,text) to service_role;
