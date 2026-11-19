@@ -12,14 +12,8 @@
 -- Replaces: nothing.
 -- Retires: nothing.
 
-create or replace function security.course_study_load_register_rule_v1(p_apply boolean default false)
-returns jsonb language plpgsql security definer set search_path to '' as $f$
-declare v_n int := 0; v_eligible int;
-begin
-  if auth.uid() is not null and coalesce(security.current_role_rank(), 0) < 6 then raise exception 'Platform Admin role required' using errcode = '42501'; end if;
-  create temp table if not exists _sl_rule (course_id uuid primary key) on commit drop;
-  truncate _sl_rule;
-  insert into _sl_rule
+create or replace function security.course_study_load_register_rule_rows_v1()
+returns table (id uuid) language sql stable security definer set search_path to '' as $f$
   select c.id from catalogue.courses c
     join catalogue.providers p on p.id = c.provider_id
     join ref.countries k on k.id = p.country_id and k.iso_alpha2 = 'AU'
@@ -28,11 +22,20 @@ begin
      and c.course_code ~ '^[0-9]{6}[0-9A-Z]$'                                   -- fixed: the CRICOS course code format
      and exists (select 1 from catalogue.provider_registrations r where r.provider_id = p.id and r.registration_scheme = 'cricos')
      and not exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = c.id
-                      and l.field in ('study_load', 'study_load_source', 'study_load_evidence_id'));
-  get diagnostics v_eligible = row_count;
+                      and l.field in ('study_load', 'study_load_source', 'study_load_evidence_id'))
+$f$;
+revoke all on function security.course_study_load_register_rule_rows_v1() from public, anon, authenticated;
+comment on function security.course_study_load_register_rule_rows_v1() is 'CF-247 s797 B7: the courses the register rule may fill (active AU CRICOS courses open to international students, no study load, no lock).';
+
+create or replace function security.course_study_load_register_rule_v1(p_apply boolean default false)
+returns jsonb language plpgsql security definer set search_path to '' as $f$
+declare v_n int := 0; v_eligible int;
+begin
+  if auth.uid() is not null and coalesce(security.current_role_rank(), 0) < 6 then raise exception 'Platform Admin role required' using errcode = '42501'; end if;
+  select count(*) into v_eligible from catalogue.courses c where c.id in (select x.id from security.course_study_load_register_rule_rows_v1() x);
   if p_apply and v_eligible > 0 then
     update catalogue.courses c set study_load = 'full_time', study_load_source = 'register', study_load_evidence_id = null, updated_at = now()
-      from _sl_rule s where c.id = s.course_id and c.study_load is null;
+     where c.id in (select x.id from security.course_study_load_register_rule_rows_v1() x) and c.study_load is null;
     get diagnostics v_n = row_count;
     insert into pipeline.admin_control_events (area, action, target, detail, actor)
     values ('api_v3', 'course_study_load_register_rule', 'catalogue.courses.study_load',
@@ -46,13 +49,10 @@ comment on function security.course_study_load_register_rule_v1(boolean) is 'CF-
 
 create or replace function security.campus_primary_rule_v1(p_apply boolean default false)
 returns jsonb language plpgsql security definer set search_path to '' as $f$
-declare v_reg jsonb; v_n int := 0; v_tie int; v_tie_ids jsonb; v_single int; v_by jsonb;
+declare v_reg jsonb; v_n int := 0; v_tie int; v_tie_ids jsonb; v_single int; v_by jsonb; v_rows jsonb;
 begin
   if auth.uid() is not null and coalesce(security.current_role_rank(), 0) < 6 then raise exception 'Platform Admin role required' using errcode = '42501'; end if;
   v_reg := security.campus_primary_apply_v1(p_apply);   -- the register head office first (unchanged)
-  create temp table if not exists _cpr (provider_id uuid, campus_id uuid, cc text, n int, rk int, top int, campuses int) on commit drop;
-  truncate _cpr;
-  insert into _cpr
   with prov as (
     select p.id, k.iso_alpha2 cc from catalogue.providers p join ref.countries k on k.id = p.country_id and k.iso_alpha2 in ('AU', 'NZ', 'CA')
      where p.lifecycle_status = 'active'
@@ -63,20 +63,24 @@ begin
     select k.provider_id, k.id campus_id, prov.cc,
            (select count(distinct cc.course_id) from catalogue.course_campuses cc join catalogue.courses c on c.id = cc.course_id and c.lifecycle_status = 'active'
              where cc.campus_id = k.id)::int n
-      from catalogue.campuses k join prov on prov.id = k.provider_id where k.status = 'active')
-  select provider_id, campus_id, cc, n, rank() over w, count(*) filter (where true) over (partition by provider_id, n), count(*) over (partition by provider_id)
-    from cnt window w as (partition by provider_id order by n desc);
-  -- top: how many campuses share the provider's highest count (only rank 1 rows matter)
-  select count(distinct provider_id) filter (where rk = 1 and top > 1), count(distinct provider_id) filter (where campuses = 1)
-    into v_tie, v_single from _cpr;
-  select coalesce(jsonb_agg(distinct provider_id), '[]'::jsonb) into v_tie_ids from _cpr where rk = 1 and top > 1;
+      from catalogue.campuses k join prov on prov.id = k.provider_id where k.status = 'active'),
+  ranked as (
+    select provider_id, campus_id, cc, n, rank() over (partition by provider_id order by n desc) rk,
+           count(*) over (partition by provider_id, n) top, count(*) over (partition by provider_id) campuses from cnt)
+  select coalesce(jsonb_agg(to_jsonb(ranked)), '[]'::jsonb) into v_rows from ranked;
+  select count(distinct x.provider_id) filter (where x.rk = 1 and x.top > 1), count(distinct x.provider_id) filter (where x.campuses = 1),
+         coalesce(jsonb_agg(distinct x.provider_id) filter (where x.rk = 1 and x.top > 1), '[]'::jsonb)
+    into v_tie, v_single, v_tie_ids
+    from jsonb_to_recordset(v_rows) x(provider_id uuid, campus_id uuid, cc text, n int, rk int, top int, campuses int);
   if p_apply then
     update catalogue.campuses k set is_primary = true, primary_basis = 'highest_course_count', updated_at = now()
-      from _cpr r where r.campus_id = k.id and r.rk = 1 and r.top = 1 and k.is_primary is distinct from true
+      from jsonb_to_recordset(v_rows) r(provider_id uuid, campus_id uuid, cc text, n int, rk int, top int, campuses int)
+     where r.campus_id = k.id and r.rk = 1 and r.top = 1 and k.is_primary is distinct from true
        and not exists (select 1 from catalogue.campuses x where x.provider_id = r.provider_id and x.is_primary);
     get diagnostics v_n = row_count;
-    select coalesce(jsonb_object_agg(cc, n), '{}'::jsonb) into v_by from (select r.cc, count(*) n from _cpr r join catalogue.campuses k on k.id = r.campus_id
-      where r.rk = 1 and r.top = 1 and k.primary_basis = 'highest_course_count' group by 1) z;
+    select coalesce(jsonb_object_agg(cc, n), '{}'::jsonb) into v_by from (
+      select r.cc, count(*) n from jsonb_to_recordset(v_rows) r(provider_id uuid, campus_id uuid, cc text, n int, rk int, top int, campuses int)
+        join catalogue.campuses k on k.id = r.campus_id where r.rk = 1 and r.top = 1 and k.primary_basis = 'highest_course_count' group by 1) z;
     insert into pipeline.admin_control_events (area, action, target, detail, actor)
     values ('api_v3', 'campus_primary_rule', 'catalogue.campuses.is_primary',
             jsonb_build_object('rule', 'B2: register head office, then the campus with the most active courses', 'register', v_reg,
