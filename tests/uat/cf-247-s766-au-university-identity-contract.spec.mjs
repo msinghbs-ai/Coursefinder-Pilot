@@ -52,3 +52,27 @@ test('nothing is deleted, merged or retired, and the consumer API is not touched
   expect(M).toMatch(/^-- Retires: nothing$/m)
   expect(M).toContain('Not changed: the consumer API')
 })
+
+// Follow-up 20261119175000: the worker held the two reads on its recovery memory (no model call, nothing spent); they are asked for on demand, the way Fill description asks.
+const F = fs.readFileSync('supabase/migrations/20261119175000_cf247_s766_torrens_moore_on_demand_read.sql', 'utf8')
+const fcode = F.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
+
+test('the follow-up opens an on-demand request with its estimate, scoped to openrouter, and marks the two reads on demand', () => {
+  expect(F).toContain("security.on_demand_open_v1('claude_session'")
+  expect(F).toContain("array['openrouter']")
+  expect(F).toContain("jsonb_build_object('reads', (select count(*) from cf_s766b), 'ai_usd', 0.003, 'firecrawl_credits', 0)")
+  expect(F).toContain("'on_demand', jsonb_build_object('by', 'c0ffee00-0000-4000-8000-000000000150', 'at', now())")
+  expect(F).toContain("pipeline.svc_pilot_submit_nonce('coverage-sweep'")
+  expect(F).toContain("security.pipeline_num_v1('pdesc.acquire_firecrawl', 1) <> 0")
+  expect(F).toContain("'openai/gpt-4.1-mini'")
+  expect(F).toContain('if v_n > 2 then raise exception')
+})
+
+test('the follow-up reads only a stored page, only a provider with no description and no manual lock, deletes and updates nothing', () => {
+  expect(F).toContain('security.provider_description_stored_v1(p.id) is not null')
+  expect(F).toContain("nullif(btrim(p.description), '') is null")
+  expect(F).toContain("l.field in ('description', 'p_description', 'all')")
+  expect(fcode).not.toMatch(/\bdelete\s+from\b|\bdrop\b|\btruncate\b|\bupdate\s+(pipeline|catalogue)\./i)
+  expect(F).toMatch(/^-- Replaces: .+/m)
+  expect(F).toMatch(/^-- Retires: nothing$/m)
+})
