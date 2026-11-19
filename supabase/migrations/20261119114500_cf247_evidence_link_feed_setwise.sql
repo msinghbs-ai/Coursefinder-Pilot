@@ -41,12 +41,13 @@ as $function$
        and e.evidence_type = any (array['layer2_html_snapshot','layer2_extraction_input','source_snapshot','provider_contact_html_snapshot'])
        and (e.mime_type ~~* '%html%' or e.mime_type ~~* '%json%')
        and not exists (select 1 from pipeline.evidence_link_index_state st
-                        where st.evidence_id = e.id and not (st.status = 'error' and st.indexed_at < now() - interval '6 hours'))  -- fixed: the retry wait the function had
-     order by o.rank_no
+                        where st.evidence_id = e.id and not (st.status = 'error' and st.indexed_at < now() - interval '6 hours'))),  -- fixed: the retry wait the function had
+  top as materialized (
+    select c.id, c.rank_no from cand c order by c.rank_no
      limit 5 * greatest(1, least(coalesce(p_limit, 60), 200))),  -- fixed: candidates read by id, five per item asked
   pick as (
     select a.id, a.storage_path, a.mime_type, a.source_url, a.evidence_type, a.captured_at, c.rank_no
-      from cand c cross join lateral (select x.* from pipeline.evidence_artifacts x where x.id = c.id) a
+      from top c cross join lateral (select x.* from pipeline.evidence_artifacts x where x.id = c.id) a
      order by c.rank_no, a.captured_at desc nulls last
      limit greatest(1, least(coalesce(p_limit, 60), 200)))
   select coalesce(jsonb_agg(jsonb_build_object('id',p.id,'path',p.storage_path,'mime',p.mime_type,'url',p.source_url,'type',p.evidence_type)

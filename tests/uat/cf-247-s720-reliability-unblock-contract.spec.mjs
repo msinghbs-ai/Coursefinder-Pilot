@@ -101,7 +101,7 @@ test('evidence-link-index feed (IQ-00348): ids from the queue index and one anti
   expect(L).toContain("set statement_timeout to '4s'  -- fixed:")
   expect(L).toContain('and not exists (select 1 from pipeline.evidence_link_index_state st')
   expect(L).toContain('with cand as materialized (')
-  expect(L).toContain('from cand c cross join lateral (select x.* from pipeline.evidence_artifacts x where x.id = c.id) a')
+  expect(L).toContain('from top c cross join lateral (select x.* from pipeline.evidence_artifacts x where x.id = c.id) a')
   expect(L).toContain("raise exception 'svc_evidence_link_index_next_v1 took % s (limit 3 s)'")
   const lc = L.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
   expect(lc).not.toMatch(/create table|create (or replace )?function (security|pipeline|api|search|destination)\./i)
