@@ -1,0 +1,1 @@
+update pipeline.sources set metadata=coalesce(metadata,'{}'::jsonb)||jsonb_build_object('worker_version','layer1-ca-sheridan-programs-v0.1.0','runtime_edge_pending',true) where id='77d813a8-637e-4fe5-a6ef-4ab9758b7d8c';
