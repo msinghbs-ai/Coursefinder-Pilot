@@ -35,3 +35,13 @@ test('the three summary tabs keep their names, the export layout and the ETA col
 test('the per-course CSV export stays daily', () => {
   expect(wf).toContain('- cron: "30 20 * * *"')
 })
+
+// s777 follow-up (20261119182000): part-totals never reach the stakeholder sheet; the tabs read returns null until every part is built
+test('the tabs are written only from a complete snapshot', () => {
+  const f = fs.readFileSync(migrationPath('20261119182000_cf247_s777_readiness_tabs_complete_only.sql'), 'utf8')
+  expect(f).toContain("select pg_temp.cf_edit_def('security.course_field_readiness_tabs_v1()'::regprocedure, '95bb07bb4afcff89d906b3ffd91dc486',")
+  expect(f).toContain("if v_s is null or coalesce((v_s->>'parts_built')::int, 0) < coalesce((v_s->>'parts')::int, 1) then return null; end if;")
+  expect(f).toContain("raise exception 'post-check: a partial snapshot (% of % parts) still returned tabs'")
+  // the summary keeps the counts the guard reads
+  expect(m).toContain("'parts_built', (select count(*) from pipeline.job_input_marks s where s.job_key like 'course-field-readiness:p%'")
+})
