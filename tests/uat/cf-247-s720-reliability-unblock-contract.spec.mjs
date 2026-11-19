@@ -91,3 +91,35 @@ test('the chunked coverage build is first in its due ticks; the dispatcher is un
   expect(P).toMatch(/^-- Replaces: /m)
   expect(P).toMatch(/^-- Retires: /m)
 })
+
+// 19 Nov 2026 11:42 critical alert (20261119114500): the evidence-link-index feed read as one set with an anti-join, inside 4 s.
+const L = fs.readFileSync('supabase/migrations/20261119114500_cf247_evidence_link_feed_setwise.sql', 'utf8')
+
+test('evidence-link-index feed (IQ-00348): ids from the queue index and one anti-join, rows read by id, 4 s query limit, 6 s deploy check', () => {
+  expect(L).toContain("<> 'ff9d9bc6d96f61f076871ab4d9e33ce0'")
+  expect(L).toContain("create or replace function public.svc_evidence_link_index_next_v1(p_limit integer default 60)")
+  expect(L).toContain("set statement_timeout to '4s'  -- fixed:")
+  expect(L).toContain('and not exists (select 1 from pipeline.evidence_link_index_state st')
+  expect(L).toContain('with cand as materialized (')
+  expect(L).toContain('from top c cross join lateral (select x.* from pipeline.evidence_artifacts x where x.id = c.id) a')
+  expect(L).toContain("raise exception 'svc_evidence_link_index_next_v1 took % s (limit 6 s)'")
+  const lc = L.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
+  expect(lc).not.toMatch(/create table|create (or replace )?function (security|pipeline|api|search|destination)\./i)
+  expect((lc.match(/create or replace function/gi) || []).length).toBe(1)
+  expect(lc).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
+  expect(L).toMatch(/^-- Replaces: /m)
+  expect(L).toMatch(/^-- Retires: /m)
+})
+
+// 19 Nov 2026 11:55 (20261119115000): 800 courses took 11.7 to 16.0 s live; 400 every 2 minutes.
+const B = fs.readFileSync('supabase/migrations/20261119115000_cf247_coverage_chunk_400.sql', 'utf8')
+
+test('the coverage chunk is 400 courses every 2 minutes, set in the setting with a reason (G2), nothing new created', () => {
+  expect(B).toContain("set value = to_jsonb(400), updated_at = now(),")
+  expect(B).toContain("where toolset_key = 'pipeline' and key = 'batch.course_coverage_courses' and value = to_jsonb(800);")
+  expect(B).toContain("set schedule = '0-58/2 * * * *', expected_ms = 7000,")
+  const bc = B.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
+  expect(bc).not.toMatch(/create (table|or replace|function)|^\s*(drop|delete|truncate)\b/im)
+  expect(B).toMatch(/^-- Replaces: /m)
+  expect(B).toMatch(/^-- Retires: /m)
+})
