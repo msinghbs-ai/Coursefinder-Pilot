@@ -1,18 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.54'
-export const PACKAGE_VERSION='0.1.476'
+export const UI_VERSION='2.16.55'
+export const PACKAGE_VERSION='0.1.477'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'19 Nov 2026',
-  title:'Coverage & completeness: Pipeline & field ETA',
+  title:'Users & roles: Create user fields stack cleanly',
   changes:[
-    'Coverage & completeness › Courses has a Pipeline & field ETA panel: for every API v3 field, how many courses have it admitted, are still in the pipeline (Trying), still need a source page, are not published by the provider, or are in Wave 2, with the daily velocity, the main bottleneck and the expected date every achievable course has it.',
-    'Choose Consolidated (all courses), By country (Australia, New Zealand, Canada) or By university (type part of the name and pick it from the list) to see that scope\'s figures.'
+
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Users & roles › Create user (Person, Role, Sign-in and Review) and the role and edit dialogs show each field as one stack: the label on its own line, a full-width box of the same height with room on the right for browser and password-manager icons, and the help text underneath. A long email address now shows in full, and nothing is squeezed onto one line on a phone.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
