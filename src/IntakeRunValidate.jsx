@@ -8,6 +8,7 @@ import { intakeStageTimeline } from './intake-stage-timeline'
 import { summariseEvidence } from './intake-evidence-view'
 import './intake-run-validate.css'
 
+const scopeMode = s => /^university:/.test(s || '') ? 'provider' : /^courses:/.test(s || '') ? 'courses' : 'approved'
 const value = x => x == null ? 'Not held' : typeof x === 'object' ? JSON.stringify(x, null, 2) : String(x)
 function Evidence({ data }) { return <pre className="intake-evidence">{value(data)}</pre> }
 function EvidenceSummary({ data }) {
@@ -23,6 +24,9 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
   const [scope, setScope] = useState(''), [size, setSize] = useState(''), [reason, setReason] = useState('')
   const [preview, setPreview] = useState(null), [cohort, setCohort] = useState(null), [run, setRun] = useState(null)
   const [report, setReport] = useState(null), [lookup, setLookup] = useState(''), [diagnostic, setDiagnostic] = useState(null)
+  // s790 PAGE-01: scope type (the approved scope, a provider page by page, or hand-picked courses)
+  const [mode, setMode] = useState('approved'), [uniQ, setUniQ] = useState(''), [unis, setUnis] = useState(null), [uniOffset, setUniOffset] = useState(0)
+  const [prov, setProv] = useState(null), [page, setPage] = useState(1), [courseQ, setCourseQ] = useState(''), [found, setFound] = useState(null), [picked, setPicked] = useState([])
   const lock = useRef(false), request = useRef(null)
   const execute = async (name, fn) => {
     if (lock.current) return
@@ -52,7 +56,7 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
     setReport(r); setLookup(r.cohort_id)
     const saved = r.saved_request
     if (saved) {
-      setCohort({ cohort_id: r.cohort_id }); setScope(saved.scope); setSize(String(saved.size)); setReason(saved.reason)
+      setCohort({ cohort_id: r.cohort_id }); setScope(saved.scope); setMode(scopeMode(saved.scope)); setSize(String(saved.size)); setReason(saved.reason)
       request.current = { cohortId: r.cohort_id, key: saved.request_key, reason: saved.reason }
       const last = r.runs?.at(-1)
       setRun(last ? { ...last.result, ...last } : null)
@@ -80,6 +84,17 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
     }
     catch (e) { setRun({ state: 'outcome_unknown' }); throw e }
   })
+  const wide = caps?.page_courses > 0
+  const findProviders = offset => execute('Finding providers', async () => { setUniOffset(offset); setUnis(await client.read('universities', { q: uniQ.trim(), offset, limit: 25 })) })
+  const pickProvider = (u, n = 1) => { invalidate(); setProv(u); setPage(n); setScope(`university:${u.id}:page:${n}`) }
+  const findCourses = () => execute('Finding courses', async () => setFound(await client.read('course_search', { q: courseQ.trim(), provider_id: prov?.id || '' })))
+  const togglePick = c => {
+    invalidate()
+    const next = picked.some(p => p.course_id === c.course_id) ? picked.filter(p => p.course_id !== c.course_id) : [...picked, c].slice(0, caps?.max_size || 20)
+    setPicked(next); setScope(next.length ? `courses:${next.map(p => p.course_id).join(',')}` : '')
+    if (next.length) setSize(String(Math.min(next.length, caps?.max_size || next.length)))
+  }
+  const changeMode = m => { invalidate(); setMode(m); setProv(null); setPicked([]); setFound(null); setScope(m === 'approved' ? (caps?.scopes?.[0]?.id || '') : '') }
   const courses = report?.courses || preview?.courses || []
   const unknown = run?.state === 'outcome_unknown'
   return <section className="m-panel intake-run" aria-label="Course intake Run & Validate">
@@ -93,12 +108,28 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
       {caps.universities?.length > 0 && <details><summary>Approved Australian universities and active course counts</summary>{caps.universities.map(u => <p key={u.id}>{u.name}: {u.active_courses} active courses</p>)}</details>}
       {caps.blocked_reason && <p role="status">Blocked: {caps.blocked_reason}. Next action: {caps.next_action || 'Ask the authorised operator to review the job controls.'}</p>}
       <div className="intake-form">
-        <label>University scope<select value={scope} disabled={!!busy || !!cohort} onChange={e => { invalidate(); setScope(e.target.value) }}>
+        {wide && <label>Scope type<select value={mode} disabled={!!busy || !!cohort} onChange={e => changeMode(e.target.value)}>
+          <option value="approved">Approved top Australian universities</option><option value="provider">One provider, page by page</option><option value="courses">Hand-picked courses</option>
+        </select><small>Every type uses the same intake plan, manual locks and same-month guard.</small></label>}
+        {mode === 'approved' && <label>University scope<select value={scope} disabled={!!busy || !!cohort} onChange={e => { invalidate(); setScope(e.target.value) }}>
           <option value="">Select a scope</option>{(caps.scopes || []).map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-        </select></label>
+        </select></label>}
         <label>Cohort size<input type="number" min={caps.min_size} max={caps.max_size} step="1" value={size} disabled={!!busy || !!cohort} onChange={e => { invalidate(); setSize(e.target.value) }}/><small>Server limit: {caps.min_size}–{caps.max_size} courses</small></label>
         <label>Audited reason<textarea value={reason} disabled={!!busy || !!cohort} onChange={e => setReason(e.target.value)}/></label>
       </div>
+      {wide && mode === 'provider' && !cohort && <div className="intake-picker" data-testid="intake-provider-picker">
+        <div className="intake-actions"><label>Find a provider<input value={uniQ} placeholder="Name (blank lists the largest first)" onChange={e => setUniQ(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') findProviders(0) }}/></label><Button disabled={!!busy} onClick={() => findProviders(0)}>Find providers</Button></div>
+        {unis && <><p>{unis.total ?? 0} Australian, New Zealand and Canadian providers with active courses{unis.total > 0 ? ` · showing ${uniOffset + 1}–${uniOffset + (unis.items?.length || 0)}` : ''}</p>
+          <div className="intake-table-scroll"><table><thead><tr><th>Provider</th><th>Country</th><th>Active courses</th><th>Pages</th><th></th></tr></thead><tbody>{(unis.items || []).map(u => <tr key={u.id} aria-selected={prov?.id === u.id}><td>{u.name}</td><td>{u.country}</td><td>{u.active_courses}</td><td>{u.pages}</td><td><Button compact disabled={!!busy} onClick={() => pickProvider(u)}>{prov?.id === u.id ? 'Chosen' : 'Choose'}</Button></td></tr>)}</tbody></table></div>
+          <div className="intake-actions"><Button compact disabled={!!busy || uniOffset === 0} onClick={() => findProviders(Math.max(0, uniOffset - 25))}>Previous</Button><Button compact disabled={!!busy || uniOffset + (unis.items?.length || 0) >= (unis.total || 0)} onClick={() => findProviders(uniOffset + 25)}>Next</Button></div></>}
+        {prov && <label>Course page<select value={page} disabled={!!busy} onChange={e => pickProvider(prov, Number(e.target.value))}>{Array.from({ length: Math.max(1, prov.pages || 1) }, (_, i) => <option key={i + 1} value={i + 1}>Page {i + 1} of {prov.pages || 1} ({caps.page_courses} courses a page)</option>)}</select><small>{prov.name}: {prov.active_courses} active courses. Pages cover every active course in a fixed order.</small></label>}
+      </div>}
+      {wide && mode === 'courses' && !cohort && <div className="intake-picker" data-testid="intake-course-picker">
+        <div className="intake-actions"><label>Find courses<input value={courseQ} placeholder="Title or course code (3 characters or more)" onChange={e => setCourseQ(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && courseQ.trim().length >= 3) findCourses() }}/></label><Button disabled={!!busy || courseQ.trim().length < 3} onClick={findCourses}>Find courses</Button></div>
+        {found && <div className="intake-table-scroll"><table><thead><tr><th></th><th>Course</th><th>Provider</th><th>Intakes</th><th>Without a start date</th></tr></thead><tbody>{(found.items || []).map(c => <tr key={c.course_id}><td><input type="checkbox" aria-label={`Pick ${c.title}`} checked={picked.some(p => p.course_id === c.course_id)} disabled={!!busy || (!picked.some(p => p.course_id === c.course_id) && picked.length >= (caps.max_size || 20))} onChange={() => togglePick(c)}/></td><td>{c.title}{c.code ? ` (${c.code})` : ''}</td><td>{c.provider} · {c.country}</td><td>{c.intakes}</td><td>{c.intakes_without_date}</td></tr>)}</tbody></table>{!found.items?.length && <p>No active course matches.</p>}</div>}
+        <p data-testid="intake-picked">{picked.length} of {caps.max_size} courses picked{picked.length ? `: ${picked.map(p => p.title).join('; ')}` : ''}</p>
+      </div>}
+      {wide && mode !== 'approved' && cohort && <p>Scope: {scope}</p>}
       <div className="intake-actions">
         <Button disabled={!!busy || !!cohort || !scope || !sizeValid} onClick={() => execute('Previewing eligible courses', async () => { invalidate(); setPreview(await client.read('preview', { scope, size: Number(size) })) })}>Preview eligible courses</Button>
         <Button disabled={!!busy || !canRun || !!caps.blocked_reason || !preview?.token || !preview.courses?.length || !reason.trim() || !!cohort} onClick={prepare}>Fix previewed cohort</Button>
@@ -124,6 +155,7 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
         <p>Verification at {fmtDateTime(report.as_at)} · Cohort {report.cohort_id}. {report.verdict || 'Verdict not supplied by backend'} {report.next_action}</p>
         <div className="intake-metrics">{Object.entries(report.totals || {}).filter(([, v]) => typeof v === 'number').map(([k, v]) => <Metric key={k} label={k.replaceAll('_', ' ')} value={v}/>)}</div>
         {courses.length > 0 && <details open><summary>Catalogue, Website and Zoho agreement by university</summary><div className="intake-table-scroll"><table><thead><tr><th>University</th><th>Courses</th><th>Website matches</th><th>Website differs</th><th>Website not read</th><th>Zoho matches</th><th>Zoho differs</th><th>Zoho not read</th></tr></thead><tbody>{parityByProvider(courses).map(r => <tr key={r.provider}><td>{r.provider}</td><td>{r.courses}</td><td>{r.website.match}</td><td>{r.website.differs}</td><td>{r.website.not_read + r.website.cannot_compare}</td><td>{r.zoho.match}</td><td>{r.zoho.differs}</td><td>{r.zoho.not_read + r.zoho.cannot_compare}</td></tr>)}</tbody></table></div><p>Read-only comparison of the values shown below. A side that was not read is counted as not read, never as a match.</p></details>}
+        {report.stage_history?.length > 0 && <details open data-testid="intake-stage-history"><summary>Stage history (fetched, parsed, extracted, verified, admitted, held)</summary><div className="intake-table-scroll"><table><thead><tr><th>Run</th><th>Stage</th><th>Courses</th><th>Intakes</th><th>Recorded</th></tr></thead><tbody>{report.stage_history.map((s, i) => <tr key={`${s.run_id || 'selection'}-${s.stage}-${i}`} data-stage={s.stage}><td>{s.run_id || 'At selection'}</td><td>{s.stage}</td><td>{s.courses}</td><td>{s.intakes}</td><td>{fmtDateTime(s.recorded_at)}</td></tr>)}</tbody></table></div><p>Fetched, parsed and extracted are counted from the stored evidence when the cohort was fixed; verified, admitted and held after each run, with its run ID.</p></details>}
         <details><summary>Audited runs and failure reasons</summary><Evidence data={report.runs}/><Evidence data={report.totals?.skipped_or_failed}/></details>
       </>}
       {courses.map(c => <article key={c.course_id} className="intake-course">

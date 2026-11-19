@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.482 — 20 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.60** (Platform Admin 19 Nov 2026 23:12 and 23:21, chat S1-Build). CF-247 s790/s791 (IQ-00313 F-INT PAGE-01, OPS-01, VERIFY-01): intake Run & Validate pages any AU, NZ or CA provider and takes hand-picked courses; durable stage counts per cohort and run (pipeline.intake_cohort_stages); setting run_now.university_page_courses (200).
+
 ## 0.1.481 — 19 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.59** (Platform Admin 19 Nov 2026 19:26, chat S1-RM-Design, s768 live check of v2.16.58). No migration. `src/Layer4Grid.jsx`: for row-based items the Proposed column states the row count and the quote column shows the first four quotes with a count of the rest. Spec `cf-247-s768-layer4-review-drawer-triage-contract` (one more test).

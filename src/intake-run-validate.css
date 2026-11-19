@@ -30,3 +30,8 @@
 .rb-counts{display:flex;flex-wrap:wrap;gap:6px}
 .rb-approve{display:grid;gap:6px;margin:8px 0}.rb-approve label{display:grid;gap:4px}.rb-approve input{width:100%;min-width:0}
 .rb-out{display:inline-flex;gap:4px;align-items:center;margin-left:6px;font-size:var(--cf-fs-xs)}
+/* CF-247 s790 PAGE-01 (19 Nov 2026): provider and course pickers */
+.intake-picker { display: grid; gap: var(--cf-space-2); margin: var(--cf-space-3) 0; padding: var(--cf-space-3); border: 1px solid var(--cf-border); border-radius: 6px; min-width: 0; }
+.intake-picker label { display: flex; flex-direction: column; gap: var(--cf-space-2); }
+.intake-picker select, .intake-picker input:not([type=checkbox]) { width: 100%; max-width: 100%; min-width: 0; font: inherit; }
+.intake-picker tr[aria-selected=true] td { font-weight: 600; }
