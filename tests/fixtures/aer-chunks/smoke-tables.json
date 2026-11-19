@@ -1,0 +1,115 @@
+{
+ "rule": "S747: the gate-held pages (rule gate_incomplete) of tests/fixtures/aer-chunks/held, most rows lost first (then file name), one page per host; on each page its largest table of 8 to 70 row chunks and at most 12,000 characters (then the lower table index)",
+ "tables": [
+  {
+   "file": "tafeqld-edu-au-international-how-to-apply-academic-entry-requirements-1371cc8b.html.gz",
+   "source_id": "1371cc8b-8670-4083-92d6-5329c0832628",
+   "url": "https://tafeqld.edu.au/international/how-to-apply/academic-entry-requirements",
+   "lost": 57,
+   "read": 36,
+   "table": 0,
+   "rows": 24,
+   "chars": 4983,
+   "first": "Brazil | Diploma de Ensino Medio (Year 10 equivalent) | Diploma de Ensino Medio Diploma de Técnico de Nivel Medio IB Diploma"
+  },
+  {
+   "file": "edithcowancollege-edu-au-how-apply-international-academic-entry-requir-0095462c.html.gz",
+   "source_id": "0095462c-04dc-4124-87a1-6b5812e56fb6",
+   "url": "https://www.edithcowancollege.edu.au/how-apply/international/academic-entry-requirements",
+   "lost": 29,
+   "read": 73,
+   "table": 0,
+   "rows": 13,
+   "chars": 2003,
+   "first": "IGCSE, GCSE or GCE | 3 x D grades (old grading system) / 3 (new grading system), or; 4 x E grades (old grading system) / 2 (new grading system). | 2 A-Level subjects with a minimum E Grade, or; 1 A-Level subject with a minimum E Grade and 2 AS-Level subjects with minimum E Grade, or; 3 or 4 AS-Level subjects with a with a total of 4 points (a = 2.5; b = 2; c = 1.5; d = 1 ; e = 0.5)"
+  },
+  {
+   "file": "murdochcollege-edu-au-entry-requirements-837ff6bc.html.gz",
+   "source_id": "837ff6bc-439a-4b94-b1e7-fd24681d36b1",
+   "url": "https://www.murdochcollege.edu.au/entry-requirements",
+   "lost": 15,
+   "read": 103,
+   "table": 0,
+   "rows": 8,
+   "chars": 2356,
+   "first": "IELTS Academic (including IELTS One Skill Retake) | 5.5 overall (all bands 5.0 or above) or equivalent | 6.0 overall (all bands 5.5 or above) or equivalent | 6.0 overall (all bands 5.5 or above) or equivalent | 5.5 overall (all bands 5.0 or above) or equivalent | 5.5 overall (all bands 5.0 or above) or equivalent | 6.0 overall (all bands 5.5 or above) or equivalent"
+  },
+  {
+   "file": "wintec-ac-nz-international-international-academic-entry-requirements-f06a01dd.html.gz",
+   "source_id": "f06a01dd-d77e-48bc-b646-e669e22daffd",
+   "url": "https://www.wintec.ac.nz/international/international-academic-entry-requirements",
+   "lost": 15,
+   "read": 93,
+   "table": 63,
+   "rows": 10,
+   "chars": 640,
+   "first": "Karen Kemsley | International Student Services Manager"
+  },
+  {
+   "file": "tafesa-edu-au-international-entry-requirements-c26d3123.html.gz",
+   "source_id": "c26d3123-640a-4cec-9556-4a1491d54371",
+   "url": "https://www.tafesa.edu.au/international/entry-requirements",
+   "lost": 8,
+   "read": 25,
+   "table": 0,
+   "rows": 34,
+   "chars": 5408,
+   "first": "Entry Requirements | Country/Region | TAFE SA | TAFE SA"
+  },
+  {
+   "file": "imc-edu-au-study-international-entry-requirements-e5f03584.html.gz",
+   "source_id": "e5f03584-1afd-48e1-8c04-d1949eb0af2e",
+   "url": "https://www.imc.edu.au/study/international-entry-requirements/",
+   "lost": 7,
+   "read": 92,
+   "table": 0,
+   "rows": 34,
+   "chars": 8452,
+   "first": "Australia | Completion of HSC | Completion of HSC with ATAR 50 | Completion of Bachelor degree"
+  },
+  {
+   "file": "manukau-ac-nz-study-international-students-how-to-apply-entry-requirem-d0419df1.html.gz",
+   "source_id": "d0419df1-412a-4e59-b205-cc65497a8dd7",
+   "url": "https://www.manukau.ac.nz/study/international-students/how-to-apply/entry-requirements-academic/",
+   "lost": 7,
+   "read": 68,
+   "table": 0,
+   "rows": 43,
+   "chars": 4894,
+   "first": "New Zealand | Successful completion of Year 12 (NCEA Level 2) | Successful completion of Year 13 (NCEA Level 3) with minimum of with minimum of 48 credits (approx) 42 credits (approx) or International Baccalaureate score 24+ or Cambridge International Examination (CIE) 120 points on UCAS tariff"
+  },
+  {
+   "file": "sibt-nsw-edu-au-how-apply-admissions-international-115ba233.html.gz",
+   "source_id": "115ba233-1118-430e-95af-e0d04dccaf0b",
+   "url": "https://sibt.nsw.edu.au/how-apply/admissions/international",
+   "lost": 6,
+   "read": 27,
+   "table": 0,
+   "rows": 8,
+   "chars": 473,
+   "first": "IELTS (Academic) | 5.5 (min 5.0 in all bands) | 6.0 (min 5.5 in all bands)"
+  },
+  {
+   "file": "kbs-edu-au-admissions-entry-requirements-international-entry-requireme-7b3cbaad.html.gz",
+   "source_id": "7b3cbaad-fcbd-4e7d-85ac-4ddf64fa14fc",
+   "url": "https://www.kbs.edu.au/admissions/entry-requirements/international-entry-requirements",
+   "lost": 5,
+   "read": 76,
+   "table": 1,
+   "rows": 49,
+   "chars": 11579,
+   "first": "Argentina | Successful completion of Bachiller / Bachillerato with an average grade of 60% | Successful completion of Bachiller / Bachillerato with grade average of 80% or higher in the final year or satisfactory completion of one year study at a recognised tertiary or higher education institution"
+  },
+  {
+   "file": "koi-edu-au-international-applicants-entry-requirement-36d483c8.html.gz",
+   "source_id": "36d483c8-74f0-48f2-a2e2-443647cfef90",
+   "url": "https://koi.edu.au/international-applicants-entry-requirement",
+   "lost": 5,
+   "read": 11,
+   "table": 0,
+   "rows": 14,
+   "chars": 4264,
+   "first": "International Applicants Entry Requirement &#8211; KOI | Course | Direct entry requirements – Minimum academic qualifications"
+  }
+ ]
+}

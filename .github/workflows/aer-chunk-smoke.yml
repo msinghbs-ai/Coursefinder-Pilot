@@ -1,0 +1,39 @@
+# AER v2 matrix reader on the row chunker: the 10-table smoke test (CF-247 S747, session S2-BOOST-AER; Platform Admin 19 Nov 2026 10:48 AEDT: "open a bounded
+# on-demand window capped at <= US$0.10 for the 10-table chunked smoke test, close the window immediately after").
+# Through the Management API with no confirmation prompt: on-demand window open, worker mode aer_chunk_smoke for 3 pinned models x 10 tables under one
+# spend total, window closed whatever happened, figures recorded as one control event. Nothing is qualified, admitted or switched on.
+name: AER matrix chunk smoke test (no admission)
+on:
+  workflow_dispatch:
+    inputs:
+      max_usd:
+        description: "Spend cap in US$ (at most 0.10)"
+        required: true
+        default: "0.10"
+      confirm_project:
+        description: "Type the Pilot project ref to confirm"
+        required: true
+concurrency:
+  group: aer-chunk-smoke
+  cancel-in-progress: false
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      MAXUSD: ${{ inputs.max_usd }}
+      CONFIRM: ${{ inputs.confirm_project }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Refuse another project
+        run: |
+          if [ -z "$REF" ] || [ "$CONFIRM" != "$REF" ]; then echo "::error::Refused: the typed project ref does not match the Pilot"; exit 1; fi
+      - name: Run the smoke test
+        run: node scripts/aer-chunk-smoke.mjs "$MAXUSD"
