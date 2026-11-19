@@ -1,0 +1,51 @@
+# Deterministic English and academic entry reader (CF-247 S815, session S1-AER; Platform Admin 20 Nov 2026 10:51 AEDT, Decision 2). $0: no model, no Firecrawl. Reads stored course pages
+# (coverage-sweep mode aer_det_read, read only) in small batches and records SHADOW readings with their verbatim quotes (security.aer_det_record_v1). Nothing is admitted; the AER gates are untouched.
+# Through the Management API with no prompt (17 Nov 2026 22:05 mandate).
+name: AER deterministic entry reader
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "status (read only) or run"
+        required: true
+        default: "status"
+      pages:
+        description: "Pages to read this run (run only)"
+        required: true
+        default: "200"
+      country:
+        description: "AU, NZ, CA or all"
+        required: true
+        default: "all"
+      confirm_project:
+        description: "Type the Pilot project ref to confirm"
+        required: true
+concurrency:
+  group: aer-det-read
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - name: Confirm the project
+        run: |
+          if [ -z "$REF" ]; then echo "::error::Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
+          if [ "${{ inputs.confirm_project }}" != "$REF" ]; then echo "::error::Refused: the typed project ref does not match the Pilot"; exit 1; fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Read
+        run: node scripts/aer-det-read.mjs "${{ inputs.mode }}" "${{ inputs.pages }}" "${{ inputs.country }}"
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: aer-det-sample
+          path: aer-det-sample.json
+          if-no-files-found: ignore
