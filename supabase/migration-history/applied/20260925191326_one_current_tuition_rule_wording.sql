@@ -1,0 +1,40 @@
+create or replace function security.course_fee_dedupe_v1(p_apply boolean default false, p_course_ids uuid[] default null)
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog','security','catalogue','search','pipeline'
+as $function$
+declare v_list jsonb; v_n int := 0; v_courses uuid[];
+begin
+  with a as (
+    select f.*, security.course_fee_rank_key(f) rk,
+           count(*) over (partition by f.course_id, f.audience, f.fee_type, f.amount) n
+    from catalogue.course_fees f
+    where f.fee_type='provider_current_tuition' and f.status='active'
+      and (p_course_ids is null or f.course_id = any(p_course_ids))),
+  r as (select a.*, row_number() over (partition by course_id, audience, fee_type, amount order by rk desc) pos from a where n>1)
+  select jsonb_agg(jsonb_build_object('course',(select course_code from catalogue.courses c where c.id=r.course_id),
+            'keep', pos=1, 'amount', amount, 'year', fee_year, 'basis', basis, 'origin',
+            case when notes like 'CF-247 provider rule admission%' then 'provider rule' when notes ilike '%layer 3%' then 'Layer 3 AI' else 'other' end)
+          order by course_id, pos),
+         array_agg(distinct course_id)
+  into v_list, v_courses from r;
+  if p_apply and v_courses is not null then
+    with a as (
+      select f.id, row_number() over (partition by f.course_id, f.audience, f.fee_type, f.amount order by security.course_fee_rank_key(f) desc) pos,
+             count(*) over (partition by f.course_id, f.audience, f.fee_type, f.amount) n
+      from catalogue.course_fees f
+      where f.fee_type='provider_current_tuition' and f.status='active' and f.course_id = any(v_courses))
+    update catalogue.course_fees f set status='superseded', updated_at=now(),
+           notes = f.notes || ' | superseded by one-current-tuition rule (Decision 132) ' || to_char(now(),'YYYY-MM-DD')
+    from a where a.id=f.id and a.n>1 and a.pos>1;
+    get diagnostics v_n = row_count;
+    update catalogue.course_fees f set basis=pf.resolved_basis, updated_at=now(),
+           notes = f.notes || ' | basis set to the approved provider rule wording (' || pf.rule_code || ', Decision 132)'
+    from catalogue.courses c
+    join pipeline.provider_fee_profiles pf on pf.provider_id=c.provider_id and pf.active
+    where c.id=f.course_id and f.course_id = any(v_courses) and f.status='active'
+      and f.fee_type='provider_current_tuition' and f.audience=pf.audience
+      and f.basis='annual' and pf.resolved_basis<>'annual';
+    perform search.refresh_course_enrichment_scoped_v1(v_courses, true);
+  end if;
+  return jsonb_build_object('mode',case when p_apply then 'apply' else 'proof' end,'courses',coalesce(cardinality(v_courses),0),'superseded',v_n,'rows',coalesce(v_list,'[]'::jsonb));
+end $function$;
+revoke all on function security.course_fee_dedupe_v1(boolean,uuid[]) from public, anon, authenticated;
