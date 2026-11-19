@@ -10,7 +10,8 @@
 -- one to one; Pilot #1397 (20261119190000) and #1398 (20261119191000) are open, so this is numbered above both.
 -- G3: no consumer table, view or function is created or changed; the public functions edited are admin_* operator bridges (not consumer API);
 -- the new table and functions are in schemas pipeline and security. No spend (planning reads stored pages and approved calendars only).
--- Replaces: the fixed top-10 scope as the only way in (kept, and still the default). Retires: nothing.
+-- Replaces: nothing (the fixed top-10 scope is kept and is still the default).
+-- Retires: nothing.
 
 -- G2: the page size of a provider's course list
 insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason)
@@ -30,8 +31,7 @@ create table if not exists pipeline.intake_cohort_stages (
   intakes integer not null,
   recorded_at timestamptz not null default now()
 );
-comment on table pipeline.intake_cohort_stages is
-  'CF-247 s791 OPS-01: stage counts of a Course intake Run & Validate cohort. fetched, parsed and extracted are written when the cohort is fixed (run_id null); verified, admitted and held after each Run Now (with its admin_jobs run id). Written only by security.intake_cohort_stages_record_v1; never updated or deleted.';
+comment on table pipeline.intake_cohort_stages is 'CF-247 s791 OPS-01: stage counts of a Course intake Run & Validate cohort. fetched, parsed and extracted are written when the cohort is fixed (run_id null); verified, admitted and held after each Run Now (with its admin_jobs run id). Written only by security.intake_cohort_stages_record_v1; never updated or deleted.';
 create index if not exists intake_cohort_stages_cohort_idx on pipeline.intake_cohort_stages (cohort_id, recorded_at);
 alter table pipeline.intake_cohort_stages enable row level security;
 revoke all on pipeline.intake_cohort_stages from public, anon, authenticated;

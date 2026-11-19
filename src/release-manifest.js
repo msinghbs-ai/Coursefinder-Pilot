@@ -1,17 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.59'
-export const PACKAGE_VERSION='0.1.481'
+export const UI_VERSION='2.16.60'
+export const PACKAGE_VERSION='0.1.482'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'19 Nov 2026',
-  title:'Layer 4 Review: tidier side-by-side columns for row-based items',
-  changes:[],
-  bugFixes:[
-    'Layer 4 Review › Grid, item drawer: for items made of many rows (such as entry requirements), the Proposed column says how many rows are proposed instead of a column of dashes, and the quote column shows the first four quotes with a count of the rest; the full row-by-row table stays below.'
-  ]
+  date:'20 Nov 2026',
+  title:'Course intake Run & Validate: any provider by page, hand-picked courses and stage history',
+  changes:[
+    'Course intake Run & Validate (Layer 2/3 operations): Scope type chooses the approved top Australian universities (as before), one provider page by page (every active Australian, New Zealand or Canadian provider, 200 courses a page, a Pipeline setting), or hand-picked courses found by title or course code (up to the cohort limit).',
+    'Course intake Run & Validate: each cohort keeps its stage counts. Fetched, parsed and extracted are counted from the stored evidence when the cohort is fixed; verified, admitted and held after each Run Now, with its run ID. Verify shows them under Stage history.'
+  ],
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
