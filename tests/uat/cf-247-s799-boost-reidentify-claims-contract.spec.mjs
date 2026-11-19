@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261120090000_cf247_s799_boost_and_reidentify_claims.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261120095000_cf247_s799_boost_and_reidentify_claims.sql', 'utf8')
 const body = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const boost = body.slice(body.indexOf('create or replace function security.boost_extract_claim_v1'), body.indexOf('create or replace function public.svc_coverage_reidentify_next'))
 const reid = body.slice(body.indexOf('create or replace function public.svc_coverage_reidentify_next'))
