@@ -54,18 +54,18 @@ test('nothing is deleted, merged or retired, and the consumer API is not touched
 })
 
 // Follow-up 20261119175000: the worker held the two reads on its recovery memory (no model call, nothing spent); they are asked for on demand, the way Fill description asks.
-const F = fs.readFileSync('supabase/migrations/20261119175000_cf247_s766_torrens_moore_on_demand_read.sql', 'utf8')
+const F = fs.readFileSync('supabase/migrations/20261119175000_cf247_s766_trading_names_on_demand_read.sql', 'utf8')
 const fcode = F.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n').replaceAll('on commit drop', 'on commit')
 
 test('the follow-up opens an on-demand request with its estimate, scoped to openrouter, and marks the two reads on demand', () => {
   expect(F).toContain("security.on_demand_open_v1('claude_session'")
   expect(F).toContain("array['openrouter']")
-  expect(F).toContain("jsonb_build_object('reads', (select count(*) from cf_s766b), 'ai_usd', 0.003, 'firecrawl_credits', 0)")
+  expect(F).toContain("jsonb_build_object('reads', (select count(*) from cf_s766b), 'ai_usd', 0.01, 'firecrawl_credits', 0)")
   expect(F).toContain("'on_demand', jsonb_build_object('by', 'c0ffee00-0000-4000-8000-000000000150', 'at', now())")
   expect(F).toContain("pipeline.svc_pilot_submit_nonce('coverage-sweep'")
   expect(F).toContain("security.pipeline_num_v1('pdesc.acquire_firecrawl', 1) <> 0")
   expect(F).toContain("'openai/gpt-4.1-mini'")
-  expect(F).toContain('if v_n > 2 then raise exception')
+  expect(F).toContain('if v_n > 6 then raise exception')
 })
 
 test('the follow-up reads only a stored page, only a provider with no description and no manual lock, deletes and updates nothing', () => {
@@ -75,4 +75,14 @@ test('the follow-up reads only a stored page, only a provider with no descriptio
   expect(fcode).not.toMatch(/\bdelete\s+from\b|\bdrop\b|\btruncate\b|\bupdate\s+(pipeline|catalogue)\./i)
   expect(F).toMatch(/^-- Replaces: .+/m)
   expect(F).toMatch(/^-- Retires: nothing$/m)
+})
+
+test('the follow-up records the trading names the stored page headings carry, the Holmes Institute host owner, and leaves the two holds an alias cannot clear', () => {
+  for (const [k, a] of [['provider:nzqa:7008', 'Auckland University of Technology in New Zealand'], ['provider:nzqa:7008', 'AUT'], ['provider:cricos:03744b', 'CIHE'], ['provider:cricos:03744b', 'Crown Institute of Higher Education'],
+    ['provider:cricos:03127e', 'Kaplan Murdoch'], ['provider:cricos:03906m', 'Sydney Metropolitan Institute of Technology']]) expect(F).toContain(`('${k}', '${a}')`)
+  expect(F).toContain("p.stable_key = 'provider:cricos:02639m'")
+  expect(F).toContain("host = 'holmesinstitute.edu.au'")
+  // Lyons College and Te Whare Wananga o Awanuiarangi: the name is already the catalogue name, so no alias is recorded and the proof is not weakened
+  expect(fcode).not.toMatch(/provider:cricos:03578m|provider:nzqa:9386/)
+  expect(F).toContain("'trading_name'")
 })
