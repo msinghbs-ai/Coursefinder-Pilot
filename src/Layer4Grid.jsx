@@ -17,10 +17,12 @@ import Layer4Clusters from'./Layer4Clusters' // v2.16.43: clusters by kind, univ
 import{CountryFlag}from'./ProviderListParts' // s767: the drawn flags of Catalogue › Providers
 
 const call=async(fn,args)=>{const{data,error}=await supabase.rpc(fn,args);if(error)throw new Error(error.message);return data}
+const QUOTE_CAP=4 // the review column shows the first quotes; the table below lists every row
 function Drawer({target,kinds,targetDays,renderItem,onClose,onDecided,nav}){
   const[t,setT]=useState(null),[err,setErr]=useState(''),[tick,setTick]=useState(0)
   useEffect(()=>{setT(null);setErr('');call('admin_layer4_item_trace_v1',{p_kind:target.kind,p_ref:target.ref}).then(setT).catch(e=>setErr(e.message))},[target.kind,target.ref,tick])
   const it=t?.item,pairs=useMemo(()=>quoteValuePairs(it),[it])
+  const withValue=pairs.filter(p=>String(p.value??'').trim()!==''&&String(p.value)!=='—'),quotes=pairs.filter(p=>p.quote)
   const evidenceUrl=urlOf(t?.evidence?.source_url)||urlOf(it?.detail?.source_url)||urlOf(it?.detail?.evidence?.page_url)
   return <><button className="m-drawer-backdrop" onClick={onClose} aria-label="Close"/><aside className="m-drawer l4g-drawer" aria-label="Source quote and extracted value" data-l4g-drawer>
     <div className="m-drawer-head"><div><small>{kinds[target.kind]?.label||target.kind}</small><h2>{it?.subject||target.subject||'Item'}</h2>{it?.provider&&<p className="l4g-sub">{it.provider}</p>}</div><button onClick={onClose} aria-label="Close"><X size={18}/></button></div>
@@ -35,11 +37,12 @@ function Drawer({target,kinds,targetDays,renderItem,onClose,onDecided,nav}){
       {t&&!t.waiting&&<p className="l4g-note" data-l4g-decided>This item is no longer waiting: it was decided or closed. Its history is below.</p>}
       {it&&<section className="l4g-review" data-l4g-review aria-label="Review side by side">
         <div className="l4g-rv-col" data-l4g-proposed><h3>Proposed text or value</h3>
-          {pairs.length?pairs.map((p,i)=><div key={i} className="l4g-rv-val">{p.link&&urlOf(p.value)?<a href={p.value} target="_blank" rel="noreferrer">{p.value} <ExternalLink size={11}/></a>:<span>{String(p.value??'')||'—'}</span>}{p.before&&<small className="l4g-muted"> (held now: {p.before})</small>}</div>)
+          {withValue.length?withValue.map((p,i)=><div key={i} className="l4g-rv-val">{p.link&&urlOf(p.value)?<a href={p.value} target="_blank" rel="noreferrer">{p.value} <ExternalLink size={11}/></a>:<span>{String(p.value)}</span>}{p.before&&<small className="l4g-muted"> (held now: {p.before})</small>}</div>)
+            :pairs.length?<p className="l4g-muted" data-l4g-rows-only>{fmtNumber(pairs.length)} proposed row{pairs.length===1?'':'s'}; each is read with its quote under Source quote and extracted value below.</p>
             :<p className="l4g-muted">This kind holds no proposed value; the reason and the suggestion say what is needed.</p>}
         </div>
         <div className="l4g-rv-col" data-l4g-source><h3>Verbatim source quote</h3>
-          {pairs.some(p=>p.quote)?pairs.map((p,i)=>p.quote?<q key={i} className="l4g-rv-quote">{p.quote}</q>:null):<p className="l4g-muted">No quote is held for this item.</p>}
+          {quotes.length?<>{quotes.slice(0,QUOTE_CAP).map((p,i)=><q key={i} className="l4g-rv-quote">{p.quote}</q>)}{quotes.length>QUOTE_CAP&&<p className="l4g-muted" data-l4g-more-quotes>and {fmtNumber(quotes.length-QUOTE_CAP)} more, in the table below.</p>}</>:<p className="l4g-muted">No quote is held for this item.</p>}
           {evidenceUrl?<p className="l4g-rv-src"><a href={evidenceUrl} target="_blank" rel="noreferrer" data-l4g-source-link>{evidenceUrl} <ExternalLink size={11}/></a>{t?.evidence?.captured_at&&<small className="l4g-muted"> · saved {fmtDate(t.evidence.captured_at)}</small>}</p>:<p className="l4g-muted">No source page is linked to this item.</p>}
         </div>
         <div className="l4g-rv-col" data-l4g-hold><h3>Machine hold reason</h3>
