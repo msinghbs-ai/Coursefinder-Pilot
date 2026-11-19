@@ -149,13 +149,13 @@ update pipeline.platform_toolset_settings
    set value = to_jsonb(80),
        reason = 's767 (19 Nov 2026, Platform Admin 11:34 directive): 14 of 48 runs hit the 120-second statement limit at 120 providers; 80 keeps the '
              || '36-hour maximum age for the 2,565 providers in scope and about two thirds of the run',
-       updated_by = 'migration 20261119120000', updated_at = now()
+       updated_at = now()
  where toolset_key = 'pipeline' and key = 'batch.sch_coverage_classify' and value = to_jsonb(120);
 update pipeline.platform_toolset_settings
    set value = to_jsonb(25),
        reason = 's767 (19 Nov 2026, Platform Admin 11:34 directive): 10 of 48 runs hit the 120-second statement limit at 40 providers (median 97 s; '
              || 'candidate query 13.5 s, the rest per provider); 25 keeps a run near 65 s',
-       updated_by = 'migration 20261119120000', updated_at = now()
+       updated_at = now()
  where toolset_key = 'pipeline' and key = 'bind.no_page_providers_per_run' and value = to_jsonb(40);
 
 -- 6. Effective state of a job a live dispatcher holds (read only), for the telemetry exporter's revision 4 and the job governance audit

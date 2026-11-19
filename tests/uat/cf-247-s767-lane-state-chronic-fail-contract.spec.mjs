@@ -48,7 +48,7 @@ test('waste-guard keeps its three guards; the cost measure is rollup target ops-
 test('two per-run sizes are lowered from the value that was read, each with its reason', () => {
   expect(c).toContain("where toolset_key = 'pipeline' and key = 'batch.sch_coverage_classify' and value = to_jsonb(120);")
   expect(c).toContain("where toolset_key = 'pipeline' and key = 'bind.no_page_providers_per_run' and value = to_jsonb(40);")
-  expect((c.match(/updated_by = 'migration 20261119120000'/g) || []).length).toBe(2)
+  expect((c.match(/reason = 's767 \(19 Nov 2026, Platform Admin 11:34 directive\): /g) || []).length).toBe(2)
 })
 
 test('the idle guard never switches a retiring or retired job on again (UR-07)', () => {
