@@ -14,6 +14,10 @@ on:
         description: "Items a tick (at most 250)"
         required: true
         default: "40"
+      batch:
+        description: "Rule checks a statement in triage (5 to 400; halves on a statement time-out)"
+        required: true
+        default: "100"
       confirm_project:
         description: "Type the Pilot project ref to confirm"
         required: true
@@ -23,7 +27,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     permissions:
       contents: read
     env:
@@ -31,6 +35,7 @@ jobs:
       REF: ${{ vars.SUPABASE_PROJECT_REF }}
       MODE: ${{ inputs.mode }}
       MAX: ${{ inputs.max_per_tick }}
+      BATCH: ${{ inputs.batch }}
       CONFIRM: ${{ inputs.confirm_project }}
     steps:
       - uses: actions/checkout@v4
@@ -41,4 +46,4 @@ jobs:
         run: |
           if [ -z "$REF" ] || [ "$CONFIRM" != "$REF" ]; then echo "::error::Refused: the typed project ref does not match the Pilot"; exit 1; fi
       - name: Triage and drain
-        run: node scripts/aer-l4-drain.mjs "$MODE" "$MAX"
+        run: node scripts/aer-l4-drain.mjs "$MODE" "$MAX" "$BATCH"
