@@ -76,3 +76,18 @@ test('no new table or function; nothing dropped; the consumer API is checked, no
   expect(M).toMatch(/^-- Replaces: |Replaces: /m)
   expect(M).toMatch(/Retires: /m)
 })
+
+// 19 Nov 2026 11:15 (20261119111500): the dispatcher's 14-day longest run (112 s, the full rebuild) kept the chunked build deferred behind
+// group A's every-minute targets; the build runs first in its due ticks instead. The dispatcher itself is not changed.
+const P = fs.readFileSync('supabase/migrations/20261119111500_cf247_coverage_build_first_in_tick.sql', 'utf8')
+
+test('the chunked coverage build is first in its due ticks; the dispatcher is unchanged and nothing new is created', () => {
+  expect(P).toContain("set priority = 5, updated_at = now(),")
+  expect(P).toContain("where target_code = 'course-coverage-build' and priority = 50 and schedule = '1-59/3 * * * *';")
+  expect(P).toContain("raise exception 'another group A target already runs before priority 5'")
+  const pc = P.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
+  expect(pc).not.toMatch(/create (table|or replace|function|procedure)|rollup_tick_v1/i)
+  expect(pc).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
+  expect(P).toMatch(/^-- Replaces: /m)
+  expect(P).toMatch(/^-- Retires: /m)
+})
