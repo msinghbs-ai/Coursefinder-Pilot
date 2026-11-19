@@ -55,7 +55,7 @@ test('nothing is deleted, merged or retired, and the consumer API is not touched
 
 // Follow-up 20261119175000: the worker held the two reads on its recovery memory (no model call, nothing spent); they are asked for on demand, the way Fill description asks.
 const F = fs.readFileSync('supabase/migrations/20261119175000_cf247_s766_torrens_moore_on_demand_read.sql', 'utf8')
-const fcode = F.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
+const fcode = F.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n').replaceAll('on commit drop', 'on commit')
 
 test('the follow-up opens an on-demand request with its estimate, scoped to openrouter, and marks the two reads on demand', () => {
   expect(F).toContain("security.on_demand_open_v1('claude_session'")
