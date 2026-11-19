@@ -51,7 +51,7 @@ test('the request is the pinned model with its provider pins, a strict schema an
 test('worker v1.0.27 mode aer_chunk_smoke: sha-256 checked version, the stored copy only, the chosen table or nothing, spend at most US$0.10, nothing written', () => {
   expect(W).toContain('const WORKER = "coverage-sweep-worker-v1.0.27"; // v1.0.27 (19 Nov 2026, CF-247 S747')
   expect([AER_CHUNK_MODE, AER_CHUNK_CONTRACT, AER_CHUNK_INPUT]).toEqual(['aer_chunk_smoke', 'aer-matrix-chunk-answer-v1', 'entry-chunks-v1'])
-  const block = W.split('if (mode === AER_CHUNK_MODE) {')[1].split('    if (mode === "entry_ai") {')[0]
+  const block = W.split('if (mode === AER_CHUNK_MODE) {')[1].split('    if (mode === "entry_inspect") {')[0]
   expect(block).toContain('(await aerV2Sha256(system)) !== String(spec.system_sha256')
   expect(block).toContain('const maxUsd = Math.min(Number(body.max_usd) || 0, 0.10);  // fixed:')
   expect(block).toContain('if (spent >= maxUsd) { res.error = "spend_cap"')

@@ -2820,24 +2820,6 @@ async function handle(req: Request): Promise<Response> {
     // v0.48.5 (27 Oct 2026, Platform Admin 05:46: D5 and D4 tests "must use the stored source pages"): mode entry_inspect returns, for at
     // most 12 entry-matrix sources, the stored copy's h1, title and raw table markup with its content hash. Read only: no AI call, no web
     // fetch, no write. Size-capped per page (entry.inspect_chars is not a setting: this is a diagnostic cap, fixed below).
-    if (mode === "entry_inspect") {
-      const ids = (Array.isArray(body.source_ids) ? body.source_ids : []).slice(0, 12);  // fixed: diagnostic batch cap
-      const rows: { source_id: string; url: string; storage_path: string | null; mime: string | null; content_hash: string | null }[] = await rpc("svc_entry_matrix_inspect_paths", { p_source_ids: ids });
-      const out: unknown[] = [];
-      for (const r of rows) {
-        try {
-          if (!r.storage_path) { out.push({ source_id: r.source_id, url: r.url, error: "no stored copy" }); continue }
-          const { data, error } = await c.storage.from("evidence").download(r.storage_path); if (error || !data) throw Error(error?.message || "missing");
-          const b = new Uint8Array(await data.arrayBuffer());
-          const t = b[0] === 0x1f && b[1] === 0x8b ? await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text() : new TextDecoder().decode(b);
-          const pick = (re: RegExp) => (t.match(re) || [])[0] || "";
-          const tables = t.match(/<table\b[\s\S]*?<\/table>/gi) || [];
-          const html = [pick(/<title[^>]*>[\s\S]*?<\/title>/i), pick(/<h1[^>]*>[\s\S]*?<\/h1>/i), ...tables].join("\n").slice(0, 120000);  // fixed: diagnostic size cap
-          out.push({ source_id: r.source_id, url: r.url, content_hash: r.content_hash, storage_path: r.storage_path, sha256: await sha256(new TextEncoder().encode(t)), tables: tables.length, chars: t.length, html });
-        } catch (e) { out.push({ source_id: r.source_id, url: r.url, error: (e instanceof Error ? e.message : String(e)).slice(0, 200) }) }
-      }
-      return j({ ok: true, mode, pages: out, worker: WORKER, workerVersion: VERSION });
-    }
     // v1.0.27 (19 Nov 2026, CF-247 S747, session S2-BOOST-AER, Platform Admin 10:48 AEDT): the AER v2 matrix reader on the row chunker, smoke test only.
     // One table of one stored entry-matrix page (svc_entry_matrix_inspect_paths, the stored copy only: no Firecrawl, no live fetch) is chunked by
     // entry-chunks.ts and sent rows_per_call rows a call with the prompt version the caller read from pipeline.ai_instruction_versions (its text must
@@ -2893,6 +2875,24 @@ async function handle(req: Request): Promise<Response> {
       const vs = out.map((x) => x.verified || { rows: x.rows, answered: 0, missing: [], doubled: [], invented: [], quotes: 0, quotes_in_row: 0, minimums: 0, minimums_in_quote: 0, checks: [] });
       return j({ ok: true, mode, source_id: body.source_id, table, version: ver.version ?? null, model, rows: rows.length, groups: out, totals: aerChunkTotals(vs),
         cost_usd: out.reduce((t, x) => t + (Number(x.cost_usd) || 0), 0), spent_usd: spent, max_usd: maxUsd, openrouter: ors.summary(), ms: Date.now() - t0, worker: WORKER });
+    }
+    if (mode === "entry_inspect") {
+      const ids = (Array.isArray(body.source_ids) ? body.source_ids : []).slice(0, 12);  // fixed: diagnostic batch cap
+      const rows: { source_id: string; url: string; storage_path: string | null; mime: string | null; content_hash: string | null }[] = await rpc("svc_entry_matrix_inspect_paths", { p_source_ids: ids });
+      const out: unknown[] = [];
+      for (const r of rows) {
+        try {
+          if (!r.storage_path) { out.push({ source_id: r.source_id, url: r.url, error: "no stored copy" }); continue }
+          const { data, error } = await c.storage.from("evidence").download(r.storage_path); if (error || !data) throw Error(error?.message || "missing");
+          const b = new Uint8Array(await data.arrayBuffer());
+          const t = b[0] === 0x1f && b[1] === 0x8b ? await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text() : new TextDecoder().decode(b);
+          const pick = (re: RegExp) => (t.match(re) || [])[0] || "";
+          const tables = t.match(/<table\b[\s\S]*?<\/table>/gi) || [];
+          const html = [pick(/<title[^>]*>[\s\S]*?<\/title>/i), pick(/<h1[^>]*>[\s\S]*?<\/h1>/i), ...tables].join("\n").slice(0, 120000);  // fixed: diagnostic size cap
+          out.push({ source_id: r.source_id, url: r.url, content_hash: r.content_hash, storage_path: r.storage_path, sha256: await sha256(new TextEncoder().encode(t)), tables: tables.length, chars: t.length, html });
+        } catch (e) { out.push({ source_id: r.source_id, url: r.url, error: (e instanceof Error ? e.message : String(e)).slice(0, 200) }) }
+      }
+      return j({ ok: true, mode, pages: out, worker: WORKER, workerVersion: VERSION });
     }
     if (mode === "entry_ai") {
       const limit = Math.min(Number(body.limit || 4), 20);
