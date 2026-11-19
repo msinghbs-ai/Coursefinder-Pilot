@@ -181,18 +181,17 @@ select pg_temp.cf_edit_def('public.admin_intake_run_read_v1(text,jsonb)'::regpro
  'scope_forms',jsonb_build_array('top-au','<provider id>','university:<provider id>:page:<n>','courses:<course id>,<course id>'),
  'page_courses',security.pipeline_num_v1('run_now.university_page_courses',200));$n$,
         $n$ elsif p_view='universities' then  -- s790 PAGE-01: every active AU, NZ and CA provider with active courses, searchable and paged
- return (select jsonb_build_object('total',count(*) over (),'items',coalesce(jsonb_agg(x) filter (where x is not null) over (),'[]')) from (select 1) one
-   left join lateral (select jsonb_agg(jsonb_build_object('id',v.id,'name',v.name,'country',v.cc,'type',v.tcode,'active_courses',v.n,
-     'pages',greatest(1,ceil(v.n::numeric/security.pipeline_num_v1('run_now.university_page_courses',200))::int)) order by v.n desc, v.name) x
-     from (select p.id,coalesce(p.display_name,p.canonical_name) name,k.iso_alpha2 cc,t.code tcode,count(c.id) n
+ return (with v as (select p.id,coalesce(p.display_name,p.canonical_name) name,k.iso_alpha2 cc,t.code tcode,count(c.id) n
              from catalogue.providers p join ref.countries k on k.id=p.country_id and k.iso_alpha2 in ('AU','NZ','CA')
              left join ref.provider_types t on t.id=p.provider_type_id
              join catalogue.courses c on c.provider_id=p.id and c.lifecycle_status='active'
             where p.lifecycle_status='active'
               and (nullif(btrim(p_args->>'q'),'') is null or coalesce(p.display_name,p.canonical_name) ilike '%'||btrim(p_args->>'q')||'%')
               and (nullif(p_args->>'country','') is null or k.iso_alpha2=upper(p_args->>'country'))
-            group by p.id,2,3,4 order by count(c.id) desc, 2
-            offset greatest(0,coalesce((p_args->>'offset')::int,0)) limit least(greatest(1,coalesce((p_args->>'limit')::int,25)),50)) v) y on true limit 1);
+            group by p.id,2,3,4),
+   pg as (select * from v order by n desc, name, id offset greatest(0,coalesce((p_args->>'offset')::int,0)) limit least(greatest(1,coalesce((p_args->>'limit')::int,25)),50))
+   select jsonb_build_object('total',(select count(*) from v),'items',coalesce((select jsonb_agg(jsonb_build_object('id',pg.id,'name',pg.name,'country',pg.cc,'type',pg.tcode,'active_courses',pg.n,
+     'pages',greatest(1,ceil(pg.n::numeric/security.pipeline_num_v1('run_now.university_page_courses',200))::int)) order by pg.n desc, pg.name, pg.id) from pg),'[]')));
  elsif p_view='course_search' then  -- s790 PAGE-01: find single courses to pick (title or course code; one provider optional)
  if length(btrim(coalesce(p_args->>'q','')))<3 then raise exception 'type at least 3 characters'; end if;
  return jsonb_build_object('items',coalesce((select jsonb_agg(jsonb_build_object('course_id',x.id,'title',x.title,'code',x.course_code,'provider_id',x.provider_id,'provider',x.provider,'country',x.cc,
