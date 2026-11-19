@@ -30,7 +30,7 @@ begin
   v6 := v5 || ' ' || c_rule;
   update pipeline.provider_description_prompts set status = 'retired' where version = 5;
   insert into pipeline.provider_description_prompts(version, system_prompt, status, reason, activated_at)
-  values (6, v6, 'active', 'CF-247 S1-RM-Design 20261120102000 (Platform Admin 20 Nov 2026 08:06, s811, ISM-2158): version 5 plus the untrusted-source-text paragraph; the page text is fenced in the user message by the same tags. Wording otherwise unchanged.', now());
+  values (6, v6, 'active', 'CF-247 S1-RM-Design 20261120103000 (Platform Admin 20 Nov 2026 08:06, s811, ISM-2158): version 5 plus the untrusted-source-text paragraph; the page text is fenced in the user message by the same tags. Wording otherwise unchanged.', now());
 
   update pipeline.prompt_templates set status = 'retired', note = coalesce(note || ' ', '') || 'Retired 20 Nov 2026: the active prompt had moved on (version 5, then 6).'
    where service_code = 'provider_description' and version = 'v4';
@@ -51,7 +51,7 @@ begin
   if to_regclass('pipeline.ai_instruction_versions') is null or to_regprocedure('security.ai_instruction_register_v1(jsonb)') is null then
     raise exception 'required AI instruction registry is missing';
   end if;
-  perform set_config('cf247.release', '20261120102000', true);
+  perform set_config('cf247.release', '20261120103000', true);
   if exists (select 1 from pipeline.ai_instruction_versions where code = 'provider-description' and version = 'provider-description-v2.2') then raise notice 'provider-description-v2.2 exists: not added again'; return; end if;
   select * into v_old from pipeline.ai_instruction_versions where code = 'provider-description' and status = 'current';
   if not found then raise exception 'guard: no current provider-description baseline in the register'; end if;

@@ -6,7 +6,7 @@ import { transformSync } from 'esbuild'
 const read = (p) => fs.readFileSync(p, 'utf8')
 const DIR = 'supabase/functions/coverage-sweep'
 const { fenceSourceText, SOURCE_TEXT_RULE } = await import('data:text/javascript;base64,' + Buffer.from(transformSync(read(`${DIR}/untrusted.ts`), { loader: 'ts', format: 'esm' }).code).toString('base64'))
-const MIG = read('supabase/migrations/20261120102000_cf247_s811_provider_description_prompt_v6_untrusted_fence.sql')
+const MIG = read('supabase/migrations/20261120103000_cf247_s811_provider_description_prompt_v6_untrusted_fence.sql')
 
 test('every OpenRouter provider preference denies data collection (ISM-2103); none allows it', () => {
   let objects = 0
@@ -56,7 +56,7 @@ test('the provider description prompt: both user messages fence the page, the bu
   expect(MIG).toMatch(/\(v->>'functions'\)::int <> 75/); expect(MIG).toMatch(/\(v->>'relations'\)::int <> 48/)
   expect(MIG).not.toMatch(/create (or replace )?(function|table|view)|alter (function|table)|drop /i)
   expect(MIG).toMatch(/^-- Replaces: /m); expect(MIG).toMatch(/^-- Retires: /m)
-  expect(Number('20261120102000')).toBeGreaterThan(20261120101000)
+  expect(Number("20261120103000")).toBeGreaterThan(20261120102000)
 })
 
 test('Zoho API v3 shows an INVALID_INPUT detail only when it is the platform’s own text (ISM-1278)', () => {

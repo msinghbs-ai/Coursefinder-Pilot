@@ -2,7 +2,7 @@
 
 ## 0.1.485 — 20 Nov 2026
 
-- Prepared visible PIM Admin release candidate **v2.16.63** (Platform Admin 20 Nov 2026 08:06, chat S1-RM-Design). CF-247 s811 (ASD ISM): `/.well-known/security.txt` published as plain text; every OpenRouter request sets `data_collection: "deny"` (ISM-2103); provider description prompt version 6 (migration `20261120102000`) and its user message fence the page text in `<untrusted_source_text>` tags (ISM-2158); Zoho API v3 passes an `INVALID_INPUT` detail only when it is the platform's own text (ISM-1278). Consumer API unchanged (G3 75 functions, 48 relations).
+- Prepared visible PIM Admin release candidate **v2.16.63** (Platform Admin 20 Nov 2026 08:06, chat S1-RM-Design). CF-247 s811 (ASD ISM): `/.well-known/security.txt` published as plain text; every OpenRouter request sets `data_collection: "deny"` (ISM-2103); provider description prompt version 6 (migration `20261120103000`) and its user message fence the page text in `<untrusted_source_text>` tags (ISM-2158); Zoho API v3 passes an `INVALID_INPUT` detail only when it is the platform's own text (ISM-1278). Consumer API unchanged (G3 75 functions, 48 relations).
 
 ## 0.1.484 — 20 Nov 2026
 

@@ -25,7 +25,7 @@ export function fenceUntrusted(label: string, text: string): string {
   return `${UNTRUSTED_NOTE}\n<<<UNTRUSTED ${name}>>>\n${defuse(stripHiddenContent(text))}\n<<<END UNTRUSTED ${name}>>>`;
 }
 
-// CF-247 s811 (ISM-2158, Platform Admin 20 Nov 2026 08:06): the provider description prompt (registry version bump, migration 20261120102000) and the
+// CF-247 s811 (ISM-2158, Platform Admin 20 Nov 2026 08:06): the provider description prompt (registry version bump, migration 20261120103000) and the
 // Boost extractor Worker use one fence the model is told about by name: the page text sits between <untrusted_source_text> tags, the tags cannot be
 // forged from inside the text, and the system prompt carries SOURCE_TEXT_RULE. fenceUntrusted() above stays for the prompts that already use it.
 const defuseTag = (s: string) => s.replace(/<(\s*\/?\s*untrusted_source_text)/gi, "< $1");
