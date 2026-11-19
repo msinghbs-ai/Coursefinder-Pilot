@@ -7,6 +7,9 @@
 // counsellor reports are closed here (Fixed, Not changed), and Decided lists the decisions taken here (who, when, choice, reason).
 // CF-247 P1 (Platform Admin, 2 Nov 2026 10:28): a provider description item (kind provider_description) shows the proposed description, every
 // sentence with its quote from the official page and the page itself; it is approved as read or rejected (never edited).
+// CF-247 s802/s803 (Platform Admin 20 Nov 2026 05:52): that rule is replaced. University and Course description cards open Edit & Approve
+// (src/DescriptionEditAdmit.jsx): Approve As-Is admits the machine text as read; Save Edit & Admit admits a person's text as human input,
+// locked and listed in Data & Governance › Human Edits & Periodic Audit. Held universities (no machine text) are opened for writing here.
 // CF-247 Workstream C (3 Nov 2026): a course description (field_code course_description_first_read, a provider's first ones) is shown and decided
 // the same way, labelled Course description.
 // CF-247 A1-A3 (Platform Admin, 30 Oct 2026 06:53): an AER item (kind aer_review) shows its source, stored copy, completeness and rows with their
@@ -25,6 +28,7 @@ import{layer4DeepLinkCursor}from'./layer4-deep-link'
 import AerCourseLinks from'./AerCourseLinks' // CF-247 F-AER.08 step 3: course links of a university's entry tables
 import Layer4Grid from'./Layer4Grid' // CF-247 UI/UX audit Phase 5 (18 Nov 2026): the review grid, saved views and the quote/value drawer
 import{CdList,CdPanel,CdWhy,ChecksLine,ReasonChips,cdChoices,isCourseDescription,useCdQueue}from'./CourseDescriptionPanel' // CF-247 course descriptions (6 Nov 2026): reconcile, ready first, the sample
+import DescriptionEditAdmit,{HeldUniversities}from'./DescriptionEditAdmit' // CF-247 s802/s803: Edit & Approve, held universities
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
 // SS-016 role simulation (1 Nov 2026): the rank a choice needs, as public.admin_layer4_inbox decides it: its own rank, else rank 4
@@ -162,6 +166,7 @@ export default function Layer4Inbox({onError,routeParams}){
             <button type="button" className={!readyFirst?'on':''} aria-pressed={!readyFirst} onClick={()=>setReadyFirst(false)} data-l4-aer-all>All waiting</button></div>}
           {cdOn&&<CdPanel q={cdq}/>}</header>}
         {view==='kind'&&cdOn&&<CdPanel q={cdq}/>}
+        {view==='kind'&&kind==='provider_description'&&<HeldUniversities rank={sum.rank} onOpened={()=>{setNote('Opened for writing: the university waits in this list as a University description card with no machine text; write it in Edit & Approve.');loadSum();loadItems(cur)}}/>}
         {showCd?<CdList q={cdq} render={it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={!cdq.sum?.provider_id} rank={sum.rank} onDone={decided} onError={onError} onRefresh={()=>{loadSum();cdq.loadSum();cdq.loadList()}}/>}/>:
         showReady?<div data-l4-aer-ready>{!ready?<Loading compact/>:(ready.items||[]).length===0?<Empty text="Nothing is ready to decide here."/>:
           ready.items.map(it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={false} rank={sum.rank} onDone={decided} onError={onError} onRefresh={()=>{loadSum();loadReady(readyOff)}}/>)}
@@ -210,7 +215,10 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh}){
   const gated=c=>(held||mheld)&&(c.key==='approve'||(c.key==='approve_except'&&!exceptOpen))
   const choices=(k.choices||[]).filter(c=>!(fee&&c.key==='use')).filter(c=>!(feeCheck&&c.key==='enter')).filter(c=>!((fee||feeCheck)&&c.key==='refuse')).map(c=>feeCheck&&FEE_CHECK[c.key]?{...c,...FEE_CHECK[c.key]}:c)
     .map(c=>it.kind==='provider_description'&&c.key==='reject'?{...c,returns:'Rejects this proposal; another read requires eligible evidence and existing retry/approval rules.'}:c).filter(hookOk)
-  const cdChoiceList=it.kind==='provider_description'?cdChoices(choices,isCourseDescription(d)):choices // s664: the course description card's four decisions
+  const cdChoiceList=it.kind==='provider_description'?cdChoices(choices.filter(c=>c.key!=='edit_approve'),isCourseDescription(d)):choices // s664: the course description card's four decisions
+  // s802/s803: Edit & Approve opens the editor (its two buttons decide); a held university opened for writing has no machine text, so it opens there
+  const editKind=it.kind==='provider_description'&&choices.some(c=>c.key==='edit_approve'),noText=it.kind==='provider_description'&&!String(d.proposed?.description||'').trim()
+  const[editing,setEditing]=useState(noText)
   const choose=c=>{setErr('');if(c.link){recordNavigation(it.kind,it.ref,c.key);window.location.hash=linkFor(c.link,it).replace(/^#/,'');return}setOpen(c);setReason(c.reason||'');setValue(c.input==='url'&&it.kind==='course_link'&&!fee?urlOf(d.proposed):c.input==='url'&&it.kind==='conjoint_first_run'?(d.proposed?.parent_url||''):(c.input==='courses'||c.input==='rows')?'[]':'')}
   // hotfix 26 Oct 2026: a university's first run (no page published / conjoint rule) shows its sample; "has a page" ticks courses from it
   const firstRun=it.kind==='no_page_first_run'||it.kind==='conjoint_first_run'
@@ -250,7 +258,8 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh}){
     {it.kind==='provider_description'&&isCourseDescription(d)&&<ChecksLine d={d}/>}
     {it.kind==='provider_departure'&&d.note&&<p className="l4i-why" data-l4-departure><small>{d.note}</small></p>}
     {it.kind==='held_scholarship'&&<dl className="l4i-dl">{d.url&&<><dt>Page</dt><dd><a href={d.url} target="_blank" rel="noreferrer">{d.url} <ExternalLink size={11}/></a></dd></>}{it.suggestion&&<><dt>AI re-check</dt><dd>{it.suggestion}</dd></>}{d.audience_quote&&<><dt>Who</dt><dd><q>{d.audience_quote}</q></dd></>}{d.value_quote&&<><dt>Value</dt><dd><q>{d.value_quote}</q></dd></>}</dl>}
-    <div className="l4i-choices">{cdChoiceList.map(c=>{const low=rank<needs(c),stop=gated(c);return <button key={c.key} type="button" className={`${open?.key===c.key?'on':''}${c.link?' link':''}`} disabled={low||stop} title={low?`Needs ${roleName(needs(c))} (rank ${needs(c)}) or above`:stop?'Held: this read is incomplete (see above)':c.returns} onClick={()=>choose(c)} data-l4-choice={c.key}>{c.label}{c.link&&<ArrowRight size={12}/>}</button>})}</div>
+    {editKind&&editing&&<DescriptionEditAdmit it={it} d={d} isCourse={isCourseDescription(d)} rank={rank} onDone={r=>{setEditing(false);setRev(v=>v+1);onDone?.(r)}} onCancel={()=>setEditing(false)}/>}
+    <div className="l4i-choices">{editKind&&!editing&&<button type="button" disabled={rank<4} title={rank<4?`Needs ${roleName(4)} (rank 4) or above`:'Edit the text before admitting it, or approve it as read'} onClick={()=>{setOpen(null);setEditing(true)}} data-l4-choice="edit_approve">Edit &amp; Approve</button>}{(noText?[]:cdChoiceList).map(c=>{const low=rank<needs(c),stop=gated(c);return <button key={c.key} type="button" className={`${open?.key===c.key?'on':''}${c.link?' link':''}`} disabled={low||stop} title={low?`Needs ${roleName(needs(c))} (rank ${needs(c)}) or above`:stop?'Held: this read is incomplete (see above)':c.returns} onClick={()=>choose(c)} data-l4-choice={c.key}>{c.label}{c.link&&<ArrowRight size={12}/>}</button>})}</div>
     {(()=>{const by={};for(const c of choices)if(rank<needs(c))(by[needs(c)]||=[]).push(c.label)
       return Object.keys(by).length?<p className="l4i-why" data-l4-handoff><small>{Object.entries(by).map(([n,l])=>`${l.join(', ')}: ${roleName(n)} (rank ${n}) or above decides; ask a ${roleName(n)}.`).join(' ')}</small></p>:null})()}
     {open&&<div className="l4i-confirm">

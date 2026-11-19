@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.33; reviewed-release=2.16.60; source-commit=8753a52c5749+local; content-sha256=987c592daf741616b1bb15a529e9225e2f7523b62c4b7804423881702aa4406b -->
+<!-- sop-export: id=operator-sop; version=2.34; reviewed-release=2.16.62; source-commit=6a88d6f457fa+local; content-sha256=3e43694f273a841b0a61b1b781b23c6391880370ce1c648e950e7c7ec2888b8f -->
 # StudySearch – Operator SOP
 
-**Version:** 2.33 (reviewed for platform release v2.16.60)  
+**Version:** 2.34 (reviewed for platform release v2.16.62)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -83,6 +83,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | When you see | Do | Where |
 |---|---|---|
 | Layer 4 Review item | Pipeline Operator and above: decide from the stored evidence, with a reason. Curator: read it and correct the value on the record if the page shows another, then hand the decision on. Entry requirement (AER) items are decided by the Platform Admin only: open and read them, and correct active rows in Catalogue › Entry requirements. | Layer 4 › Inbox (Course link) |
+| A description you edited is Unacknowledged or Due for 6-month re-review (v2.16.62) | Open it, read the original and your text side by side, Re-Verify by Machine if the page may have changed, then Acknowledge & Keep Lock, or Edit & Re-Lock with a reason. Ask the Platform Admin to release the lock when the machine text should take over. | Data & Governance › Human Edits & Periodic Audit (My Human Edits) |
 | Held scholarship in the Inbox | Publish or refuse it with a reason, using the AI re-check; never admit a scholarship that does not say it is open to international students. | Layer 4 › Inbox (Held scholarship) |
 | Website to find | Search the official site, confirm the university's name on its home page, enter and save it. | Layer 4 › Inbox (Website needed) |
 | An entry requirement that is wrong, missing or no longer published (v2.15.363) | Catalogue › Entry requirements: filter to the row and open it to read its quote and stored copy. Correct an active row with Edit in list (give the reason first); add a missing one with Add requirement from the provider's own source and its stored copy; Withdraw a row no longer published, or Quarantine one whose evidence is in doubt, with a reason. A waiting row is decided in Layer 4, not here. | Catalogue › Entry requirements |
@@ -117,6 +118,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.34 | 20 Nov 2026 | v2.16.62 | Layer 4 › Inbox, University and Course description cards: Edit & Approve opens the text with the page's own words, the official page link and live counts; Approve As-Is admits the machine text unchanged, Save Edit & Admit admits your text as human input, locked by hand. Held universities with no machine text are opened for writing there. New page Data & Governance › Human Edits & Periodic Audit: My Human Edits and All Human Edits (Admin Governance) with Unacknowledged and Due for 6-month re-review badges; Acknowledge & Keep Lock, Re-Verify by Machine (reads nothing again, changes nothing), Edit & Re-Lock, and for the Platform Admin Release Lock to Machine. |
 | 2.33 | 19 Nov 2026 | v2.16.50 | Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. |
 | 2.32 | 19 Nov 2026 | v2.16.47 | Around this course and Around this provider now show the approved city, career and visa figures to you as well. Accreditations show on the Provider detail. |
 | 2.31 | 19 Nov 2026 | v2.16.46 | Course detail: the Description pipeline and Related insights & funding are folded; open them when you need them. Scholarships are listed once. |

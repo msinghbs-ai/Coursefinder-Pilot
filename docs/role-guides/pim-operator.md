@@ -31,6 +31,7 @@ Manage records: add and archive providers and courses, approve fee rules, build 
 - **Reference data**
 - **Layer 2/3 Build & enrich**: Operations, Universities, Enrich fields, Enrichment plan, Adapter builder, Course sources, Flags, Scholarships
 - **Layer 4 Review**: Inbox
+- **Human Edits & Periodic Audit**: My Human Edits
 - **Platform health**: Health checks, Queues & yield, Integration queue, Country & category completeness
 - **Scheduled jobs**: Automations, Jobs, Task manager
 - **Evidence**

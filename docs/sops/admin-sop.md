@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.76; reviewed-release=2.16.60; source-commit=8753a52c5749+local; content-sha256=f5b47182152d1289753028c3bd9de3bc1b2c04e8a560bd3ab1181bab46d0ecf4 -->
+<!-- sop-export: id=admin-sop; version=2.77; reviewed-release=2.16.62; source-commit=6a88d6f457fa+local; content-sha256=36484515c1731c3e629b8dc0e1ef20ad6f102630ab47a1b929dd05d0b7eb844e -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.76 (reviewed for platform release v2.16.60)  
+**Version:** 2.77 (reviewed for platform release v2.16.62)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -140,6 +140,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.77 | 20 Nov 2026 | v2.16.62 | Layer 4 › Inbox, University and Course description cards: Edit & Approve opens the text with the page's own words, the official page link and live counts; Approve As-Is admits the machine text unchanged, Save Edit & Admit admits your text as human input, locked by hand. Held universities with no machine text are opened for writing there. New page Data & Governance › Human Edits & Periodic Audit: My Human Edits and All Human Edits (Admin Governance) with Unacknowledged and Due for 6-month re-review badges; Acknowledge & Keep Lock, Re-Verify by Machine (reads nothing again, changes nothing), Edit & Re-Lock, and for the Platform Admin Release Lock to Machine. Weekly: All Human Edits, Due for 6-month re-review; acknowledge, re-verify or release each. |
 | 2.76 | 19 Nov 2026 | v2.16.58 | Layer 4 Review › Grid: the Country and Provider type pills show the drawn flag, the country code and how many items wait with that pill chosen. The item drawer shows the proposed value, the verbatim quote with its source link and the exact machine hold reason side by side, with the kind's own decisions beneath; Previous and Next, or J and K, move to the next or previous item and never decide anything. |
 | 2.75 | 19 Nov 2026 | v2.16.53 | Layer 4 › Inbox › Grid: Country pills (All, Australia, New Zealand, Canada) and Provider type pills (All, University, VET / College, School, HEI) narrow the rows, the count and Export CSV. They are not saved in a view. |
 | 2.74 | 19 Nov 2026 | v2.16.50 | Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. The machine rule now admits a description whose own page proves the course (CRICOS or NZQA code, or exact title). |

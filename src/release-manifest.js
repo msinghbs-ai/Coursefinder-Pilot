@@ -1,16 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.60'
-export const PACKAGE_VERSION='0.1.482'
+export const UI_VERSION='2.16.62'
+export const PACKAGE_VERSION='0.1.484'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'20 Nov 2026',
-  title:'Course intake Run & Validate: any provider by page, hand-picked courses and stage history',
+  title:'Layer 4 Edit & Approve for descriptions, and Human Edits & Periodic Audit',
   changes:[
-    'Course intake Run & Validate (Layer 2/3 operations): Scope type chooses the approved top Australian universities (as before), one provider page by page (every active Australian, New Zealand or Canadian provider, 200 courses a page, a Pipeline setting), or hand-picked courses found by title or course code (up to the cohort limit).',
-    'Course intake Run & Validate: each cohort keeps its stage counts. Fetched, parsed and extracted are counted from the stored evidence when the cohort is fixed; verified, admitted and held after each Run Now, with its run ID. Verify shows them under Stage history.'
+    'Layer 4 Review › Inbox, University and Course description cards: Edit & Approve. The text box starts with the machine text, with the page\'s own words and the official page link beside it and live character, sentence, word and word-list checks. Approve As-Is admits the machine text unchanged; Save Edit & Admit admits your text as human input, locked by hand unless you clear the box, and lists it for review in six months.',
+    'Layer 4 Review › Inbox, By kind › University description: Held universities: open for writing lists universities whose reading was held with no machine text; Open for writing makes a card you write by hand from the stored page.',
+    'New page Data & Governance › Human Edits & Periodic Audit: My Human Edits (your own) and All Human Edits (Admin Governance, Platform Admin), with Unacknowledged and Due for 6-month re-review counts. Tick edits and choose Acknowledge & Keep Lock, Re-Verify by Machine (a side-by-side comparison with the stored page and the latest machine text; nothing is read again or changed), Edit & Re-Lock, or Release Lock to Machine (Platform Admin).'
   ],
   bugFixes:[]
 }

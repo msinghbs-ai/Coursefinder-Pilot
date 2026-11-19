@@ -141,3 +141,26 @@
 .l4g-rv-src{margin:6px 0 0}
 .l4g-hold-badge{display:block;margin:0 0 8px;padding:6px 10px;border-radius:8px;background:var(--cf-amber-50);border:1px solid var(--cf-amber-200);font-size:var(--cf-fs-xs);font-weight:600}
 @media (max-width:760px){.l4g-review{grid-template-columns:minmax(0,1fr)}.l4g-nav{padding:6px 12px}}
+/* CF-247 s802/s803 (20 Nov 2026): Edit & Approve on description cards (DescriptionEditAdmit.jsx) */
+.dea{display:grid;gap:7px;border:1px solid var(--cf-indigo-200,var(--cf-slate-300));border-radius:var(--cf-radius-md);background:var(--cf-indigo-50,var(--cf-slate-50));padding:9px 11px;min-width:0}
+.dea-head{margin:0;font-size:var(--cf-fs-sm)}
+.dea-head small{color:var(--cf-slate-600)}
+.dea-field{display:grid;gap:3px;font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
+.dea textarea{width:100%;box-sizing:border-box;border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:6px 8px;font:inherit;font-size:var(--cf-fs-sm);line-height:1.45;background:var(--cf-white);color:inherit;min-width:0}
+.dea input[type=text],.dea>input,.dea-held-list>input{border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:5px 8px;font:inherit;font-size:var(--cf-fs-sm);min-width:0}
+.dea-checks{margin:0;font-size:var(--cf-fs-xs)}
+.dea-checks.ok{color:var(--cf-green-800)}
+.dea-checks.bad{color:var(--cf-amber-800,var(--cf-amber-700))}
+.dea-checks em{font-style:normal;font-weight:700;color:var(--cf-red-700,var(--cf-amber-700))}
+.dea-quotes{font-size:var(--cf-fs-xs)}
+.dea-quotes summary{cursor:pointer;font-weight:600}
+.dea-quotes ol{margin:4px 0 0;padding-left:18px;display:grid;gap:3px}
+.dea-src,.dea-held{margin:0;overflow-wrap:anywhere}
+.dea-lock{display:flex;gap:6px;align-items:flex-start;font-size:var(--cf-fs-xs)}
+.dea-actions{display:flex;flex-wrap:wrap;gap:6px}
+.dea-err{margin:0;color:var(--cf-red-700,#b42318);font-size:var(--cf-fs-sm)}
+.dea-held-list{border:1px solid var(--m-border);border-radius:var(--cf-radius-lg);background:var(--cf-white);padding:8px 12px;display:grid;gap:6px;font-size:var(--cf-fs-sm)}
+.dea-held-list summary{cursor:pointer}
+.dea-held-list ul{list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:320px;overflow:auto}
+.dea-held-list li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;border-bottom:1px solid var(--cf-slate-150);padding:4px 0}
+.dea-held-list li span{min-width:0;overflow-wrap:anywhere}
