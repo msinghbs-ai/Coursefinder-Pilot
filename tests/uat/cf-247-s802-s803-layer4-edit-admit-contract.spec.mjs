@@ -93,3 +93,11 @@ test('the migration proves it on live items in a rolled-back sub-block and keeps
   for (const s of ["course edit: admitted, locked, audited (human_input)", "course approve as read: machine_human_approved", "held university opened and written by hand: admitted, locked", "raise exception 'cf-s802-undo';", "post-check: a too-short edit was admitted", "post-check: the audit is not empty at creation"])
     expect(MIG).toContain(s)
 })
+
+test('s805b: the held list counts every match, and the page is cut from it', () => {
+  const B = fs.readFileSync('supabase/migrations/20261120102000_cf247_s805b_held_list_total.sql', 'utf8')
+  expect(B).toContain("select pg_temp.cf_edit_def('security.human_edit_admin_v1(text,jsonb)'::regprocedure, '556463cffdf557048473e0c7e67617bb',")
+  expect(B).toContain("'total', (select count(*) from m)) into v_out;")
+  expect(B).toContain('(select * from m order by name limit v_lim offset v_off)')
+  expect(B).toContain("post-check: held total")
+})
