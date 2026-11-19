@@ -9,7 +9,7 @@
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 // Check the admin copy with `node scripts/export-sops.mjs --check-mirror <coursefinder-admin/docs/sops>` (SS-016 UR-03): it exits 1 on drift.
 
-export const SOP_REVIEWED_FOR = '2.16.57'
+export const SOP_REVIEWED_FOR = '2.16.58'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -45,7 +45,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.75', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.76', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -128,7 +128,8 @@ export const SOPS = [
       'Scholarships withdrawn by the nightly review: a jump means a rule changed or a site moved its pages.',
     ],
     escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
-    changes: [{ version: '2.75', date: '19 Nov 2026', release: '2.16.53', change: 'Layer 4 › Inbox › Grid: Country pills (All, Australia, New Zealand, Canada) and Provider type pills (All, University, VET / College, School, HEI) narrow the rows, the count and Export CSV. They are not saved in a view.' },
+    changes: [{ version: '2.76', date: '19 Nov 2026', release: '2.16.58', change: 'Layer 4 Review › Grid: the Country and Provider type pills show the drawn flag, the country code and how many items wait with that pill chosen. The item drawer shows the proposed value, the verbatim quote with its source link and the exact machine hold reason side by side, with the kind\'s own decisions beneath; Previous and Next, or J and K, move to the next or previous item and never decide anything.' },
+      { version: '2.75', date: '19 Nov 2026', release: '2.16.53', change: 'Layer 4 › Inbox › Grid: Country pills (All, Australia, New Zealand, Canada) and Provider type pills (All, University, VET / College, School, HEI) narrow the rows, the count and Export CSV. They are not saved in a view.' },
       { version: '2.74', date: '19 Nov 2026', release: '2.16.50', change: 'Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. The machine rule now admits a description whose own page proves the course (CRICOS or NZQA code, or exact title).' },
       { version: '2.73', date: '19 Nov 2026', release: '2.16.49', change: 'Course detail › Around this course: the Entry requirements card no longer carries a scholarship line. Scholarships are listed once, in the Scholarships section (three, then Show all (N) scholarships), for every role.' },
       { version: '2.72', date: '19 Nov 2026', release: '2.16.47', change: 'Around this course and Around this provider show live figures for every role: Counsellors and Viewers see the approved climate, population, career and visa figures. Accreditations are listed on the Provider detail; rows under review are marked for Editors and up and are not shown to Counsellors or Viewers.' },

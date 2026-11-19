@@ -47,6 +47,8 @@ const FLAG={
   CA:<><rect width="20" height="10" style={F.white}/><rect width="5" height="10" style={F.caRed}/><rect x="15" width="5" height="10" style={F.caRed}/>
     <polygon points={LEAF.map(([x,y])=>`${(10+x*3.3).toFixed(2)},${(4.8+y*3.3).toFixed(2)}`).join(' ')} style={F.caRed}/></>
 }
+// s767 (Platform Admin 19 Nov 2026 19:26): the same drawn flag alone, for the Layer 4 Review country pills
+export function CountryFlag({code}){const c=String(code||'').trim().toUpperCase(),f=FLAG[c];return f?<svg className="pl-flag" data-flag={c} viewBox="0 0 20 10" aria-hidden="true" focusable="false">{f}</svg>:null}
 export function CountryTag({code}){
   const c=String(code||'').trim().toUpperCase();if(!c)return '—'
   const f=FLAG[c]
