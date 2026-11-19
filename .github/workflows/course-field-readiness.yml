@@ -1,0 +1,60 @@
+# Course field readiness (CF-247 s770, Platform Admin 19 Nov 2026 11:41). Daily at 07:30 AEDT (20:30 UTC; 06:30 AEST from April, when
+# daylight saving ends), after the 06:50 backup and the overnight drains. Runs the read-only scripts/telemetry/course-field-readiness.sql in
+# 8 parts through the Management API (read-only transaction), renders Course_Field_Readiness_Matrix_<date>.csv and the three summary tabs with
+# scripts/telemetry/course-field-readiness.mjs, and commits them to the branch course-readiness-snapshot (never merged). The daily scheduled
+# task "Course field readiness to Drive (07:45)" copies them into the Google Drive folder Monitoring. Nothing is written to the database.
+name: Course field readiness
+on:
+  schedule:
+    - cron: "30 20 * * *"
+  workflow_dispatch:
+concurrency:
+  group: course-field-readiness
+  cancel-in-progress: false
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      PARTS: "8"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check settings
+        run: |
+          if [ -z "$REF" ]; then echo "Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "Secret SUPABASE_ACCESS_TOKEN is not set"; exit 1; fi
+          if [ "$REF" != "fxcwkweaxjtknorudmwp" ]; then echo "Refusing project $REF"; exit 1; fi
+      - name: Read the courses (read-only, in parts)
+        run: |
+          mkdir -p "$RUNNER_TEMP/parts"
+          for k in $(seq 0 $((PARTS - 1))); do
+            sed -e "s/__PARTS__/$PARTS/g" -e "s/__PART__/$k/g" scripts/telemetry/course-field-readiness.sql > "$RUNNER_TEMP/q.sql"
+            jq -n --rawfile q "$RUNNER_TEMP/q.sql" '{query:$q}' > "$RUNNER_TEMP/q.json"
+            ok=0
+            for attempt in 1 2 3; do
+              code=$(curl -sS -o "$RUNNER_TEMP/parts/$k.json" -w '%{http_code}' -X POST "https://api.supabase.com/v1/projects/$REF/database/query" \
+                -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @"$RUNNER_TEMP/q.json")
+              if [ "$code" -ge 200 ] && [ "$code" -lt 300 ] && jq -e 'type == "array"' "$RUNNER_TEMP/parts/$k.json" > /dev/null; then ok=1; break; fi
+              echo "::warning::part $k attempt $attempt failed ($code): $(head -c 300 "$RUNNER_TEMP/parts/$k.json" | tr -d '\n')"; sleep 20
+            done
+            if [ "$ok" != 1 ]; then echo "::error::part $k failed"; exit 1; fi
+            echo "part $k: $(jq length "$RUNNER_TEMP/parts/$k.json") courses"
+          done
+      - name: Render the matrix and the summary
+        run: |
+          DATE=$(TZ=Australia/Sydney date +%F)
+          node scripts/telemetry/course-field-readiness.mjs "$RUNNER_TEMP/out" "$DATE" "$RUNNER_TEMP"/parts/*.json | tee -a "$GITHUB_STEP_SUMMARY"
+          ls -la "$RUNNER_TEMP/out"
+      - name: Commit to the snapshot branch
+        run: |
+          git config user.name "course-field-readiness"; git config user.email "course-field-readiness@users.noreply.github.com"
+          git checkout -B course-readiness-snapshot
+          rm -rf monitoring/course-readiness; mkdir -p monitoring/course-readiness
+          cp "$RUNNER_TEMP"/out/* monitoring/course-readiness/
+          git add -A monitoring/course-readiness
+          git commit -m "Course field readiness $(TZ=Australia/Sydney date +%F)" || echo "No change"
+          git push -f origin course-readiness-snapshot
