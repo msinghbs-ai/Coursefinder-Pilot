@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261120070000_cf247_s797_b7_study_load_b2_primary_campus.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261120093000_cf247_s797_b7_study_load_b2_primary_campus.sql', 'utf8')
 const body = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 const RULE = "(c.study_load_source = 'register' and c.study_load_evidence_id is null)"
 
