@@ -123,3 +123,16 @@ test('the coverage chunk is 400 courses every 2 minutes, set in the setting with
   expect(B).toMatch(/^-- Replaces: /m)
   expect(B).toMatch(/^-- Retires: /m)
 })
+
+// 19 Nov 2026 12:55 (20261119125500): the four issues verified as cleared close through security.integration_issue_close_v1; IQ-00606 stays open.
+const V = fs.readFileSync('supabase/migrations/20261119125500_cf247_close_verified_reliability_issues.sql', 'utf8')
+
+test('verified issues close only through integration_issue_close_v1 with passed evidence and a time; page_text stays open', () => {
+  expect(V).toContain("perform security.integration_issue_close_v1(r.id,")
+  expect(V).toContain("jsonb_build_object('outcome', 'passed', 'evidence', r.evidence, 'checked_at', '2026-11-19T12:55:00+11:00',")
+  for (const ref of ['IQ-00609', 'IQ-00594', 'IQ-00588', 'IQ-00348']) expect(V).toContain(`('${ref}', '`)
+  expect(V).toContain("raise exception 'IQ-00606 must stay open'")
+  const vc = V.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
+  expect(vc).not.toMatch(/create (table|or replace|function)|^\s*(drop|delete|truncate|update)\b/im)
+  expect(V).toMatch(/^-- Replaces: /m)
+})
