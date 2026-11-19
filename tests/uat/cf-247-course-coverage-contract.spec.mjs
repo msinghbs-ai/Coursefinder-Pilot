@@ -20,7 +20,7 @@ test('Course coverage is reachable from Coverage & completeness and uses the val
   expect(nav).toContain("{ key: 'courses', label: 'Courses', min: 1 }")
   expect(nav).toContain("{ key: 'attributes', label: 'Attributes', min: 1 }")
   expect(nav).toContain("'course-coverage': { page: 'coverage', tab: 'courses' }")
-  expect(main).toContain("<CoverageTelemetry onError={err}/><CoverageView view=\"courses\"/><LinkRefresh/></div>") // v2.16.42: Coverage now leads the Courses tab // SS-020 step 4: Progress is on Layer 2/3 › Operations
+  expect(main).toContain("<CoverageTelemetry onError={err}/>{/* v2.16.54 (s777, Platform Admin 19 Nov 2026 15:36): Pipeline & field ETA, consolidated, by country or by university */}<PipelineEta onError={err}/><CoverageView view=\"courses\"/><LinkRefresh/></div>") // v2.16.42: Coverage now leads the Courses tab // SS-020 step 4: Progress is on Layer 2/3 › Operations
   // Decision 217: the attributes view, By area and Fee schedules share the Coverage country and university
   expect(main).toContain('<CoverageView view="attributes" onScope={setScope} belowFilters={({country,provider})=><FieldCoverage rank={rank} country={country} provider={provider}/>}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>') // v2.15.157: approvals moved to Layer 4 › Attributes
   expect(main).not.toContain('Layer4Attributes') // v2.15.253: Layer 4 › Attributes retired; approvals on Providers › Onboarding and the Adapter builder

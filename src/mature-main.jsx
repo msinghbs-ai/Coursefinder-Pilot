@@ -97,6 +97,7 @@ const AdapterBuilderTab=lazyPage(()=>import('./AdapterBuilderTab'))
 const BuildAdapter=lazyPage(()=>import('./BuildAdapter'))
 const LinkRefresh=lazyPage(()=>import('./LinkRefresh'))
 const CoverageTelemetry=lazyPage(()=>import('./CoverageTelemetry')) // v2.16.42: Coverage now
+const PipelineEta=lazyPage(()=>import('./PipelineEta')) // v2.16.54 (s777): Pipeline & field ETA
 const ScholarshipLayer=lazyPage(()=>import('./ScholarshipLayer'))
 const Progress=lazyPage(()=>import('./Progress'))
 const AdminTasks=lazyPage(()=>import('./AdminTasks'))
@@ -423,7 +424,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
             {rank>=4&&<StatisticsDatasets rank={rank} onView={view}/>}{rank>=4&&<section data-ranking-imports><RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/></section>}</div>}
         return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
       // v2.15.301: Flags moved to Layer 2/3 › Flags
-      case'coverage':return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack">{/* v2.16.42 (Platform Admin 18 Nov 2026 12:19): Coverage now (registry-driven fields, 0 of N to N of N, readiness grid) leads */}<CoverageTelemetry onError={err}/><CoverageView view="courses"/><LinkRefresh/></div>
+      case'coverage':return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack">{/* v2.16.42 (Platform Admin 18 Nov 2026 12:19): Coverage now (registry-driven fields, 0 of N to N of N, readiness grid) leads */}<CoverageTelemetry onError={err}/>{/* v2.16.54 (s777, Platform Admin 19 Nov 2026 15:36): Pipeline & field ETA, consolidated, by country or by university */}<PipelineEta onError={err}/><CoverageView view="courses"/><LinkRefresh/></div>
       // v2.15.301 (Platform Admin, 20 Oct 2026, "Merge into one Sources page"): one Sources page with a layer filter; registers first
       case'layer1':return <SourcesPage routeParams={routeParams} navigate={navigate}/>
       // v2.15.301 (Platform Admin, 20 Oct 2026, "One list with a type filter"): Key dates and Reference sources in one list

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.476 — 19 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.54** (Platform Admin 19 Nov 2026 15:36, chat S1-Build, s776 and s777). Migration `20261119174000`: the course field readiness snapshot (rollup target `course-field-readiness`, one of 16 parts every 4 minutes, kept in `pipeline.job_input_marks`), the merged summary with a 7-day observed velocity, `security.course_field_eta_v1` (read by the new `pipeline_eta` action of `admin_field_coverage`) and `security.course_field_readiness_tabs_v1` (the hourly Stakeholder_Course_Readiness_Summary tabs). `src/PipelineEta.jsx` on Coverage & completeness › Courses (Consolidated, By country, By university). Specs s776 and s777.
+
 ## 0.1.475 — 19 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.53** (Platform Admin 19 Nov 2026 16:18, chat S1-RM-Design, s766 and s767). Two migrations. `20261119172000` (s766): table `pipeline.provider_host_owners` (host, owner, reason) with owners for Victoria University (CRICOS 00124K), RMIT University and Western Sydney University; `security.provider_description_identity_v1` honours a recorded owner (identical when none is recorded); trading-name aliases "Torrens University" and "Moore Theological College" in `catalogue.provider_aliases`; the reader's identity names (`public.svc_provider_description_next`) include trading names; one stored-page read queued for each of those two providers. `20261119173000` (s767): `public.admin_layer4_grid_read_v1` takes optional `country` and `provider_type`. `src/Layer4Grid.jsx`: Country and Provider type pills. Both migrations are md5-guarded and passed the rolled-back live dry run. Not the consumer API (75 functions, 48 tables). Specs s766 and s767.

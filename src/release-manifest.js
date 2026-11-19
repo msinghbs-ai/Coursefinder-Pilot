@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.53'
-export const PACKAGE_VERSION='0.1.475'
+export const UI_VERSION='2.16.54'
+export const PACKAGE_VERSION='0.1.476'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'19 Nov 2026',
-  title:'Layer 4 Review › Grid filters by country and provider type',
+  title:'Coverage & completeness: Pipeline & field ETA',
   changes:[
-    'Layer 4 Review › Grid has Country pills (All, Australia, New Zealand, Canada) and Provider type pills (All, University, VET / College, School, HEI) beside the kind and reason filters. The rows, the count and Export CSV follow them.',
-    'Provider descriptions: a university that shares a website host with a pathway college, or with a second registration of itself, is now decided by a recorded host owner (Victoria University, RMIT University and Western Sydney University). A recorded trading name (Torrens University, Moore Theological College) counts as an identity name for the page proof.'
+    'Coverage & completeness › Courses has a Pipeline & field ETA panel: for every API v3 field, how many courses have it admitted, are still in the pipeline (Trying), still need a source page, are not published by the provider, or are in Wave 2, with the daily velocity, the main bottleneck and the expected date every achievable course has it.',
+    'Choose Consolidated (all courses), By country (Australia, New Zealand, Canada) or By university (type part of the name and pick it from the list) to see that scope\'s figures.'
   ],
   bugFixes:[]
 }
