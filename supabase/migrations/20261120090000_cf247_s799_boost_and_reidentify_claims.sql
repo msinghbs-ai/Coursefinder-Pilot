@@ -14,6 +14,22 @@
 --   public.svc_coverage_reidentify_next.
 -- Retires: nothing.
 
+-- the old claims, timed first under the same load (always rolled back: nothing stays claimed)
+do $before$
+declare t timestamptz; a1 int[] := '{}'; a2 int[] := '{}'; i int; v_rule text := (select max(rule) from pipeline.coverage_reidentify_done);
+begin
+  begin
+    for i in 1 .. 3 loop
+      t := clock_timestamp(); perform public.svc_boost_extract_claim(40); a1 := a1 || round(extract(epoch from clock_timestamp() - t) * 1000)::int;
+      t := clock_timestamp(); perform public.svc_coverage_reidentify_next(100, v_rule); a2 := a2 || round(extract(epoch from clock_timestamp() - t) * 1000)::int;
+    end loop;
+    raise exception 'cf-s799-undo0';
+  exception when raise_exception then if sqlerrm <> 'cf-s799-undo0' then raise; end if;
+  end;
+  perform set_config('cf.s799_before', format('before: boost median %s ms %s, reidentify median %s ms %s',
+    (select percentile_disc(0.5) within group (order by x) from unnest(a1) x), a1, (select percentile_disc(0.5) within group (order by x) from unnest(a2) x), a2), true);
+end $before$;
+
 create index if not exists evidence_artifacts_page_text_hash_idx on pipeline.evidence_artifacts (content_hash, entity_id)
   where evidence_type = 'provider_course_page_text' and storage_path is not null and content_hash is not null;
 create index if not exists evidence_artifacts_page_text_entity_idx on pipeline.evidence_artifacts (entity_id, captured_at desc nulls last) include (id, content_hash)
@@ -195,5 +211,5 @@ begin
     if v_prev <> 100 then raise exception 'post-check: an older rule handed out % rows (expected 100)', v_prev; end if;
     v_o := v_o || format(' | boost pool old = new = %s | reidentify under identity-v0.5.12: %s rows', v_new, v_prev);
   end;
-  perform set_config('cf.diag', v_o, true);
+  perform set_config('cf.diag', current_setting('cf.s799_before', true) || ' | after: ' || v_o, true);
 end $$;
