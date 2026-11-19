@@ -59,3 +59,15 @@ test('the workflow: daily 07:30 AEDT, only this project, read in parts with retr
   expect(WF).toContain('git push -f origin course-readiness-snapshot')
   expect(WF).not.toMatch(/apply-migration|svc_|security\.\w+\(/)
 })
+
+test('the sheet tabs: counts are data, every percentage and the row check are formulas over them', () => {
+  const rows = [{ course_id: 'c1', country_code: 'AU', provider_id: 'p1', provider_name: 'A', course_title: 'T',
+    cells: Object.fromEntries(FIELDS.map((f) => [f, 'TRYING'])) }]
+  const t = build(rows, '2026-11-19').summary.sheet_tabs
+  expect(t.Executive_Summary[1].slice(0, 2)).toEqual(['Active courses', 1])
+  expect(t.Executive_Summary[3][0]).toBe('Field')
+  expect(t.Executive_Summary[4]).toEqual(['official_url', 0, '=IF($B$2=0,0,B5/$B$2)', 1, '=IF($B$2=0,0,D5/$B$2)', 0, '=IF($B$2=0,0,F5/$B$2)', 0,
+    '=IF($B$2=0,0,H5/$B$2)', 0, '=IF($B$2=0,0,J5/$B$2)', '=B5+D5+F5+H5+J5'])
+  expect(t.Executive_Summary).toHaveLength(4 + FIELDS.length)
+  expect(t.Dev_Display_Rules).toBe(DISPLAY_RULES)
+})
