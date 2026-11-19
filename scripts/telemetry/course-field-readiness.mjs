@@ -67,10 +67,30 @@ export function build(rows, date) {
     .sort((a, b) => b.needs_source - a.needs_source || b.courses - a.courses || String(a.provider_name).localeCompare(String(b.provider_name)))
   const byProviderTab = [
     ['rank', 'provider_name', 'country_code', 'active_courses', 'cells_possible_needs_source', 'cells_trying', 'top_fields_needing_a_source', 'provider_id'],
-    ...providers.slice(0, 500).map((p, i) => [i + 1, p.provider_name, p.country_code, p.courses, p.needs_source, p.trying,
+    ...providers.slice(0, 100).map((p, i) => [i + 1, p.provider_name, p.country_code, p.courses, p.needs_source, p.trying,
       Object.entries(p.gaps).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([f, v]) => `${f} (${v})`).join('; '), p.provider_id]),
   ]
-  return { csv: lines.join('\n') + '\n', summary: { date, total, by_country: byCountry, Executive_Summary: executive, By_Provider_Action_List: byProviderTab, Dev_Display_Rules: DISPLAY_RULES } }
+  return { csv: lines.join('\n') + '\n', summary: { date, total, by_country: byCountry, Executive_Summary: executive, By_Provider_Action_List: byProviderTab, Dev_Display_Rules: DISPLAY_RULES,
+    sheet_tabs: sheetTabs(executive, byProviderTab, total, date) } }
+}
+
+// The Google Sheet Stakeholder_Course_Readiness_Summary (Drive › Monitoring): each tab's rows, written from A1 as they are. On Executive_Summary
+// the counts are the export's data and every percentage and the row check are formulas over them (B2 is the number of active courses).
+export function sheetTabs(executive, byProviderTab, total, date) {
+  const [title, , ...fieldRows] = executive
+  const exec = [
+    [title[0]],
+    ['Active courses', total, `Source: workflow course-field-readiness, branch course-readiness-snapshot, export of ${date} (AEDT)`],
+    [],
+    ['Field', 'Admitted', 'Admitted %', 'Trying', 'Trying %', 'Possible, needs a source', 'Possible, needs a source %', 'Not possible', 'Not possible %',
+      'Empty, not started', 'Empty, not started %', 'Row check (equals B2)'],
+    ...fieldRows.map((r, i) => {
+      const n = i + 5
+      const pct = (col) => `=IF($B$2=0,0,${col}${n}/$B$2)`
+      return [r[0], r[1], pct('B'), r[3], pct('D'), r[5], pct('F'), r[7], pct('H'), r[9], pct('J'), `=B${n}+D${n}+F${n}+H${n}+J${n}`]
+    }),
+  ]
+  return { Executive_Summary: exec, By_Provider_Action_List: byProviderTab, Dev_Display_Rules: DISPLAY_RULES }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
