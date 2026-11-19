@@ -165,5 +165,35 @@ begin
   end;
   v_o := format('boost claim first %s ms (%s items); warm median %s ms %s | reidentify(100, %s) warm median %s ms %s (%s rows)', ms1, n1, ms1b, a1, v_rule, ms2, a2, n2);
   if ms1b > 200 or ms2 > 200 then raise exception 'post-check: a claim is still slow: %', v_o; end if;
+  -- the same work: the old formulation (hash grouping) and the new one find the same due pages, and an older rule still hands out work
+  declare v_old int; v_new int; v_prev int; begin
+    with shared as (select e.content_hash from pipeline.evidence_artifacts e where e.evidence_type = 'provider_course_page_text' and e.storage_path is not null and e.content_hash is not null
+                     group by e.content_hash having count(distinct e.entity_id) > 1)
+    select count(*) into v_old from catalogue.courses c
+      join lateral (select e.id, e.content_hash from pipeline.evidence_artifacts e where e.entity_id = c.id and e.evidence_type = 'provider_course_page_text' and e.storage_path is not null
+                     order by e.captured_at desc nulls last limit 1) a on true
+     where c.lifecycle_status = 'active' and (c.study_load is null or (c.study_load_source = 'register' and c.study_load_evidence_id is null))
+       and not exists (select 1 from shared h where h.content_hash = a.content_hash)
+       and not exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = c.id and l.field in ('study_load', 'study_load_source', 'study_load_evidence_id'))
+       and not exists (select 1 from pipeline.boost_extract_items x where x.lane = 'study_load' and x.entity_id = c.id and x.evidence_id = a.id
+                        and (x.state in ('verified', 'rejected', 'failed') or (x.state = 'claimed' and x.claimed_at > now() - interval '30 minutes')));
+    with lp as (select distinct on (e.entity_id) e.entity_id, e.id, e.content_hash from pipeline.evidence_artifacts e
+                 where e.evidence_type = 'provider_course_page_text' and e.storage_path is not null order by e.entity_id, e.captured_at desc nulls last)
+    select count(*) into v_new from lp join catalogue.courses c on c.id = lp.entity_id
+     where c.lifecycle_status = 'active' and (c.study_load is null or (c.study_load_source = 'register' and c.study_load_evidence_id is null))
+       and not exists (select 1 from pipeline.boost_extract_items x where x.lane = 'study_load' and x.entity_id = c.id and x.evidence_id = lp.id
+                        and (x.state in ('verified', 'rejected', 'failed') or (x.state = 'claimed' and x.claimed_at > now() - interval '30 minutes')))
+       and not exists (select 1 from pipeline.evidence_artifacts h where h.content_hash = lp.content_hash and h.evidence_type = 'provider_course_page_text'
+                        and h.storage_path is not null and h.content_hash is not null and h.entity_id <> c.id)
+       and not exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = c.id and l.field in ('study_load', 'study_load_source', 'study_load_evidence_id'));
+    if v_old <> v_new then raise exception 'post-check: the boost pool differs: old % new %', v_old, v_new; end if;
+    begin
+      v_prev := jsonb_array_length(public.svc_coverage_reidentify_next(100, 'identity-v0.5.12'));
+      raise exception 'cf-s799-undo2';
+    exception when raise_exception then if sqlerrm <> 'cf-s799-undo2' then raise; end if;
+    end;
+    if v_prev <> 100 then raise exception 'post-check: an older rule handed out % rows (expected 100)', v_prev; end if;
+    v_o := v_o || format(' | boost pool old = new = %s | reidentify under identity-v0.5.12: %s rows', v_new, v_prev);
+  end;
   perform set_config('cf.diag', v_o, true);
 end $$;
