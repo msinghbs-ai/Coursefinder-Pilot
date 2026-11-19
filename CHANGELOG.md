@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.486 — 20 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.64** (Platform Admin 20 Nov 2026 08:06, chat S1-RM-Design). CF-247 s812 (UnoPim grid actions and per-field provenance): the Providers bulk bar gains Queue to Intake Run & Validate (a hand-off list on Layer 2/3 Operations; nothing is run) and Flag primary campus (Platform Admin; preview, then apply with a reason; one audit event; the B2 rule for the ticked providers only, skipping providers that already have a primary campus, have it locked, tie or are outside AU, NZ and CA). Provider and Course drawers show Human Locked pills from the lock table. Migration `20261120104000` adds `security.s812_bulk_admin_v1` and three actions of the existing `public.admin_layer4_inbox` (one md5-guarded in-place edit, signature unchanged) and the setting `bulk.primary_campus_max`; no new public function, table or view; consumer API 75 functions and 48 relations, no drift. Register and AI verified are shown only for the description, the one field that records its source; the other fields' source is not recorded per field.
+
 ## 0.1.485 — 20 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.63** (Platform Admin 20 Nov 2026 08:06, chat S1-RM-Design). CF-247 s811 (ASD ISM): `/.well-known/security.txt` published as plain text; every OpenRouter request sets `data_collection: "deny"` (ISM-2103); provider description prompt version 6 (migration `20261120103000`) and its user message fence the page text in `<untrusted_source_text>` tags (ISM-2158); Zoho API v3 passes an `INVALID_INPUT` detail only when it is the platform's own text (ISM-1278). Consumer API unchanged (G3 75 functions, 48 relations).
