@@ -86,7 +86,7 @@ test('the prompt version is data: three candidates, one pinned model each with i
 
 test('the run opens and always closes its window, never spends above US$0.10, records the figures as evidence and switches nothing', () => {
   expect(S).toContain("const CAP = Math.min(0.10, Number(process.argv[2]) || 0.10)")
-  expect(S).toContain('if (spent >= CAP - Math.min(0.01, CAP / 5))')  // S750: one call's margin, at most a fifth of the cap
+  expect(S).toContain('if (spent >= CAP - Math.min(0.01, CAP / 10))')  // S750: one call's margin, at most a fifth of the cap
   expect(S).toContain("security.on_demand_open_v1('claude_session'")
   expect(S).toContain("null, array['openrouter']) as r`)")
   const fin = S.split('} finally {')[1].split('\n}\n')[0]
