@@ -41,7 +41,7 @@ test('a whole, faithful answer meets the bar; each kind of fault is counted agai
 test('the request is the pinned model with its provider pins, a strict schema and require_parameters; extra fields never replace them', () => {
   const r = aerChunkRequest('qwen/qwen3-30b-a3b-instruct-2507', 'SYS', entryChunkUser('P', 'https://x', G), 6000, { order: ['a/fp8'], allow_fallbacks: false }, { reasoning: { enabled: false }, model: 'other', provider: {} })
   expect(r.model).toBe('qwen/qwen3-30b-a3b-instruct-2507'); expect(r.temperature).toBe(0)
-  expect(r.provider).toEqual({ order: ['a/fp8'], allow_fallbacks: false, require_parameters: true })
+  expect(r.provider).toEqual({ order: ['a/fp8'], allow_fallbacks: false, data_collection: 'deny', require_parameters: true })
   expect(r.reasoning).toEqual({ enabled: false })
   expect(r.response_format.json_schema.strict).toBe(true)
   expect(r.response_format.json_schema.schema.properties.rows.items.required).toEqual(['r', 'no_requirement', 'country', 'qualification', 'study_level', 'minimum', 'quote'])

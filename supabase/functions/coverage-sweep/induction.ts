@@ -48,7 +48,7 @@ export function inductionInput(raw: any): InductionInput {
 export function inductionRequest(model: string, input: InductionInput, maxTokens: number) {
   return {
     model, temperature: 0, max_tokens: maxTokens, response_format: { type: "json_object" },
-    provider: { require_parameters: true, allow_fallbacks: false },
+    provider: { data_collection: "deny", require_parameters: true, allow_fallbacks: false },
     messages: [{ role: "system", content: INDUCTION_SYSTEM }, { role: "user", content: JSON.stringify(input) }],
   };
 }

@@ -75,7 +75,7 @@ export function boostFieldSections(page: string, lanes: string[], maxChars: numb
 export function boostFieldsRequest(model: string, title: string, lanes: string[], input: string, maxTokens: number) {
   return {
     model, temperature: 0, max_tokens: maxTokens, response_format: { type: "json_object" },
-    provider: { require_parameters: true, allow_fallbacks: false },
+    provider: { data_collection: "deny", require_parameters: true, allow_fallbacks: false },
     messages: [
       { role: "system", content: BOOST_FIELDS_SYSTEM },
       { role: "user", content: `Course: ${title || "(untitled)"}\nFields asked: ${lanes.join(", ")}\n\nPage text:\n${input}` },

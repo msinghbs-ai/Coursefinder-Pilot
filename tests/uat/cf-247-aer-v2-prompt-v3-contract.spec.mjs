@@ -81,7 +81,7 @@ test('the request: strict v3 schema, require_parameters always, the version rout
   const r = aerV3Request('xiaomi/mimo-v2.6-flash', 'S', 'U', 12000, { order: ['xiaomi/fp8'], allow_fallbacks: false, require_parameters: false },
     { reasoning: { enabled: false }, model: 'openai/gpt-4.1-mini', response_format: null })
   expect(r.model).toBe('xiaomi/mimo-v2.6-flash')
-  expect(r.provider).toEqual({ order: ['xiaomi/fp8'], allow_fallbacks: false, require_parameters: true })
+  expect(r.provider).toEqual({ order: ['xiaomi/fp8'], allow_fallbacks: false, data_collection: 'deny', require_parameters: true })
   expect(r.reasoning).toEqual({ enabled: false })
   expect(r.response_format.json_schema.strict).toBe(true)
   expect(r.response_format.json_schema.schema).toBe(AER_V3_SCHEMA)

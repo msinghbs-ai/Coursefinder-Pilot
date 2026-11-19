@@ -180,7 +180,7 @@ If no candidate is clearly this course's own page, answer 0. Answer JSON only: r
 export function aiMatchRequest(it: { title: string; code: string | null; level: string | null; provider: string; candidates: { url: string; title: string }[]; model?: string }, maxTokens = 300) {  // v0.54.0 (W32): the answer limit is a setting (answer.ts); the default is the value fixed here before
   const list = it.candidates.map((x, i) => `${i + 1}. ${x.url}${x.title ? ` | ${x.title}` : ""}`).join("\n");
   return {
-    model: String(it.model || ""), temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { require_parameters: true },
+    model: String(it.model || ""), temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { data_collection: "deny", require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "page_choice", strict: true, schema: { type: "object", additionalProperties: false, required: ["reason", "choice"],
       properties: { reason: { type: "string" }, choice: { type: "integer", minimum: 0, maximum: it.candidates.length } } } } },
     messages: [{ role: "system", content: AI_MATCH_SYSTEM },
@@ -192,7 +192,7 @@ const SCH_AI_LEVELS = ["undergraduate", "postgraduate_coursework", "postgraduate
 const numOrNull = { type: ["number", "null"] }, strOrNull = { type: ["string", "null"] };
 export function scholarshipAiRequest(model: string, prompt: string, p: { provider: string; url: string; title: string; h1: string; text: string }, maxTokens = 3000) {  // v0.54.0 (W32): the answer limit is a setting (answer.ts); the default is the value fixed here before
   return {
-    model, temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { require_parameters: true },
+    model, temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { data_collection: "deny", require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "scholarship_page", strict: true, schema: { type: "object", additionalProperties: false,
       required: ["is_scholarship", "single_scholarship", "not_scholarship_reason", "name", "name_quote", "audience", "audience_quote", "offered", "offered_quote", "value", "levels", "levels_quote", "courses", "open_date", "close_date", "dates_quote"],
       properties: {
@@ -272,7 +272,7 @@ function orStats() {
 // v0.33.0: the narrow re-check of a held scholarship page (who may apply, value), with the exact sentence for each
 export function scholarshipRecheckRequest(model: string, p: { name: string; provider: string; url: string; title: string; h1: string; text: string }, maxTokens = 800) {  // v0.54.0 (W32): the answer limit is a setting (answer.ts); the default is the value fixed here before
   return {
-    model, temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { require_parameters: true },
+    model, temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { data_collection: "deny", require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "scholarship_recheck", strict: true, schema: { type: "object", additionalProperties: false,
       required: ["audience", "audience_quote", "value_stated", "value_quote"],
       properties: { audience: { type: "string", enum: ["international", "both", "domestic", "not_stated"] }, audience_quote: { type: "string" },
@@ -344,7 +344,7 @@ export function centralAiRequest(model: string, kind: string, p: { provider: str
     ? { type: "object", additionalProperties: false, required: ["undergraduate", "postgraduate", "research", "by_course"], properties: { undergraduate: lvl, postgraduate: lvl, research: lvl, by_course: { type: "boolean" } } }
     : { type: "object", additionalProperties: false, required: ["periods"], properties: { periods: { type: "array", items: { type: "object", additionalProperties: false, required: ["period", "month", "year", "quote"],
         properties: { period: { type: "string" }, month: { type: "integer" }, year: { type: ["integer", "null"] }, quote: { type: "string" } } } } } };
-  return { model, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },
+  return { model, temperature: 0, max_tokens: maxTokens, provider: { data_collection: "deny", require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: kind, strict: true, schema } },
     messages: [{ role: "system", content: CENTRAL_AI_PROMPT[kind] }, { role: "user", content: `University: ${p.provider}\nPage address: ${p.url}\n\n${fenceUntrusted("page text", p.text)}` }] };
 }
@@ -3419,7 +3419,7 @@ async function handle(req: Request): Promise<Response> {
       const ask = async (system: string, user: string, name: string, schema: unknown, mdl: string = model) => {
         const read = ASK_READ[name] || "course_fields", maxTokens = answerLimit(ws, read);
         const r = await cascadeFetch(ors.fetch, { models: mdl === model ? routes.course_other_fields?.models : null, deadline: t0 + BUDGET_MS - 25000, service: mdl === descModel && mdl !== model ? "course_description" : "course_other_fields" }, "https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-          body: JSON.stringify({ model: mdl, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true }, response_format: { type: "json_schema", json_schema: { name, strict: true, schema } },
+          body: JSON.stringify({ model: mdl, temperature: 0, max_tokens: maxTokens, provider: { data_collection: "deny", require_parameters: true }, response_format: { type: "json_schema", json_schema: { name, strict: true, schema } },
             messages: [{ role: "system", content: system }, { role: "user", content: user }] }), signal: AbortSignal.timeout(60000) });  // fixed: API time-out of one call
         const d = await r.json().catch(() => ({}));
         const ans = readAnswer(d, read, maxTokens, name); cost += ans.cost;

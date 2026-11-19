@@ -53,7 +53,7 @@ export function aerV2User(c: AerV2Course, quals: AerV2Qualification[], pageText:
 }
 
 export function aerV2Request(model: string, system: string, user: string, maxTokens: number) {
-  return { model, temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { require_parameters: true },
+  return { model, temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { data_collection: "deny", require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "aer_v2_course_page", strict: true, schema: AER_V2_SCHEMA } },
     messages: [{ role: "system", content: system }, { role: "user", content: user }] };
 }
@@ -205,7 +205,7 @@ export function aerV3User(c: AerV2Course, quals: AerV2Qualification[], b: AerBlo
 export function aerV3Request(model: string, system: string, user: string, maxTokens: number, routing?: Record<string, unknown> | null, params?: Record<string, unknown> | null) {
   const extra: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(params || {})) if (!["model", "messages", "response_format", "provider", "max_tokens", "temperature"].includes(k)) extra[k] = v;
-  return { ...extra, model, temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { ...(routing || {}), require_parameters: true },
+  return { ...extra, model, temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { ...(routing || {}), data_collection: "deny", require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "aer_v2_course_page_v3", strict: true, schema: AER_V3_SCHEMA } },
     messages: [{ role: "system", content: system }, { role: "user", content: user }] };
 }

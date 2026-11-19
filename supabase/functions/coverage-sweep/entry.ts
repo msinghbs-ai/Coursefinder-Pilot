@@ -52,7 +52,7 @@ export function entryNoAnswerWhy(d: any, slice: number, slices: number): string 
 }
 
 export function entryMatrixRequest(model: string, p: { provider: string; url: string; text: string; slice?: string; cells?: string; note?: string }, maxTokens = 8000) {
-  return { model, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },
+  return { model, temperature: 0, max_tokens: maxTokens, provider: { data_collection: "deny", require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "entry_matrix", strict: true, schema: ENTRY_SCHEMA } },
     messages: [{ role: "system", content: ENTRY_PROMPT },
       { role: "user", content: `Provider: ${p.provider}\nPage address: ${p.url}${p.slice ? `\nPart of the page: ${p.slice}` : ""}${p.note ? `\n\n${p.note}` : ""}\n\nPage text:\n${p.text}${p.cells ? `\n\nPublished cells of the band table(s), in printed order (one row for each):\n${p.cells}` : ""}` }] };

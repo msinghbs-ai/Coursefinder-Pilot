@@ -143,7 +143,7 @@ test('worker v0.57.0: stored copy first, own hosts only, direct before Firecrawl
   expect(w).not.toMatch(/catalogue\.providers|description:\s*ans/)
   expect(DESCRIPTION_SYSTEM).toContain('Do not state rankings, ratings, awards, facilities, employment or graduate outcomes, accreditations')
   const req = descriptionRequest('openai/gpt-4.1-mini', 'U', 'https://u.edu.au/about', 'text', 1500)
-  expect(req.model).toBe('openai/gpt-4.1-mini'); expect(req.provider).toEqual({ require_parameters: true }); expect(req.max_tokens).toBe(1500)
+  expect(req.model).toBe('openai/gpt-4.1-mini'); expect(req.provider).toEqual({ data_collection: 'deny', require_parameters: true }); expect(req.max_tokens).toBe(1500)
   expect(req.response_format.json_schema.strict).toBe(true)
 })
 

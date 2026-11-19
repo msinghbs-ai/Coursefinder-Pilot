@@ -40,7 +40,7 @@ test('ops_diagnose (A2 contract ops-diagnose-v1): the given instructions and sch
   expect(opsDiagnoseUsable({ ...item, contract: 'old' })).toContain('unsupported contract')
   expect(opsDiagnoseUsable({ ...item, response_schema: null })).toContain('no instructions or response_schema')
   const r = opsDiagnoseRequest(item, 800)
-  expect(r.model).toBe('openai/gpt-4.1-mini'); expect(r.temperature).toBe(0); expect(r.provider).toEqual({ require_parameters: true }); expect(r.max_tokens).toBe(800)
+  expect(r.model).toBe('openai/gpt-4.1-mini'); expect(r.temperature).toBe(0); expect(r.provider).toEqual({ data_collection: 'deny', require_parameters: true }); expect(r.max_tokens).toBe(800)
   expect(r.messages[0]).toEqual({ role: 'system', content: 'You diagnose one issue.' })
   expect(r.response_format.json_schema.schema).toBe(item.response_schema)
   expect(r.response_format.json_schema.strict).toBe(false)  // reasoning is optional, so strict mode cannot be asked

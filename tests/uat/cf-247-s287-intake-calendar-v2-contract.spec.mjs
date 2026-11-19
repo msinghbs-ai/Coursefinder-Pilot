@@ -50,7 +50,7 @@ test('long documents are read whole in slices up to the setting; the dated parse
 
 test('the request: pinned model, strict schema with meaning, scope and who a deadline applies to, earlier findings as notes', () => {
   const r = calendarAiRequest('openai/gpt-4.1-mini', { provider: 'UNSW Sydney', url: 'https://www.unsw.edu.au/key-dates', text: 'x', notes: '- year_not_printed: start of term 4', slice: '1 of 2' }, 4000)
-  expect(r.model).toBe('openai/gpt-4.1-mini'); expect(r.provider).toEqual({ require_parameters: true }); expect(r.temperature).toBe(0); expect(r.max_tokens).toBe(4000)
+  expect(r.model).toBe('openai/gpt-4.1-mini'); expect(r.provider).toEqual({ data_collection: 'deny', require_parameters: true }); expect(r.temperature).toBe(0); expect(r.max_tokens).toBe(4000)
   const sc = r.response_format.json_schema; expect(sc.strict).toBe(true)
   expect(sc.schema.properties.scope.enum).toEqual(['main_teaching', 'offshore_campus', 'college_or_residence', 'study_abroad_inbound', 'pathway_or_foundation', 'research_only', 'other'])
   expect(sc.schema.properties.periods.items.properties.start_meaning.enum).toEqual(['teaching_start', 'orientation', 'enrolment', 'other'])

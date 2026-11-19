@@ -77,7 +77,7 @@ export function builderRequest(model: string, draft: any) {
   const pairs = (name: string, key: string) => ({ type: "array", items: { type: "object", additionalProperties: false, required: ["field", key], properties: { field: { type: "string" }, [key]: { type: "string" } } } });
   return {
     model, temperature: 0, max_tokens: 4000, // v0.17.14: 1500 cut a long answer off mid-string (Notre Dame, 7 Oct)
-    usage: { include: true }, provider: { require_parameters: true },
+    usage: { include: true }, provider: { data_collection: "deny", require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "adapter_proposal", strict: true, schema: { type: "object", additionalProperties: false, required: ["reason", "json_source", "json_paths", "patterns", "pick", "notes"],
       properties: { reason: { type: "string" }, json_source: { type: "string" }, json_paths: pairs("json_paths", "path"), patterns: pairs("patterns", "pattern"), pick: pairs("pick", "how"), notes: { type: "string" } } } } },
     messages: [{ role: "system", content: BUILDER_SYSTEM },

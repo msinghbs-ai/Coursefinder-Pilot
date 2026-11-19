@@ -36,7 +36,7 @@ export function pageIdInput(html: string, mainTextFn: (h: string) => string) {
 
 export function pageIdRequest(model: string, course: { title: string; level: string | null; provider: string }, page: { h1: string; title: string; text: string }) {
   return {
-    model, temperature: 0, max_tokens: 500, usage: { include: true }, provider: { require_parameters: true },
+    model, temperature: 0, max_tokens: 500, usage: { include: true }, provider: { data_collection: "deny", require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "page_identity", strict: true, schema: { type: "object", additionalProperties: false, required: ["reason", "page_course_name", "same_course"],
       properties: { reason: { type: "string" }, page_course_name: { type: "string" }, same_course: { type: "boolean" } } } } },
     messages: [{ role: "system", content: PAGE_ID_SYSTEM },

@@ -57,7 +57,7 @@ export function calendarAiRequest(model: string, p: { provider: string; url: str
       end: { anyOf: [date(), { type: "null" }] },
       application_deadlines: { type: "array", items: date({ applies_to: { type: "string", enum: APPLIES } }) } } } } } };
   const notes = p.notes ? `\n\nNotes from earlier reads of this university's calendars (check whether they apply here):\n${p.notes}` : "";
-  return { model, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },
+  return { model, temperature: 0, max_tokens: maxTokens, provider: { data_collection: "deny", require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "intake_calendar_v2", strict: true, schema } },
     messages: [{ role: "system", content: CALENDAR_PROMPT + notes },
                { role: "user", content: `University: ${p.provider}\nPage address: ${p.url}${p.slice ? `\nPart: ${p.slice}` : ""}\n\nPage text:\n${p.text}` }] };

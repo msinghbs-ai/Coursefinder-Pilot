@@ -121,7 +121,7 @@ test('course-text.ts: schema per field asked, quotes on the page, dates never ma
   expect(Object.keys(courseTextSchema(['deadline']).properties)).toEqual(['deadlines'])
   expect(courseTextSchema(['description', 'deadline']).required).toEqual(['description', 'deadlines'])
   const req = courseTextRequest('openai/gpt-4.1-mini', 'u', ['description'], 1500)
-  expect(req.provider).toEqual({ require_parameters: true }); expect(req.temperature).toBe(0); expect(req.max_tokens).toBe(1500)
+  expect(req.provider).toEqual({ data_collection: 'deny', require_parameters: true }); expect(req.temperature).toBe(0); expect(req.max_tokens).toBe(1500)
   expect(COURSE_TEXT_SYSTEM).toContain('never work out a date from a start date or a term, and never assume a year')
   expect(courseTextUser('Uni', 'BSc', ['description', 'deadline'], 'TEXT', { min_sentences: 1, max_sentences: 4, max_chars: 700 }))
     .toBe('Provider: Uni\nCourse: BSc\nFields: description, deadlines\nDescription length: 1 to 4 sentences, at most 700 characters in all (the sentences, not the quotes).\n\nPage text:\nTEXT')

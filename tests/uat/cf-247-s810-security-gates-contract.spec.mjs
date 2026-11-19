@@ -36,10 +36,10 @@ test('every call site that sends scraped page text to a model cleans or fences i
   expect(read('supabase/functions/coverage-sweep/boost.ts')).toContain('fenceUntrusted("course page text", input)')
   expect(read('supabase/functions/coverage-sweep/builder.ts')).toContain('fenceUntrusted("sample pages", samples)')
   expect(read('supabase/functions/coverage-sweep/sch-extract.ts')).toContain('stripHiddenContent(t)')
-  // the description prompt wording is registry-governed (s553): cleaned where the page text is built, template untouched
+  // the description prompt wording is registry-governed (s553): cleaned where the page text is built; s811 (registry version 6) fences it in the user message
   const d = read('supabase/functions/coverage-sweep/description.ts')
   expect(d).toContain('let h = stripHiddenContent(String(html || ""))')
-  expect(d).toContain('\\nPage text:\\n${page}')
+  expect(d).toContain('\\nPage text:\\n${fenceSourceText(page)}')
 })
 
 test('website API v3 sends the platform\'s own validation text only, never another database message', () => {

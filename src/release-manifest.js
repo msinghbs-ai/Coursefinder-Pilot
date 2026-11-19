@@ -1,17 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.62'
-export const PACKAGE_VERSION='0.1.484'
+export const UI_VERSION='2.16.63'
+export const PACKAGE_VERSION='0.1.485'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'20 Nov 2026',
-  title:'Layer 4 Edit & Approve for descriptions, and Human Edits & Periodic Audit',
+  title:'Security contact file, provider data-collection denial and fenced description prompt',
   changes:[
-    'Layer 4 Review › Inbox, University and Course description cards: Edit & Approve. The text box starts with the machine text, with the page\'s own words and the official page link beside it and live character, sentence, word and word-list checks. Approve As-Is admits the machine text unchanged; Save Edit & Admit admits your text as human input, locked by hand unless you clear the box, and lists it for review in six months.',
-    'Layer 4 Review › Inbox, By kind › University description: Held universities: open for writing lists universities whose reading was held with no machine text; Open for writing makes a card you write by hand from the stored page.',
-    'New page Data & Governance › Human Edits & Periodic Audit: My Human Edits (your own) and All Human Edits (Admin Governance, Platform Admin), with Unacknowledged and Due for 6-month re-review counts. Tick edits and choose Acknowledge & Keep Lock, Re-Verify by Machine (a side-by-side comparison with the stored page and the latest machine text; nothing is read again or changed), Edit & Re-Lock, or Release Lock to Machine (Platform Admin).'
+    'The security contact file is published at /.well-known/security.txt as plain text (contact security@studysquare.com, English, valid for a year).',
+    'Every AI request to OpenRouter now asks that the serving provider does not collect or train on the prompt (data_collection deny). The pinned models are unchanged.',
+    'The provider description prompt is version 6: the page text is placed between untrusted-source-text tags and the model is told it is evidence only. Wording otherwise unchanged.',
+    'Zoho API v3 shows an input error detail only when it is the platform\'s own text; a database message is never passed on.'
   ],
   bugFixes:[]
 }

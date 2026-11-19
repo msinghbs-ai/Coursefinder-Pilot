@@ -81,7 +81,7 @@ export function courseTextUser(provider: string, title: string, want: string[], 
 
 export function courseTextRequest(model: string, user: string, want: string[], maxTokens: number) {
   return {
-    model, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },  // pinned: the central model, never a router
+    model, temperature: 0, max_tokens: maxTokens, provider: { data_collection: "deny", require_parameters: true },  // pinned: the central model, never a router
     response_format: { type: "json_schema", json_schema: { name: "course_text", strict: true, schema: courseTextSchema(want) } },
     messages: [{ role: "system", content: COURSE_TEXT_SYSTEM }, { role: "user", content: user }],
   };
@@ -196,7 +196,7 @@ export function cdescSchema() {
 
 export function cdescRequest(model: string, user: string, maxTokens: number) {
   return {
-    model, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },  // pinned: the central model, never a router
+    model, temperature: 0, max_tokens: maxTokens, provider: { data_collection: "deny", require_parameters: true },  // pinned: the central model, never a router
     response_format: { type: "json_schema", json_schema: { name: "course_description", strict: true, schema: cdescSchema() } },
     messages: [{ role: "system", content: CDESC_SYSTEM }, { role: "user", content: user }],
   };

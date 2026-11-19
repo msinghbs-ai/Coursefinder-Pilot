@@ -319,7 +319,7 @@ test('phase 2 worker: models come from the readers; the cascade moves on only on
   expect(worker).toContain('// was v0.84.0 // v0.84.0 (13 Nov 2026, CF-247 operating model 3.3.2')
   expect(worker).toContain('const model = String(routes.course_other_fields?.model || w?.model || ""), descModel = String(routes.course_description?.model || w?.model || "")')
   expect(worker).toContain('await askText(cdescRequest(descModel, cdescUser(')
-  expect(worker).toContain('model: String(it.model || ""), temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { require_parameters: true },')
+  expect(worker).toContain('model: String(it.model || ""), temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { data_collection: "deny", require_parameters: true },')
   // round 4 (v0.86.0): every model call goes through cascade.ts so that each attempt is kept. Nine calls carry the route's cascade; six name their
   // service only (one model, the call as it was), each for a stated reason (the database chain, a reserved price, a pinned record): scholarship pages
   // and eligibility, provider descriptions, adapter proposals, operations diagnosis, entry matrices. v0.93.0 (S1-AER benchmark): a tenth call carries

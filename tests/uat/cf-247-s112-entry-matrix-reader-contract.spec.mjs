@@ -57,7 +57,7 @@ test('large tables are read in slices with the header repeated; the request is p
   expect(s[1].startsWith(head)).toBe(true)
   expect(s[2].startsWith(head)).toBe(true)
   const req = entryMatrixRequest('openai/gpt-4.1-mini', { provider: 'P', url: 'https://x', text: 't' })
-  expect(req.provider).toEqual({ require_parameters: true })
+  expect(req.provider).toEqual({ data_collection: 'deny', require_parameters: true })
   expect(req.temperature).toBe(0)
   expect(req.response_format.json_schema.strict).toBe(true)
   expect(ENTRY_SCHEMA.properties.rows.items.required).toContain('quote')

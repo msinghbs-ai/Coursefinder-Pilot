@@ -32,11 +32,12 @@ test('answer schemas equal the worker’s; the provider description user templat
   const schemas = [...M.matchAll(/'(\{"type": "object"[^']*\})'::jsonb/g)].map((m) => JSON.parse(m[1]))
   expect(schemas).toContainEqual(cdesc)
   expect(schemas).toContainEqual(pdesc)
-  // the worker: `Provider: ${provider}\nPage: ${url}\n${lengthNote(length)}\nPage text:\n${page}`
-  const tpl = /content: `(Provider: \$\{provider\}\\nPage: \$\{url\}\\n\$\{lengthNote\(length\)\}\\nPage text:\\n\$\{page\})` \}/.exec(DS)[1]
+  // the worker: `Provider: ${provider}\nPage: ${url}\n${lengthNote(length)}\nPage text:\n${fenceSourceText(page)}` (s811: the page text is fenced; registered as v6 by migration 20261120102000)
+  const M6 = fs.readFileSync('supabase/migrations/20261120102000_cf247_s811_provider_description_prompt_v6_untrusted_fence.sql', 'utf8')
+  const tpl = /content: `(Provider: \$\{provider\}\\nPage: \$\{url\}\\n\$\{lengthNote\(length\)\}\\nPage text:\\n\$\{fenceSourceText\(page\)\})` \}/.exec(DS)[1]
   const v = { provider: 'P', url: 'U', length_note: 'L', page_text: 'T' }
-  const worker = tpl.replace('${provider}', v.provider).replace('${url}', v.url).replace('${lengthNote(length)}', v.length_note).replace('${page}', v.page_text).replace(/\\n/g, '\n')
-  const reg = /E'(Provider: \{\{provider\}\}\\nPage: \{\{url\}\}\\n\{\{length_note\}\}\\nPage text:\\n\{\{page_text\}\})'/.exec(M)[1]
+  const worker = tpl.replace('${provider}', v.provider).replace('${url}', v.url).replace('${lengthNote(length)}', v.length_note).replace('${fenceSourceText(page)}', `<untrusted_source_text>\n${v.page_text}\n</untrusted_source_text>`).replace(/\\n/g, '\n')
+  const reg = /E'(Provider: \{\{provider\}\}\\nPage: \{\{url\}\}\\n\{\{length_note\}\}\\nPage text:\\n<untrusted_source_text>\\n\{\{page_text\}\}\\n<\/untrusted_source_text>)'/.exec(M6)[1]
   const rendered = reg.replace(/\\n/g, '\n').replace(/\{\{([a-z_]+)\}\}/g, (_, k) => v[k])
   expect(rendered).toBe(worker)
   expect(M).toContain("array['provider', 'url', 'length_note', 'page_text']")
@@ -57,7 +58,7 @@ test('shadow only: no live status, and nothing in the worker or another migratio
   const files = (d) => fs.readdirSync(d, { recursive: true }).filter((f) => /\.(ts|js|mjs)$/.test(f)).map((f) => `${d}/${f}`)
   for (const f of files('supabase/functions')) expect(fs.readFileSync(f, 'utf8'), f).not.toMatch(/prompt_templates|prompt_render_v1/)
   // a migration that releases a prompt keeps the registry in step (20261116090000: course description v3 registered, v2 retired there); it writes rows, nothing reads them
-  const KEEPS_REGISTRY = ['20261116050000_cf247_prompt_registry_shadow.sql', '20261116090000_cf247_cdesc_v3_retry_gate_telemetry.sql', '20261119084000_cf247_s662_s664_cdesc_one_two_sentences_identity_proof.sql']
+  const KEEPS_REGISTRY = ['20261116050000_cf247_prompt_registry_shadow.sql', '20261120102000_cf247_s811_provider_description_prompt_v6_untrusted_fence.sql', '20261116090000_cf247_cdesc_v3_retry_gate_telemetry.sql', '20261119084000_cf247_s662_s664_cdesc_one_two_sentences_identity_proof.sql']
   for (const f of migrationNames().filter((x) => x.endsWith('.sql') && !KEEPS_REGISTRY.includes(x)))
     expect(fs.readFileSync(migrationPath(f), 'utf8'), f).not.toMatch(/prompt_templates/)
   expect(M).not.toMatch(/entry_matrices'|course_entry_requirements'/)

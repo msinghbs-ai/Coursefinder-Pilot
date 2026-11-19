@@ -40,8 +40,8 @@ test('zoho-api-v3 is zoho-api-v2 with the v3 function names: same keys, rate lim
   const a = norm(V2), b = norm(V3)
   const changed = b.filter((l) => !a.includes(l))
   // only the lines that name a v3 function, the version label, the log label, edu_country and the linked-course paging differ
-  expect(changed.length).toBeLessThanOrEqual(22)
-  for (const l of changed) expect(l).toMatch(/zoho_v3_|zoho-v3|v3:\$\{action\}|edu_country|zoho_api_v3_error|"destination"\]/)
+  expect(changed.length).toBeLessThanOrEqual(23)
+  for (const l of changed) expect(l).toMatch(/zoho_v3_|zoho-v3|v3:\$\{action\}|edu_country|zoho_api_v3_error|"destination"\]|ISM-1278/)
   expect(V3).toContain('svc.rpc("zoho_v2_auth"'); expect(V3).toContain('svc.rpc("zoho_v2_rate"'); expect(V3).toContain('svc.rpc("zoho_v2_log"')
   expect(V3).toContain('p_action: action ? `v3:${action}` : action')
   // 17 Nov 2026 (roadmap schema pack, RM0E; Zoho v3 additive changes merge on green): v3 has the v2 actions plus destination

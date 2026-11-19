@@ -53,7 +53,7 @@ test('the route: one model, the central Qwen3 30B, provisional qualification on 
   expect(worker).toContain('await cascadeFetch(fetch, { service: "layer1_induction_map" }, "https://openrouter.ai/api/v1/chat/completions"')
   expect(worker).toContain('const route = await rpc("svc_layer1_induction_map_route_v1", {});')
   expect(ind).toContain('export const INDUCTION_PROMPT_VERSION = "induction-map-v1";')
-  expect(ind).toContain('provider: { require_parameters: true, allow_fallbacks: false },')
+  expect(ind).toContain('provider: { data_collection: "deny", require_parameters: true, allow_fallbacks: false },')
   expect(fs.readFileSync('docs/platform/ai-prompts.json', 'utf8')).toContain('"layer1_induction_map"')
 })
 
