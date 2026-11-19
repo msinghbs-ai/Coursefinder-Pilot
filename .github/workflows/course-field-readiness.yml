@@ -1,7 +1,8 @@
 # Course field readiness (CF-247 s770, Platform Admin 19 Nov 2026 11:41). Daily at 07:30 AEDT (20:30 UTC; 06:30 AEST from April, when
 # daylight saving ends), after the 06:50 backup and the overnight drains. Runs the read-only scripts/telemetry/course-field-readiness.sql in
 # 8 parts through the Management API (read-only transaction), renders Course_Field_Readiness_Matrix_<date>.csv and the three summary tabs with
-# scripts/telemetry/course-field-readiness.mjs, and commits them to the branch course-readiness-snapshot (never merged). The daily scheduled
+# scripts/telemetry/course-field-readiness.mjs (with the per-country files Course_Field_Readiness_<CC>[_Part<n>]_<date>.csv, each under
+# 2.9 MB, s771), and commits them to the branch course-readiness-snapshot (never merged). The daily scheduled
 # task "Course field readiness to Drive (07:45)" copies them into the Google Drive folder Monitoring. Nothing is written to the database.
 name: Course field readiness
 on:

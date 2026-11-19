@@ -3,6 +3,8 @@
 // (one Management API answer per part, JSON arrays) into:
 //   Course_Field_Readiness_Matrix_<date>.csv      one row per active course, the 14 canonical API v3 fields and the per-course counts
 //   Stakeholder_Course_Readiness_Summary.json     the three tabs of the Google Sheet Stakeholder_Course_Readiness_Summary (rows of cells)
+//   Course_Field_Readiness_<CC>[_Part<n>]_<date>.csv  the same rows by country, each file under MAX_PART_BYTES so it opens directly and
+//                                                    fits one Google Drive connector upload (s771, Platform Admin 19 Nov 2026 14:24)
 // Usage: node scripts/telemetry/course-field-readiness.mjs <out-dir> <date YYYY-MM-DD> <part.json>...
 // Read only: it reads files and writes files; nothing reaches the database from here.
 import fs from 'node:fs'
@@ -22,6 +24,9 @@ export const DISPLAY_RULES = [
   ['EMPTY_NOT_STARTED', 'The country\'s scope is not switched on yet (Canada entry requirements; destination data where the country has no approved edition)', 'not_listed_on_register', 'Hide the field and its section for that country; no message'],
 ]
 
+// fixed: the Google Drive connector carries about 3.1 MB per upload; each country file stays under 2.9 MB (decimal), header included
+export const MAX_PART_BYTES = 2_850_000
+
 export const stateOf = (cell) => (STATES.includes(cell) ? cell : 'ADMITTED')
 
 export const csvCell = (v) => {
@@ -29,7 +34,9 @@ export const csvCell = (v) => {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
-export function build(rows, date) {
+export function build(rows, date, maxPartBytes = MAX_PART_BYTES) {
+  rows = [...rows].sort((a, b) => String(a.country_code).localeCompare(String(b.country_code)) || String(a.provider_name).localeCompare(String(b.provider_name))
+    || String(a.course_title).localeCompare(String(b.course_title)) || String(a.course_id).localeCompare(String(b.course_id)))
   const header = ['course_id', 'country_code', 'provider_id', 'provider_name', 'course_title', ...FIELDS,
     'fields_admitted', 'fields_trying', 'fields_possible_needs_source', 'fields_not_possible', 'fields_empty_not_started']
   const lines = [header.join(',')]
@@ -70,8 +77,33 @@ export function build(rows, date) {
     ...providers.slice(0, 100).map((p, i) => [i + 1, p.provider_name, p.country_code, p.courses, p.needs_source, p.trying,
       Object.entries(p.gaps).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([f, v]) => `${f} (${v})`).join('; '), p.provider_id]),
   ]
-  return { csv: lines.join('\n') + '\n', summary: { date, total, by_country: byCountry, Executive_Summary: executive, By_Provider_Action_List: byProviderTab, Dev_Display_Rules: DISPLAY_RULES,
-    sheet_tabs: sheetTabs(executive, byProviderTab, total, date) } }
+  const files = countryFiles(lines, rows, date, maxPartBytes)
+  return { csv: lines.join('\n') + '\n', files, summary: { date, total, by_country: byCountry, Executive_Summary: executive, By_Provider_Action_List: byProviderTab, Dev_Display_Rules: DISPLAY_RULES,
+    sheet_tabs: sheetTabs(executive, byProviderTab, total, date), country_files: files.map(({ name, country, rows: n, bytes }) => ({ name, country, rows: n, bytes })) } }
+}
+
+// One plain CSV per country, split into parts by size (header in every part) so each stays under maxPartBytes; rows stay in matrix order
+export function countryFiles(lines, rows, date, maxPartBytes) {
+  const header = lines[0] + '\n'
+  const byCc = new Map()
+  rows.forEach((r, i) => { const cc = r.country_code; if (!byCc.has(cc)) byCc.set(cc, []); byCc.get(cc).push(lines[i + 1] + '\n') })
+  const out = []
+  for (const [cc, ls] of [...byCc.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const parts = []; let cur = []; let size = Buffer.byteLength(header)
+    for (const l of ls) {
+      const b = Buffer.byteLength(l)
+      if (Buffer.byteLength(header) + b > maxPartBytes) throw new Error(`one ${cc} row is over the part size`)
+      if (size + b > maxPartBytes && cur.length) { parts.push(cur); cur = []; size = Buffer.byteLength(header) }
+      cur.push(l); size += b
+    }
+    if (cur.length) parts.push(cur)
+    parts.forEach((p, i) => {
+      const content = header + p.join('')
+      const name = parts.length === 1 ? `Course_Field_Readiness_${cc}_${date}.csv` : `Course_Field_Readiness_${cc}_Part${i + 1}_${date}.csv`
+      out.push({ name, country: cc, rows: p.length, bytes: Buffer.byteLength(content), content })
+    })
+  }
+  return out
 }
 
 // The Google Sheet Stakeholder_Course_Readiness_Summary (Drive › Monitoring): each tab's rows, written from A1 as they are. On Executive_Summary
@@ -101,9 +133,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const rows = parts.flatMap((p) => JSON.parse(fs.readFileSync(p, 'utf8')))
   const ids = new Set(rows.map((r) => r.course_id))
   if (ids.size !== rows.length) { console.error(`duplicate course rows: ${rows.length} rows, ${ids.size} courses`); process.exit(1) }
-  const { csv, summary } = build(rows, date)
+  const { csv, files, summary } = build(rows, date)
   fs.mkdirSync(outDir, { recursive: true })
   fs.writeFileSync(path.join(outDir, `Course_Field_Readiness_Matrix_${date}.csv`), csv)
+  for (const f of files) fs.writeFileSync(path.join(outDir, f.name), f.content)
   fs.writeFileSync(path.join(outDir, 'Stakeholder_Course_Readiness_Summary.json'), JSON.stringify(summary, null, 1))
-  console.log(JSON.stringify({ date, courses: rows.length, by_country: summary.by_country }))
+  console.log(JSON.stringify({ date, courses: rows.length, by_country: summary.by_country, files: summary.country_files }))
 }
