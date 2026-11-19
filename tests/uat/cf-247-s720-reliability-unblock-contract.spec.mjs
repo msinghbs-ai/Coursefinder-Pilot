@@ -110,3 +110,16 @@ test('evidence-link-index feed (IQ-00348): ids from the queue index and one anti
   expect(L).toMatch(/^-- Replaces: /m)
   expect(L).toMatch(/^-- Retires: /m)
 })
+
+// 19 Nov 2026 11:55 (20261119115000): 800 courses took 11.7 to 16.0 s live; 400 every 2 minutes.
+const B = fs.readFileSync('supabase/migrations/20261119115000_cf247_coverage_chunk_400.sql', 'utf8')
+
+test('the coverage chunk is 400 courses every 2 minutes, set in the setting with a reason (G2), nothing new created', () => {
+  expect(B).toContain("set value = to_jsonb(400), updated_at = now(),")
+  expect(B).toContain("where toolset_key = 'pipeline' and key = 'batch.course_coverage_courses' and value = to_jsonb(800);")
+  expect(B).toContain("set schedule = '0-58/2 * * * *', expected_ms = 7000,")
+  const bc = B.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
+  expect(bc).not.toMatch(/create (table|or replace|function)|^\s*(drop|delete|truncate)\b/im)
+  expect(B).toMatch(/^-- Replaces: /m)
+  expect(B).toMatch(/^-- Retires: /m)
+})
