@@ -22,7 +22,7 @@ end $g$;
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason)
 values ('pipeline', 'bulk.primary_campus_max', 'Bulk flag primary campus: providers in one request',
         'How many ticked providers one Flag primary campus request may cover. The preview and the apply both stop at this number.',
-        'number', 100, 1, 500, 'providers', 970, 'Bulk actions', 'public.admin_layer4_inbox (campus_primary_preview, campus_primary_apply)', 'CF-247 s812 (Platform Admin 20 Nov 2026 08:06)')
+        'number', to_jsonb(100), 1, 500, 'providers', 970, 'Bulk actions', 'public.admin_layer4_inbox (campus_primary_preview, campus_primary_apply)', 'CF-247 s812 (Platform Admin 20 Nov 2026 08:06)')
 on conflict (toolset_key, key) do nothing;
 
 create or replace function security.s812_bulk_admin_v1(p_action text, p_args jsonb)
