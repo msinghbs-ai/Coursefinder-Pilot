@@ -18,7 +18,7 @@ test('the drawer carries the three review columns, the exact reason badge and J 
 
 const kinds = { provider_description: { label: 'Provider description', order: 1, choices: [] } }
 const ROWS = ['r1', 'r2', 'r3'].map((r, i) => ({ kind: 'provider_description', ref: r, provider: `University ${i + 1}`, country: 'AU', subject: `Description ${i + 1}`, why: 'audit_sample', created_at: '2026-11-10T00:00:00Z', age_days: 9 }))
-async function openDrawer(page, traces, decides) {
+async function openDrawer(page, traces, decides, detail) {
   await mockAdmin(page, { rank: 6 })
   await page.route('https://example.supabase.co/rest/v1/rpc/admin_layer4_inbox', async (route) => {
     const b = route.request().postDataJSON()
@@ -35,7 +35,7 @@ async function openDrawer(page, traces, decides) {
     const b = route.request().postDataJSON(); traces.push(b.p_ref)
     const n = Number(b.p_ref.slice(1))
     return route.fulfill({ json: { waiting: true, item: { kind: b.p_kind, ref: b.p_ref, provider: `University ${n}`, subject: `Description ${n}`, why: 'Machine rule aer-matrix-machine-v1 did not admit this audit_sample', suggestion: 'Read the quote, then decide.',
-      created_at: '2026-11-10T00:00:00Z', detail: { proposed: `Proposed text ${n}`, quote: `Verbatim quote ${n}`, source_url: `https://example.edu.au/about-${n}` } }, evidence: { source_url: `https://example.edu.au/about-${n}`, captured_at: '2026-11-09T00:00:00Z' }, history: [] } })
+      created_at: '2026-11-10T00:00:00Z', detail: detail || { proposed: `Proposed text ${n}`, quote: `Verbatim quote ${n}`, source_url: `https://example.edu.au/about-${n}` } }, evidence: { source_url: `https://example.edu.au/about-${n}`, captured_at: '2026-11-09T00:00:00Z' }, history: [] } })
   })
   await page.goto('/#layer-4-review?view=grid')
   await page.locator('[data-l4g-kind]').selectOption('provider_description')
@@ -71,6 +71,15 @@ test.describe('mocked browser', () => {
     // the first open may read twice (the development build mounts effects twice); each move reads the new item once
     expect(traces.filter((t, i) => t !== traces[i - 1])).toEqual(['r1', 'r2', 'r3', 'r2', 'r3'])
     expect(decides, 'moving between items decides nothing').toEqual([])
+  })
+
+  test('a row-based item says so instead of a column of dashes, and the quote column shows the first four quotes only', async ({ page }) => {
+    await openDrawer(page, [], [], { proposed: { sample: Array.from({ length: 6 }, (_, i) => ({ quote: `Requirement quote ${i + 1}` })) } })
+    const d = page.locator('[data-l4g-drawer]')
+    await expect(d.locator('[data-l4g-rows-only]')).toContainText('6 proposed rows')
+    await expect(d.locator('[data-l4g-source] q')).toHaveCount(4)
+    await expect(d.locator('[data-l4g-more-quotes]')).toContainText('and 2 more')
+    await expect(d.locator('[data-l4g-proposed]')).not.toContainText('—')
   })
 
   test('typing in a field never moves the item', async ({ page }) => {
