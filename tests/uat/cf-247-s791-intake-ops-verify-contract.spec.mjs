@@ -51,3 +51,17 @@ test('VERIFY-01: the verify screen shows the stage history with run ids', async 
   await expect(h.locator('tr[data-stage="fetched"]')).toContainText('At selection')
   await expect(page.getByText('Scope: courses:bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb')).toBeVisible()
 })
+
+const B = fs.readFileSync('supabase/migrations/20261120010000_cf247_s791b_run_now_dispatcher_jobs.sql', 'utf8')
+const bBody = B.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
+
+test('VERIFY-01 (s791b): Run Now and the screen read the live dispatcher target before the cron row; every other Run Now check is unchanged', () => {
+  expect(bBody).toContain('create or replace function security.job_schedule_refusal_v1(p_job text)')
+  for (const t of ['pipeline.field_execution_registry r where r.kind = \'worker_lane\' and r.mode = \'live\' and r.legacy_job = p_job', 'pipeline.rollup_targets t where t.mode = \'live\' and t.legacy_job = p_job', 'pipeline.admission_rules a where a.mode = \'live\' and a.legacy_job = p_job']) expect(bBody).toContain(t)
+  expect(bBody).toContain("'3c769a37828264b0292e13ca02ef6537'")
+  expect(bBody).toContain("'d98dd923bb41fde5ef5314bca7d2050c'")
+  expect(bBody).toContain('when security.job_schedule_refusal_v1(p_job) is not null then security.job_schedule_refusal_v1(p_job)')
+  expect(bBody).not.toMatch(/run_now\.jobs|intake_dates\.apply_enabled|pg_try_advisory_xact_lock|update cron\.job|cron\.(alter_job|schedule|unschedule)/)
+  expect(bBody).toContain("raise exception 'cf-s791b-undo';")
+  expect(bBody).not.toMatch(/^\s*(delete|drop|truncate)\b/im)
+})
