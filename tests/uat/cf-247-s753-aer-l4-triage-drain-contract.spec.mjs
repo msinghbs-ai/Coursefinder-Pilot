@@ -15,7 +15,11 @@ test('triage puts every pending AER item through its own rule check, read only',
 })
 
 test('drain hands only passing items to the cron admission functions, at most 250 a tick, rows locked with SKIP LOCKED, clear of the cron', () => {
-  expect(S).toContain('const MAX = Math.max(1, Math.min(250, Math.floor(Number(process.argv[3]) || 100)))')
+  expect(S).toContain('const MAX = Math.max(1, Math.min(250, Math.floor(Number(process.argv[3]) || 40)))')
+  // run 1 (16:40): 400 checks in one statement passed the 60 s statement time; triage and drain halve on a time-out (down to 5), never above the bound
+  expect(S).toContain('let BATCH = Math.max(5, Math.min(400, Math.floor(Number(process.argv[4]) || 50)))')
+  expect(S).toContain("const timedOut = (e) => /57014|statement timeout/.test(String(e?.message || e))")
+  expect(S).toContain("size = Math.max(5, Math.floor(part.length / 2)); part = ids.slice(i, i + size)")
   expect(S).toContain('const ids = before.pass')
   expect(S).toContain("and i.status = 'pending' for update of i skip locked)")
   expect(S).toContain("then security.aer_machine_admit_v1(c.id, 'run') else security.aer_matrix_machine_admit_v1(c.id, 'run') end v")

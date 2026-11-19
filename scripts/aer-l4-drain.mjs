@@ -12,22 +12,28 @@
 import { need, lit, summary } from './boost-live-lib.mjs'
 need()
 const MODE = process.argv[2] === 'drain' ? 'drain' : 'triage'
-const MAX = Math.max(1, Math.min(250, Math.floor(Number(process.argv[3]) || 100)))  // the Platform Admin's tick bound (at most 250)
+const MAX = Math.max(1, Math.min(250, Math.floor(Number(process.argv[3]) || 40)))  // the Platform Admin's tick bound (at most 250); halves on a statement time-out
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN, REF = process.env.REF
 const sql = async (query) => {
   const r = await fetch(`https://api.supabase.com/v1/projects/${REF}/database/query`, { method: 'POST', headers: { authorization: `Bearer ${TOKEN}`, 'content-type': 'application/json' }, body: JSON.stringify({ query }) })
   const t = await r.text(); if (!r.ok) throw Error(`database query failed (HTTP ${r.status}): ${t.slice(0, 600)}`); return JSON.parse(t)
 }
 const SCOPE = `i.status = 'pending' and ((i.field_code = 'course_entry_first_read' and i.entity_type = 'course') or (i.field_code in ('entry_matrix_first_run', 'entry_matrix_change') and i.entity_type = 'provider'))`
-const BATCH = 400  // items checked in one statement (inside the API's statement time)
+// S753 run 1 (16:40): 400 checks in one statement passed the API's 60 s statement time (a timed-out statement is rolled back whole, so nothing
+// changed). A statement now takes BATCH items (from 50) and halves on a statement time-out, down to 5; a drain tick does the same.
+let BATCH = Math.max(5, Math.min(400, Math.floor(Number(process.argv[4]) || 50)))
+const timedOut = (e) => /57014|statement timeout/.test(String(e?.message || e))
+async function halving(size, run) { let n = size; for (;;) { try { return { n, out: await run(n) } } catch (e) { if (!timedOut(e) || n <= 5) throw e; n = Math.max(5, Math.floor(n / 2)); console.log(`statement time-out: retrying with ${n}`) } } }
 async function triage(label) {
   const [{ n }] = await sql(`select count(*)::int n from pipeline.layer4_review_items i where ${SCOPE}`)
   const groups = {}, pass = []
   let claimed = 0, claimedRecent = 0, assigned = 0
-  for (let off = 0; off < n + BATCH; off += BATCH) {
-    const rows = await sql(`with p as (select i.id, i.field_code, i.claimed_at, i.assigned_to from pipeline.layer4_review_items i where ${SCOPE} order by i.id offset ${off} limit ${BATCH}),
+  for (let off = 0; off < n + BATCH;) {
+    const h = await halving(BATCH, (b) => sql(`with p as (select i.id, i.field_code, i.claimed_at, i.assigned_to from pipeline.layer4_review_items i where ${SCOPE} order by i.id offset ${off} limit ${b}),
       c as (select p.*, case when p.field_code = 'course_entry_first_read' then security.aer_machine_check_v1(p.id) else security.aer_matrix_machine_check_v1(p.id) end r from p)
-      select id::text, field_code, coalesce(r->>'ok', 'false') ok, coalesce(r->>'rule', '') rule, claimed_at is not null claimed, coalesce(claimed_at > now() - interval '1 hour', false) recent, assigned_to is not null assigned from c`)
+      select id::text, field_code, coalesce(r->>'ok', 'false') ok, coalesce(r->>'rule', '') rule, claimed_at is not null claimed, coalesce(claimed_at > now() - interval '1 hour', false) recent, assigned_to is not null assigned from c`))
+    BATCH = h.n; off += h.n
+    const rows = h.out
     if (!rows.length) break
     for (const x of rows) {
       const k = `${x.field_code}|${x.ok === 'true' ? 'passes the rule' : x.rule || '?'}`
@@ -49,12 +55,18 @@ let after = before, ticks = [], failure = null
 if (MODE === 'drain') {
   try {
     const ids = before.pass
-    for (let i = 0; i < ids.length; i += MAX) {
+    let size = MAX
+    for (let i = 0; i < ids.length;) {
       await clearOfCron()
-      const part = ids.slice(i, i + MAX), t0 = Date.now()
-      const [{ res }] = await sql(`with c as (select i.id, i.field_code from pipeline.layer4_review_items i where i.id = any (array[${part.map((x) => lit(x.id)).join(', ')}]::uuid[]) and i.status = 'pending' for update of i skip locked)
+      const t0 = Date.now()
+      let part = ids.slice(i, i + size), res
+      for (;;) {
+        try { [{ res }] = await sql(`with c as (select i.id, i.field_code from pipeline.layer4_review_items i where i.id = any (array[${part.map((x) => lit(x.id)).join(', ')}]::uuid[]) and i.status = 'pending' for update of i skip locked)
         select coalesce(jsonb_agg(jsonb_build_object('id', c.id, 'outcome', coalesce(v->>'outcome', v->>'rule', 'unknown'), 'rows', v->'rows')), '[]'::jsonb) res
-          from c, lateral (select case when c.field_code = 'course_entry_first_read' then security.aer_machine_admit_v1(c.id, 'run') else security.aer_matrix_machine_admit_v1(c.id, 'run') end v) a`)
+          from c, lateral (select case when c.field_code = 'course_entry_first_read' then security.aer_machine_admit_v1(c.id, 'run') else security.aer_matrix_machine_admit_v1(c.id, 'run') end v) a`); break }
+        catch (e) { if (!timedOut(e) || part.length <= 5) throw e; size = Math.max(5, Math.floor(part.length / 2)); part = ids.slice(i, i + size); console.log(`tick time-out: retrying with ${size}`) }
+      }
+      i += part.length
       const tally = {}; for (const x of res) tally[x.outcome] = (tally[x.outcome] || 0) + 1
       ticks.push({ tick: ticks.length + 1, items: part.length, locked_or_gone: part.length - res.length, ms: Date.now() - t0, outcomes: tally })
       console.log(`tick ${ticks.length}: ${part.length} items, ${Date.now() - t0} ms, ${JSON.stringify(tally)}`)
