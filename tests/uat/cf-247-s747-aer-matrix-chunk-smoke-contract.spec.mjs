@@ -49,14 +49,20 @@ test('the request is the pinned model with its provider pins, a strict schema an
 })
 
 test('worker v1.0.27 mode aer_chunk_smoke: sha-256 checked version, the stored copy only, the chosen table or nothing, spend at most US$0.10, nothing written', () => {
-  expect(W).toContain('const WORKER = "coverage-sweep-worker-v1.0.27"; // v1.0.27 (19 Nov 2026, CF-247 S747')
+  expect(W).toContain('const WORKER = "coverage-sweep-worker-v1.0.28"; // v1.0.28 (19 Nov 2026, CF-247 S747 after smoke run 1)')
+  expect(W).toContain('// v1.0.27 (19 Nov 2026, CF-247 S747')
   expect([AER_CHUNK_MODE, AER_CHUNK_CONTRACT, AER_CHUNK_INPUT]).toEqual(['aer_chunk_smoke', 'aer-matrix-chunk-answer-v1', 'entry-chunks-v1'])
   const block = W.split('if (mode === AER_CHUNK_MODE) {')[1].split('    if (mode === "entry_inspect") {')[0]
   expect(block).toContain('(await aerV2Sha256(system)) !== String(spec.system_sha256')
   expect(block).toContain('const maxUsd = Math.min(Number(body.max_usd) || 0, 0.10);  // fixed:')
   expect(block).toContain('if (spent >= maxUsd) { res.error = "spend_cap"')
   expect(block).toContain('rpc("svc_entry_matrix_inspect_paths"')
-  expect(block).toContain('the table is not the one the caller chose')
+  expect(block).toContain('the table is not the one the caller chose (no table of the page has its rows)')
+  // v1.0.28: the table is found by its rows (count and first row), on the whole page first, then on the exported form s745 certifies; the input used is returned
+  expect(block).toContain('const fits = (v: any[]) => v.length === Number(body.expect_rows) && v[0]?.quote === String(body.expect_first ?? "");')
+  expect(block).toContain('let input = "full_page", hit = pick(html);')
+  expect(block).toContain('if (!hit.rows.length) { input = "tables_only";')
+  expect(block).toContain('chosen_table: Number(body.table), input,')
   expect(block).toContain('entryChunkGroups(rows, per)')
   expect(block).not.toMatch(/fcClient|firecrawl|svc_[a-z_]*record|svc_entry_matrix_record|storage\.from\([^)]*\)\.upload/i)
 })
