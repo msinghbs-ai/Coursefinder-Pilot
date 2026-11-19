@@ -80,7 +80,7 @@ export function scholarshipExtractRequest(model: string, prompt: string, p: { pr
   return {
     // v0.77.1: the same pinned model, served by its fastest provider (provider-level routing only; the model never changes): the version 3 answer is
     // long, and 125 of the first 231 reads on the default provider stopped at about 60 s with no answer
-    model, temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { require_parameters: true, sort: "throughput" },
+    model, temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { data_collection: "deny", require_parameters: true, sort: "throughput" },
     response_format: { type: "json_schema", json_schema: { name: "scholarship_extract_v3", strict: true, schema: { type: "object", additionalProperties: false,
       required: [...V2_REQUIRED, "detail"], properties: { ...V2_PROPERTIES, detail: DETAIL_SCHEMA } } } },
     messages: [{ role: "system", content: prompt },

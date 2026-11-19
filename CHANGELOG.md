@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.485 — 20 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.63** (Platform Admin 20 Nov 2026 08:06, chat S1-RM-Design). CF-247 s811 (ASD ISM): `/.well-known/security.txt` published as plain text; every OpenRouter request sets `data_collection: "deny"` (ISM-2103); provider description prompt version 6 (migration `20261120103000`) and its user message fence the page text in `<untrusted_source_text>` tags (ISM-2158); Zoho API v3 passes an `INVALID_INPUT` detail only when it is the platform's own text (ISM-1278). Consumer API unchanged (G3 75 functions, 48 relations).
+
 ## 0.1.484 — 20 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.62** (Platform Admin 20 Nov 2026 05:52, chat S1-Build). CF-247 s802 to s805: Layer 4 Edit & Approve for University and Course descriptions (security.layer4_description_decide_v1: unedited text approved as read, machine_human_approved; edited text admitted as human_input, checked, locked by hand, audited); held universities opened for writing; pipeline.human_edit_audit; Data & Governance › Human Edits & Periodic Audit (My Human Edits, All Human Edits) with Acknowledge & Keep Lock, Re-Verify by Machine ($0, read-only), Edit & Re-Lock, Release Lock to Machine and Accept machine text. Settings governance.human_edit_review_months (6) and governance.recheck_word_share (0.6). No consumer API change.

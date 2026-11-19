@@ -18,7 +18,7 @@ test('matcher: one pinned model; a choice must be one of the prepared candidates
   const idx = await fs.readFile('supabase/functions/coverage-sweep/index.ts', 'utf8')
   // worker v0.85.0 (13 Nov 2026, AI spend control): the model is handed out by public.svc_coverage_ai_match_next from the route course_matching; none is named in the worker
   expect(idx).not.toContain('AI_MATCH_MODEL =')
-  expect(idx).toContain('    model: String(it.model || ""), temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { require_parameters: true },')
+  expect(idx).toContain('    model: String(it.model || ""), temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { data_collection: "deny", require_parameters: true },')
   expect(idx).toContain('if (d?.model && !String(d.model).startsWith(sentModel(d, String((it as any).model || "")))) throw Error(`returned model ${d.model}`);')
   const m = await fs.readFile('supabase/migrations-archive/20261002184400_cf247_ai_link_matcher.sql', 'utf8')
   expect(m).toContain("chosen address is not one of the candidates")

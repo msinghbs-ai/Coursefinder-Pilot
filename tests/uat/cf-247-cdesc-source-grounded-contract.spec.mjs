@@ -43,7 +43,7 @@ test('the prompt: the contract text verbatim, hash recorded, version pinned and 
 
 test('the request: pinned model, strict schema with the contract fields, the system prompt and a structured record whose page text is only quoted spans', () => {
   const req = cdescRequest('openai/gpt-4.1-mini', 'U', 1500)
-  expect(req.provider).toEqual({ require_parameters: true }); expect(req.temperature).toBe(0); expect(req.max_tokens).toBe(1500)
+  expect(req.provider).toEqual({ data_collection: 'deny', require_parameters: true }); expect(req.temperature).toBe(0); expect(req.max_tokens).toBe(1500)
   expect(req.response_format.json_schema.strict).toBe(true)
   expect(req.messages[0]).toEqual({ role: 'system', content: CDESC_SYSTEM })
   expect(cdescSchema().required).toEqual(['course_id', 'status', 'description', 'claims', 'unverified_claims', 'prompt_version'])

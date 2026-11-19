@@ -28,7 +28,7 @@ export const AER_CHUNK_SCHEMA = {
 export function aerChunkRequest(model: string, system: string, user: string, maxTokens: number, routing?: Record<string, unknown> | null, params?: Record<string, unknown> | null, contract: string = AER_CHUNK_CONTRACT) {
   const extra: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(params || {})) if (!["model", "messages", "response_format", "provider", "max_tokens", "temperature"].includes(k)) extra[k] = v;
-  return { ...extra, model, temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { ...(routing || {}), require_parameters: true },
+  return { ...extra, model, temperature: 0, max_tokens: maxTokens, usage: { include: true }, provider: { ...(routing || {}), data_collection: "deny", require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: contract === AER_CHUNK_CONTRACT_V2 ? "aer_matrix_chunk_v2" : "aer_matrix_chunk_v1", strict: true, schema: AER_CHUNK_SCHEMA } },
     messages: [{ role: "system", content: system }, { role: "user", content: user }] };
 }

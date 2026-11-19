@@ -31,7 +31,7 @@ test('worker v0.20.1: the model is pinned, answers are strict JSON, and every fa
   const w = read('supabase/functions/coverage-sweep/index.ts')
   expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(20\.[1-9]|2[1-9]\.\d+|[3-9]\d\.\d+))"/)
   expect(w).toContain('if (mode === "scholarship_ai") {')
-  expect(w).toContain('provider: { require_parameters: true }')
+  expect(w).toContain('provider: { data_collection: "deny", require_parameters: true }')
   expect(w).toContain('json_schema: { name: "scholarship_page", strict: true')
   expect(w).toContain('if (d?.model && !String(d.model).startsWith(it.model)) throw Error(`returned model ${d.model}, not ${it.model}`);')
   expect(w).toContain('const verdict = !a.is_scholarship ? "not_scholarship" : !a.single_scholarship ? "listing" : !checks.name ? "unproven" : "scholarship";')

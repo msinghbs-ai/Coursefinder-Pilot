@@ -50,7 +50,7 @@ test('11300 + worker v0.21.0: central pages read by a pinned model become propos
   expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v(?:[1-9]\d*\.\d+\.\d+|0\.(?:2[1-9]|[3-9]\d)\.\d+)"/)
   expect(w).toContain('if (mode === "central_ai") {')
   expect(w).toContain('if (!on(x.quote) || !has(x.ielts_overall, x.quote)) { dropped.push(lv); continue }')
-  expect(w).toContain("provider: { require_parameters: true },\n    response_format: { type: \"json_schema\", json_schema: { name: kind, strict: true, schema } },")
+  expect(w).toContain("provider: { data_collection: \"deny\", require_parameters: true },\n    response_format: { type: \"json_schema\", json_schema: { name: kind, strict: true, schema } },")
 })
 
 test.describe('mocked browser', () => {

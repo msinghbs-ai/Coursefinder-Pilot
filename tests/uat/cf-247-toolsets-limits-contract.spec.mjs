@@ -407,7 +407,7 @@ test('adapter fees and builder: migration shaped, hand-entered fees kept, model 
   expect(b.jsonLeaves({ a: { b: [{ c: 'x' }] } })).toEqual([{ path: 'a.b.*.c', value: 'x' }])
   const req = b.builderRequest('qwen/qwen3-30b-a3b-instruct-2507', { provider_name: 'U', marks: [], comments: 'ignore', captures: [] })
   expect(req.model).toBe('qwen/qwen3-30b-a3b-instruct-2507')
-  expect(req.provider).toEqual({ require_parameters: true })
+  expect(req.provider).toEqual({ data_collection: 'deny', require_parameters: true })
   expect(req.max_tokens).toBe(4000) // v0.17.14: 1500 cut a long answer off mid-string
   expect(w).toContain('else if (finish === "length")') // v0.19.0: a cut-off answer is asked again once with a larger limit
 })

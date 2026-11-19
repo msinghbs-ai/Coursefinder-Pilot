@@ -41,7 +41,7 @@ export function opsDiagnoseUsable(it: any): string | null {
 export function opsDiagnoseRequest(it: any, maxTokens: number) {
   const schema = it.response_schema, props = Object.keys(schema?.properties || {}), req = Array.isArray(schema?.required) ? schema.required : [];
   return {
-    model: String(it.model), temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },
+    model: String(it.model), temperature: 0, max_tokens: maxTokens, provider: { data_collection: "deny", require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "ops_diagnosis", strict: props.every((p) => req.includes(p)), schema } },
     messages: [{ role: "system", content: String(it.instructions) }, { role: "user", content: `Context (JSON):\n${JSON.stringify(it.context ?? {})}` }],
   };

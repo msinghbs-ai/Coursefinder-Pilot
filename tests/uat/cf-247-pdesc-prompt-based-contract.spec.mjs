@@ -95,7 +95,7 @@ test('worker v0.69.0 uses the prompt the lease hands over, stamps its version an
   expect(IX).toContain('const g = await useFcWhy("provider_description_on_demand", it.provider_id, url, true);')
   expect(IX).toContain('const g = await useFcWhy("provider_description", it.provider_id, url, true);')  // the regular scan keeps its Firecrawl budget
   const req = promptRequest('openai/gpt-4.1-mini', 'x'.repeat(200), 'Example University', 'https://example.edu/about', 'page', 1500)
-  expect(req.provider).toEqual({ require_parameters: true })  // pinned: one model, never a router
+  expect(req.provider).toEqual({ data_collection: 'deny', require_parameters: true })  // pinned: one model, never a router
   expect(req.response_format.json_schema.schema).toEqual(PROMPT_SCHEMA)
 })
 

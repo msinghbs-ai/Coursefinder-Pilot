@@ -112,7 +112,7 @@ export function courseEntryUser(provider: string, title: string, slice: CourseSl
   return `University: ${provider}\nCourse: ${title}\n${part}\nPage text:\n${slice.text}`;
 }
 export function courseEntryRequest(model: string, user: string, maxTokens: number) {
-  return { model, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },
+  return { model, temperature: 0, max_tokens: maxTokens, provider: { data_collection: "deny", require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "course_entry", strict: true, schema: COURSE_ENTRY_SCHEMA } },
     messages: [{ role: "system", content: COURSE_ENTRY_SYSTEM }, { role: "user", content: user }] };
 }

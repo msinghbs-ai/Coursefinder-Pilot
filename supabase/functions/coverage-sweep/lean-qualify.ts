@@ -34,7 +34,7 @@ export const INTAKE_SCHEMA = { type: "object", additionalProperties: false, requ
 
 export function intakeRequest(model: string, provider: string, title: string, text: string, candidate: boolean, maxTokens: number) {
   const system = INTAKE_PROMPT_SENTENCES.join("") + (candidate ? " " + BLOCKS_LINE : "");
-  return { model, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },
+  return { model, temperature: 0, max_tokens: maxTokens, provider: { data_collection: "deny", require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "course_fields", strict: true, schema: INTAKE_SCHEMA } },
     messages: [{ role: "system", content: system }, { role: "user", content: `University: ${provider}\nCourse: ${title}\nFields: intakes\n\nPage text:\n${text}` }] };
 }

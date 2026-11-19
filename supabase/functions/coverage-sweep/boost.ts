@@ -212,7 +212,7 @@ export function studyLoadSections(page: string, maxChars: number): { text: strin
 export function boostStudyLoadRequest(model: string, context: string, input: string, maxTokens: number) {
   return {
     model, temperature: 0, max_tokens: maxTokens, response_format: { type: "json_object" },
-    provider: { require_parameters: true, allow_fallbacks: false },
+    provider: { data_collection: "deny", require_parameters: true, allow_fallbacks: false },
     messages: [
       { role: "system", content: BOOST_STUDY_LOAD_SYSTEM },
       { role: "user", content: `Course: ${String(context || "").replace(/\s+/g, " ").trim().slice(0, 300)}\n\nThe parts of the course page that can state study load, in page order:\n\n${fenceUntrusted("course page text", input)}` },

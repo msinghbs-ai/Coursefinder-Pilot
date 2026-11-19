@@ -71,7 +71,7 @@ export function feeAiRequest(model: string, it: FeeItem, text: string, maxTokens
     `Page text:\n${text}`,
   ].filter(Boolean).join("\n\n");
   return {
-    model, temperature: 0, ...(maxTokens && maxTokens > 0 ? { max_tokens: Math.floor(maxTokens) } : {}), provider: { require_parameters: true },
+    model, temperature: 0, ...(maxTokens && maxTokens > 0 ? { max_tokens: Math.floor(maxTokens) } : {}), provider: { data_collection: "deny", require_parameters: true },
     messages: [{ role: "system", content: FEE_AI_PROMPT }, { role: "user", content: user }],
     response_format: { type: "json_schema", json_schema: { name: "fee_rows", strict: true, schema: fees_schema } },
   };
