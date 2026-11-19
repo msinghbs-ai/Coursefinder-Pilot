@@ -1,9 +1,9 @@
 // Guards: page-text claim bounded (Platform Admin 19 Nov 2026 14:24, IQ-00606): the claim walks each country's bound pages in claim order (Boost weight, then course id) through a partial index and stops at its limit, never sorts the whole backlog, never waits for another claim, and keeps the claim rows, items and order it had.
-// CF-247 S772. supabase/migrations/20261119143000_cf247_s772_page_text_bounded_claim.sql
+// CF-247 S772. supabase/migrations/20261119150000_cf247_s772_page_text_bounded_claim.sql
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261119143000_cf247_s772_page_text_bounded_claim.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261119150000_cf247_s772_page_text_bounded_claim.sql', 'utf8')
 const code = M.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
 
 test('guarded by the live body md5 and replaces only svc_page_text_next_v1, with the same signature and settings', () => {

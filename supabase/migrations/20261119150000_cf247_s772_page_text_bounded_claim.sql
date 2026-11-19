@@ -17,7 +17,7 @@
 
 do $g$ begin
   if md5((select prosrc from pg_proc where oid = 'public.svc_page_text_next_v1(integer)'::regprocedure)) <> '007c7250542efd4de3867223e5c9be2d'
-     and position('20261119143000' in (select prosrc from pg_proc where oid = 'public.svc_page_text_next_v1(integer)'::regprocedure)) = 0 then
+     and position('20261119150000' in (select prosrc from pg_proc where oid = 'public.svc_page_text_next_v1(integer)'::regprocedure)) = 0 then
     raise exception 'live public.svc_page_text_next_v1 differs from the definition this change replaces';
   end if;
 end $g$;
@@ -25,7 +25,7 @@ end $g$;
 create index if not exists coverage_course_pages_bound_read_course_idx on pipeline.coverage_course_pages (course_id) include (evidence_id)
   where status = 'bound' and read_status = 'read';
 comment on index pipeline.coverage_course_pages_bound_read_course_idx is
-  'CF-247 s772 (20261119143000): bound, read course pages in course order with their stored page; walked by svc_page_text_next_v1.';
+  'CF-247 s772 (20261119150000): bound, read course pages in course order with their stored page; walked by svc_page_text_next_v1.';
 
 create or replace function public.svc_page_text_next_v1(p_limit integer)
  returns jsonb
@@ -37,7 +37,7 @@ declare v jsonb; v_lim int := least(greatest(coalesce(p_limit, 1), 1), 200);  --
         v_c jsonb := '[]'::jsonb; v_part jsonb; v_n int; v_found int := 0; r record;
 begin
   if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required' using errcode = '42501'; end if;
-  -- 20261119143000 (s772, IQ-00606): one claim at a time; a call that finds one running returns no items instead of waiting
+  -- 20261119150000 (s772, IQ-00606): one claim at a time; a call that finds one running returns no items instead of waiting
   if not pg_try_advisory_xact_lock(hashtext('cf247:page_text_next')) then
     return jsonb_build_object('items', '[]'::jsonb, 'min_chars', security.pipeline_num_v1('page_text.min_chars', 200)::int, 'busy', true);
   end if;
@@ -94,7 +94,7 @@ end $function$;
 do $c$
 declare v_drift jsonb;
 begin
-  if position('20261119143000' in (select prosrc from pg_proc where oid = 'public.svc_page_text_next_v1(integer)'::regprocedure)) = 0 then
+  if position('20261119150000' in (select prosrc from pg_proc where oid = 'public.svc_page_text_next_v1(integer)'::regprocedure)) = 0 then
     raise exception 'svc_page_text_next_v1 was not replaced';
   end if;
   if not exists (select 1 from pg_indexes where schemaname = 'pipeline' and indexname = 'coverage_course_pages_bound_read_course_idx') then
