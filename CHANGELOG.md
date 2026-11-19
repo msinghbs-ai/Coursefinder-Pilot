@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.473 — 19 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.51** (Platform Admin 19 Nov 2026 13:04, chat S1-Build, s769; ref 8XEY7B). Migration `20261119130000` (md5-guarded `create or replace` of `security.scholarship_listing_match_v1` and `public.admin_scholarship_coverage_read`; no table, column, index or job): the matcher works out each listed item's and each record's key, words and addresses once (materialised) instead of for every pair, and the coverage read returns at most 50 providers a page. `src/ScholarshipCoverage.jsx` pages through them (Previous, Next, Showing x–y of N). Spec s769.
+
 ## 0.1.472 — 19 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.50** (Platform Admin 18 Nov 2026, chat S1-Courses, s662 and s664; first built 18 Nov as Pilot #1314, renumbered after v2.16.49). Migration `20261119084000` (md5-guarded edits of seven functions; no new table or function): course description prompt `cdesc-source-grounded-v4` (1 to 2 sentences) with worker `coverage-sweep` v1.0.25, limits 2 sentences and 360 characters, identity proof in `cdesc-machine-v2` (setting `enrich.course_description_identity_proof_on`), the first-description hold off (setting `enrich.course_description_first_hold_on`), and the Layer 4 course description card's plain-English hold box (`src/lib/cdesc-hold.js`, `CdWhy`) with Re-read (1-2 sentences) and Approve all verified for provider. Specs s662 and s664.

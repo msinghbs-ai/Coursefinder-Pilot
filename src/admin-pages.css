@@ -486,6 +486,8 @@
 /* Decision 222: Websites to find */.wtf-tried{margin:4px 0 0;padding-left:16px;font-size:var(--cf-fs-xs);max-width:420px}.wtf-tried a{word-break:break-all}.wtf-edit{display:flex;gap:6px;align-items:center;min-width:240px}.wtf-edit input{flex:1;min-width:0}.la-todo{display:block;margin-top:4px}
 
 /* v2.15.240: Scholarships > Coverage */
+.sc-pager{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:10px;font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
+.sc-pager>span{margin-right:auto}
 .sc-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:4px 0 12px}
 .sc-tiles>div{border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg);padding:10px 12px;display:grid;gap:2px;background:var(--cf-white)}
 .sc-tiles small{font-size:var(--cf-fs-2xs);color:var(--cf-slate-500);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
