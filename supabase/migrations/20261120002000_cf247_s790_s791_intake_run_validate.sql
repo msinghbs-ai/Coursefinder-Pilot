@@ -38,31 +38,33 @@ revoke all on pipeline.intake_cohort_stages from public, anon, authenticated;
 
 create or replace function security.intake_cohort_stages_record_v1(p_cohort uuid, p_run uuid)
 returns jsonb language plpgsql security definer set search_path to '' as $f$
-declare v_at timestamptz := (select created_at from pipeline.run_now_cohorts where id = p_cohort); v_rows jsonb;
+declare v_at timestamptz := (select created_at from pipeline.run_now_cohorts where id = p_cohort); v_since timestamptz; v_rows jsonb;
 begin
   if v_at is null then raise exception 'unknown cohort'; end if;
   if p_run is null then
     -- at selection: what the stored evidence held for each picked intake
+    with x as (select m.course_id, nullif(e->>'page_url', '') is not null fetched,
+                      nullif(btrim(coalesce(e->>'page_quote', '')), '') is not null parsed,
+                      coalesce(jsonb_strip_nulls(e->'planned'), '{}'::jsonb) <> '{}'::jsonb extracted
+                 from pipeline.run_now_cohort_members m cross join lateral jsonb_array_elements(m.evidence) e where m.cohort_id = p_cohort)
     insert into pipeline.intake_cohort_stages (cohort_id, run_id, stage, courses, intakes)
-    select p_cohort, null, s.stage, count(distinct m.course_id) filter (where s.ok), count(*) filter (where s.ok)
-      from pipeline.run_now_cohort_members m
-      cross join lateral jsonb_array_elements(m.evidence) e
-      cross join lateral (values
-        ('fetched',   nullif(e->>'page_url', '') is not null),
-        ('parsed',    nullif(btrim(coalesce(e->>'page_quote', '')), '') is not null),
-        ('extracted', coalesce(e->'planned', '{}'::jsonb) <> '{}'::jsonb and jsonb_strip_nulls(e->'planned') <> '{}'::jsonb)) s(stage, ok)
-     where m.cohort_id = p_cohort
-     group by s.stage;
+    select p_cohort, null, s.stage,
+           (select count(distinct x.course_id) from x where case s.stage when 'fetched' then x.fetched when 'parsed' then x.parsed else x.extracted end),
+           (select count(*) from x where case s.stage when 'fetched' then x.fetched when 'parsed' then x.parsed else x.extracted end)
+      from (values (1, 'fetched'), (2, 'parsed'), (3, 'extracted')) s(o, stage) order by s.o;
   else
-    -- after a run: the decision the intake job recorded for each picked intake since the cohort was fixed
+    -- after a run: the intake job's own decisions on the picked intakes since the last count of this cohort (its event log, so each run counts its own)
+    v_since := coalesce((select max(recorded_at) from pipeline.intake_cohort_stages where cohort_id = p_cohort and run_id is not null), v_at);
+    with x as (select ev.intake_id, min(ev.course_id::text)::uuid course_id, bool_or(ev.outcome = 'filled') filled
+                 from pipeline.course_intake_date_events ev
+                 join pipeline.run_now_cohort_members m on m.cohort_id = p_cohort and m.course_id = ev.course_id
+                where ev.run_at > v_since and ev.intake_id in (select (e->>'intake_id')::uuid from jsonb_array_elements(m.evidence) e)
+                group by ev.intake_id)
     insert into pipeline.intake_cohort_stages (cohort_id, run_id, stage, courses, intakes)
-    select p_cohort, p_run, s.stage, count(distinct d.course_id) filter (where s.ok), count(*) filter (where s.ok)
-      from pipeline.course_intake_dates d
-      join pipeline.run_now_cohort_members m on m.cohort_id = p_cohort and m.course_id = d.course_id
-      cross join lateral (values ('verified', true), ('admitted', d.outcome = 'filled'), ('held', d.outcome <> 'filled')) s(stage, ok)
-     where d.applied_at >= v_at
-       and d.intake_id in (select (e->>'intake_id')::uuid from jsonb_array_elements(m.evidence) e)
-     group by s.stage;
+    select p_cohort, p_run, s.stage,
+           (select count(distinct x.course_id) from x where case s.stage when 'verified' then true when 'admitted' then x.filled else not x.filled end),
+           (select count(*) from x where case s.stage when 'verified' then true when 'admitted' then x.filled else not x.filled end)
+      from (values (1, 'verified'), (2, 'admitted'), (3, 'held')) s(o, stage) order by s.o;
   end if;
   select coalesce(jsonb_agg(jsonb_build_object('stage', stage, 'courses', courses, 'intakes', intakes) order by id), '[]') into v_rows
     from pipeline.intake_cohort_stages where cohort_id = p_cohort and run_id is not distinct from p_run and recorded_at = now();
@@ -258,6 +260,7 @@ begin
       st := security.intake_cohort_stages_record_v1(v_coh, null);
       if jsonb_array_length(st) <> 3 then raise exception 'post-check: selection stages %', st; end if;
       st := st || security.intake_cohort_stages_record_v1(v_coh, gen_random_uuid());
+      if jsonb_array_length(st) <> 6 then raise exception 'post-check: run stages %', st; end if;
       vr := public.admin_intake_run_read_v1('verify', jsonb_build_object('cohort_id', v_coh));
       if jsonb_array_length(vr->'stage_history') <> jsonb_array_length(st) then raise exception 'post-check: verify stage_history % vs %', vr->'stage_history', st; end if;
       v_o := v_o || ' | latest cohort stages ' || (select string_agg((x->>'stage') || '=' || (x->>'courses') || '/' || (x->>'intakes'), ' ') from jsonb_array_elements(st) x);
