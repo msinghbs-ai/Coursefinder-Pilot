@@ -88,8 +88,8 @@ td.cf-empty-cell{padding:22px;text-align:center;color:var(--cf-muted);font-size:
 .cf-page{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--cf-space-4);min-width:0}
 .cf-page-body{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--cf-space-4);min-width:0}
 .cf-page-tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:thin;border-bottom:1px solid var(--cf-border);margin-top:-6px}
-.cf-page-tabs button{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;border:0;border-bottom:2px solid transparent;background:transparent;padding:9px 12px 8px;color:var(--cf-muted);font:inherit;font-size:var(--cf-fs-base);font-weight:700;cursor:pointer;white-space:nowrap}
-.cf-page-tabs button:hover{color:var(--cf-text)}
+.cf-page-tabs button{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;border:0;border-bottom:2px solid transparent;background:transparent;padding:9px 12px 8px;color:var(--cf-slate-700);font:inherit;font-size:var(--cf-fs-base);font-weight:700;cursor:pointer;white-space:nowrap}
+.cf-page-tabs button:hover{color:var(--cf-slate-900);border-bottom-color:var(--cf-slate-300)} /* s781: inactive tabs read clearly (slate 700 on white, 9.4:1) */
 .cf-page-tabs button.active{border-bottom-color:var(--cf-brand);color:var(--cf-brand-ink)}
 .cf-page-tabs button:focus-visible{outline:none;box-shadow:var(--cf-focus-ring);border-radius:var(--cf-radius-sm)}
 .cf-tab-count{border-radius:var(--cf-radius-pill);background:var(--cf-surface-3);padding:1px 6px;font-size:var(--cf-fs-2xs);color:var(--cf-text-2)}

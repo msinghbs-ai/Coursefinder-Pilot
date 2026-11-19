@@ -129,6 +129,28 @@ async function decorateProviderList(){
    persistListCache()
  }catch{}
 }
+// s781 (Platform Admin 19 Nov 2026 16:37): the Providers list asks for every visible row's logo in one call (by stable key), from the same cache
+// the list used before. A row that has no logo, or whose call fails, shows its two-letter monogram.
+export function listLogoCached(stable){const c=listCache.get(String(stable||''));return c?.expiresAt>now()?c:null}
+let listPending=new Map(),listTimer=0
+export function requestListLogo(stable){
+ const k=String(stable||'');if(!k)return Promise.resolve(null)
+ const hit=listLogoCached(k);if(hit)return Promise.resolve(hit)
+ if(listPending.has(k))return listPending.get(k).p
+ let res;const p=new Promise(r=>{res=r});listPending.set(k,{p,res})
+ if(!listTimer)listTimer=setTimeout(flushListLogos,0)
+ return p
+}
+async function flushListLogos(){
+ listTimer=0;const batch=listPending;listPending=new Map();const keys=[...batch.keys()]
+ try{
+   const{data,error}=await supabase.functions.invoke('provider-asset-access',{body:{stable_keys:keys}})
+   if(error)throw error
+   const expiresAt=cacheTtl(data?.expires_in||600),byKey=new Map((data?.items||[]).map(x=>[String(x.stable_key),x]))
+   for(const k of keys){const item=byKey.get(k),v={url:String(item?.url||''),provider_id:String(item?.provider_id||''),expiresAt};listCache.set(k,v);batch.get(k).res(v)}
+   persistListCache()
+ }catch{for(const k of keys)batch.get(k).res(null)}
+}
 // the providers list: the logo opens the same editor, for roles allowed to change logos (the row itself still opens the provider)
 function bindListEdit(slot,providerId,name){
  if(!slot||!providerId||slot.dataset.cfUploadBound==='1')return
