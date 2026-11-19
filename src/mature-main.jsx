@@ -76,6 +76,7 @@ const ComparisonWorkspace=lazyPage(()=>import('./ComparisonWorkspace'))
 const AerWorkspace=lazyPage(()=>import('./AerWorkspace'))
 const ProviderContactsWorkspace=lazyPage(()=>import('./ProviderContactsWorkspace'))
 const Layer4Inbox=lazyPage(()=>import('./Layer4Inbox'))
+const HumanEditsAudit=lazyPage(()=>import('./HumanEditsAudit')) // CF-247 s804/s805: Data & Governance › Human Edits & Periodic Audit
 const Automations=lazyPage(()=>import('./Automations'))
 const SearchCapCard=lazyPage(()=>import('./SearchCapCard'))
 const PipelineSettings=lazyPage(()=>import('./PipelineSettings'))
@@ -458,6 +459,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
       // v2.15.253 (Platform Admin, 12 Oct 2026): Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired (old addresses redirect in nav-map.js).
       // v2.15.300 (Platform Admin, 20 Oct 2026): Review queue, AI could not decide and Websites to find retired into the Inbox kinds.
       case'layer4':return <Layer4Inbox onError={err} routeParams={routeParams}/>
+      case'governance':return <HumanEditsAudit key={tab} tab={tab} rank={rank} onError={err}/>
       // v2.15.300: Screen use (Platform Admin) under the health checks, to decide which screens retire
       // v2.15.301: Capacity moved to the Go-live checklist; Storage & retention is a tab here
       case'health':return tab==='completeness'?<CompletenessReport rank={rank} onError={onError}/>:tab==='storage'?<RetentionScreen onError={onError}/>:tab==='queues'?<div className="m-page-stack" data-queues-yield>{/* SS-020 step 3 (Decision 269, Final board F31: lanes first): Pipeline yield moved here from Integration queue; PIM Admin and above, as before (server checks too) */}{rank>=5&&<PipelineYield onError={onError}/>}<QueueWatch onError={onError}/><BoostQueue onError={onError}/></div>:tab==='integration'?<IntegrationQueue onError={onError}/>:<><PlatformHealth onError={onError}/>{rank>=6&&<ScreenUse onError={onError}/>}</>

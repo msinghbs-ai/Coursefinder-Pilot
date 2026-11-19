@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.484 — 20 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.62** (Platform Admin 20 Nov 2026 05:52, chat S1-Build). CF-247 s802 to s805: Layer 4 Edit & Approve for University and Course descriptions (security.layer4_description_decide_v1: unedited text approved as read, machine_human_approved; edited text admitted as human_input, checked, locked by hand, audited); held universities opened for writing; pipeline.human_edit_audit; Data & Governance › Human Edits & Periodic Audit (My Human Edits, All Human Edits) with Acknowledge & Keep Lock, Re-Verify by Machine ($0, read-only), Edit & Re-Lock, Release Lock to Machine and Accept machine text. Settings governance.human_edit_review_months (6) and governance.recheck_word_share (0.6). No consumer API change.
+
 ## 0.1.483 — 20 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.61** (Platform Admin 20 Nov 2026 06:10 and 06:12, chat S1-RM-Design). CF-247 s806 to s810: completeness bars, Missing field pills, provider bulk bar and provenance panel on Courses and Providers (migration `20261120100000`, one in-place edit of `security.admin_providers_page_v3`); role guides 1.1; browser security headers, untrusted page-text fence, website API v3 error detail, and CI secret scan, dependency audit and SBOM gates. Consumer API unchanged (75 functions, 48 relations).

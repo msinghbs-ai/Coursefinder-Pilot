@@ -109,6 +109,12 @@ export const PAGES = {
     // is a kind in the Inbox, and their addresses open the Inbox on that kind (resolveTarget). Decisions taken are under Inbox › Decided.
     // v2.15.252: the AI send-back tab retired with Layer 3. v2.15.253: Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired.
   ] },
+  // CF-247 s804/s805 (Platform Admin 20 Nov 2026 05:52): Data & Governance › Human Edits & Periodic Audit. My Human Edits for a Pipeline
+  // Operator's own edits; All Human Edits (Admin Governance) for the Platform Admin. The server checks both (public.admin_layer4_inbox human_edits).
+  governance: { label: 'Human Edits & Periodic Audit', slug: 'human-edits-audit', icon: 'shield', subtitle: 'Descriptions a person edited before admitting them: locked by hand, acknowledged, re-verified against the stored page and reviewed every six months.', tabs: [
+    { key: 'mine', label: 'My Human Edits', min: 4 },
+    { key: 'all', label: 'All Human Edits (Admin Governance)', min: 6 },
+  ] },
 
   // v2.15.301 (Platform Admin, 20 Oct 2026): Capacity moved to the Go-live checklist; Storage & retention is a tab here (Platform Admin only)
   health: { label: 'Platform health', slug: 'platform-health', icon: 'health', subtitle: 'Automatic checks across jobs, queues, budgets and the database; what takes space and purging it.', tabs: [
@@ -186,6 +192,7 @@ export const SECTIONS = [
   { label: '', pages: ['dashboard'] },
   { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'entry', 'rankings', 'destination', 'reference'] },
   { label: 'Data pipeline', pages: ['coverage', 'layer1', 'layer2', 'layer4'] },
+  { label: 'Data & Governance', pages: ['governance'] },
   { label: 'Operations', pages: ['health', 'jobs', 'evidence'] },
   { label: 'Platform settings', pages: ['environment', 'services', 'migration'] },
   { label: 'Administration', pages: ['users'] },

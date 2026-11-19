@@ -1,0 +1,32 @@
+/* CF-247 s804/s805 (20 Nov 2026): Data & Governance › Human Edits & Periodic Audit (HumanEditsAudit.jsx) */
+.he{display:grid;gap:12px;min-width:0}
+.he-intro{margin:0;color:var(--cf-slate-600)}
+.he-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.he-bar,.he-actions,.he-pills,.he-detail-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.he-pills button{border:1px solid var(--cf-slate-300);background:var(--cf-white);border-radius:var(--cf-radius-pill);padding:5px 11px;font-size:var(--cf-fs-sm);cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.he-pills button.on{background:var(--cf-indigo-50);border-color:var(--cf-indigo-500);color:var(--cf-indigo-800);font-weight:600}
+.he-badge{background:var(--cf-amber-500);color:var(--cf-white);border-radius:var(--cf-radius-pill);padding:0 7px;font-size:var(--cf-fs-3xs);font-weight:700}
+.he-bar select{border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:4px 8px;font:inherit;font-size:var(--cf-fs-sm)}
+.he-actions{border:1px solid var(--m-border);border-radius:var(--cf-radius-md);padding:6px 10px;background:var(--cf-white)}
+.he-actions small{color:var(--cf-slate-600);margin-right:4px}
+.he-confirm{border:1px solid var(--cf-amber-500);border-radius:var(--cf-radius-md);padding:8px 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.he-confirm p{margin:0;flex:1 1 100%}
+.he-note{margin:0;padding:8px 12px;border-radius:var(--cf-radius-md);background:var(--cf-green-50);color:var(--cf-green-800);font-size:var(--cf-fs-sm)}
+.he-err{margin:0;color:var(--cf-red-700);font-size:var(--cf-fs-sm)}
+.he-table-wrap{overflow-x:auto;border:1px solid var(--m-border);border-radius:var(--cf-radius-lg);background:var(--cf-white)}
+.he-table{width:100%;border-collapse:collapse;font-size:var(--cf-fs-sm)}
+.he-table th,.he-table td{text-align:left;vertical-align:top;padding:7px 9px;border-bottom:1px solid var(--cf-slate-150)}
+.he-table th{font-size:var(--cf-fs-xs);color:var(--cf-slate-600);font-weight:600}
+.he-table tr.due td:first-child{box-shadow:inset 3px 0 0 var(--cf-red-700)}
+.he-table tr.unack:not(.due) td:first-child{box-shadow:inset 3px 0 0 var(--cf-amber-500)}
+.he-chips{display:flex;flex-wrap:wrap;gap:4px}
+.he-detail{display:grid;gap:8px}
+.he-sides{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.he-sides section{border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-md);padding:7px 9px;min-width:0}
+.he-sides h4{margin:0 0 4px;font-size:var(--cf-fs-xs);color:var(--cf-slate-600);text-transform:uppercase;letter-spacing:.04em}
+.he-sides p{margin:0;line-height:1.45;overflow-wrap:anywhere}
+.he-recheck ol{margin:4px 0 0;padding-left:18px;display:grid;gap:3px}
+.he-recheck li.miss{color:var(--cf-amber-800)}
+.he-edit{display:grid;gap:6px}
+.he-edit textarea,.he-edit input{width:100%;box-sizing:border-box;border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:6px 8px;font:inherit;font-size:var(--cf-fs-sm)}
+.he-pager{display:flex;align-items:center;justify-content:space-between;gap:6px}

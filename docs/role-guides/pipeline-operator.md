@@ -31,6 +31,7 @@ Keep the data pipeline moving: watch jobs and queues, run and pause them, and se
 - **Reference data**
 - **Layer 2/3 Build & enrich**: Operations, Universities, Enrich fields, Enrichment plan, Course sources, Flags, Scholarships
 - **Layer 4 Review**: Inbox
+- **Human Edits & Periodic Audit**: My Human Edits
 - **Platform health**: Health checks, Queues & yield, Country & category completeness
 - **Scheduled jobs**: Automations, Jobs, Task manager
 - **Evidence**

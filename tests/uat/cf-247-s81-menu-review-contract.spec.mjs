@@ -11,7 +11,7 @@ const to = (t, q = {}) => { const r = resolveTarget(t, new URLSearchParams(q)); 
 
 test('menu: 20 pages (was 23; v2.15.363 added Catalogue › Entry requirements); Sources, API usage, Data model and Storage & retention left the menu', () => {
   const inMenu = SECTIONS.flatMap(s => s.pages)
-  expect(inMenu.length).toBe(21)  // v2.16.19 (RM0F, decision G-2, Platform Admin 17 Nov 2026): Destination data added after Rankings & statistics (was 20). v2.15.363: Entry requirements (AER operations workspace, Platform Admin 29 Oct 2026 08:06)
+  expect(inMenu.length).toBe(22) /* v2.16.62 (s804, Platform Admin 20 Nov 2026 05:52): Data & Governance › Human Edits & Periodic Audit, two tabs (was 21 pages, 56 tabs) */  // v2.16.19 (RM0F, decision G-2, Platform Admin 17 Nov 2026): Destination data added after Rankings & statistics (was 20). v2.15.363: Entry requirements (AER operations workspace, Platform Admin 29 Oct 2026 08:06)
   expect(SECTIONS.find(s => s.label === 'Catalogue').pages).toEqual(['courses', 'providers', 'contacts', 'scholarships', 'entry', 'rankings', 'destination', 'reference'])
   for (const gone of ['sources', 'apiUsage', 'dataModel', 'retention']) { expect(PAGES[gone]).toBeUndefined(); expect(inMenu).not.toContain(gone) }
   expect(SECTIONS.find(s => s.label === 'Data pipeline').pages).toEqual(['coverage', 'layer1', 'layer2', 'layer4'])

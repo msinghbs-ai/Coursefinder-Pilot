@@ -1,20 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.61'
-export const PACKAGE_VERSION='0.1.483'
+export const UI_VERSION='2.16.62'
+export const PACKAGE_VERSION='0.1.484'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'20 Nov 2026',
-  title:"Completeness bars, Missing field pills, provider bulk bar and provenance panel; security headers and CI gates",
+  title:'Layer 4 Edit & Approve for descriptions, and Human Edits & Periodic Audit',
   changes:[
-    "Catalogue \u203a Courses and Providers: a Completeness bar on every row. Courses draw the existing six-signal score (registration, structure, fee, intake, English, description); Providers show the share of nine tracked fields held. The bar is a progress bar with the percentage as its label, with no colour bands.",
-    "Catalogue \u203a Courses and Providers: a Missing field pill bar. Courses: Fee, Intake, English, Scholarship, Description and Study load narrow the list on the server through filters the list already had. Providers: the nine tracked fields (description, website, city, state or region, type, phone, email, address, established year); several pills keep providers that lack every field chosen, and Export CSV, total and rows agree.",
-    "Catalogue \u203a Providers: tick providers to get a bulk bar with Fill fields (description only), Export selected (CSV, with each provider's completeness and missing fields) and Clear.",
-    "Catalogue \u203a Providers detail drawer: a Completeness and provenance panel showing the nine fields as Held or Missing and the description's source as Register, AI verified or Human input \u00b7 Locked. Other fields do not record their source per field yet, and the panel says so.",
-    "Guides: the Counsellor, Curator and Platform Admin role guides (version 1.1) and the Courses and Providers page guides describe completeness, Missing field pills, the bulk bar and provenance, Intake Run & Validate and Layer 1 country preparation.",
-    "Security: the Cloudflare Worker now sends a Content-Security-Policy, Strict-Transport-Security, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy and Permissions-Policy. Page text read from a site is fenced as untrusted, with hidden markup removed, before any model sees it. Website API v3 no longer forwards any database message to the caller. Pull requests run a secret scan, a dependency audit and a CycloneDX SBOM."
+    'Layer 4 Review › Inbox, University and Course description cards: Edit & Approve. The text box starts with the machine text, with the page\'s own words and the official page link beside it and live character, sentence, word and word-list checks. Approve As-Is admits the machine text unchanged; Save Edit & Admit admits your text as human input, locked by hand unless you clear the box, and lists it for review in six months.',
+    'Layer 4 Review › Inbox, By kind › University description: Held universities: open for writing lists universities whose reading was held with no machine text; Open for writing makes a card you write by hand from the stored page.',
+    'New page Data & Governance › Human Edits & Periodic Audit: My Human Edits (your own) and All Human Edits (Admin Governance, Platform Admin), with Unacknowledged and Due for 6-month re-review counts. Tick edits and choose Acknowledge & Keep Lock, Re-Verify by Machine (a side-by-side comparison with the stored page and the latest machine text; nothing is read again or changed), Edit & Re-Lock, or Release Lock to Machine (Platform Admin).'
   ],
   bugFixes:[]
 }

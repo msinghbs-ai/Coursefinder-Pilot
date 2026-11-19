@@ -33,6 +33,7 @@ Own the platform: approve and publish, activate sources, set limits and settings
 - **Reference data**
 - **Layer 2/3 Build & enrich**: Operations, Universities, Enrich fields, Enrichment plan, Adapter builder, Course sources, Flags, Scholarships
 - **Layer 4 Review**: Inbox
+- **Human Edits & Periodic Audit**: My Human Edits, All Human Edits (Admin Governance)
 - **Platform health**: Health checks, Queues & yield, Integration queue, Storage & retention, Country & category completeness
 - **Scheduled jobs**: Automations, Jobs, Task manager
 - **Evidence**
