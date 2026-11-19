@@ -118,3 +118,8 @@
 .l4i-cd-why{margin:4px 0;padding:8px 10px;border-left:3px solid var(--cf-amber-500);background:var(--cf-slate-50);border-radius:var(--cf-radius-sm);font-size:var(--cf-fs-sm);color:var(--cf-slate-700)}
 .l4i-cd-why p{margin:.2rem 0}
 .l4i-cd-why ul{margin:.2rem 0 .2rem 1rem}
+.l4g-pills{display:grid;gap:6px}
+.l4g-pillrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.l4g-pilllabel{font-size:var(--cf-fs-2xs);color:var(--cf-slate-500);min-width:88px}
+.l4g-pillrow button{min-height:28px;border:1px solid var(--cf-slate-200);border-radius:999px;background:var(--cf-white);padding:4px 10px;font-size:var(--cf-fs-xs);cursor:pointer}
+.l4g-pillrow button.on{background:var(--cf-slate-900);color:var(--cf-white);border-color:var(--cf-slate-900)}

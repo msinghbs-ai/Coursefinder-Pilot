@@ -1,19 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.51'
-export const PACKAGE_VERSION='0.1.473'
+export const UI_VERSION='2.16.53'
+export const PACKAGE_VERSION='0.1.475'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'19 Nov 2026',
-  title:'Scholarships › Coverage loads again, 50 providers a page',
+  title:'Layer 4 Review › Grid filters by country and provider type',
   changes:[
-    'Scholarships › Coverage lists 50 providers a page, by name. Showing x–y of N under the table says where you are; Previous and Next move through the rest. Search still looks across every provider.'
+    'Layer 4 Review › Grid has Country pills (All, Australia, New Zealand, Canada) and Provider type pills (All, University, VET / College, School, HEI) beside the kind and reason filters. The rows, the count and Export CSV follow them.',
+    'Provider descriptions: a university that shares a website host with a pathway college, or with a second registration of itself, is now decided by a recorded host owner (Victoria University, RMIT University and Western Sydney University). A recorded trading name (Torrens University, Moore Theological College) counts as an identity name for the page proof.'
   ],
-  bugFixes:[
-    'Scholarships › Coverage no longer stops with an error reference (8XEY7B) on the Watch list or All with scholarships. A provider\'s figures and its detail open in under a second, including universities whose listing pages name several hundred scholarships.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

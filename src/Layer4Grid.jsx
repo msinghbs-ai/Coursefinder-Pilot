@@ -47,19 +47,23 @@ function Drawer({target,kinds,targetDays,renderItem,onClose,onDecided}){
     </div>
   </aside></>}
 
+// s767: the pills offered; the server checks the same values (public.admin_layer4_grid_read_v1). University covers university, university college and wānanga; VET / College covers TAFE / polytechnic and private VET.
+const COUNTRY_PILLS=[['','All'],['AU','Australia'],['NZ','New Zealand'],['CA','Canada']]
+const TYPE_PILLS=[['','All'],['university','University'],['vet_college','VET / College'],['school','School'],['hei','HEI']]
 export default function Layer4Grid({kinds={},targetDays=0,rank,renderItem,onDecided,onError}){
   const[vs,setVs]=useState(null),[viewId,setViewId]=useState(''),[kind,setKind]=useState(''),[why,setWhy]=useState(''),[q,setQ]=useState(''),[sort,setSort]=useState('oldest')
   const[cols,setCols]=useState(DEFAULT_COLS),[offset,setOffset]=useState(0),[data,setData]=useState(null),[loading,setLoading]=useState(false),[err,setErr]=useState('')
   const[picker,setPicker]=useState(false),[open,setOpen]=useState(null),[saving,setSaving]=useState(''),[name,setName]=useState(''),[note,setNote]=useState('')
+  const[cty,setCty]=useState(''),[ptype,setPtype]=useState('') // v2.16.53 (s767, Platform Admin 19 Nov 2026 16:18): Country and Provider type pills beside the kind and reason filters
   const[grouped,setGrouped]=useState(false) // v2.16.40: Grouped decisions (Platform Admin 18 Nov 2026 13:02)
   const[clustered,setClustered]=useState(false) // v2.16.43: Clusters (Platform Admin 18 Nov 2026 19:20)
   const view=vs?.views?.find(v=>v.id===viewId)||null,vkinds=view?.definition?.kinds||null
   const loadViews=pick=>call('admin_saved_views_read_v1',{p_screen:'layer4_inbox'}).then(d=>{setVs(d);const v=(pick&&d.views.find(x=>x.id===pick))||d.views[0];if(v)apply(v)}).catch(e=>setErr(e.message))
   const apply=v=>{const d=v.definition||{};setViewId(v.id);setKind((d.kinds||[])[0]||'');setWhy(d.why_contains||'');setQ(d.q||'');setSort(d.sort||'oldest');setCols(Array.isArray(d.columns)&&d.columns.length?d.columns:DEFAULT_COLS);setOffset(0);setNote('')}
   useEffect(()=>{loadViews()},[])
-  const args=o=>({kind,why_contains:why||undefined,q:q||undefined,sort,offset:o})
+  const args=o=>({kind,why_contains:why||undefined,q:q||undefined,country:cty||undefined,provider_type:ptype||undefined,sort,offset:o})
   const load=(o=offset)=>{if(!kind)return;setLoading(true);setErr('');call('admin_layer4_grid_read_v1',{p_args:args(o)}).then(d=>{setData(d);setLoading(false)}).catch(e=>{setErr(e.message);setData(null);setLoading(false)})}
-  useEffect(()=>{setOffset(0);load(0)},[kind,why,sort])
+  useEffect(()=>{setOffset(0);load(0)},[kind,why,sort,cty,ptype])
   useEffect(()=>{const h=setTimeout(()=>{setOffset(0);load(0)},350);return()=>clearTimeout(h)},[q])
   const gridKinds=vs?.grid_kinds||[],kindList=vkinds||Object.entries(kinds).filter(([k])=>!gridKinds.length||gridKinds.includes(k)).sort((a,b)=>(a[1].order||0)-(b[1].order||0)).map(([k])=>k)
   const columns=cols.map(c=>({key:c,label:GRID_COLUMNS[c]||c,width:c==='subject'||c==='why'?260:c==='age_days'||c==='country'?90:160,render:c==='kind'?r=>kinds[r.kind]?.label||r.kind:c==='created_at'?r=>fmtDate(r.created_at):c==='age_days'?r=><StatusChip tone={Number(targetDays)&&r.age_days>Number(targetDays)?'warning':'neutral'} label={fmtNumber(r.age_days)}/>:undefined}))
@@ -71,7 +75,7 @@ export default function Layer4Grid({kinds={},targetDays=0,rank,renderItem,onDeci
   const archive=async()=>{setSaving('view');try{await call('admin_saved_view_archive_v1',{p_id:view.id,p_reason:'removed from the grid'});setNote('View removed.');await loadViews()}catch(e){setErr(e.message)}setSaving('')}
   const canEdit=view&&(view.scope==='personal'?view.mine:vs?.can_edit_shared)
   return <div className="l4g" data-l4g-grid>
-    <p className="l4g-help">The grid shows one kind of item at a time, paged on the server. A view chooses the kind, the reason filter, the order and the columns; it never changes a rule (the AER audit sample and the course-address rules are unchanged). Open a row to see the quote on the saved page beside the value it produced, the evidence and the decision history, and to decide it as on the other views.</p>
+    <p className="l4g-help">The grid shows one kind of item at a time, paged on the server. The Country and Provider type pills narrow the rows and the count on this screen (they are not saved in a view). A view chooses the kind, the reason filter, the order and the columns; it never changes a rule (the AER audit sample and the course-address rules are unchanged). Open a row to see the quote on the saved page beside the value it produced, the evidence and the decision history, and to decide it as on the other views.</p>
     <div className="l4g-views" role="toolbar" aria-label="Saved views">
       {(vs?.views||[]).map(v=><button key={v.id} type="button" className={v.id===viewId?'on':''} data-l4g-view={v.code||'personal'} title={v.description||''} onClick={()=>apply(v)}>{v.name}{v.scope==='personal'&&<small> · mine</small>}</button>)}
       <button type="button" className={!viewId?'on':''} data-l4g-view="custom" onClick={()=>{setViewId('');setWhy('');setQ('');setGrouped(false);setClustered(false)}}>Custom</button>
@@ -90,6 +94,12 @@ export default function Layer4Grid({kinds={},targetDays=0,rank,renderItem,onDeci
         <Button compact disabled={!kind||saving!==''} onClick={exportCsv} data-l4g-csv><Download size={14}/>{saving==='csv'?'Exporting…':'Export CSV'}</Button>
         <Button compact onClick={()=>load(offset)} data-l4g-refresh><RefreshCw size={14}/>Refresh</Button>
       </div>
+    </div>
+    <div className="l4g-pills" data-l4g-pills>
+      <div className="l4g-pillrow" role="toolbar" aria-label="Country" data-l4g-country-pills><span className="l4g-pilllabel">Country</span>
+        {COUNTRY_PILLS.map(([v,l])=><button key={v||'all'} type="button" className={cty===v?'on':''} aria-pressed={cty===v} data-l4g-country={v||'all'} onClick={()=>setCty(v)}>{l}</button>)}</div>
+      <div className="l4g-pillrow" role="toolbar" aria-label="Provider type" data-l4g-ptype-pills><span className="l4g-pilllabel">Provider type</span>
+        {TYPE_PILLS.map(([v,l])=><button key={v||'all'} type="button" className={ptype===v?'on':''} aria-pressed={ptype===v} data-l4g-ptype={v||'all'} onClick={()=>setPtype(v)}>{l}</button>)}</div>
     </div>
     {picker&&<fieldset className="l4g-picker" data-l4g-picker><legend>Columns shown</legend>{Object.entries(GRID_COLUMNS).map(([c,l])=><label key={c}><input type="checkbox" checked={cols.includes(c)} onChange={e=>setCols(x=>e.target.checked?[...x,c]:x.filter(y=>y!==c).length?x.filter(y=>y!==c):x)}/>{l}</label>)}</fieldset>}
     <div className="l4g-save">
