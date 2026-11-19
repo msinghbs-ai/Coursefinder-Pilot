@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.477 — 19 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.55** (Platform Admin 19 Nov 2026 15:38, chat S1-Build, s778). No migration. `src/access-roles.css`: every direct field of the Users & roles dialogs (`.ar-modal > label`, `.cuw-body > label`) is a vertical stack (label, full-width 40 px control at 14 px with 40 px right padding for autofill icons, 12 px helper below); the wizard body uses a 20 px grid gap; the password row keeps its show button. Audit: the Layer 1 add-source wizard (`.l1i`), the record editor (`.re-form`) and the provider-contacts import (`.pc-import-grid`) already stack and are unchanged. Spec s778 (1280 px and phone width).
+
 ## 0.1.476 — 19 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.54** (Platform Admin 19 Nov 2026 15:36, chat S1-Build, s776 and s777). Migration `20261119174000`: the course field readiness snapshot (rollup target `course-field-readiness`, one of 16 parts every 4 minutes, kept in `pipeline.job_input_marks`), the merged summary with a 7-day observed velocity, `security.course_field_eta_v1` (read by the new `pipeline_eta` action of `admin_field_coverage`) and `security.course_field_readiness_tabs_v1` (the hourly Stakeholder_Course_Readiness_Summary tabs). `src/PipelineEta.jsx` on Coverage & completeness › Courses (Consolidated, By country, By university). Specs s776 and s777.
