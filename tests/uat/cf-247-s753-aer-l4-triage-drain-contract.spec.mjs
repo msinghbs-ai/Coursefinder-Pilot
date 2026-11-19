@@ -33,5 +33,6 @@ test('nothing else changes: no setting, lock, claim, rule, decision or held item
   expect(code).not.toMatch(/create\s+(or\s+replace\s+)?(function|table)|alter\s+table|drop\s/i)
   expect(Y).toMatch(/on:\n  workflow_dispatch:/); expect(Y).not.toMatch(/schedule:|push:|pull_request/)
   expect(Y).toContain('if [ -z "$REF" ] || [ "$CONFIRM" != "$REF" ]')
-  expect(Y).toContain('run: node scripts/aer-l4-drain.mjs "$MODE" "$MAX"')
+  expect(Y).toContain('run: node scripts/aer-l4-drain.mjs "$MODE" "$MAX" "$BATCH"')
+  expect(Y).toContain('timeout-minutes: 60')  // a drain runs triage before and after (run 2: 14 min for one triage at 50 a statement)
 })
