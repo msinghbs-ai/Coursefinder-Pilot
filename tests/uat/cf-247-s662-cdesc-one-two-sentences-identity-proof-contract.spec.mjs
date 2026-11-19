@@ -22,7 +22,7 @@ test('prompt v4: 1 to 2 sentences, no intake, campus, fee or duration sentence, 
   const back = CDESC_SYSTEM.replace(/Write 1–2 complete factual sentences[\s\S]*?State distinctive subject matter/, 'Write 2–4 complete factual sentences where evidence supports them. Prefer about\n55–100 words if useful facts support that length; shorter is acceptable when evidence is thin.\nState distinctive subject matter')
     .replaceAll('cdesc-source-grounded-v4', 'cdesc-source-grounded-v3')
   expect(back).toBe(CDESC_SYSTEM_V3)
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.28"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.29"')
 })
 
 test('the database releases v4 with the worker, and the limits the check applies are 2 sentences and 360 characters', () => {
