@@ -3,7 +3,7 @@
 //     English and description held, six signals). Providers use the share of the nine provider fields that security.provider_missing_fields_v1 tracks.
 //   - MissingFieldBar: a row of pills; each pill that is on narrows the list to records that lack that field (all pills on = lacking every one of them).
 //     The filter runs on the server before the page is cut: Courses through the filters courses_page already has, Providers through the `missing`
-//     argument of security.admin_providers_page_v3 (migration 20261120090000).
+//     argument of security.admin_providers_page_v3 (migration 20261120100000).
 //   - ProviderBulkBar: what a ticked set of providers can do (fill fields, export the ticked rows, clear).
 // Nothing here writes to the catalogue, and no value here is an operational limit (G2): the bar has no colour bands or thresholds.
 import React from'react'

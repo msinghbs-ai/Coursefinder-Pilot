@@ -1,9 +1,9 @@
-// Guards: Platform Admin 20 Nov 2026 06:10 AEDT (chat S1-RM-Design, s807): the UnoPim patterns on Catalogue › Courses and Providers: a per-row Completeness bar (Courses: the server's six-signal score; Providers: the share of the nine tracked fields held), a Missing field pill bar whose pills go to the server as filters over the whole set (Courses through the filters courses_page already has; Providers through the new `missing` argument, migration 20261120090000), a bulk bar for ticked providers (fill, export the ticked rows, clear) and a provenance panel in the Provider drawer. Read only: no write, no new public function (G3 75/48).
+// Guards: Platform Admin 20 Nov 2026 06:10 AEDT (chat S1-RM-Design, s807): the UnoPim patterns on Catalogue › Courses and Providers: a per-row Completeness bar (Courses: the server's six-signal score; Providers: the share of the nine tracked fields held), a Missing field pill bar whose pills go to the server as filters over the whole set (Courses through the filters courses_page already has; Providers through the new `missing` argument, migration 20261120100000), a bulk bar for ticked providers (fill, export the ticked rows, clear) and a provenance panel in the Provider drawer. Read only: no write, no new public function (G3 75/48).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261120090000_cf247_s807_provider_missing_field_filter.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261120100000_cf247_s807_provider_missing_field_filter.sql', 'utf8')
 const BAR = fs.readFileSync('src/CompletenessBar.jsx', 'utf8')
 const CSS = fs.readFileSync('src/completeness-bar.css', 'utf8')
 const UI = fs.readFileSync('src/mature-main.jsx', 'utf8')
