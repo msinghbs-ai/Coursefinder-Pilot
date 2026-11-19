@@ -209,9 +209,11 @@ begin
      or (select value from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'bind.no_page_providers_per_run') <> to_jsonb(25) then
     raise exception 'post-check: a per-run size was not set (changed since it was read?)';
   end if;
-  select count(*) into v_n from security.job_effective_state_v1(now() - interval '1 hour', now() - interval '1 hour')  -- fixed: a post-check window
-   where jobname in ('coverage-discover', 'coverage-discover-2', 'page-text') and runner = 'coverage-lane-dispatch' and effective_active;
-  if v_n <> 3 then raise exception 'post-check: % of 3 PR 4 lanes read as live through job_effective_state_v1', v_n; end if;
+  -- each of 3 PR 4 lanes is found on its dispatcher, on exactly when its registry row is enabled (a lane flag-recheck holds idle reads as held)
+  select count(*) into v_n from security.job_effective_state_v1(now() - interval '1 hour', now() - interval '1 hour') e  -- fixed: a post-check window
+    join pipeline.field_execution_registry r on r.kind = 'worker_lane' and r.mode = 'live' and r.legacy_job = e.jobname
+   where e.jobname in ('coverage-discover', 'coverage-discover-2', 'page-text') and e.runner = 'coverage-lane-dispatch' and e.effective_active = r.enabled;
+  if v_n <> 3 then raise exception 'post-check: % of 3 PR 4 lanes read their dispatcher state through job_effective_state_v1', v_n; end if;
   if exists (select 1 from cron.job where jobname = 'course-link-reverse' and active) then
     raise exception 'post-check: course-link-reverse (retiring) is switched on';
   end if;

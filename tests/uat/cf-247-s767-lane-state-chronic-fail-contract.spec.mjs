@@ -32,7 +32,8 @@ test('the telemetry reads a job a live dispatcher holds from its dispatcher; the
   expect(f).toContain(' stable\n')
   expect(f).not.toMatch(/\b(insert|update|delete)\b|alter_job/i)
   expect(c).toContain('revoke all on function security.job_effective_state_v1(timestamptz, timestamptz) from public, anon, authenticated, service_role;')
-  expect(c).toContain("raise exception 'post-check: % of 3 PR 4 lanes read as live through job_effective_state_v1', v_n;")
+  expect(c).toContain("raise exception 'post-check: % of 3 PR 4 lanes read their dispatcher state through job_effective_state_v1', v_n;")
+  expect(c).toContain("and e.runner = 'coverage-lane-dispatch' and e.effective_active = r.enabled;")
 })
 
 test('waste-guard keeps its three guards; the cost measure is rollup target ops-cost-guard; no cron job changes', () => {
