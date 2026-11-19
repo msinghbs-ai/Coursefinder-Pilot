@@ -6,7 +6,9 @@ import { runOutcomeNotice } from './intake-run-outcome'
 import { intakeErrorMessage } from './intake-error-message'
 import { intakeStageTimeline } from './intake-stage-timeline'
 import { summariseEvidence } from './intake-evidence-view'
+import { readIntakeQueue, clearIntakeQueue } from './field-provenance'
 import './intake-run-validate.css'
+import './completeness-bar.css'
 
 const scopeMode = s => /^university:/.test(s || '') ? 'provider' : /^courses:/.test(s || '') ? 'courses' : 'approved'
 const value = x => x == null ? 'Not held' : typeof x === 'object' ? JSON.stringify(x, null, 2) : String(x)
@@ -26,6 +28,8 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
   const [report, setReport] = useState(null), [lookup, setLookup] = useState(''), [diagnostic, setDiagnostic] = useState(null)
   // s790 PAGE-01: scope type (the approved scope, a provider page by page, or hand-picked courses)
   const [mode, setMode] = useState('approved'), [uniQ, setUniQ] = useState(''), [unis, setUnis] = useState(null), [uniOffset, setUniOffset] = useState(0)
+  // s812 Bulk Queue to Intake Run & Validate: providers handed over from the Providers grid (this browser tab). Listed here; nothing is run until the operator picks one and uses the steps below.
+  const [queue, setQueue] = useState(() => readIntakeQueue())
   const [prov, setProv] = useState(null), [page, setPage] = useState(1), [courseQ, setCourseQ] = useState(''), [found, setFound] = useState(null), [picked, setPicked] = useState([])
   const lock = useRef(false), request = useRef(null)
   const execute = async (name, fn) => {
@@ -107,6 +111,12 @@ export default function IntakeRunValidate({ rank = 0, client = intakeRunApi }) {
       {!canRun && <p>Read only: your role or the job controls do not permit Run Now.</p>}
       {caps.universities?.length > 0 && <details><summary>Approved Australian universities and active course counts</summary>{caps.universities.map(u => <p key={u.id}>{u.name}: {u.active_courses} active courses</p>)}</details>}
       {caps.blocked_reason && <p role="status">Blocked: {caps.blocked_reason}. Next action: {caps.next_action || 'Ask the authorised operator to review the job controls.'}</p>}
+      {queue.length > 0 && <section className="iq-queue" data-intake-queue aria-label="Providers queued from the Providers grid">
+        <strong>{queue.length} provider{queue.length === 1 ? '' : 's'} queued from the Providers grid</strong>
+        <small>Nothing has been run. Choose one to set it as this run's provider, then preview, fix the cohort and run as usual; the size cap, the reason and the job controls apply.</small>
+        <ul>{queue.map(q => <li key={q.id} data-intake-queued={q.id}><span>{q.name || q.id}</span><Button compact disabled={!!busy || !!cohort} onClick={() => { changeMode('provider'); pickProvider({ id: q.id, name: q.name }, 1) }}>Use for this run</Button></li>)}</ul>
+        <Button compact onClick={() => { clearIntakeQueue(); setQueue([]) }}>Clear queue</Button>
+      </section>}
       <div className="intake-form">
         {wide && <label>Scope type<select value={mode} disabled={!!busy || !!cohort} onChange={e => changeMode(e.target.value)}>
           <option value="approved">Approved top Australian universities</option><option value="provider">One provider, page by page</option><option value="courses">Hand-picked courses</option>

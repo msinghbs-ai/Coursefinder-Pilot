@@ -15,7 +15,7 @@ Keep the catalogue right: decide what waits for a person, correct records by han
 - Open Layer 4 Review › Inbox, read every item, and decide the kinds open to your role (an item whose decision needs a higher role says so and its buttons are greyed); correct course, provider, campus and scholarship values by hand (a value entered by hand is never overwritten by automation).
 - Open Layer 1 Register and prepare + Add source drafts (country, record type, field mapping); edit key dates and reference site details.
 - Read Destination data, Reference data, Platform health and Evidence.
-- Find incomplete records in one click: Missing field pills on Courses and Providers, a Completeness bar on every row, and in a provider's drawer a Completeness and provenance panel (the description's source reads Register, AI verified or Human input · Locked). Tick providers to get a bar with Fill fields, Export selected (CSV) and Clear.
+- Find incomplete records in one click: Missing field pills on Courses and Providers, a Completeness bar on every row, and in a provider's drawer a Completeness and provenance panel (the description's source reads Register, AI verified or Human input · Locked). Tick providers to get a bar with Fill fields, Queue to Intake Run & Validate, Flag primary campus (Platform Admin), Export selected (CSV) and Clear. A Human Locked pill marks any tracked field a person has locked, in the provider and course drawers.
 - Layer 2/3 Build & enrich › Operations › Intake Run & Validate: pick approved Australian universities or hand-picked courses and read the stages, evidence and before / after intake values.
 - Layer 1 Register › + Add source is where a new country is prepared (country, record type, field mapping).
 
@@ -59,7 +59,7 @@ Keep the catalogue right: decide what waits for a person, correct records by han
 ### Fix the incomplete providers in a country
 
 1. Open Providers, choose the country, then the Missing field pills you care about (for example Website).
-2. Tick the providers to work on; the bar offers Fill fields (description only) and Export selected (CSV).
+2. Tick the providers to work on; the bar offers Fill fields (description only), Queue to Intake Run & Validate, Flag primary campus (Platform Admin) and Export selected (CSV).
 3. Open a provider: the Completeness and provenance panel shows what is held, what is missing and where the description came from.
 
 ### Prepare a new source for a country

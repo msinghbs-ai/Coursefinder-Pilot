@@ -4,10 +4,13 @@
 //   - MissingFieldBar: a row of pills; each pill that is on narrows the list to records that lack that field (all pills on = lacking every one of them).
 //     The filter runs on the server before the page is cut: Courses through the filters courses_page already has, Providers through the `missing`
 //     argument of security.admin_providers_page_v3 (migration 20261120100000).
-//   - ProviderBulkBar: what a ticked set of providers can do (fill fields, export the ticked rows, clear).
-// Nothing here writes to the catalogue, and no value here is an operational limit (G2): the bar has no colour bands or thresholds.
+//   - ProviderBulkBar: what a ticked set of providers can do (fill fields, queue to Intake Run & Validate, flag primary campus, export the ticked rows, clear).
+//   - ProviderProvenancePanel: per field, Held or Missing, the description's source (Register, AI verified, Human input) and Human Locked from the lock table (s812).
+// Nothing here writes to the catalogue (the primary campus write is in BulkPrimaryCampus.jsx, through the server), and no value here is an operational limit (G2).
 import React from'react'
-import{Download,Wand2,X}from'lucide-react'
+import{Download,ListPlus,MapPin,Wand2,X}from'lucide-react'
+import{useFieldLocks,LockPill}from'./FieldProvenance'
+import{lockFor,otherLocked,PROVIDER_LOCK_COLUMNS}from'./field-provenance'
 import{fmtNumber}from'./lib/format.js'
 import'./completeness-bar.css'
 
@@ -84,7 +87,7 @@ export function pickedProvidersCsv(rows,pickedIds){
   return lines.join('\r\n')+'\r\n'
 }
 
-export function ProviderBulkBar({picked,rows,cap,onFill,onClear,canFill}){
+export function ProviderBulkBar({picked,rows,cap,onFill,onClear,canFill,onQueue,onPrimary}){
   if(!picked.length)return null
   const exportCsv=()=>{
     const blob=new Blob([pickedProvidersCsv(rows,picked)],{type:'text/csv;charset=utf-8'}),a=document.createElement('a')
@@ -93,6 +96,8 @@ export function ProviderBulkBar({picked,rows,cap,onFill,onClear,canFill}){
   return <div className="cbulk" data-bulk-bar role="toolbar" aria-label="Actions for the ticked providers">
     <strong data-bulk-count>{fmtNumber(picked.length)} selected{cap?<small> of at most {fmtNumber(cap)}</small>:null}</strong>
     {canFill&&<button type="button" className="m-secondary compact" data-bulk-fill onClick={onFill}><Wand2 size={13}/>Fill fields for these</button>}
+    {onQueue&&<button type="button" className="m-secondary compact" data-bulk-queue onClick={onQueue} title="Hands these providers to Intake Run & Validate. Nothing is run."><ListPlus size={13}/>Queue to Intake Run &amp; Validate</button>}
+    {onPrimary&&<button type="button" className="m-secondary compact" data-bulk-primary-open onClick={onPrimary} title="Marks the campus with the most active courses as primary, after a preview (Platform Admin)."><MapPin size={13}/>Flag primary campus</button>}
     <button type="button" className="m-secondary compact" data-bulk-export onClick={exportCsv}><Download size={13}/>Export selected (CSV)</button>
     <button type="button" className="mfb-clear" data-bulk-clear onClick={onClear}><X size={12}/>Clear selection</button>
   </div>
@@ -105,7 +110,8 @@ export function ProvenancePill({kind,title}){
   const k={register:'Register',ai:'AI verified',human:'Human input · Locked',unknown:'Source not recorded'}[kind]||'Source not recorded'
   return <span className={`cprov cprov-${kind||'unknown'}`} data-provenance={kind||'unknown'} title={title}>{k}</span>
 }
-export function ProviderProvenancePanel({row,data}){
+export function ProviderProvenancePanel({row,data,rank=0}){
+  const pid=row?.id||data?.id,{locks}=useFieldLocks('provider',pid,Number(rank)>=3)
   const d=row&&row.pdesc&&typeof row.pdesc==='object'?row.pdesc:null
   const missing=d&&Array.isArray(d.missing_fields)?d.missing_fields:(Array.isArray(data?.missing_fields)?data.missing_fields:null)
   if(!missing&&!d)return null
@@ -115,9 +121,12 @@ export function ProviderProvenancePanel({row,data}){
     <CompletenessBar pct={providerCompleteness(missing)} title="Share of the nine tracked provider fields that hold a value"/>
     <ul className="cprov-list">
       {PROVIDER_TRACKED_FIELDS.map(f=>{const gone=missing?missing.includes(f):null
+        const lk=lockFor(locks,PROVIDER_LOCK_COLUMNS[f])
         return <li key={f} data-prov-field={f}><span>{PROVIDER_FIELD_WORDS[f]}</span>
-          {gone==null?<em>not read</em>:gone?<em className="cprov-missing">Missing</em>:f==='description'&&filled&&t?<ProvenancePill kind={t[1]} title={`Description source: ${tier}`}/>:f==='description'&&filled?<ProvenancePill kind="unknown" title="A description is held but how it was read was not recorded"/>:<span className="cprov-held">Held</span>}</li>})}
+          {gone==null?<em>not read</em>:gone?<em className="cprov-missing">Missing</em>:f==='description'&&filled&&t?<ProvenancePill kind={t[1]} title={`Description source: ${tier}`}/>:f==='description'&&filled?<ProvenancePill kind="unknown" title="A description is held but how it was read was not recorded"/>:<span className="cprov-held">Held</span>}
+          {lk&&<LockPill lock={lk}/>}</li>})}
     </ul>
-    <p className="cprov-note">Only the description records where it came from. The other fields show Held or Missing: their source is not recorded per field yet.</p>
+    {locks&&otherLocked(locks,PROVIDER_LOCK_COLUMNS).length>0&&<p className="cprov-note" data-other-locks>Also locked by hand: {otherLocked(locks,PROVIDER_LOCK_COLUMNS).join(', ')}.</p>}
+    <p className="cprov-note">Human Locked shows where a person has locked the field. Only the description records where it came from (Register, AI verified or Human input); the other fields show Held or Missing because their source is not recorded per field yet.</p>
   </section>
 }
