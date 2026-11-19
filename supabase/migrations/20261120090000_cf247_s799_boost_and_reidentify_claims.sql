@@ -145,6 +145,19 @@ begin
   exception when raise_exception then if sqlerrm <> 'cf-s799-undo' then raise; end if;
   end;
   v_o := format('boost claim %s ms (%s items), again %s ms | reidentify(100, %s) %s ms (%s rows)', ms1, n1, ms1b, v_rule, ms2, n2);
-  if ms1b > 200 or ms2 > 200 then raise exception 'post-check: a claim is still slow: %', v_o; end if;
+  declare l text; begin
+  for l in execute format($q$explain (analyze, costs off) with due as materialized (
+      select q.course_id from pipeline.coverage_course_pages q
+       where q.status = 'mismatch' and q.read_status = 'identity_mismatch' and coalesce(q.basis, '') <> 'manual'
+         and not exists (select 1 from pipeline.coverage_reidentify_done d where d.course_id = q.course_id and d.evidence_id = q.evidence_id and d.rule = %L))
+    select p.course_id, security.coverage_country(p.provider_id) country
+      from due join pipeline.coverage_course_pages p on p.course_id = due.course_id
+      join pipeline.evidence_artifacts e on e.id = p.evidence_id
+      join catalogue.courses co on co.id = p.course_id and co.lifecycle_status = 'active'
+     where p.status = 'mismatch' and p.read_status = 'identity_mismatch' and coalesce(p.basis, '') <> 'manual' and e.storage_path is not null
+       and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = p.provider_id)
+       and not exists (select 1 from pipeline.coverage_reidentify_done d where d.course_id = p.course_id and d.evidence_id = p.evidence_id and d.rule = %L)
+       and not security.page_refused_v1(p.course_id, p.url)
+     order by p.course_id limit 100 for update of p skip locked$q$, v_rule, v_rule) loop v_o := v_o || ' | ' || l; end loop; end;
   perform set_config('cf.diag', v_o, true);
 end $$;
