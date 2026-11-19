@@ -486,6 +486,16 @@
 /* Decision 222: Websites to find */.wtf-tried{margin:4px 0 0;padding-left:16px;font-size:var(--cf-fs-xs);max-width:420px}.wtf-tried a{word-break:break-all}.wtf-edit{display:flex;gap:6px;align-items:center;min-width:240px}.wtf-edit input{flex:1;min-width:0}.la-todo{display:block;margin-top:4px}
 
 /* v2.15.240: Scholarships > Coverage */
+.pe-bar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin:6px 0 10px}
+.pe-field{display:flex;flex-direction:column;gap:4px;font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
+.pe-field select,.pe-field input{height:36px;padding:0 10px;border:1px solid var(--cf-slate-300);border-radius:var(--cf-radius-md);font-size:var(--cf-fs-sm);min-width:220px;max-width:100%}
+.pe-search{position:relative;flex:1 1 260px;min-width:0}
+.pe-list{position:absolute;z-index:5;left:0;right:0;top:100%;margin:4px 0 0;padding:4px;list-style:none;background:var(--cf-white);border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-md);box-shadow:var(--cf-shadow-lg);max-height:280px;overflow:auto}
+.pe-list button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:6px 8px;border:0;background:none;text-align:left;border-radius:var(--cf-radius-sm);cursor:pointer}
+.pe-list button:hover,.pe-list button[aria-selected=true]{background:var(--cf-indigo-50)}
+.pe-list small,.pe-code,.pe-sub,.pe-table td small{color:var(--cf-slate-500);font-size:var(--cf-fs-2xs)}
+.pe-code{display:block}
+.pe-meta,.pe-note{font-size:var(--cf-fs-xs);color:var(--cf-slate-600);margin:6px 0}
 .sc-pager{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:10px;font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
 .sc-pager>span{margin-right:auto}
 .sc-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:4px 0 12px}
