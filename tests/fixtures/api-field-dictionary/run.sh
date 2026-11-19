@@ -12,7 +12,7 @@ case "$DB" in g_*) ;; *) echo "database name must begin g_" >&2; exit 1;; esac
 P="psql -v ON_ERROR_STOP=1 -q -X -d $DB"
 F=tests/fixtures/api-field-dictionary
 S=supabase/migrations-archive/20261115190000_api_v3_additive_schema.sql; M0=supabase/migrations-archive/20261116110000_cf247_api_field_dictionary_sync.sql
-M=supabase/migrations-archive/20261118135707_cf247_api_field_dictionary_v3_gaps.sql  # the newest reviewed list, on top of the functions of M0
+M=supabase/migrations/20261120080100_cf247_s798_api_field_dictionary.sql  # the newest reviewed list, on top of the functions of M0
 N=$(node -e "console.log(JSON.parse(require('fs').readFileSync('docs/api/v3/field-dictionary.json','utf8')).fields.length)")
 # a fingerprint of the reviewed list: the loaded table must carry exactly the same values (the compact form decodes losslessly)
 FP=$(node -e "const c=require('crypto');const d=JSON.parse(require('fs').readFileSync('docs/api/v3/field-dictionary.json','utf8'));console.log(c.createHash('md5').update(d.fields.map(f=>[f.api_surface,f.endpoint,f.field_path,f.data_type,f.is_nullable,f.description,(f.allowed_values?JSON.stringify(f.allowed_values).replace(/,/g,', '):'null'),(f.req_ids||[]).slice().sort().join(',')].join('|')).sort().join('\\n')).digest('hex'))")
