@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const M = fs.readFileSync('supabase/migrations/20261120080000_cf247_s798_b1_b3_b4_accreditations_alliance_oet.sql', 'utf8')
+const M = fs.readFileSync('supabase/migrations/20261120094000_cf247_s798_b1_b3_b4_accreditations_alliance_oet.sql', 'utf8')
 const body = M.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
 
 test('B1: every row names its body page; only AACSB, EQUIS and AMBA count towards a crown; AMBA rows are approved', () => {

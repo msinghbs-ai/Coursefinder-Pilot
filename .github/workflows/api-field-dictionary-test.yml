@@ -7,7 +7,7 @@ on:
       - 'supabase/migrations-archive/20261116110000_cf247_api_field_dictionary_sync.sql'
       - 'supabase/migrations-archive/20261117061000_cf247_api_field_dictionary_destination.sql'
       - 'supabase/migrations-archive/20261118135707_cf247_api_field_dictionary_v3_gaps.sql'
-      - 'supabase/migrations/20261120080100_cf247_s798_api_field_dictionary.sql'
+      - 'supabase/migrations/20261120094100_cf247_s798_api_field_dictionary.sql'
       - 'docs/api/v3/field-dictionary.json'
       - 'scripts/api-v3-field-dictionary.mjs'
       - 'tests/fixtures/api-field-dictionary/**'

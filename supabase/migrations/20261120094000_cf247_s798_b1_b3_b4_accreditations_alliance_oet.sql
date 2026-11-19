@@ -12,7 +12,7 @@
 -- B4: the English grades held (score_grade, subtest_grades) are shown on each v3 English requirement, as held (null when none is held);
 --   no letter is derived from a number.
 -- v3 also states the basis of the study load (study_load_basis: provider_page, register, register_rule, manual), so a B7 rule value is never
---   mistaken for a reading. API v3 is open to additions (Decision 277); the v3 field dictionary is reloaded by 20261120080100.
+--   mistaken for a reading. API v3 is open to additions (Decision 277); the v3 field dictionary is reloaded by 20261120094100.
 -- Parity before writing (read live 20 Nov 2026 05:45 AEDT): head 20261120010000. G3: no consumer (v2) object changes. No spend.
 -- Replaces: nothing.
 -- Retires: nothing.

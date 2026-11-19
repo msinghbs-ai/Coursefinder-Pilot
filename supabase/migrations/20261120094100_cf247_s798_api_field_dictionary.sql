@@ -1,5 +1,5 @@
 -- CF-247 s798 API v3 field dictionary: the fields s797/s798 add to the v3 answers (S1-Build; Platform Admin 20 Nov 2026 05:42 AEDT, decisions B1, B4, B7;
--- migration 20261120080000 serves the fields).
+-- migration 20261120094000 serves the fields).
 -- Replaces: nothing (20261116110000 keeps the sync and drift functions; this file only loads the next reviewed list)
 -- Retires: nothing
 --
