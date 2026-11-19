@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { checkDescription, sentencesOf, bannedIn, isEdited } from '../../src/lib/description-check.js'
 
-const MIG = fs.readFileSync('supabase/migrations/20261120100000_cf247_s802_s805_layer4_edit_admit_human_edit_audit.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261120101000_cf247_s802_s805_layer4_edit_admit_human_edit_audit.sql', 'utf8')
 const INBOX = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8')
 const EDIT = fs.readFileSync('src/DescriptionEditAdmit.jsx', 'utf8')
 const fn = name => { const a = MIG.indexOf(`create or replace function ${name}(`); const b = MIG.indexOf('end $f$;', a); expect(a).toBeGreaterThan(-1); return MIG.slice(a, b) }

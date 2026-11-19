@@ -11,7 +11,7 @@
 -- s805: Acknowledge & Keep Lock, Re-Verify by Machine (a read-only comparison with the stored page quotes and the latest machine candidate; $0,
 --   nothing is overwritten), Edit & Re-Lock (a new revision), Release Lock to Machine, and Accept machine text (after a re-verify).
 -- No public function is added or re-signed: the screens reach these through new actions of public.admin_layer4_inbox (md5-guarded edit).
--- Parity before writing (read live 20 Nov 2026 07:01 AEDT): head 20261120095000, 2,202 rows; numbered above every open pull request (Pilot #1403 holds 20261120090000).
+-- Parity before writing (read live 20 Nov 2026 07:01 AEDT): head 20261120095000, 2,202 rows; numbered above every open pull request (Pilot #1403 holds 20261120100000).
 -- G3: no consumer object changes (descriptions are data the website already reads). No spend.
 -- Replaces: the "approved as read, never edited" refusal in security.layer4_provider_description_apply_impl and security.layer4_course_description_apply_v1.
 -- Retires: nothing.

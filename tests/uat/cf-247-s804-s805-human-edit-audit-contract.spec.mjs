@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { PAGES, SECTIONS } from '../../src/nav-map.js'
 
-const MIG = fs.readFileSync('supabase/migrations/20261120100000_cf247_s802_s805_layer4_edit_admit_human_edit_audit.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261120101000_cf247_s802_s805_layer4_edit_admit_human_edit_audit.sql', 'utf8')
 const PAGE = fs.readFileSync('src/HumanEditsAudit.jsx', 'utf8')
 const SHELL = fs.readFileSync('src/mature-main.jsx', 'utf8')
 const ADMIN = (() => { const a = MIG.indexOf('create or replace function security.human_edit_admin_v1('); return MIG.slice(a, MIG.indexOf('end $f$;', a)) })()
