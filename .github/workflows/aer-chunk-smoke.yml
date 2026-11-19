@@ -1,4 +1,4 @@
-# AER v2 matrix reader on the row chunker: the 10-table smoke test (CF-247 S747, session S2-BOOST-AER; Platform Admin 19 Nov 2026 10:48 AEDT: "open a bounded
+# AER v2 matrix reader on the row chunker: the 10-table smoke test, and the S750 20-table single-model run (CF-247 S747 and S750, session S2-BOOST-AER; Platform Admin 19 Nov 2026 10:48 AEDT: "open a bounded
 # on-demand window capped at <= US$0.10 for the 10-table chunked smoke test, close the window immediately after").
 # Through the Management API with no confirmation prompt: on-demand window open, worker mode aer_chunk_smoke for 3 pinned models x 10 tables under one
 # spend total, window closed whatever happened, figures recorded as one control event. Nothing is qualified, admitted or switched on.
@@ -10,6 +10,22 @@ on:
         description: "Spend cap in US$ (at most 0.10)"
         required: true
         default: "0.10"
+      model:
+        description: "Pinned model (version suffix: qwen3-30b, mistral-small-3.2, mimo-v2.6-flash) or all"
+        required: true
+        default: "all"
+      rows_per_call:
+        description: "Rows a call (blank: the version's own, 25)"
+        required: false
+        default: ""
+      tables:
+        description: "Table set in tests/fixtures/aer-chunks (smoke-tables.json or smoke-tables-20.json)"
+        required: true
+        default: "smoke-tables.json"
+      inspect:
+        description: "Source ids to inspect only (row chunks, no model call, no spend, no window); blank runs the test"
+        required: false
+        default: ""
       confirm_project:
         description: "Type the Pilot project ref to confirm"
         required: true
@@ -26,6 +42,10 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       REF: ${{ vars.SUPABASE_PROJECT_REF }}
       MAXUSD: ${{ inputs.max_usd }}
+      MODEL: ${{ inputs.model }}
+      ROWS: ${{ inputs.rows_per_call }}
+      TABLES: ${{ inputs.tables }}
+      INSPECT: ${{ inputs.inspect }}
       CONFIRM: ${{ inputs.confirm_project }}
     steps:
       - uses: actions/checkout@v4
@@ -36,4 +56,4 @@ jobs:
         run: |
           if [ -z "$REF" ] || [ "$CONFIRM" != "$REF" ]; then echo "::error::Refused: the typed project ref does not match the Pilot"; exit 1; fi
       - name: Run the smoke test
-        run: node scripts/aer-chunk-smoke.mjs "$MAXUSD"
+        run: node scripts/aer-chunk-smoke.mjs "$MAXUSD" "$MODEL" "$ROWS" "$TABLES" "$INSPECT"

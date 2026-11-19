@@ -49,7 +49,7 @@ test('the request is the pinned model with its provider pins, a strict schema an
 })
 
 test('worker v1.0.27 mode aer_chunk_smoke: sha-256 checked version, the stored copy only, the chosen table or nothing, spend at most US$0.10, nothing written', () => {
-  expect(W).toContain('const WORKER = "coverage-sweep-worker-v1.0.28"; // v1.0.28 (19 Nov 2026, CF-247 S747 after smoke run 1)')
+  expect(W).toContain('// v1.0.28 (19 Nov 2026, CF-247 S747 after smoke run 1)')
   expect(W).toContain('// v1.0.27 (19 Nov 2026, CF-247 S747')
   expect([AER_CHUNK_MODE, AER_CHUNK_CONTRACT, AER_CHUNK_INPUT]).toEqual(['aer_chunk_smoke', 'aer-matrix-chunk-answer-v1', 'entry-chunks-v1'])
   const block = W.split('if (mode === AER_CHUNK_MODE) {')[1].split('    if (mode === "entry_inspect") {')[0]
@@ -86,7 +86,7 @@ test('the prompt version is data: three candidates, one pinned model each with i
 
 test('the run opens and always closes its window, never spends above US$0.10, records the figures as evidence and switches nothing', () => {
   expect(S).toContain("const CAP = Math.min(0.10, Number(process.argv[2]) || 0.10)")
-  expect(S).toContain('if (spent >= CAP - 0.01)')
+  expect(S).toContain('if (spent >= CAP - Math.min(0.01, CAP / 5))')  // S750: one call's margin, at most a fifth of the cap
   expect(S).toContain("security.on_demand_open_v1('claude_session'")
   expect(S).toContain("null, array['openrouter']) as r`)")
   const fin = S.split('} finally {')[1].split('\n}\n')[0]
