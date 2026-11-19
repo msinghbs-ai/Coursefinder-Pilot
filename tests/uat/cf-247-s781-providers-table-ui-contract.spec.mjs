@@ -11,7 +11,7 @@ const KIT = fs.readFileSync('src/ui-kit.css', 'utf8')
 const row = (id, name, extra = {}) => ({ id, canonical_name: name, display_name: name, country_code: 'AU', course_count: 10, lifecycle_status: 'active', publication_status: 'published', last_verified_at: '2026-10-01T00:00:00Z', adapter_status: 'none', university_groups: [], evidence_count: 2, provider_type_code: 'university', provider_type_name: 'University', ...extra })
 const ROWS = [
   row('p1', 'University of Alpha', { stable_key: 'provider:cricos:00001A', registration: { scheme: 'CRICOS', code: '00001A', status: 'active' } }),
-  row('p2', 'Beta Institute of Technology', { country_code: 'NZ', stable_key: 'provider:nzqa:8001', provider_type_code: null, provider_type_name: null }),
+  row('p2', 'Beta Institute of Technology', { country_code: 'NZ', stable_key: 'provider:nzqa:8001', registration: { scheme: 'nzqa', code: '8001', status: 'active' }, provider_type_code: null, provider_type_name: null }),
   row('p3', 'Collège Gamma', { country_code: 'CA', stable_key: 'provider:ca:dli:o123' }),
 ]
 const STATES = { p1: { adapter: 'off' }, p2: { adapter: 'testing' }, p3: { adapter: null } }
@@ -64,7 +64,8 @@ test('Providers at 1280 px: logo or monogram, bold name with its code, one flag 
   const title = rows.nth(0).locator('.pl-title')
   expect(Number(await title.evaluate(e => getComputedStyle(e).fontWeight))).toBeGreaterThanOrEqual(600)
   await expect(rows.nth(0).locator('[data-provider-meta]')).toHaveText('CRICOS 00001A')
-  await expect(rows.nth(1).locator('[data-provider-meta]')).toHaveText('provider:nzqa:8001')
+  await expect(rows.nth(1).locator('[data-provider-meta]')).toHaveText('NZQA 8001') // the register name in capitals, as stored lower case
+  await expect(rows.nth(2).locator('[data-provider-meta]')).toHaveText('provider:ca:dli:o123') // no registration: the stable key
   // country: one SVG flag and the code once (no "AU AU")
   for (const [i, c] of [[0, 'AU'], [1, 'NZ'], [2, 'CA']]) {
     const tag = rows.nth(i).locator(`[data-country="${c}"]`)
