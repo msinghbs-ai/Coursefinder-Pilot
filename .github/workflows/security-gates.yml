@@ -1,0 +1,76 @@
+# CF-247 s809 (Platform Admin 20 Nov 2026; ASD ISM-2030 secret scanning, ISM-2028, 2102 and 2154 dependency vulnerability scanning,
+# ISM-1730 software bill of materials). Three gates on every pull request and every push to main, in this repository and in coursefinder-admin.
+# Read only: nothing here touches the database, a secret or a live service. No package-lock.json is committed (repository rule): the dependency
+# jobs resolve one in the runner only, from package.json, and throw it away with the runner.
+name: Security gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    name: Secret scan (ISM-2030)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Pinned scanner and its recommended rule set (cloud keys, source-host tokens, private keys, chat and mail tokens). A finding fails the build.
+      - name: Scan the working tree for secrets
+        run: |
+          echo '{"rules":[{"id":"@secretlint/secretlint-rule-preset-recommend"}]}' > "$RUNNER_TEMP/secretlintrc.json"
+          npx --yes secretlint@14.0.1 --secretlintrc "$RUNNER_TEMP/secretlintrc.json" --secretlintignore /dev/null --format compact \
+            "src/**/*" "supabase/**/*" "scripts/**/*" "tests/**/*" "tools/**/*" "docs/**/*" "public/**/*" ".github/**/*" "workers/**/*" "sql/**/*" "*.json" "*.jsonc" "*.md" "*.mjs" "*.js" "*.html"
+
+  dependency-scan:
+    name: Dependency vulnerabilities (ISM-2028, 2102, 2154)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Resolve a lockfile in the runner only
+        run: npm install --package-lock-only --ignore-scripts --no-fund --no-audit
+      # High and critical advisories in any dependency, direct or transitive, fail the build. Lower ones are listed in the log.
+      - name: Audit
+        run: |
+          npm audit --audit-level=high
+          npm audit --audit-level=low --omit=dev || true
+
+  sbom:
+    name: Software bill of materials (ISM-1730)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Resolve and install production dependencies
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-fund --no-audit
+          npm ci --omit=dev --ignore-scripts --no-fund --no-audit
+      # CycloneDX 1.5 JSON of what ships. Kept 90 days with the run, so a release build has the list of what went into it.
+      - name: Generate the CycloneDX SBOM
+        run: npx --yes @cyclonedx/cyclonedx-npm@7.0.1 --omit dev --output-format JSON --spec-version 1.5 --output-file sbom.cdx.json
+      - name: Check it is a CycloneDX document with components
+        run: node -e "const d=JSON.parse(require('fs').readFileSync('sbom.cdx.json','utf8'));if(d.bomFormat!=='CycloneDX'||!(d.components||[]).length)process.exit(1);console.log('CycloneDX',d.specVersion,d.components.length,'components')"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx-${{ github.sha }}
+          path: sbom.cdx.json
+          retention-days: 90

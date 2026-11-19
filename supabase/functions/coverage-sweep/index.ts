@@ -45,7 +45,7 @@ import { deliveryQuoteFits, titleNamesLevel } from "./field-checks.ts";
 import { ADMISSION_GATE, OPENED_COPY_REQUIRED, admit, decisionRow, openCopy, type ArtifactManifest, type Decision, type GateSettings, type Reason } from "./admission-gate.ts";  // v0.97.0: pre-AI admission gate, shadow (Decision 278)
 import { BLOCK_INPUT, LEAN_SECTIONS, SECTION_DEFAULTS, blockPlain, holds, longPageWindow, selectSections } from "./lean-sections.ts";
 import { FEE_CANDIDATE_PROMPT, INTAKE_BASELINE_PROMPT, INTAKE_CANDIDATE_PROMPT, LEAN_QUALIFY, feeFound, feeRequest, intakeFound, intakeRequest, quoteHeld } from "./lean-qualify.ts";
-import { DESCRIPTION_ANSWER_KEY, DESCRIPTION_PROMPT_VERSION, promptRequest, promptSentences, DESCRIPTION_WORKER_PROTOCOL, aboutLinks, aboutPageCheck, descriptionAnswer, descriptionClaimCheck, descriptionCostQuote, descriptionPageText, descriptionIdentitySeen, descriptionRequest, descriptionSourceIdentity, type IdentityTrace, ownHost, providerDescriptionSentences } from "./description.ts";
+import { DESCRIPTION_ANSWER_KEY, DESCRIPTION_PROMPT_VERSION, promptRequest, promptSentences, DESCRIPTION_WORKER_PROTOCOL, aboutLinks, aboutPageCheck, descriptionAnswer, descriptionClaimCheck, descriptionCostQuote, descriptionPageText, descriptionIdentitySeen, descriptionRequest, descriptionSourceIdentity, type IdentityTrace, ownHost, providerDescriptionSentences } from "./description.ts"; import { fenceUntrusted } from "./untrusted.ts";
 const SCH_VERSION = "scholarship-sweep-v0.7.3"; // v0.7.3 (11 Oct 2026, Platform Admin bugs 11/10-6): a "while places last" condition is not an ended scholarship; an amount the student pays (deposit, bond, fee) is never the award and a "valued at" amount counts; courses listed after "one of the following courses" are read. v0.7.2 (11 Oct 2026): course titles end at bullets (•, ⦁) and at the next capitalised word or sentence. v0.7.1 (11 Oct 2026): courses named after "excluding" are exclusions; course titles keep their bracketed specialisation; numeric dates read in the provider country's day/month order; date proofs start at their label. v0.7.0 (11 Oct 2026): application open and close dates (with rounds), study start, courses the page names, and the sentence behind each level and field. v0.6.3 (11 Oct 2026): academic-result percentages (CWA, WAM, ATAR) are not award values; the value text is a whole sentence. v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
 // Student") includes international students.
@@ -208,7 +208,7 @@ export function scholarshipAiRequest(model: string, prompt: string, p: { provide
         courses: { type: "array", items: { type: "string" } },
         open_date: strOrNull, close_date: strOrNull, dates_quote: { type: "string" } } } } },
     messages: [{ role: "system", content: prompt },
-      { role: "user", content: `University: ${p.provider || "unknown"}\nPage address: ${p.url}\nPage title: ${p.title}\nMain heading: ${p.h1}\n\nPage text:\n${p.text}` }],
+      { role: "user", content: `University: ${p.provider || "unknown"}\nPage address: ${p.url}\nPage title: ${p.title}\nMain heading: ${p.h1}\n\n${fenceUntrusted("page text", p.text)}` }],
   };
 }
 const INTL_WORDS = /\b(international|overseas|offshore|student visa|subclass 500|non[- ]?residents?|foreign|non[- ]?domestic|not (?:be )?an? domestic student)\b/i;
@@ -279,7 +279,7 @@ export function scholarshipRecheckRequest(model: string, p: { name: string; prov
                     value_stated: { type: "boolean" }, value_quote: { type: "string" } } } } },
     messages: [
       { role: "system", content: "You check one scholarship page for a course search site for international students. Answer only from the page text. Copy sentences exactly as they appear on the page; do not shorten or rephrase them." },
-      { role: "user", content: `Scholarship: ${p.name || "(as named on the page)"}\nUniversity: ${p.provider}\nPage: ${p.url}\nTitle: ${p.title}\nHeading: ${p.h1}\n\n1. Who may apply? "international" if the page says international students (or overseas, student visa holders) may apply; "domestic" if it is only for citizens, permanent residents, domestic or humanitarian visa holders; "both" if it says both; "not_stated" if the page does not say. Copy the one sentence that says it into audience_quote ("" if not stated).\n2. Does the page state what the scholarship is worth (an amount, a percentage or full tuition)? Copy that sentence into value_quote ("" if not stated).\n\nPage text:\n${p.text}` },
+      { role: "user", content: `Scholarship: ${p.name || "(as named on the page)"}\nUniversity: ${p.provider}\nPage: ${p.url}\nTitle: ${p.title}\nHeading: ${p.h1}\n\n1. Who may apply? "international" if the page says international students (or overseas, student visa holders) may apply; "domestic" if it is only for citizens, permanent residents, domestic or humanitarian visa holders; "both" if it says both; "not_stated" if the page does not say. Copy the one sentence that says it into audience_quote ("" if not stated).\n2. Does the page state what the scholarship is worth (an amount, a percentage or full tuition)? Copy that sentence into value_quote ("" if not stated).\n\n${fenceUntrusted("page text", p.text)}` },
     ],
   };
 }
@@ -346,7 +346,7 @@ export function centralAiRequest(model: string, kind: string, p: { provider: str
         properties: { period: { type: "string" }, month: { type: "integer" }, year: { type: ["integer", "null"] }, quote: { type: "string" } } } } } };
   return { model, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: kind, strict: true, schema } },
-    messages: [{ role: "system", content: CENTRAL_AI_PROMPT[kind] }, { role: "user", content: `University: ${p.provider}\nPage address: ${p.url}\n\nPage text:\n${p.text}` }] };
+    messages: [{ role: "system", content: CENTRAL_AI_PROMPT[kind] }, { role: "user", content: `University: ${p.provider}\nPage address: ${p.url}\n\n${fenceUntrusted("page text", p.text)}` }] };
 }
 const MONTHS_RE = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 // the answer, in the rule parser's shape, keeping only what its quote proves
@@ -3629,7 +3629,7 @@ async function handle(req: Request): Promise<Response> {
             `University: ${pg.provider}\nCourse: ${pg.title}\nFields: ${want.join(", ")}\n` +
               // v0.36.0 (22 Oct 2026, NZ review fix 4): a field whose last quote was not on the page is asked once more, saying so
               (pg.items || []).filter((x: any) => x.hint).map((x: any) => `Note for ${x.field}: ${x.hint}; copy the words exactly as they appear on the page, or give null.\n`).join("") +
-              `\nPage text:\n${page}`, "course_fields",
+              `\n${fenceUntrusted("page text", page)}`, "course_fields",
             { type: "object", additionalProperties: false, required: want, properties: props });
           for (const x of pg.items || []) {
             const v = a?.[x.field] || {}, val = v.value == null ? null : String(v.value).trim(), q = String(v.quote || "");
@@ -3735,7 +3735,7 @@ async function handle(req: Request): Promise<Response> {
           const page = text.slice(0, Math.round(PAGE_CHARS * 5 / 6));
           const { a, cost: c1 } = await ask(
             "Find the postal street address of this education provider's main campus or head office on the page. Quote the exact words of the address from the page. Give null when the page has no street address.",
-            `Provider: ${p.provider}\n\nPage text:\n${page}`, "address",
+            `Provider: ${p.provider}\n\n${fenceUntrusted("page text", page)}`, "address",
             { type: "object", additionalProperties: false, required: ["street", "city", "postcode", "quote"], properties: { street: strOrNull, city: strOrNull, postcode: strOrNull, quote: strOrNull } });
           const proven = !!(a?.street && a?.quote && on(page, a.quote) && flat(a.quote).includes(flat(a.street)));
           out.push({ item_id: Number(p.item_id), ...stored, value: proven ? { street: a.street, city: a.city, postcode: a.postcode } : null, quote: proven ? String(a.quote).slice(0, 300) : null, reason: proven ? null : "no street address quoted on the page", cost: c1 });

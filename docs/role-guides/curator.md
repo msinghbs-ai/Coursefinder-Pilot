@@ -1,6 +1,6 @@
 # StudySearch – Curator guide
 
-**Version:** 1.0 (reviewed for platform release v2.16.35)  
+**Version:** 1.1 (reviewed for platform release v2.16.61)  
 **Role:** Curator (rank 3)  
 **Change control:** CF-247  
 **Source:** generated from the Pilot `src/guide/roleGuides.js` and the menu; never edited by hand.
@@ -15,6 +15,9 @@ Keep the catalogue right: decide what waits for a person, correct records by han
 - Open Layer 4 Review › Inbox, read every item, and decide the kinds open to your role (an item whose decision needs a higher role says so and its buttons are greyed); correct course, provider, campus and scholarship values by hand (a value entered by hand is never overwritten by automation).
 - Open Layer 1 Register and prepare + Add source drafts (country, record type, field mapping); edit key dates and reference site details.
 - Read Destination data, Reference data, Platform health and Evidence.
+- Find incomplete records in one click: Missing field pills on Courses and Providers, a Completeness bar on every row, and in a provider's drawer a Completeness and provenance panel (the description's source reads Register, AI verified or Human input · Locked). Tick providers to get a bar with Fill fields, Export selected (CSV) and Clear.
+- Layer 2/3 Build & enrich › Operations › Intake Run & Validate: pick approved Australian universities or hand-picked courses and read the stages, evidence and before / after intake values.
+- Layer 1 Register › + Add source is where a new country is prepared (country, record type, field mapping).
 
 ## 3. What you cannot do
 
@@ -53,6 +56,12 @@ Keep the catalogue right: decide what waits for a person, correct records by han
 2. Pick a kind; read the quote and the source page; decide it, or correct the record, where your role allows.
 3. The decision is kept with who, when and why.
 
+### Fix the incomplete providers in a country
+
+1. Open Providers, choose the country, then the Missing field pills you care about (for example Website).
+2. Tick the providers to work on; the bar offers Fill fields (description only) and Export selected (CSV).
+3. Open a provider: the Completeness and provenance panel shows what is held, what is missing and where the description came from.
+
 ### Prepare a new source for a country
 
 1. Open Layer 1 Register › + Add source.
@@ -68,3 +77,4 @@ Anything that needs approving, activating or publishing goes to a Platform Admin
 | Version | Date | Release | Change |
 |---|---|---|---|
 | 1.0 | 18 Nov 2026 | v2.16.35 | First issue. |
+| 1.1 | 20 Nov 2026 | v2.16.61 | Completeness, Missing field pills, bulk bar and provenance panel; Intake Run & Validate and Layer 1 country preparation named. |

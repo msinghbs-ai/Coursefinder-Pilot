@@ -8,6 +8,7 @@ import { supabase } from './lib/supabase'
 import { StatusChip, fmtDate, fmtDateTime, fmtNumber, fmtTime } from './ui-kit'
 import { ADAPTER_STATES, EMPTY_REASON_LABELS, STUDY_LOAD_LABELS, COURSE_COLUMNS, COURSE_SCREEN, DEFAULT_LIMITS, FIELD_STATES, fieldWords, GROUPS, PROVIDER_SCREEN, citySummary, clampWidth, columnOf, defaultLayout, groupHeading, intakeName, intakeSummary, minWidthOf, monthName, moveColumn, normaliseLayout, qualityOf, registryOf, toggleColumn } from './catalogue-columns'
 import './catalogue-columns.css'
+import { CompletenessBar, courseCompleteness } from './CompletenessBar'
 
 const LOCAL = 'coursefinder:pim:catalogue-layout:v1:'
 const readLocal = (user, screen) => { try { return JSON.parse(localStorage.getItem(LOCAL + user + ':' + screen) || 'null') } catch { return null } }
@@ -218,6 +219,7 @@ export function renderCourseCell(key, row, { navigate } = {}) {
     case 'delivery_mode': return row.delivery_mode ? String(row.delivery_mode).replaceAll('_', ' ') : <FieldState fs={fs.delivery} />
     // 18 Nov 2026 (Platform Admin 07:03): the study load as the API v3 gives it; the empty reason as a badge, so a blank left on purpose reads differently from a gap
     case 'study_load': return row.study_load ? <span data-study-load={row.study_load}>{STUDY_LOAD_LABELS[row.study_load] || String(row.study_load).replaceAll('_', ' ')}</span> : <span className="ccol-unknown" data-study-load="">Not held</span>
+    case 'completeness_score_v2': return <CompletenessBar pct={courseCompleteness(row.completeness_score_v2)} title="Share of six signals held: registration, structure, fee, intake, English requirement and description" />
     case 'empty_reason_code': return row.empty_reason_code ? <span data-empty-reason={row.empty_reason_code}><StatusChip tone={row.empty_reason_code === 'pending_extraction' ? 'info' : row.empty_reason_code === 'source_unavailable' ? 'warning' : 'neutral'} label={EMPTY_REASON_LABELS[row.empty_reason_code] || String(row.empty_reason_code).replaceAll('_', ' ')} title="Empty on purpose: the reason recorded for this course's empty values" /></span> : <span className="ccol-unknown" data-empty-reason="" title="No reason is recorded: an empty value here is a gap still to fill">No reason recorded</span>
     case 'intl_fee_year': return row.intl_fee_year ? String(row.intl_fee_year) : <FieldState fs={fs.provider_tuition} />
     case 'intakes': case 'intake_month': case 'intake_year': case 'commencement_date': case 'deadline': return intakeCell(key, row)
@@ -242,7 +244,7 @@ export function renderCourseCell(key, row, { navigate } = {}) {
     default: return undefined
   }
 }
-export const NEW_CELL_KEYS = new Set(['country_name', 'city_names', 'campus_count', 'duration', 'delivery_mode', 'study_load', 'empty_reason_code', 'intl_fee_year', 'intakes', 'intake_month', 'intake_year', 'commencement_date', 'last_published_at', 'deadline', 'english', 'academic_entry', 'description', 'official_url', 'has_scholarship',
+export const NEW_CELL_KEYS = new Set(['completeness_score_v2', 'country_name', 'city_names', 'campus_count', 'duration', 'delivery_mode', 'study_load', 'empty_reason_code', 'intl_fee_year', 'intakes', 'intake_month', 'intake_year', 'commencement_date', 'last_published_at', 'deadline', 'english', 'academic_entry', 'description', 'official_url', 'has_scholarship',
   'adapter_state', 'adapter_last_read_at', 'adapter_result', 'page_stored', 'source_identity', 'layer4_status', 'enrichment_status', 'last_admitted_field', 'created_at', 'last_modified_at', 'last_admitted_at', 'lifecycle_status', 'publication_status'])
 
 /** The table columns for the person's layout, in their order, with their widths' limits. */

@@ -1,0 +1,15 @@
+# CF-247 s810 (ASD ISM-1424, ISM-1717; Platform Admin 20 Nov 2026): browser security headers, sent by the Cloudflare Worker that serves this app's files.
+# Read by Workers Static Assets from the built folder (Vite copies public/ into dist/). No operational value here: these are fixed safety rules.
+# Script and connection sources are named; styles allow 'unsafe-inline' because React sets style attributes; images allow https: for provider logos.
+# frame-src has no web origins: the only frames are sandboxed srcdoc previews (email preview, saved page viewer).
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://fxcwkweaxjtknorudmwp.supabase.co wss://fxcwkweaxjtknorudmwp.supabase.co; frame-src 'self' about: data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+# The generated release history page carries its own inline script and styles; it holds no user data and makes no requests.
+# Only the policy is lifted for that one page; every other header above still applies to it.
+/release-history.html
+  ! Content-Security-Policy

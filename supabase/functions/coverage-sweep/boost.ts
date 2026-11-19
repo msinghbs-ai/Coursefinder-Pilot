@@ -6,6 +6,7 @@
 // src/verify.ts), so a result is judged the same way as in the test-project rehearsal.
 // Pure functions only (no network). The system message is exported to docs/platform/ai-prompts.json by scripts/ai-prompts-export.mjs.
 // Page content is data: nothing here follows an instruction found on a page.
+import { fenceUntrusted } from "./untrusted.ts";
 
 export const BOOST_STUDY_LOAD_PROMPT_ID = "boost-study-load";
 export const BOOST_STUDY_LOAD_PROMPT_VERSION = "boost-study-load-v5";  // v5 (18 Nov 2026, Platform Admin 14:29): a fee note (EFTSL, CSP, a fee calculated on a standard full-time load) is never the study load. v4: v2 (18 Nov 2026, Platform Admin decision 1): the study load for international students when the page states one; otherwise the course's general study load
@@ -214,7 +215,7 @@ export function boostStudyLoadRequest(model: string, context: string, input: str
     provider: { require_parameters: true, allow_fallbacks: false },
     messages: [
       { role: "system", content: BOOST_STUDY_LOAD_SYSTEM },
-      { role: "user", content: `Course: ${String(context || "").replace(/\s+/g, " ").trim().slice(0, 300)}\n\nPAGE TEXT (the parts of the course page that can state study load, in page order):\n${input}` },
+      { role: "user", content: `Course: ${String(context || "").replace(/\s+/g, " ").trim().slice(0, 300)}\n\nThe parts of the course page that can state study load, in page order:\n\n${fenceUntrusted("course page text", input)}` },
     ],
   };
 }

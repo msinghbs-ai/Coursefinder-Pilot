@@ -167,7 +167,7 @@ Deno.serve(async (req: Request) => {
   const { data, error } = await svc.rpc(fn, args);
   if (error) {
     const m = String(error.message || "");
-    if (error.code === "22023" || m.includes("INVALID_INPUT")) return fail(400, "INVALID_INPUT", {}, m.replace(/^.*INVALID_INPUT:\s*/, "").slice(0, 200) || undefined);
+    if (error.code === "22023" || m.includes("INVALID_INPUT")) return fail(400, "INVALID_INPUT", {}, m.includes("INVALID_INPUT:") ? m.replace(/^[\s\S]*INVALID_INPUT:\s*/, "").slice(0, 200) || undefined : undefined); // s810 (ISM-1278): only the platform's own "INVALID_INPUT:" text reaches the caller, never another database message
     console.error(JSON.stringify({ event: "website_api_v3_error", request_id: requestId, action, error_code: error.code || null }));
     return fail(503, "SERVICE_UNAVAILABLE");
   }
