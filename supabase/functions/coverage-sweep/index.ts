@@ -4620,7 +4620,7 @@ async function handle(req: Request): Promise<Response> {
       });
       return j({ ok: true, mode, extractor: ELR_DET_VERSION, pages, ms: Date.now() - t0, worker: WORKER, workerVersion: VERSION });
     }
-    // CF-247 s851 (S1-Fees-Intakes, 20 Nov 2026): read-only, $0 (no model, no Firecrawl, no write). The international fee, intake months and application closing date a
+    // CF-247 s851 (S1-Fees-Intakes, 20 Nov 2026): read-only, $0 (no model, no page fetch, no write). The international fee, intake months and application closing date a
     // batch of stored course pages state in words (fid-det-reader.ts); the database records and gates the readings from this reply (security.fid_det_record_v1).
     if (mode === "fid_det_read") {
       const items: { course_id: string; evidence_id: string; storage_path: string; country: string }[] = (Array.isArray(body.items) ? body.items : []).slice(0, 40);  // fixed: bound on one call (CPU and response size)
