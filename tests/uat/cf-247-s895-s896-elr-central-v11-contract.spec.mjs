@@ -7,7 +7,7 @@ const MIG = fs.readFileSync('supabase/migrations/20261121080000_cf247_s895_s896_
 const tiers = (t) => Object.fromEntries(Object.entries(centralRead(t).defaults).map(([k, v]) => [k, v.map((x) => [x.test_code, x.overall_score])]))
 
 test('v1.1 reads a table whose columns are study levels and whose rows are tests, quoting each row', () => {
-  expect(ELR_CENTRAL_VERSION).toBe('elr-central-v1.1')
+  expect(ELR_CENTRAL_VERSION).toMatch(/^elr-central-v1\.[1-9]\d*$/)  // s904: v1.2 keeps every v1.1 reading
   const t = ['| Test | Undergraduate | Postgraduate coursework | Higher degree by research |', '|---|---|---|---|',
     '| IELTS Academic | 6.0 (no band below 5.5) | 6.5 (no band below 6.0) | 6.5 (6.0) |', '| TOEFL iBT | 79 | 90 | 90 |', '| PTE Academic | 58.5 | 64 | 64 |'].join('\n')
   expect(tiers(t)).toEqual({ undergraduate: [['IELTS', 6], ['TOEFL_IBT', 79], ['PTE', 58.5]], postgraduate: [['IELTS', 6.5], ['TOEFL_IBT', 90], ['PTE', 64]], research: [['IELTS', 6.5], ['TOEFL_IBT', 90], ['PTE', 64]] })
@@ -27,7 +27,8 @@ test('values without a study level (English bands) are reported, never spread ac
   expect(r.defaults).toEqual({})
   expect(r.values_found).toBe(6)
   expect(r.bands).toBe(true)
-  expect(r.untiered).toEqual(['| Band A | 6.0 | 79 | 50 |', '| Band B | 6.5 | 85 | 58 |'])
+  // s904 (v1.2): rows labelled with a band are band definitions (kept for band-to-course matching), so they are no longer reported as untiered lines
+  expect(Object.keys(r.band_defs)).toEqual(['band A', 'band B'])
 })
 
 test('s896: pages are read again by v1.1 with no provider excluded; the route name, approval, plan and apply are unchanged', () => {

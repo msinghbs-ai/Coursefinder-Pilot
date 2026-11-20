@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { feeAiParsed, feeAiRequest, hasFeeAmount, noNul } from "./fees.ts";
 import { answerLimit, errorCost, readAnswer, readError, type ReadType } from "./answer.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { detRead, detUncovered, AER_DET_VERSION } from "./aer-det-reader.ts"; import { elrRead, ELR_DET_VERSION } from "./elr-det-reader.ts"; import { centralRead, ELR_CENTRAL_VERSION } from "./elr-central-reader.ts"; import { fidRead, FID_DET_VERSION } from "./fid-det-reader.ts";  // s840: ELR reader on this line so the worker's line references stay (s851: fid-det-reader added on the same line)
+import { detRead, detUncovered, AER_DET_VERSION } from "./aer-det-reader.ts"; import { elrRead, ELR_DET_VERSION } from "./elr-det-reader.ts"; import { centralRead, ELR_CENTRAL_VERSION } from "./elr-central-reader.ts"; import { bandMentions, ELR_BAND_VERSION } from "./elr-band-reader.ts"; import { fidRead, FID_DET_VERSION } from "./fid-det-reader.ts";  // s840: ELR reader on this line so the worker's line references stay (s851: fid-det-reader added on the same line)
 import { clean, currencyFor, domainFitsName, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, pageDataItems, robotsAllows, siteNameMatch, staleCalendarUrl, titleOf } from "./extract.ts";
 // v0.17.32: same normalising as extract.ts siteNorm (kept here so the shared extract.ts, used by other functions, is unchanged)
 import { LINK_ROLLOVER_VERSION, pageAnswer, storedCopyAnswer, strongIdentity, yearCandidates } from "./link-rollover.ts"; import { structRead, structLines, STRUCT_DET_VERSION } from "./struct-det-reader.ts"; // s861: deterministic course structure reader (duration, study load, delivery mode)
@@ -4657,6 +4657,60 @@ async function handle(req: Request): Promise<Response> {
         tally[status] = (tally[status] || 0) + 1;
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
+    // CF-247 s906 (S1-ELR-Bands-And-Crawl, 21 Nov 2026): read-only, $0 (no model, no fetch, no write). The English band each stored course page names, among the bands its
+    // university's central English page defines (elr-band-reader.ts); the database records and gates the readings from this reply (security.elr_band_record_v1).
+    if (mode === "elr_band_read") {
+      const items: { course_id: string; evidence_id: string; storage_path: string; bands: string[] }[] = (Array.isArray(body.items) ? body.items : []).slice(0, 40);  // fixed: bound on one call
+      const pages: unknown[] = [];
+      await pool(items, 4, async (it) => {
+        try {
+          if (Date.now() - t0 > BUDGET_MS) { pages.push({ course_id: it.course_id, evidence_id: it.evidence_id, error: "call_time_used" }); return }
+          const { data, error } = await c.storage.from("evidence").download(it.storage_path); if (error || !data) throw Error(error?.message || "missing");
+          const b = new Uint8Array(await data.arrayBuffer());
+          const raw = b[0] === 0x1f && b[1] === 0x8b ? await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text() : new TextDecoder().decode(b);
+          const text = /<\w+[\s>]/.test(raw.slice(0, 2000)) ? htmlToText(raw) : raw;
+          pages.push({ course_id: it.course_id, evidence_id: it.evidence_id, chars: text.length, mentions: bandMentions(text, Array.isArray(it.bands) ? it.bands : []) });
+        } catch (e) { pages.push({ course_id: it.course_id, evidence_id: it.evidence_id, error: (e instanceof Error ? e.message : String(e)).slice(0, 160) }) }
+      });
+      return j({ ok: true, mode, extractor: ELR_BAND_VERSION, pages, ms: Date.now() - t0, worker: WORKER, workerVersion: VERSION });
+    }
+    // CF-247 s907 (S1-ELR-Bands-And-Crawl, Platform Admin 21 Nov 2026 09:00): a one-off bounded fetch of known, unstored central English pages. Each page is read through the
+    // one Firecrawl client under the same gate as provider-facts (useFcWhy: an open on-demand request scoped to central covers it; robots, directory and credit rules still hold),
+    // stored as provider-facts evidence and recorded on its fact source. No model and no proposal: the stored page is read by the central English sweep (elr-central-v1.2).
+    if (mode === "elr_central_fetch") {
+      const items: { id: string; provider_id: string; url: string; country: string }[] = (Array.isArray(body.items) ? body.items : []).slice(0, 12);  // fixed: bound on one call (scrape time)
+      const out: unknown[] = [];
+      await pool(items, 3, async (it) => {
+        const g = Date.now() - t0 > BUDGET_MS ? { ok: false, why: "time budget" } : await useFcWhy("provider_facts_scrape", it.provider_id, it.url);
+        if (!g.ok) {
+          await rpc("svc_provider_facts_read_record", { p_id: it.id, p_status: "failed", p_http: null, p_storage_path: null, p_sha256: null, p_mime: null, p_rows: [], p_summary: { error: g.why, via: "elr_central_fetch" } }).catch(() => null);
+          out.push({ id: it.id, outcome: "refused", why: g.why }); return
+        }
+        try {
+          const sc = await fcx.scrape({ proxy: FC_PROXY, url: it.url, formats: ["markdown"], onlyMainContent: true }, { use_case: "provider_facts_read", provider_id: it.provider_id }, { timeoutMs: 90000 });  // fixed: API time-out
+          if (fcFailed(sc)) throw new Error(sc.rec.error || "scrape failed");
+          const d = sc.d, md: string = sc.markdown, http = Number(sc.page_status ?? sc.http);
+          const extra = Math.max(0, Number(d?.data?.metadata?.creditsUsed ?? d?.creditsUsed ?? 1) - 1);
+          if (extra > 0) await rpc("svc_coverage_usage", { p_units: extra, p_purpose: "provider_facts_scrape", p_provider_id: it.provider_id, p_url: it.url });
+          if (!sc.accepted || md.length < 200) {
+            await rpc("svc_provider_facts_read_record", { p_id: it.id, p_status: "failed", p_http: http, p_storage_path: null, p_sha256: null, p_mime: null, p_rows: [], p_summary: { error: d?.error || "no content", via: "elr_central_fetch" } });
+            out.push({ id: it.id, outcome: "failed", http, why: "no content" }); return
+          }
+          const sha = await sha256(new TextEncoder().encode(md));
+          const path = `layer2/${it.country || "XX"}/provider-facts/${it.provider_id}/${it.id}/${sha}.md.gz`;
+          const up = await c.storage.from("evidence").upload(path, await gzip(md), { contentType: "application/gzip", upsert: true });
+          if (up.error) throw new Error("upload: " + up.error.message);
+          await rpc("svc_provider_facts_read_record_v2", { p_id: it.id, p_status: "read", p_http: http, p_storage_path: path, p_sha256: sha, p_mime: "text/markdown", p_rows: [],
+            p_summary: { chars: md.length, title: String(d?.data?.metadata?.title || "").slice(0, 200), via: "elr_central_fetch" }, p_links: [] });
+          out.push({ id: it.id, outcome: "read", http, chars: md.length, credits: 1 + extra });
+        } catch (e) {
+          const msg = (e instanceof Error ? e.message : String(e)).slice(0, 160);
+          await rpc("svc_provider_facts_read_record", { p_id: it.id, p_status: "failed", p_http: null, p_storage_path: null, p_sha256: null, p_mime: null, p_rows: [], p_summary: { error: msg, via: "elr_central_fetch" } }).catch(() => null);
+          out.push({ id: it.id, outcome: "failed", why: msg });
+        }
+      });
+      return j({ ok: true, mode, extractor: "elr-central-fetch-v1.0", fetched: out, ms: Date.now() - t0, worker: WORKER, workerVersion: VERSION });
+    }
     }
     // v1.0.15 (18 Nov 2026, CF-247 S2-Build, Platform Admin 10:12): mode page_text turns the stored HTML copy of a bound course page (evidence
     // source_snapshot, written by mode read) into the plain-text page Boost reads (evidence provider_course_page_text at coverage-text/<course>/<hash>.txt),
