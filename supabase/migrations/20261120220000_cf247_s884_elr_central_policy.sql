@@ -22,7 +22,7 @@
 --   (s886) one schedule: the existing job elr-det-sweep also reads the central pages back, records them, applies a bounded number of approved elr-central policies a run
 --          (security.provider_english_apply_v1) and sends each regulated-discipline hold to Layer 4. No new cron job (the active job count does not change).
 --          security.provider_english_apply_all_v1 (job provider-english-defaults) skips elr-central policies so its run time does not grow with them.
--- Objects (no new public function, table or view; G3 stays 75/48): tables pipeline.elr_central_reads, pipeline.elr_central_applies; column pipeline.elr_det_requests.mode;
+-- Objects (no new public function, table or view; G3 stays 75/48): tables pipeline.elr_central_reads, pipeline.elr_central_requests, pipeline.elr_central_applies (no foreign keys, no change to an existing table);
 --   functions security.elr_central_claim_v1, security.elr_central_record_v1; replaced security.elr_det_sweep_tick_v1, security.elr_det_status_v1,
 --   security.provider_english_plan_v1, security.provider_english_apply_v1, security.provider_english_apply_all_v1, security.policy_auto_approve_v1 (each md5-checked first);
 --   settings elr_central.on, batch.elr_central, elr_central.apply_per_run, elr_central.reapply_hours, elr_central.l4_per_run, central.auto_approve_elr_central.
@@ -337,7 +337,7 @@ end $function$
 
 -- (s885) the working tables
 create table if not exists pipeline.elr_central_reads (
-  fact_source_id uuid not null references pipeline.provider_fact_sources(id) on delete cascade,
+  fact_source_id uuid not null,
   extractor      text not null,
   provider_id    uuid not null,
   evidence_id    uuid,
@@ -358,7 +358,7 @@ alter table pipeline.elr_central_reads enable row level security;
 revoke all on pipeline.elr_central_reads from public, anon, authenticated;
 
 create table if not exists pipeline.elr_central_applies (
-  proposal_id  uuid primary key references pipeline.provider_policy_proposals(id) on delete cascade,
+  proposal_id  uuid primary key,
   applied_at   timestamptz not null default now(),
   runs         integer not null default 1,
   written      integer not null default 0,
@@ -369,8 +369,19 @@ comment on table pipeline.elr_central_applies is 'CF-247 s886: when the English 
 alter table pipeline.elr_central_applies enable row level security;
 revoke all on pipeline.elr_central_applies from public, anon, authenticated;
 
-alter table pipeline.elr_det_requests add column if not exists mode text not null default 'elr_det_read';
-comment on column pipeline.elr_det_requests.mode is 'CF-247 s886: the worker mode of the call (elr_det_read for course pages, elr_central_read for central English pages).';
+-- no foreign keys and no change to an existing table: the tables the jobs write all the time are not locked by this change
+create table if not exists pipeline.elr_central_requests (
+  id           bigint primary key,
+  pages        integer not null,
+  status       text not null default 'sent' check (status in ('sent', 'done', 'lost', 'failed')),
+  submitted_at timestamptz not null default now(),
+  finished_at  timestamptz,
+  result       jsonb
+);
+comment on table pipeline.elr_central_requests is 'CF-247 s886: each call the English requirement sweep made to the coverage-sweep worker for central English pages (mode elr_central_read), by its pg_net request id; the sweep reads the answer back and records it.';
+create index if not exists elr_central_requests_open on pipeline.elr_central_requests (submitted_at) where status = 'sent';
+alter table pipeline.elr_central_requests enable row level security;
+revoke all on pipeline.elr_central_requests from public, anon, authenticated;
 
 -- (G2) settings
 insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
@@ -507,13 +518,9 @@ declare
 begin
   if not pg_try_advisory_xact_lock(hashtext('cf247:elr_det_sweep')) then return jsonb_build_object('skipped', 'another run is working'); end if;  -- fixed: one run at a time
   -- 1. answered calls
-  for q in select r.id, r.mode, h.status_code, h.content, h.timed_out, h.error_msg from pipeline.elr_det_requests r join net._http_response h on h.id = r.id where r.status = 'sent' order by r.id loop
+  for q in select r.id, h.status_code, h.content, h.timed_out, h.error_msg from pipeline.elr_det_requests r join net._http_response h on h.id = r.id where r.status = 'sent' order by r.id loop
     begin v_res := q.content::jsonb; exception when others then v_res := null; end;
-    if q.mode = 'elr_central_read' and coalesce(q.timed_out, false) = false and q.status_code between 200 and 299 and v_res->>'ok' = 'true' and v_res->>'extractor' = 'elr-central-v1.0' then
-      v_rec := security.elr_central_record_v1(v_res->'pages', 'request:' || q.id);
-      update pipeline.elr_det_requests set status = 'done', finished_at = now(), result = v_rec where id = q.id;
-      v_harv := v_harv + 1;
-    elsif q.mode = 'elr_det_read' and coalesce(q.timed_out, false) = false and q.status_code between 200 and 299 and v_res->>'ok' = 'true' and v_res->>'extractor' = 'elr-det-v1.0' then
+    if coalesce(q.timed_out, false) = false and q.status_code between 200 and 299 and v_res->>'ok' = 'true' and v_res->>'extractor' = 'elr-det-v1.0' then
       v_rec := security.elr_det_record_v1(v_res->'pages', 'request:' || q.id);
       update pipeline.elr_det_requests set status = 'done', finished_at = now(), result = v_rec where id = q.id;
       v_harv := v_harv + 1;
@@ -522,6 +529,18 @@ begin
       v_bad := v_bad + 1;
     end if;
     update pipeline.elr_det_pages set outcome = 'lost' where request_id = q.id and outcome = 'sent';
+  end loop;
+  -- 1b. answered central-page calls (s886)
+  for q in select r.id, h.status_code, h.content, h.timed_out, h.error_msg from pipeline.elr_central_requests r join net._http_response h on h.id = r.id where r.status = 'sent' order by r.id loop
+    begin v_res := q.content::jsonb; exception when others then v_res := null; end;
+    if coalesce(q.timed_out, false) = false and q.status_code between 200 and 299 and v_res->>'ok' = 'true' and v_res->>'extractor' = 'elr-central-v1.0' then
+      v_rec := security.elr_central_record_v1(v_res->'pages', 'request:' || q.id);
+      update pipeline.elr_central_requests set status = 'done', finished_at = now(), result = v_rec where id = q.id;
+      v_harv := v_harv + 1;
+    else
+      update pipeline.elr_central_requests set status = 'failed', finished_at = now(), result = jsonb_build_object('http', q.status_code, 'timed_out', q.timed_out, 'error', left(coalesce(q.error_msg, q.content, ''), 300)) where id = q.id;
+      v_bad := v_bad + 1;
+    end if;
     update pipeline.elr_central_reads set outcome = 'lost' where request_id = q.id and outcome = 'sent';
   end loop;
   -- 2. calls with no answer in time are given up; their pages go back to the queue
@@ -529,13 +548,14 @@ begin
               where status = 'sent' and submitted_at < now() - make_interval(mins => security.pipeline_num_v1('elr_det.request_lost_minutes', 30)::int) returning id)
   update pipeline.elr_det_pages d set outcome = 'lost' from l where d.request_id = l.id and d.outcome = 'sent';
   get diagnostics v_lost = row_count;
-  update pipeline.elr_central_reads c set outcome = 'lost'
-    from pipeline.elr_det_requests l where l.id = c.request_id and l.status = 'lost' and c.outcome = 'sent';
+  with l as (update pipeline.elr_central_requests set status = 'lost', finished_at = now()
+              where status = 'sent' and submitted_at < now() - make_interval(mins => security.pipeline_num_v1('elr_det.request_lost_minutes', 30)::int) returning id)
+  update pipeline.elr_central_reads c set outcome = 'lost' from l where c.request_id = l.id and c.outcome = 'sent';
   -- 3. the next batch
   if security.pipeline_num_v1('elr_det.sweep_on', 1) < 1 then
     return jsonb_build_object('read_back', v_harv, 'failed', v_bad, 'pages_lost', v_lost, 'sent', 0, 'sweep', 'off', 'ms', round(extract(epoch from clock_timestamp() - v_t0) * 1000));
   end if;
-  select count(*) into v_open from pipeline.elr_det_requests where status = 'sent' and mode = 'elr_det_read';
+  select count(*) into v_open from pipeline.elr_det_requests where status = 'sent';
   v_per := greatest(5, least(40, security.pipeline_num_v1('elr_det.pages_per_call', 25)::int));
   v_room := security.pipeline_num_v1('elr_det.in_flight_max', 8)::int - v_open;
   v_batch := least(security.pipeline_num_v1('batch.elr_det_sweep', 200)::int, greatest(v_room, 0) * v_per);
@@ -560,12 +580,12 @@ begin
   end if;
   -- 4. central English pages (s886): one call a run for the next universities, only when none is waiting
   if security.pipeline_num_v1('elr_central.on', 1) >= 1 then
-    if not exists (select 1 from pipeline.elr_det_requests where status = 'sent' and mode = 'elr_central_read') then
+    if not exists (select 1 from pipeline.elr_central_requests where status = 'sent') then
       select coalesce(jsonb_agg(jsonb_build_object('fact_source_id', c.fact_source_id, 'provider_id', c.provider_id, 'evidence_id', c.evidence_id, 'storage_path', c.storage_path)), '[]'::jsonb)
         into v_cpages from security.elr_central_claim_v1(security.pipeline_num_v1('batch.elr_central', 6)::int) c;
       if jsonb_array_length(v_cpages) > 0 then
         v_cid := pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'elr_central_read', 'items', v_cpages));
-        insert into pipeline.elr_det_requests (id, pages, mode) values (v_cid, jsonb_array_length(v_cpages), 'elr_central_read');
+        insert into pipeline.elr_central_requests (id, pages) values (v_cid, jsonb_array_length(v_cpages));
         insert into pipeline.elr_central_reads as r (fact_source_id, extractor, provider_id, evidence_id, outcome, request_id, sent_at)
         select (e->>'fact_source_id')::uuid, 'elr-central-v1.0', (e->>'provider_id')::uuid, (e->>'evidence_id')::uuid, 'sent', v_cid, now() from jsonb_array_elements(v_cpages) e
         on conflict (fact_source_id, extractor) do update set outcome = 'sent', request_id = excluded.request_id, sent_at = now(), result = null where r.outcome = 'lost';
@@ -658,6 +678,7 @@ update pipeline.automation_catalogue
 
 insert into pipeline.component_register (kind, name, layer, area, purpose, status, replaces, introduced_in) values
   ('table', 'pipeline.elr_central_reads', 'Layer 2', 'English requirements', 'Central English pages the deterministic central reader was sent or has read, with the outcome', 'active', '{}', '20261120220000'),
+  ('table', 'pipeline.elr_central_requests', 'Layer 2', 'English requirements', 'Worker calls of the sweep for central English pages', 'active', '{}', '20261120220000'),
   ('table', 'pipeline.elr_central_applies', 'Layer 2', 'English requirements', 'When each approved elr-central policy was last applied by the sweep', 'active', '{}', '20261120220000'),
   ('function', 'security.elr_central_claim_v1', 'Layer 2', 'English requirements', 'Next universities with stored central English pages to read', 'active', '{}', '20261120220000'),
   ('function', 'security.elr_central_record_v1', 'Layer 2', 'English requirements', 'Turns central-page readings into a governed English policy proposal (missing tiers only)', 'active', '{}', '20261120220000')

@@ -11,7 +11,7 @@ test('housekeeping and no new job: replaces and retires lines, no top-level drop
   expect(MIG).not.toMatch(/^(drop|delete|truncate)\b/im)
   expect(MIG).not.toMatch(/cron\.schedule\(/)
   expect(MIG).toContain("raise exception 'post-check: the number of active cron jobs changed'")
-  for (const t of ['elr_central_reads', 'elr_central_applies']) {
+  for (const t of ['elr_central_reads', 'elr_central_requests', 'elr_central_applies']) {
     expect(MIG).toContain(`comment on table pipeline.${t} is 'CF-247 s88`)
     expect(MIG).toContain(`revoke all on pipeline.${t} from public, anon, authenticated;`)
   }
