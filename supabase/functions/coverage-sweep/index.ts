@@ -2,8 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { feeAiParsed, feeAiRequest, hasFeeAmount, noNul } from "./fees.ts";
 import { answerLimit, errorCost, readAnswer, readError, type ReadType } from "./answer.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { detRead, detUncovered, AER_DET_VERSION } from "./aer-det-reader.ts";
-import { elrRead, ELR_DET_VERSION } from "./elr-det-reader.ts";
+import { detRead, detUncovered, AER_DET_VERSION } from "./aer-det-reader.ts"; import { elrRead, ELR_DET_VERSION } from "./elr-det-reader.ts";  // s840: ELR reader on this line so the worker's line references stay
 import { clean, currencyFor, domainFitsName, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, pageDataItems, robotsAllows, siteNameMatch, staleCalendarUrl, titleOf } from "./extract.ts";
 // v0.17.32: same normalising as extract.ts siteNorm (kept here so the shared extract.ts, used by other functions, is unchanged)
 import { structRead, structLines, STRUCT_DET_VERSION } from "./struct-det-reader.ts"; // s861: deterministic course structure reader (duration, study load, delivery mode)
