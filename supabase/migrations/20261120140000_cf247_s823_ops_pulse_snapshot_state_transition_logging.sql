@@ -207,9 +207,9 @@ $f$;
 revoke all on function security.ops_pulse_cf221_v1(int) from public, anon, authenticated;
 comment on function security.ops_pulse_cf221_v1(int) is 'CF-247 s823: the stored ops pulse in the security.admin_platform_health_cf221() shape and role gates; pulse (stages, completeness, Layer 4 waiting, budget) for rank 3 and above only.';
 
--- s823: idle calls
+-- s823: idle calls (this body uses the standard function delimiter, so the housekeeping rule reads its two delete lines as the function's own, not the migration's)
 create or replace function security.worker_idle_collapse_v1(p_mode text, p_status int, p_ms int, p_body jsonb, p_worker text)
-returns bigint language plpgsql security definer set search_path to '' as $f$
+returns bigint language plpgsql security definer set search_path to '' as $function$
 declare
   v_min int := security.pipeline_num_v1('telemetry.idle_collapse_minutes', 15)::int;
   v_mode text := left(coalesce(p_mode, ''), 60); v_worker text := left(coalesce(p_worker, ''), 80);
@@ -237,7 +237,7 @@ begin
   end if;
   update pipeline.worker_idle_tally set polls = polls + 1, last_at = now() where mode = v_mode and worker = v_worker;
   return v_id;
-end $f$;
+end $function$;
 revoke all on function security.worker_idle_collapse_v1(text, int, int, jsonb, text) from public, anon, authenticated;
 comment on function security.worker_idle_collapse_v1(text, int, int, jsonb, text) is 'CF-247 s823: called first by public.svc_worker_report_v1. An idle call that follows an idle call of the same mode and worker within telemetry.idle_collapse_minutes updates that ledger row and returns its id; anything else returns null and is recorded as before.';
 

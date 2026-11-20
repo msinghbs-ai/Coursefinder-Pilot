@@ -9,6 +9,7 @@ import{ExternalLink}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button}from'./ui-kit'
 import{checkDescription,isEdited,stripBanned,holdReason}from'./lib/description-check.js'
+import HelpButton from'./HelpDrawer' // S1-UX s827: the ? help drawer, on the hold banner (S1-RM-Design, 20 Nov 2026 13:07)
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
 let RULES=null,RULES_P=null
@@ -28,6 +29,7 @@ export function HoldBanner({it,candidate,rules}){
   const h=holdReason(it?.why,candidate,rules)
   return <div className={`dea-hold dea-hold-${h.kind}`} role="note" data-dea-hold={h.kind}>
     <strong>Main hold reason: {h.title}{h.words?.length?<> — {h.words.map((w,i)=><React.Fragment key={w}>{i?', ':''}<code data-dea-hold-word>{w}</code></React.Fragment>)}</>:null}</strong>
+    <span className="dea-hold-help"><HelpButton topic="layer4" label="Help: deciding a held description"/></span>
     {it?.why&&<details className="dea-tech"><summary>Technical detail</summary><small data-dea-hold-code>{it.why}</small></details>}
   </div>
 }
