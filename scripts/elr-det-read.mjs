@@ -3,14 +3,16 @@
 // $0: no model, no Firecrawl. Mode status (read only) prints security.elr_det_status_v1(). Mode run calls one sweep run (security.elr_det_sweep_tick_v1, the job
 // elr-det-sweep's own command) every 60 s for the given number of minutes, so a governed Run Now drains a bounded workload at once and its gains are read back.
 // Arguments: 1 = mode (status | run), 2 = minutes (run only, 1 to 50).
-import { need, read, summary } from './boost-live-lib.mjs'
+import { need, summary } from './boost-live-lib.mjs'
 need()
 const mode = process.argv[2] || 'status', minutes = Math.min(50, Math.max(1, Number(process.argv[3] || 10)))  // fixed: a run stays inside the workflow's 60-minute limit
-const status = async () => (await read('select security.elr_det_status_v1() as s'))[0].s
-async function tick() {
+// s843: the status function is revoked from public, so the read-only role cannot call it; it is read through the owner's connection (it is STABLE and writes nothing)
+const status = async () => (await query('select security.elr_det_status_v1() as s'))[0].s
+const tick = async () => (await query('select security.elr_det_sweep_tick_v1() as r'))[0].r
+async function query(sql) {
   const r = await fetch(`https://api.supabase.com/v1/projects/${process.env.REF}/database/query`, { method: 'POST',
-    headers: { authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`, 'content-type': 'application/json' }, body: JSON.stringify({ query: 'select security.elr_det_sweep_tick_v1() as r' }) })
-  const t = await r.text(); if (!r.ok) throw Error(`sweep run failed (HTTP ${r.status}): ${t.slice(0, 400)}`); return JSON.parse(t)[0].r
+    headers: { authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`, 'content-type': 'application/json' }, body: JSON.stringify({ query: sql }) })
+  const t = await r.text(); if (!r.ok) throw Error(`database query failed (HTTP ${r.status}): ${t.slice(0, 400)}`); return JSON.parse(t)
 }
 const line = (s) => `promoted ${s.courses_promoted} courses (${s.rows_promoted} rows); Layer 4 ${s.layer4_pending}; pages ${JSON.stringify(s.pages)}; calls ${JSON.stringify(s.calls)}`
 const before = await status()
