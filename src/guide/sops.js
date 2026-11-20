@@ -9,7 +9,7 @@
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 // Check the admin copy with `node scripts/export-sops.mjs --check-mirror <coursefinder-admin/docs/sops>` (SS-016 UR-03): it exits 1 on drift.
 
-export const SOP_REVIEWED_FOR = '2.16.69'
+export const SOP_REVIEWED_FOR = '2.16.70'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -45,7 +45,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.80', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '2.81', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -128,7 +128,8 @@ export const SOPS = [
       'Scholarships withdrawn by the nightly review: a jump means a rule changed or a site moved its pages.',
     ],
     escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
-    changes: [{ version: '2.80', date: '20 Nov 2026', release: '2.16.68', change: 'Dashboard: start from the five cards and Active failures (genuine failures and warnings only); Waiting for your approval, Waiting for you and Also are gone. Layer 4 Review opens on Review by rule: every waiting item of a queue grouped by its rule, one card at a time, Preview the batch, and one confirmed batch for Contains a banned word only. Platform health: Page Capture and AI Extraction & Auto-Clean show their rate against normal.' },
+    changes: [{ version: '2.81', date: '20 Nov 2026', release: '2.16.70', change: 'Layer 4 Review › Entry requirements: read System recovery / Re-read available apart from Waiting for a reviewer. On a completeness-gate card with a stored copy, Re-read from stored copy ($0) replaces the stale partial read with a deterministic re-read; with no stored page, Queue stored-page fetch. Audit samples stay with Waiting for a reviewer.' },
+      { version: '2.80', date: '20 Nov 2026', release: '2.16.68', change: 'Dashboard: start from the five cards and Active failures (genuine failures and warnings only); Waiting for your approval, Waiting for you and Also are gone. Layer 4 Review opens on Review by rule: every waiting item of a queue grouped by its rule, one card at a time, Preview the batch, and one confirmed batch for Contains a banned word only. Platform health: Page Capture and AI Extraction & Auto-Clean show their rate against normal.' },
       { version: '2.79', date: '20 Nov 2026', release: '2.16.67', change: 'Platform health › Health checks: the 4-stage pipeline (Official Registers, Page Capture, AI Extraction & Auto-Clean, Live Catalogue) under the summary; start with an amber or red stage and open the screen it names. The Dashboard shows five cards with a bar per country. A ? on the main screens opens three steps for that screen.' },
       { version: '2.78', date: '20 Nov 2026', release: '2.16.65', change: 'Catalogue › Providers › More filters › Main campus (Set, Unset, No active campus). Tied main campuses were settled by the registered city, the register head office address, then the earliest registered of co-located campuses; NZ and CA courses with no campus took their provider\'s only campus. Weekly: Main campus Unset, choose the main campus for each.' },
       { version: '2.77', date: '20 Nov 2026', release: '2.16.62', change: 'Layer 4 › Inbox, University and Course description cards: Edit & Approve opens the text with the page\'s own words, the official page link and live counts; Approve As-Is admits the machine text unchanged, Save Edit & Admit admits your text as human input, locked by hand. Held universities with no machine text are opened for writing there. New page Data & Governance › Human Edits & Periodic Audit: My Human Edits and All Human Edits (Admin Governance) with Unacknowledged and Due for 6-month re-review badges; Acknowledge & Keep Lock, Re-Verify by Machine (reads nothing again, changes nothing), Edit & Re-Lock, and for the Platform Admin Release Lock to Machine. Weekly: All Human Edits, Due for 6-month re-review; acknowledge, re-verify or release each.' },

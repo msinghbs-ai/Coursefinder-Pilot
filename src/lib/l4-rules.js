@@ -36,7 +36,7 @@ export const firstSentence=why=>String(why||'').trim().split(/(?<=[.;])\s+/)[0].
 /** The plain name of one rule group from the server (key cd:<code>, aer:<code> or <kind>:<first sentence>). */
 export function groupLabel(g){const k=String(g?.key||'')
   if(k.startsWith('cd:'))return CD_RAIL[k.slice(3)]||CD_RAIL.other
-  if(k.startsWith('aer:'))return g?.label||AER_RAIL[k.slice(4)]||prettyCode(k.slice(4))
+  if(k.startsWith('aer:')||k.startsWith('aerb:')){const c=k.slice(k.indexOf(':')+1);return g?.label||AER_RAIL[c]||prettyCode(c)}
   return g?.label||firstSentence(k.slice(k.indexOf(':')+1))||'Held by a check'}
 
 /** The main hold reason of one card in plain English (the rule group's name when the card is shown from a group). */
@@ -66,3 +66,16 @@ export function cdRailOf(it){const d=it?.detail||{},code=d?.machine?.reason_code
   if(!code)return null
   const k=code==='policy_refused_word'?'banned_word':cdHoldKey(code,d)
   return k==='other'?null:CD_RAIL[k]||null}
+
+// CF-247 s870 (Platform Admin 20 Nov 2026 16:28): AER items the platform files under technical recovery (group B) are kept apart from the items a
+// reviewer decides: the server's rule groups key them aerb:<code> (security.layer4_rule_groups_v1, migration 20261120145500).
+export const isRecoveryGroup=g=>String(g?.key||'').startsWith('aerb:')||g?.recovery===true
+/** A recovery group's batch: re-read from the stored copy ($0), or queue a stored-page fetch when no page is stored. */
+export const batchRereads=g=>isRecoveryGroup(g)
+/** One AER card's recovery action from its server check (rule_group_items reread): re-read, queue a fetch, or nothing. */
+export function rereadAction(it){const v=it?.reread?.verdict
+  if(v==='rereadable')return{key:'aer_det_reread',label:'Re-read from stored copy ($0)',why:'The stale partial read is replaced: the stored copy is read again by the deterministic reader (no AI, no Firecrawl), and its result goes through the same machine rule and Layer 4.'}
+  if(v==='no_stored_page')return{key:'aer_page_fetch',label:'Queue stored-page fetch',why:'No page of this course is stored. The course goes on the Course page needed list; the search lane finds and stores its page under its own daily share.'}
+  return null}
+export const REREAD_SKIP={not_waiting:'no longer waiting',not_a_course_read:'an entry matrix (decided by the Platform Admin)',already_deterministic:'already read by the deterministic reader',
+  not_technical_recovery:'waiting for a reviewer',audit_sample:'an audit sample (a person checks it)',locked:'locked by hand',course_not_active:'course not active',no_stored_page:'no stored page'}

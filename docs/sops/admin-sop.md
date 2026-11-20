@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.80; reviewed-release=2.16.69; source-commit=13256fba232f+local; content-sha256=92bcebafaa8cc3579dc7ee21ced68e3ef1735a95520f2fc1ee65fdfe3e4ed165 -->
+<!-- sop-export: id=admin-sop; version=2.81; reviewed-release=2.16.70; source-commit=8d457a68191b+local; content-sha256=0d1f8e6d591b1e86286a8e9351c65df3170f4973bce6f7e1b7c52a6f2ad633d1 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.80 (reviewed for platform release v2.16.69)  
+**Version:** 2.81 (reviewed for platform release v2.16.70)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -140,6 +140,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.81 | 20 Nov 2026 | v2.16.70 | Layer 4 Review › Entry requirements: read System recovery / Re-read available apart from Waiting for a reviewer. On a completeness-gate card with a stored copy, Re-read from stored copy ($0) replaces the stale partial read with a deterministic re-read; with no stored page, Queue stored-page fetch. Audit samples stay with Waiting for a reviewer. |
 | 2.80 | 20 Nov 2026 | v2.16.68 | Dashboard: start from the five cards and Active failures (genuine failures and warnings only); Waiting for your approval, Waiting for you and Also are gone. Layer 4 Review opens on Review by rule: every waiting item of a queue grouped by its rule, one card at a time, Preview the batch, and one confirmed batch for Contains a banned word only. Platform health: Page Capture and AI Extraction & Auto-Clean show their rate against normal. |
 | 2.79 | 20 Nov 2026 | v2.16.67 | Platform health › Health checks: the 4-stage pipeline (Official Registers, Page Capture, AI Extraction & Auto-Clean, Live Catalogue) under the summary; start with an amber or red stage and open the screen it names. The Dashboard shows five cards with a bar per country. A ? on the main screens opens three steps for that screen. |
 | 2.78 | 20 Nov 2026 | v2.16.65 | Catalogue › Providers › More filters › Main campus (Set, Unset, No active campus). Tied main campuses were settled by the registered city, the register head office address, then the earliest registered of co-located campuses; NZ and CA courses with no campus took their provider's only campus. Weekly: Main campus Unset, choose the main campus for each. |

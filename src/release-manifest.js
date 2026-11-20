@@ -1,18 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.69'
-export const PACKAGE_VERSION='0.1.491'
+export const UI_VERSION='2.16.70'
+export const PACKAGE_VERSION='0.1.492'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'20 Nov 2026',
-  title:'Plain hold reasons on course description cards and an instant batch preview',
+  title:'Entry requirements: no dead-end cards; re-read stale partial reads from the stored copy at no cost',
   changes:[
-    'Preview the batch on Layer 4 Review opens at once: the chosen rule\'s records are read as soon as you choose the rule.'
+    'Layer 4 Review lists entry requirement items the platform is recovering under System recovery / Re-read available, apart from Waiting for a reviewer, and their status says System recovery.',
+    'A course read held by the completeness gate with a stored copy of its page offers Re-read from stored copy ($0): the stale read is replaced and the stored copy is read again by the deterministic reader, with no AI and no Firecrawl. With no stored page it offers Queue stored-page fetch.',
+    'Preview the batch on a System recovery rule re-reads or queues its records after a confirmation. These actions are the Platform Admin\'s.'
   ],
   bugFixes:[
-    'A course description card\'s Main hold reason showed the machine code (for example "identity margin thin"); it now names the rule in plain English in every view (for example Page match not clear enough).'
+    'About 1,800 entry requirement cards held by the completeness gate showed no action at all. The stale partial reads are re-queued for the deterministic reader once on release; entry matrices, audit samples, locked courses and active rows are not touched.'
   ]
 }
 

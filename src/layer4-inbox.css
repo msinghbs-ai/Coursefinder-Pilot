@@ -214,3 +214,9 @@ mark.dea-ban{background:var(--cf-amber-100);color:inherit;padding:0 2px;border-r
 .l4f-rec-hold small,.l4f-rec-why{color:var(--cf-text-2)}
 .l4f-run{margin:0 0 8px}
 @media (max-width:820px){.l4f{grid-template-columns:1fr}.l4f-rail{position:static;max-height:none}}
+/* CF-247 s870 (Platform Admin 20 Nov 2026 16:28): System recovery apart from Waiting for a reviewer; the recovery action on a card */
+.l4f-sec{margin-top:10px;padding-top:6px;border-top:1px solid var(--cf-slate-100)}
+.l4f-sec-head{display:flex;justify-content:space-between;align-items:center;margin:4px 0 0;font-size:12px;font-weight:600;color:var(--cf-text-2)}
+.l4f-sec-recovery .l4r-grp{border-style:dashed}
+.l4f-recovery{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px;padding:8px 10px;border:1px solid var(--cf-amber-200);border-radius:var(--cf-radius-lg);background:var(--cf-amber-50)}
+.l4f-recovery small{color:var(--cf-text-2);flex:1 1 240px}
