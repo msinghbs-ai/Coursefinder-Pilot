@@ -162,8 +162,8 @@ begin
                       else public.layer4_review_decide(r.id, 'edit_and_approve', v_reason, to_jsonb(v_url)) end;
         perform set_config('request.jwt.claim.sub', coalesce(v_prev, ''), true);
         -- the stored copy the worker kept becomes the course page's reading at once (the read lane's own recorder), so no re-read is needed
+        update pipeline.coverage_course_pages set url = v_url, status = 'bound', bound_at = now() where course_id = r.entity_id and url is distinct from v_url;
         if exists (select 1 from pipeline.coverage_course_pages p where p.course_id = r.entity_id) and nullif(ch->>'storage_path', '') is not null then
-          update pipeline.coverage_course_pages set url = v_url, status = 'bound', bound_at = now() where course_id = r.entity_id;
           v_rec := public.svc_coverage_read_record(r.entity_id, 'read', nullif(ch->>'http', '')::int, 'direct', ch->>'identity', ch->>'storage_path', ch->>'sha256', ch->'candidates');
         end if;
         v_out := case when lower(v_url) = lower(v_held) then 'admitted_held_address' else 'admitted_newer_year' end;

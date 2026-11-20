@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.495 — 20 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.73** (S1-CourseLink-2027-CRICOS s891 to s893): rule course_link_year_rollover_v1 tries held Course link pages with an old year in their address at 2027, 2026 and 2025, then as held, and admits the newest that answers on the provider's own host and proves the exact CRICOS code (plain reads, $0), with the page stored at once; it runs inside the job link-refresh (no new job). Layer 4 Review › By university: Preview & Settle Batch on single-queue rule groups. Migration `20261120235000`; worker mode link_year_rollover.
+
 ## 0.1.494 — 20 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.72** (S1-RM-Design s875, found in the signed-in check of v2.16.71): a technical-recovery card's status reads "System recovery: the platform is working on it"; "re-read available" is no longer claimed for entry-matrix items (only course reads have the $0 stored-copy re-read). No migration.

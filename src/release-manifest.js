@@ -1,19 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.72'
-export const PACKAGE_VERSION='0.1.494'
+export const UI_VERSION='2.16.73'
+export const PACKAGE_VERSION='0.1.495'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'20 Nov 2026',
-  title:'Clearer status on cards the platform is recovering',
+  title:'Course links move to the current year by themselves',
   changes:[
-    'A card in System Queues says "System recovery: the platform is working on it"; Re-read from stored copy ($0) shows only on cards that can be re-read.'
+    'Course link pages held because their address carries an old year are tried at 2027, 2026 and 2025, then as held; the newest that opens on the university\'s own site and shows the exact CRICOS code is admitted by itself, at no cost.',
+    'Layer 4 Review › By university: Preview & Settle Batch on a rule group of Course link cards (one decision, a reason, SETTLE n to confirm).'
   ],
-  bugFixes:[
-    'Entry-matrix cards in recovery said "re-read available" although only course reads can be re-read from a stored copy.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
