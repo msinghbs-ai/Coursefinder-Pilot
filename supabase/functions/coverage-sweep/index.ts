@@ -5,7 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { detRead, detUncovered, AER_DET_VERSION } from "./aer-det-reader.ts"; import { elrRead, ELR_DET_VERSION } from "./elr-det-reader.ts"; import { centralRead, ELR_CENTRAL_VERSION } from "./elr-central-reader.ts"; import { fidRead, FID_DET_VERSION } from "./fid-det-reader.ts";  // s840: ELR reader on this line so the worker's line references stay (s851: fid-det-reader added on the same line)
 import { clean, currencyFor, domainFitsName, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, pageDataItems, robotsAllows, siteNameMatch, staleCalendarUrl, titleOf } from "./extract.ts";
 // v0.17.32: same normalising as extract.ts siteNorm (kept here so the shared extract.ts, used by other functions, is unchanged)
-import { LINK_ROLLOVER_VERSION, pageAnswer, strongIdentity, yearCandidates } from "./link-rollover.ts"; import { structRead, structLines, STRUCT_DET_VERSION } from "./struct-det-reader.ts"; // s861: deterministic course structure reader (duration, study load, delivery mode)
+import { LINK_ROLLOVER_VERSION, pageAnswer, storedCopyAnswer, strongIdentity, yearCandidates } from "./link-rollover.ts"; import { structRead, structLines, STRUCT_DET_VERSION } from "./struct-det-reader.ts"; // s861: deterministic course structure reader (duration, study load, delivery mode)
 const siteNorm = (s: string) => clean(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/&/g, " and ").replace(/[\u2019']/g, "").replace(/[^a-z0-9]+/g, " ").replace(/\bthe\b/g, " ").replace(/\s+/g, " ").trim();
 import { ADD_TESTS_PARSER, ADDED_TESTS, calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { CALENDAR_PARSER_DATES, CALENDAR_READER, calendarAiParsed, calendarAiRequest, calendarSafe, calendarSlices } from "./calendar.ts";
@@ -4493,7 +4493,7 @@ async function handle(req: Request): Promise<Response> {
     // address that answers on the same host, is not a "not found" or "no longer offered" page and is proved this course's page by the platform's identity rule (the exact
     // CRICOS code in Australia) is kept as a stored copy (the read lane's own path and format) and returned; the database decides (security.link_rollover_record_v1).
     if (mode === "link_year_rollover") {
-      const items: { item_id: string; course_id: string; provider_id: string; url: string; code: string; title: string; country: string }[] = (Array.isArray(body.items) ? body.items : []).slice(0, 40);  // fixed: bound on one call (fetches and response size)
+      const items: { item_id: string; course_id: string; provider_id: string; url: string; code: string; title: string; country: string; stored_path?: string | null; stored_sha?: string | null }[] = (Array.isArray(body.items) ? body.items : []).slice(0, 40);  // fixed: bound on one call (fetches and response size)
       const now = Number(body.now_year) || new Date().getUTCFullYear();
       const minChars = Number(body.min_chars) > 0 ? Number(body.min_chars) : 1500;
       const markers: string[] = Array.isArray(body.markers) ? body.markers.map(String) : [];
@@ -4527,6 +4527,21 @@ async function handle(req: Request): Promise<Response> {
           tries.push({ url: cand.url, year: cand.year, http, final_url: finalUrl, reason: "proved", identity: basis });
           chosen = { url: finalUrl, requested: cand.url, year: cand.year, held: cand.held, http, identity: basis, chars: text.length, storage_path: path, sha256: sha, candidates };
           break;
+        }
+        // s894 (Platform Admin 21 Nov 2026 07:35): no live read proved the course, so the stored copy already bound to the held address is read from the evidence
+        // store ($0, no fetch); it proves the held address only by the same identity rule and with none of the "not found / no longer offered" words.
+        const heldCand = yearCandidates(it.url, now).find((x) => x.held);
+        if (!chosen && heldCand && it.stored_path) {
+          try {
+            const html = await readEvidenceCopy(c, it.stored_path), text = htmlToText(html);
+            const ad = adapters[it.provider_id] ? applyAdapter(adapters[it.provider_id], html, { title: it.title, code: it.code, country: it.country || "", status: "bound" }, VERSION) : null;
+            const ans = storedCopyAnswer({ text, year: heldCand.year, markers });
+            const basis = ans.ok ? (identity(html, text, it.title, it.code, false, it.country || "") || ad?.identity || null) : null;
+            if (ans.ok && strongIdentity(basis, it.country || "")) {
+              tries.push({ url: it.url, year: heldCand.year, http: null, final_url: it.url, reason: "proved_by_stored_copy", identity: basis });
+              chosen = { url: it.url, requested: it.url, year: heldCand.year, held: true, http: null, identity: basis, chars: text.length, storage_path: null, sha256: it.stored_sha ?? null, source: "stored_copy" };
+            } else tries.push({ url: it.url, year: heldCand.year, http: null, final_url: it.url, reason: ans.ok ? "stored_copy_not_proved" : `stored_copy_${ans.reason}`, identity: basis });
+          } catch { tries.push({ url: it.url, year: heldCand.year, http: null, final_url: it.url, reason: "stored_copy_unreadable" }) }
         }
         out.push({ item_id: it.item_id, course_id: it.course_id, chosen, tries });
       });
