@@ -29,6 +29,7 @@ import AerCourseLinks from'./AerCourseLinks' // CF-247 F-AER.08 step 3: course l
 import Layer4HoldReasons from'./Layer4HoldReasons' // CF-247 s831: why AER items are held, and the audit sample
 import Layer4Grid from'./Layer4Grid' // CF-247 UI/UX audit Phase 5 (18 Nov 2026): the review grid, saved views and the quote/value drawer
 import{CdList,CdPanel,CdWhy,ChecksLine,ReasonChips,cdChoices,isCourseDescription,useCdQueue}from'./CourseDescriptionPanel' // CF-247 course descriptions (6 Nov 2026): reconcile, ready first, the sample
+import Layer4RuleGroups from'./Layer4RuleGroups' // CF-247 S1-UX s826: Waiting, grouped by rule (left panel; the cards and their action bars are unchanged)
 import DescriptionEditAdmit,{HeldUniversities}from'./DescriptionEditAdmit' // CF-247 s802/s803: Edit & Approve, held universities
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
@@ -176,7 +177,7 @@ export default function Layer4Inbox({onError,routeParams}){
             <small>{fmtNumber(readyOff+1)}–{fmtNumber(readyOff+(ready.items||[]).length)} of {fmtNumber(aerSum.review_ready)} ready, oldest first</small>
             <Button compact disabled={readyOff+(ready.items||[]).length>=Number(aerSum.review_ready)} onClick={()=>{const o=readyOff+Number(ready.limit||25);setReadyOff(o);loadReady(o)}}>Next</Button></div>}</div>:
         !items?<Loading compact/>:(items.items||[]).length===0?<Empty text="Nothing left here."/>:
-          items.items.map(it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={view==='kind'} rank={sum.rank} onDone={decided} onError={onError} onRefresh={()=>{loadSum();loadItems(cur)}}/>)}
+          <Layer4RuleGroups items={items.items} render={it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={view==='kind'} rank={sum.rank} onDone={decided} onError={onError} onRefresh={()=>{loadSum();loadItems(cur)}}/>}/>}
         {!showReady&&!showCd&&items&&view!=='decided'&&(cur||items.more===true||Number(items.total)>(items.items||[]).length)&&(()=>{const b=Number(items.before||0),n=(items.items||[]).length,t=Number(items.total||0)
           return <div className="l4i-pager" data-l4-pager><Button compact disabled={!cur} onClick={prev} data-l4-prev>Previous</Button>
             <small data-l4-range>{n?`${fmtNumber(b+1)}–${fmtNumber(b+n)}`:'0'} of {fmtNumber(t)}, oldest first</small>

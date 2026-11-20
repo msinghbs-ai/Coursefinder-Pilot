@@ -37,6 +37,8 @@ import{SectionTitle,fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInlin
 import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,shownTabs,effectiveTab,refusedTab,roleName}from'./nav-map'
 import{ViewerContext}from'./lib/viewer'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
+import HelpButton from'./HelpDrawer' // CF-247 S1-UX s827: the ? help drawer on each main screen header
+const HELP_TOPIC={dashboard:'dashboard',health:'health',layer4:'layer4',courses:'catalogue',providers:'catalogue'}
 import QueueWatch from'./QueueWatch'
 import IntegrationQueue,{PipelineYield}from'./IntegrationQueue'
 import CourseSources from'./CourseSources'
@@ -359,7 +361,7 @@ function App(){
         leading={<button className="m-mobile-menu" onClick={()=>setNavOpen(true)} aria-label="Open menu"><Menu size={20}/></button>}
         breadcrumbs={<AppBreadcrumbs pageKey={pageKey} tab={tab} routeParams={route.params} navigate={go}/>}
         title={datasetHeader?.title||page.title} subtitle={datasetHeader?.subtitle||page.subtitle}
-        actions={<>{canOpen('health',rank)&&<button type="button" className="cf-health-link" onClick={()=>go('health')} title={`Platform health: ${healthLabel}`} aria-label={`Platform health: ${healthLabel}`}><StatusDot tone={tone} label={healthLabel}/><span className="cf-health-text">Health</span></button>}<ReleasePill/><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></>}/>
+        actions={<>{HELP_TOPIC[pageKey]&&<HelpButton topic={HELP_TOPIC[pageKey]}/>}{canOpen('health',rank)&&<button type="button" className="cf-health-link" onClick={()=>go('health')} title={`Platform health: ${healthLabel}`} aria-label={`Platform health: ${healthLabel}`}><StatusDot tone={tone} label={healthLabel}/><span className="cf-health-text">Health</span></button>}<ReleasePill/><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></>}/>
       {/* v2.15.253 (Platform Admin, 12 Oct 2026): credit and limit notices on every page (Curator and above) */}
       <CreditBanner rank={rank} canOpenServices={canOpen('services',rank)}/>
       <DeployedVersionNotice/>

@@ -1,21 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.66'
-export const PACKAGE_VERSION='0.1.488'
+export const UI_VERSION='2.16.67'
+export const PACKAGE_VERSION='0.1.489'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'20 Nov 2026',
-  title:'Clearer description review, automatic removal of banned words and a Platform Health summary',
+  title:'4-stage pipeline on Platform Health, Dashboard cards by country, Layer 4 rule groups and ? help',
   changes:[
-    'Description cards show the main hold reason in plain English at the top, with one-click Remove "word" & Admit when a banned word is the only problem.',
-    'Each description card has one action bar: Remove "word" & Admit, Save Edit & Admit, Approve As-Is and, set apart, Reject. The duplicate buttons underneath are gone.',
-    'University descriptions held only for a promotional word on the readers\' list are admitted automatically with the word removed, after the same checks; the word list is also given to the reader up front.',
-    'Human Edits lists the words reviewers remove most often, marked as already on the list or a candidate to add.',
-    'Platform Health opens on a plain-English summary (health, AI spend against the daily cap, blockers, Layer 4 waiting) and Needs attention (failed jobs, stuck work, connections down); everything technical is under Technical details.'
+    'Platform Health shows the 4-stage pipeline under the summary: Official Registers, Page Capture, AI Extraction & Auto-Clean and Live Catalogue, each with its status, what is queued and how many of its checks pass. Select a stage to see what it is doing and open the screen that controls it.',
+    'The Dashboard shows five cards with icons (system status, completeness with a bar for Australia, New Zealand and Canada, decisions waiting on you, active blockers and today\'s AI spend against the daily cap) and, for operators, Active failures. A Viewer or Counsellor sees catalogue search only.',
+    'Layer 4 Inbox: Waiting, grouped by rule, on the left groups the cards on the page by the check that holds them; Preview the batch lists a group and Show only these narrows the list to it.',
+    'A ? on the Dashboard, Platform Health, Layer 4 Review, Courses and Providers headers opens three steps for that screen and a link to the Platform guide.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Platform Health and the top-bar health dot read stored figures, rebuilt every 5 minutes, instead of counting the work tables on every open; workers that find nothing to do no longer add a log line on every call.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
