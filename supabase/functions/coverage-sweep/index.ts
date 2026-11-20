@@ -5,8 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { detRead, detUncovered, AER_DET_VERSION } from "./aer-det-reader.ts"; import { elrRead, ELR_DET_VERSION } from "./elr-det-reader.ts"; import { centralRead, ELR_CENTRAL_VERSION } from "./elr-central-reader.ts"; import { fidRead, FID_DET_VERSION } from "./fid-det-reader.ts";  // s840: ELR reader on this line so the worker's line references stay (s851: fid-det-reader added on the same line)
 import { clean, currencyFor, domainFitsName, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, pageDataItems, robotsAllows, siteNameMatch, staleCalendarUrl, titleOf } from "./extract.ts";
 // v0.17.32: same normalising as extract.ts siteNorm (kept here so the shared extract.ts, used by other functions, is unchanged)
-import { LINK_ROLLOVER_VERSION, pageAnswer, strongIdentity, yearCandidates } from "./link-rollover.ts"; // s891: course_link_year_rollover_v1
-import { structRead, structLines, STRUCT_DET_VERSION } from "./struct-det-reader.ts"; // s861: deterministic course structure reader (duration, study load, delivery mode)
+import { LINK_ROLLOVER_VERSION, pageAnswer, strongIdentity, yearCandidates } from "./link-rollover.ts"; import { structRead, structLines, STRUCT_DET_VERSION } from "./struct-det-reader.ts"; // s861: deterministic course structure reader (duration, study load, delivery mode)
 const siteNorm = (s: string) => clean(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/&/g, " and ").replace(/[\u2019']/g, "").replace(/[^a-z0-9]+/g, " ").replace(/\bthe\b/g, " ").replace(/\s+/g, " ").trim();
 import { ADD_TESTS_PARSER, ADDED_TESTS, calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { CALENDAR_PARSER_DATES, CALENDAR_READER, calendarAiParsed, calendarAiRequest, calendarSafe, calendarSlices } from "./calendar.ts";
@@ -4488,6 +4487,51 @@ async function handle(req: Request): Promise<Response> {
       }
       return j({ ok: true, mode, run_id: runId, tally, calls, credits, stop: stopReason, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
     }
+    // s891 (20 Nov 2026, CF-247 session S1-CourseLink-2027-CRICOS, Platform Admin 22:58 AEDT): mode link_year_rollover. The caller (security.link_rollover_tick_v1,
+    // run inside the job link-refresh) sends held official course pages whose address carries a past curriculum year. Each is tried at the upcoming year, the current
+    // year, the year before and then at the held address (link-rollover.ts), each by a plain read only (robots.txt respected; never Firecrawl, never a model). The first
+    // address that answers on the same host, is not a "not found" or "no longer offered" page and is proved this course's page by the platform's identity rule (the exact
+    // CRICOS code in Australia) is kept as a stored copy (the read lane's own path and format) and returned; the database decides (security.link_rollover_record_v1).
+    if (mode === "link_year_rollover") {
+      const items: { item_id: string; course_id: string; provider_id: string; url: string; code: string; title: string; country: string }[] = (Array.isArray(body.items) ? body.items : []).slice(0, 40);  // fixed: bound on one call (fetches and response size)
+      const now = Number(body.now_year) || new Date().getUTCFullYear();
+      const minChars = Number(body.min_chars) > 0 ? Number(body.min_chars) : 1500;
+      const markers: string[] = Array.isArray(body.markers) ? body.markers.map(String) : [];
+      const out: unknown[] = [];
+      await pool(items, Math.min(Math.max(1, Number(body.at_once) || 4), 8), async (it) => {  // fixed: at most 8 courses at once on one call
+        const tries: { url: string; year: number | null; http: number | null; final_url: string | null; reason: string; identity?: string | null }[] = [];
+        let chosen: Record<string, unknown> | null = null;
+        for (const cand of yearCandidates(it.url, now)) {
+          if (Date.now() - t0 > BUDGET_MS) { tries.push({ url: cand.url, year: cand.year, http: null, final_url: null, reason: "call_time_used" }); break }
+          let http: number | null = null, finalUrl = cand.url, html = "";
+          try {
+            const u = new URL(cand.url);
+            if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) { tries.push({ url: cand.url, year: cand.year, http: null, final_url: null, reason: "robots_disallowed" }); continue }
+            const r = await fetch(u, { headers: { "user-agent": UA, accept: "text/html,application/xhtml+xml" }, redirect: "follow", signal: AbortSignal.timeout(20000) });  // fixed: API time-out
+            http = r.status; finalUrl = r.url || cand.url;
+            if (r.ok && /html/i.test(r.headers.get("content-type") || "html")) html = await r.text();
+          } catch { http = null }
+          const text = html ? htmlToText(html) : "";
+          const ad = html && adapters[it.provider_id] ? applyAdapter(adapters[it.provider_id], html, { title: it.title, code: it.code, country: it.country || "", status: "bound" }, VERSION) : null;
+          const ans = pageAnswer({ http, requested: cand.url, finalUrl, year: cand.year, text, minChars, markers, jsonIdentity: !!(ad?.json_found && ad.identity) });
+          if (!ans.ok) { tries.push({ url: cand.url, year: cand.year, http, final_url: finalUrl, reason: ans.reason }); continue }
+          const basis = identity(html, text, it.title, it.code, false, it.country || "") || ad?.identity || null;
+          if (!strongIdentity(basis, it.country || "")) { tries.push({ url: cand.url, year: cand.year, http, final_url: finalUrl, reason: "not_proved_this_course", identity: basis }); continue }
+          const textSha = await sha256(new TextEncoder().encode(normText(text)));
+          const gz = await gzip(html), sha = await sha256(new TextEncoder().encode(html));
+          const path = `layer2/${["NZ", "CA"].includes(it.country) ? it.country : "AU"}/coverage/${it.provider_id}/${it.course_id}/${sha}.html.gz`;
+          const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
+          if (up.error) { tries.push({ url: cand.url, year: cand.year, http, final_url: finalUrl, reason: "store_failed", identity: basis }); continue }
+          const candidates = ad?.candidates && (ad.json_found || String(basis).startsWith("adapter_")) ? { ...(ad.candidates as Record<string, unknown>), final_url: finalUrl, text_sha: textSha }
+            : { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text, currencyFor(it.country)), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION, text_sha: textSha };
+          tries.push({ url: cand.url, year: cand.year, http, final_url: finalUrl, reason: "proved", identity: basis });
+          chosen = { url: finalUrl, requested: cand.url, year: cand.year, held: cand.held, http, identity: basis, chars: text.length, storage_path: path, sha256: sha, candidates };
+          break;
+        }
+        out.push({ item_id: it.item_id, course_id: it.course_id, chosen, tries });
+      });
+      return j({ ok: true, mode, rule: LINK_ROLLOVER_VERSION, run_id: body.run_id ?? null, items: out, ms: Date.now() - t0, worker: WORKER, workerVersion: VERSION });
+    }
     if (mode === "read") {
       const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string; priority?: boolean; manual?: boolean; country?: string; basis?: string; rendered_before?: boolean; render_ok?: boolean ; direct_only?: boolean }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 200) }); // v0.44.0: up to the UI maximum of Read course pages (batch.coverage_read, 200); it was capped at 60 here // fixed: 200 is the setting's max_value
       const tally: Record<string, number> = {};
@@ -4623,51 +4667,6 @@ async function handle(req: Request): Promise<Response> {
     }
     // CF-247 s851 (S1-Fees-Intakes, 20 Nov 2026): read-only, $0 (no model, no page fetch, no write). The international fee, intake months and application closing date a
     // batch of stored course pages state in words (fid-det-reader.ts); the database records and gates the readings from this reply (security.fid_det_record_v1).
-    // s891 (20 Nov 2026, CF-247 session S1-CourseLink-2027-CRICOS, Platform Admin 22:58 AEDT): mode link_year_rollover. The caller (security.link_rollover_tick_v1,
-    // run inside the job link-refresh) sends held official course pages whose address carries a past curriculum year. Each is tried at the upcoming year, the current
-    // year, the year before and then at the held address (link-rollover.ts), each by a plain read only (robots.txt respected; never Firecrawl, never a model). The first
-    // address that answers on the same host, is not a "not found" or "no longer offered" page and is proved this course's page by the platform's identity rule (the exact
-    // CRICOS code in Australia) is kept as a stored copy (the read lane's own path and format) and returned; the database decides (security.link_rollover_record_v1).
-    if (mode === "link_year_rollover") {
-      const items: { item_id: string; course_id: string; provider_id: string; url: string; code: string; title: string; country: string }[] = (Array.isArray(body.items) ? body.items : []).slice(0, 40);  // fixed: bound on one call (fetches and response size)
-      const now = Number(body.now_year) || new Date().getUTCFullYear();
-      const minChars = Number(body.min_chars) > 0 ? Number(body.min_chars) : 1500;
-      const markers: string[] = Array.isArray(body.markers) ? body.markers.map(String) : [];
-      const out: unknown[] = [];
-      await pool(items, Math.min(Math.max(1, Number(body.at_once) || 4), 8), async (it) => {  // fixed: at most 8 courses at once on one call
-        const tries: { url: string; year: number | null; http: number | null; final_url: string | null; reason: string; identity?: string | null }[] = [];
-        let chosen: Record<string, unknown> | null = null;
-        for (const cand of yearCandidates(it.url, now)) {
-          if (Date.now() - t0 > BUDGET_MS) { tries.push({ url: cand.url, year: cand.year, http: null, final_url: null, reason: "call_time_used" }); break }
-          let http: number | null = null, finalUrl = cand.url, html = "";
-          try {
-            const u = new URL(cand.url);
-            if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) { tries.push({ url: cand.url, year: cand.year, http: null, final_url: null, reason: "robots_disallowed" }); continue }
-            const r = await fetch(u, { headers: { "user-agent": UA, accept: "text/html,application/xhtml+xml" }, redirect: "follow", signal: AbortSignal.timeout(20000) });  // fixed: API time-out
-            http = r.status; finalUrl = r.url || cand.url;
-            if (r.ok && /html/i.test(r.headers.get("content-type") || "html")) html = await r.text();
-          } catch { http = null }
-          const text = html ? htmlToText(html) : "";
-          const ad = html && adapters[it.provider_id] ? applyAdapter(adapters[it.provider_id], html, { title: it.title, code: it.code, country: it.country || "", status: "bound" }, VERSION) : null;
-          const ans = pageAnswer({ http, requested: cand.url, finalUrl, year: cand.year, text, minChars, markers, jsonIdentity: !!(ad?.json_found && ad.identity) });
-          if (!ans.ok) { tries.push({ url: cand.url, year: cand.year, http, final_url: finalUrl, reason: ans.reason }); continue }
-          const basis = identity(html, text, it.title, it.code, false, it.country || "") || ad?.identity || null;
-          if (!strongIdentity(basis, it.country || "")) { tries.push({ url: cand.url, year: cand.year, http, final_url: finalUrl, reason: "not_proved_this_course", identity: basis }); continue }
-          const textSha = await sha256(new TextEncoder().encode(normText(text)));
-          const gz = await gzip(html), sha = await sha256(new TextEncoder().encode(html));
-          const path = `layer2/${["NZ", "CA"].includes(it.country) ? it.country : "AU"}/coverage/${it.provider_id}/${it.course_id}/${sha}.html.gz`;
-          const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
-          if (up.error) { tries.push({ url: cand.url, year: cand.year, http, final_url: finalUrl, reason: "store_failed", identity: basis }); continue }
-          const candidates = ad?.candidates && (ad.json_found || String(basis).startsWith("adapter_")) ? { ...(ad.candidates as Record<string, unknown>), final_url: finalUrl, text_sha: textSha }
-            : { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text, currencyFor(it.country)), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION, text_sha: textSha };
-          tries.push({ url: cand.url, year: cand.year, http, final_url: finalUrl, reason: "proved", identity: basis });
-          chosen = { url: finalUrl, requested: cand.url, year: cand.year, held: cand.held, http, identity: basis, chars: text.length, storage_path: path, sha256: sha, candidates };
-          break;
-        }
-        out.push({ item_id: it.item_id, course_id: it.course_id, chosen, tries });
-      });
-      return j({ ok: true, mode, rule: LINK_ROLLOVER_VERSION, run_id: body.run_id ?? null, items: out, ms: Date.now() - t0, worker: WORKER, workerVersion: VERSION });
-    }
     if (mode === "fid_det_read") {
       const items: { course_id: string; evidence_id: string; storage_path: string; country: string }[] = (Array.isArray(body.items) ? body.items : []).slice(0, 40);  // fixed: bound on one call (CPU and response size)
       const out: unknown[] = [];

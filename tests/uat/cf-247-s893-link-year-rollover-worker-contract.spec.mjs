@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const start = IX.indexOf('if (mode === "link_year_rollover") {'), end = IX.indexOf('if (mode === "fid_det_read") {')
+const start = IX.indexOf('if (mode === "link_year_rollover") {'), end = IX.indexOf('if (mode === "read") {')
 const MODE = IX.slice(start, end)
 
 test('s893: the mode is a plain read with robots.txt, an API time-out and the identity rule; no Firecrawl, no model, no database write', () => {
