@@ -112,7 +112,8 @@ begin
            from k group by k.gkey)
   select jsonb_build_object('kind', v_kind, 'built_in', true, 'provider_id', v_prov, 'total', coalesce(sum(g.n), 0), 'refs_max', v_max, 'batch_max', v_batch,
            'groups', coalesce(jsonb_agg(jsonb_build_object('key', g.gkey, 'n', g.n, 'oldest', g.oldest, 'late', g.late,
-                       'label', case when v_kind = 'aer_review' then coalesce((select r->>'label' from jsonb_array_elements(v_aer) r where 'aer:' || (r->>'code') = g.gkey limit 1), g.clause)
+                       'label', case when v_kind = 'aer_review' then coalesce((select r->>'label' from jsonb_array_elements(v_aer) r where 'aer:' || (r->>'code') = g.gkey limit 1),
+                                                   upper(substr(g.gkey, 5, 1)) || replace(substr(g.gkey, 6), '_', ' '))
                                      when v_kind = 'provider_description' then null else nullif(g.clause, '') end,
                        'refs', to_jsonb(g.refs)) order by g.n desc, g.gkey), '[]'::jsonb),
            'as_at', now(), 'ms', round(extract(epoch from clock_timestamp() - t0) * 1000)::int)
