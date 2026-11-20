@@ -29,4 +29,5 @@ test('s890: the decision goes through the screen path for 02475D only, with no l
 test('s890: the held reading is admitted with its item (md5-guarded edit)', () => {
   expect(code).toContain("'c332bdfe60b67b8ce57f6e5e24709fe4'")
   expect(code).toContain("or id = nullif(i.proposed_value->>''read_id'', '''')::uuid) and provider_id = i.entity_id")
+  expect(code).toContain("updated_at = now(), review_item_id = i.id")
 })

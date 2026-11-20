@@ -14,7 +14,8 @@
 --     and listed in Human Edits & Periodic Audit. Rehearsed rolled back 23:14 (run 44734083037): admitted, item resolved, locks 7,585.
 --   2 Fixes what the rehearsal showed: a university opened for writing from a held reading kept that reading held after its text was admitted,
 --     because the reading was not linked to the new item. security.layer4_description_human_admit_v1 now also admits the reading the item names
---     (proposed_value read_id). md5-guarded edit (c332bdfe, read live 23:14); no other line changes.
+--     (proposed_value read_id) and links it to the item, so the following statement, which supersedes the provider's other admitted readings, keeps it.
+--     md5-guarded edit (c332bdfe, read live 23:14); no other line changes.
 -- Not changed: 02475D stays active and published with its 35 courses (no lifecycle event, no archive, no re-parenting); the host owner record; UTS;
 -- the consumer API (G3 75 functions and 48 relations, read before and after); the manual locks (7,585 before and after); no AI or Firecrawl call.
 -- Numbering: spec s890 (s884-s886 are S1-ELR's in an open pull request); migration 20261120231000, above the live head 20261120200000 and
@@ -41,9 +42,13 @@ do $e$
 declare v_def text := pg_get_functiondef('security.layer4_description_human_admit_v1(uuid,uuid,jsonb,text)'::regprocedure);
         v_old constant text := 'where review_item_id = i.id and state in (''proposed'', ''held'');';
         v_new constant text := 'where (review_item_id = i.id or id = nullif(i.proposed_value->>''read_id'', '''')::uuid) and provider_id = i.entity_id and state in (''proposed'', ''held'');  -- s890: a reading opened for writing is linked by read_id';
+        v_old2 constant text := 'jsonb_build_object(''admission_source'', ''human_input''), updated_at = now()';
+        v_new2 constant text := 'jsonb_build_object(''admission_source'', ''human_input''), updated_at = now(), review_item_id = i.id';
 begin
   if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 then raise exception 'guard: the reading update is not found exactly once'; end if;
-  execute replace(v_def, v_old, v_new);
+  if (length(v_def) - length(replace(v_def, v_old2, ''))) / length(v_old2) <> 1 then raise exception 'guard: the reading admission is not found exactly once'; end if;
+  -- the admitted reading is linked to its item, so the next statement (which supersedes other admitted readings) keeps it
+  execute replace(replace(v_def, v_old, v_new), v_old2, v_new2);
 end $e$;
 
 -- 1 the Platform Admin's decision for CRICOS 02475D ---------------------------------------------------------------------------------------------
