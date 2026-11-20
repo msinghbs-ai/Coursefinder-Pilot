@@ -8,13 +8,16 @@
 --    It reads the quotes already held; no page is read again and no AI is asked (it runs before the held re-check would ask the AI again).
 -- 2. Classifier (scholarship-coverage-classify, failed 07:29, 08:29 and 09:29 at 120.1 s): its Coverage snapshot called the university test and
 --    security.fc_sch_eligible_v1 once per provider (about 2,600), and each call planned security.third_party_host_v1 again. Both are now worked
---    out for all providers at once (security.scholarship_university_ids_v1, security.fc_sch_eligible_ids_v1; the same answers, proved below).
+--    out for all providers at once (security.scholarship_university_ids_v1, security.fc_sch_eligible_ids_v1; the same answers, proved below):
+--    70 to 120 s became about 8 s. The snapshot now runs on its own (rollup target scholarship-coverage-snapshot, hourly at :34) instead of
+--    inside the classifier. The classifier's case reader also called security.third_party_host_v1 once per page candidate (now read once), and
+--    its batch stops at sch_cov.classify_candidate_budget candidates: this hour's 80 providers held 14,216 candidates (about 3 to 5 ms each).
 -- 3. Full attribute sync (scholarship-course-attribute-full, failed 07:51 on 19 and 20 Nov at 120.1 s): 15,890 courses in 2,000-course batches in
 --    one call. A full pass now works in chunks (batch.sch_attr_chunk) until a time budget (sch_attr.full_run_seconds) and keeps its place; the
 --    15-minute run continues it until every course is done.
 -- Parity before writing (read live 20 Nov 2026 10:47 AEDT): head 20261120110000, 2,207 rows; numbered above it.
--- G1: one rollup target (scholarship-domestic-rule, rollup-scheduler; no cron job). G2: seven settings. G3: no consumer object changes. No spend.
--- Replaces: the per-provider university and eligibility calls in security.scholarship_provider_coverage_refresh_v1; the single-call full pass of security.scholarship_course_attribute_sync_v1.
+-- G1: two rollup targets (scholarship-domestic-rule, scholarship-coverage-snapshot; rollup-scheduler; no cron job). G2: eight settings. G3: no consumer object changes. No spend.
+-- Replaces: the Coverage snapshot inside scholarship-coverage-classify (now its own rollup target); the unbounded classifier batch; the per-provider university and eligibility calls in security.scholarship_provider_coverage_refresh_v1; the per-page host check in security.scholarship_coverage_items_v1; the single-call full pass of security.scholarship_course_attribute_sync_v1.
 -- Retires: nothing.
 
 insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason)
@@ -32,6 +35,8 @@ values
   null, null, 'patterns', 3313, 'Scholarships', 'security.scholarship_domestic_quote_v1', 'CF-247 s815: "preference will be given to" is not domestic-only'),
  ('pipeline', 'batch.sch_domestic_rule', 'Domestic-only rule: reviews a run', 'Held scholarships the domestic-only rule reads in one run.',
   'number', '200'::jsonb, 1, 2000, 'reviews', 3314, 'Job sizes', 'security.scholarship_domestic_rule_v1 (rollup target scholarship-domestic-rule)', 'CF-247 s815'),
+ ('pipeline', 'sch_cov.classify_candidate_budget', 'Scholarship classifier: candidate pages a run', 'The classifier takes providers in its usual order until their scholarship page candidates reach this many (always at least one provider); about 3 to 5 ms a candidate.',
+  'number', '1500'::jsonb, 100, 20000, 'candidates', 3317, 'Job sizes', 'security.scholarship_coverage_classify_v1', 'CF-247 s815 (IQ-00239 / IQ-00241): 80 providers held 14,216 candidates and ran past 120 s'),
  ('pipeline', 'sch_attr.full_run_seconds', 'Full scholarship attribute sync: seconds a run', 'A full pass of the scholarship attributes on course search documents works for this long, then continues on the next run.',
   'number', '60'::jsonb, 10, 100, 'seconds', 3315, 'Scholarships', 'security.scholarship_course_attribute_sync_v1', 'CF-247 s815 (IQ-00613): the full pass timed out at 120 s'),
  ('pipeline', 'batch.sch_attr_chunk', 'Scholarship attribute sync: courses a chunk', 'Courses refreshed together by the scholarship attribute sync.',
@@ -117,30 +122,32 @@ comment on function security.scholarship_university_ids_v1() is 'CF-247 s815: ev
 create or replace function security.fc_sch_eligible_ids_v1(p_ids uuid[])
 returns table(provider_id uuid, eligible boolean) language sql stable security definer set search_path to '' as $f$
   -- security.fc_sch_eligible_v1 for many providers at once: the legitimacy test while scholarship.legitimacy_checks_on (and the pilot scope),
-  -- else not Australian or at least scholarship_min_courses CRICOS-coded courses; the third-party host list is read once
+  -- else not Australian or at least scholarship_min_courses CRICOS-coded courses. The settings, the third-party host list, the universities and
+  -- the course counts are each read once.
   with ids as (select distinct x id from unnest(p_ids) x where x is not null),
+  cfg as materialized (select security.scholarship_flag_v1('scholarship.legitimacy_checks_on', false) legit, security.scholarship_flag_v1('scholarship.pilot_only', true) pilot_only,
+                              security.pipeline_num_v1('scholarship.legitimacy_min_courses', 1) min_courses, security.fc_setting_num_v1('scholarship_min_courses', 30) fc_min),
   univ as materialized (select u from security.scholarship_university_ids_v1() u),
   lnk as materialized (select l.domain from pipeline.important_links l where l.enabled and l.retired_at is null and l.domain is not null
                          and 'not_provider_site' = any (l.uses) and l.authority_category in ('third_party_directory', 'general_web', 'ranking_publisher')),
+  cc as materialized (select c.provider_id, count(*) filter (where c.lifecycle_status = 'active') n_active,
+                             count(*) filter (where c.lifecycle_status = 'active' and c.course_code ~ '^[0-9]{6}[0-9A-Z]$') n_cricos
+                        from catalogue.courses c where c.provider_id in (select i.id from ids i) group by c.provider_id),
   b as (select i.id, p.id pid, p.lifecycle_status, p.publication_status, p.enrols_international, p.website, k.iso_alpha2, t.status t_status, t.code t_code,
-               security.site_host_v1(p.website) h
-          from ids i left join catalogue.providers p on p.id = i.id left join ref.countries k on k.id = p.country_id left join ref.provider_types t on t.id = p.provider_type_id),
+               nullif(lower(regexp_replace(substring(btrim(coalesce(p.website, '')) from '^(?:https?://)?([^/:?#\s]+)'), '^www\.', '')), '') h,  -- security.site_host_v1
+               coalesce(cc.n_active, 0) n_active, coalesce(cc.n_cricos, 0) n_cricos, i.id in (select u.u from univ u) is_univ
+          from ids i left join catalogue.providers p on p.id = i.id left join ref.countries k on k.id = p.country_id
+          left join ref.provider_types t on t.id = p.provider_type_id left join cc on cc.provider_id = i.id),
   w as (select b.*, nullif(btrim(coalesce(b.website, '')), '') is not null
                     and not coalesce((select bool_or(case when l.domain like '%.%' then b.h = l.domain or b.h like '%.' || l.domain else b.h ~ ('(^|\.)' || l.domain) end)
                                         from lnk l where b.h is not null), false) site_ok
           from b)
   select w.id,
-         case when security.scholarship_flag_v1('scholarship.legitimacy_checks_on', false)
-                   and (not security.scholarship_flag_v1('scholarship.pilot_only', true) or security.scholarship_pilot_member_v1(w.id))
+         case when cfg.legit and (not cfg.pilot_only or security.scholarship_pilot_member_v1(w.id))
               then coalesce(w.pid is not null and w.lifecycle_status = 'active' and w.publication_status = 'published' and w.enrols_international is not false and w.site_ok
-                   and ((w.t_status = 'active' and w.t_code <> 'school'
-                         and (select count(*) from catalogue.courses c where c.provider_id = w.id and c.lifecycle_status = 'active')
-                             >= security.pipeline_num_v1('scholarship.legitimacy_min_courses', 1))
-                        or w.id in (select u.u from univ u)), false)
-              else w.iso_alpha2 is distinct from 'AU'
-                   or (select count(*)::int from catalogue.courses c where c.provider_id = w.id and c.lifecycle_status = 'active' and c.course_code ~ '^[0-9]{6}[0-9A-Z]$')
-                      >= security.fc_setting_num_v1('scholarship_min_courses', 30) end
-    from w
+                   and ((w.t_status = 'active' and w.t_code <> 'school' and w.n_active >= cfg.min_courses) or w.is_univ), false)
+              else w.iso_alpha2 is distinct from 'AU' or w.n_cricos >= cfg.fc_min end
+    from w cross join cfg
 $f$;
 revoke all on function security.fc_sch_eligible_ids_v1(uuid[]) from public, anon, authenticated;
 comment on function security.fc_sch_eligible_ids_v1(uuid[]) is 'CF-247 s815: security.fc_sch_eligible_v1 for many providers at once (third-party hosts and universities read once).';
@@ -171,6 +178,48 @@ cand as (
         $n$el.eligible search_eligible,$n$,
         $n$    left join rv v on v.provider_id = p.id left join fc f on f.provider_id = p.id
     left join elig el on el.provider_id = p.id)$n$]);
+
+-- the classifier's own case reader called security.third_party_host_v1 once per scholarship page candidate of the batch; the host list is now read once
+do $$ begin
+  perform set_config('cf.s815_items_before', (select md5(coalesce(string_agg(md5(row(x.*)::text), ',' order by md5(row(x.*)::text)), ''))
+                                                from security.scholarship_coverage_items_v1(array(select c.provider_id from pipeline.scholarship_coverage_providers c order by c.provider_id limit 30)) x), true);
+end $$;
+select pg_temp.cf_edit_def('security.scholarship_coverage_items_v1(uuid[])'::regprocedure, '6931746c40448bd7182472dd1f8b433e',
+  array[$o$  lst as (select l.* from pipeline.scholarship_listing_pages l join pv on pv.id = l.provider_id),$o$,
+        $o$security.third_party_host_v1(coalesce(c.url, '')) dir$o$],
+  array[$n$  lnk as materialized (select l.domain from pipeline.important_links l where l.enabled and l.retired_at is null and l.domain is not null  -- s815: read once
+                         and 'not_provider_site' = any (l.uses) and l.authority_category in ('third_party_directory', 'general_web', 'ranking_publisher')),
+  lst as (select l.* from pipeline.scholarship_listing_pages l join pv on pv.id = l.provider_id),$n$,
+        $n$coalesce((select bool_or(case when l.domain like '%.%' then hx.h = l.domain or hx.h like '%.' || l.domain else hx.h ~ ('(^|\.)' || l.domain) end)
+                     from lnk l, (select nullif(lower(regexp_replace(substring(btrim(coalesce(c.url, '')) from '^(?:https?://)?([^/:?#\s]+)'), '^www\.', '')), '') h) hx
+                    where hx.h is not null), false) dir  -- s815: security.third_party_host_v1 with the host list read once$n$]);
+do $$ begin
+  if (select md5(coalesce(string_agg(md5(row(x.*)::text), ',' order by md5(row(x.*)::text)), ''))
+        from security.scholarship_coverage_items_v1(array(select c.provider_id from pipeline.scholarship_coverage_providers c order by c.provider_id limit 30)) x)
+     is distinct from current_setting('cf.s815_items_before', true) then
+    raise exception 'post-check: the classifier''s cases changed for the same 30 providers'; end if;
+end $$;
+
+
+-- the classifier: its batch stops at a candidate budget, and the Coverage snapshot runs on its own rollup target
+select pg_temp.cf_edit_def('security.scholarship_coverage_classify_v1(uuid[])'::regprocedure, '3e32a64f1f816f41d1fc7d61708ba6dc',
+  array[$o$       limit security.pipeline_num_v1('batch.sch_coverage_classify', 40)::int) x;$o$,
+        $o$  if p_providers is null then
+    begin perform security.scholarship_provider_coverage_refresh_v1();
+    exception when others then raise warning 'scholarship_provider_coverage_refresh_v1: %', sqlerrm; end;
+  end if;$o$],
+  array[$n$       limit security.pipeline_num_v1('batch.sch_coverage_classify', 40)::int) x;
+    -- s815: the batch stops at sch_cov.classify_candidate_budget scholarship page candidates (at least the first provider)
+    select coalesce(array_agg(z.id order by z.n), '{}') into v_ids from (
+      select u.id, u.n, sum(coalesce(k.c, 0)) over (order by u.n) cum
+        from unnest(v_ids) with ordinality u(id, n)
+        left join (select q.provider_id, count(*) c from pipeline.scholarship_page_candidates q where q.provider_id = any (v_ids) group by q.provider_id) k on k.provider_id = u.id) z
+     where z.n = 1 or z.cum <= security.pipeline_num_v1('sch_cov.classify_candidate_budget', 1500);$n$,
+        $n$  -- s815: the Coverage snapshot (security.scholarship_provider_coverage_refresh_v1) runs on its own rollup target, scholarship-coverage-snapshot$n$]);
+insert into pipeline.rollup_targets(target_code, legacy_job, call_sql, call_md5, schedule, rollup_group, priority, enabled, mode, expected_ms, note)
+values ('scholarship-coverage-snapshot', null, 'select security.scholarship_provider_coverage_refresh_v1()', md5('select security.scholarship_provider_coverage_refresh_v1()'), '34 * * * *', 'A', 75, true, 'live', 9000,
+        's815 (20 Nov 2026): the per-provider scholarship coverage snapshot (Coverage › All providers), moved out of scholarship-coverage-classify; about 8 s set-based (was 70 to 120 s).')
+on conflict (target_code) do nothing;
 
 -- 3. the full scholarship attribute sync works in chunks within a time budget and keeps its place
 alter table pipeline.scholarship_attribute_sync add column if not exists full_cursor uuid, add column if not exists full_started_at timestamptz,
@@ -234,14 +283,14 @@ do $$
 declare v_o text := ''; t0 timestamptz; v_ms int; v_cms int; v_r jsonb; v_n int; v_ids uuid[];
 begin
   -- the university test: the same providers
-  if exists (select u from security.scholarship_university_ids_v1() u except select p.id from catalogue.providers p where security.scholarship_university(p.id))
-     or exists (select p.id from catalogue.providers p where security.scholarship_university(p.id) except select u from security.scholarship_university_ids_v1() u) then
-    raise exception 'post-check: the university set differs'; end if;
-  -- eligibility: the same answer for a spread of 400 providers (every country and kind)
-  v_ids := array(select p.id from catalogue.providers p order by md5(p.id::text) limit 400);
+  v_ids := array(select p.id from catalogue.providers p order by md5(p.id::text) limit 600);
+  select count(*) into v_n from unnest(v_ids) x(id)
+   where security.scholarship_university(x.id) is distinct from (x.id in (select u from security.scholarship_university_ids_v1() u));
+  if v_n > 0 then raise exception 'post-check: the university test differs for % providers', v_n; end if;
+  -- eligibility: the same answer for the same 600 providers (every country and kind)
   select count(*) into v_n from security.fc_sch_eligible_ids_v1(v_ids) e where e.eligible is distinct from security.fc_sch_eligible_v1(e.provider_id);
   if v_n > 0 then raise exception 'post-check: eligibility differs for % providers', v_n; end if;
-  v_o := 'same universities (' || (select count(*) from security.scholarship_university_ids_v1()) || ') and eligibility (400 providers)';
+  v_o := 'same university test (600 providers; ' || (select count(*) from security.scholarship_university_ids_v1()) || ' universities) and eligibility (600 providers)';
   -- the Coverage snapshot and the classifier, timed (rolled back)
   t0 := clock_timestamp();
   begin perform security.scholarship_provider_coverage_refresh_v1(); raise exception 'cf-s815-undo';
@@ -252,7 +301,7 @@ begin
   exception when others then if sqlerrm <> 'cf-s815-undo' then raise exception 'post-check: the classifier failed: %', sqlerrm; end if; end;
   v_cms := round(extract(epoch from clock_timestamp() - t0) * 1000);
   v_o := v_o || ' | snapshot ' || v_ms || ' ms (was 70 to 120 s) | classifier run ' || v_cms || ' ms';
-  if v_cms > 60000 then raise exception 'post-check: the classifier took % ms', v_cms; end if;
+  if v_cms > 20000 then raise exception 'post-check: the classifier took % ms', v_cms; end if;
   -- the domestic-only rule
   if security.scholarship_domestic_quote_v1('this scholarship is offered to commencing Indigenous Australian students of exceptional research potential') is null
      or security.scholarship_domestic_quote_v1('Preference will be given to Canadian Citizens.') is not null
@@ -275,7 +324,7 @@ begin
     v_o := v_o || ' | full attribute run ' || round(extract(epoch from clock_timestamp() - t0) * 1000) || ' ms, ' || (v_r->'full_pass'->>'courses') || ' courses, finished ' || (v_r->'full_pass'->>'finished');
     raise exception 'cf-s815-undo';
   exception when others then if sqlerrm <> 'cf-s815-undo' then raise exception 'post-check: the full attribute run failed: %', sqlerrm; end if; end;
-  if not exists (select 1 from pipeline.rollup_targets where target_code = 'scholarship-domestic-rule' and mode = 'live' and enabled and call_md5 = md5(call_sql)) then
-    raise exception 'post-check: the rollup target is not live'; end if;
+  if (select count(*) from pipeline.rollup_targets where target_code in ('scholarship-domestic-rule', 'scholarship-coverage-snapshot') and mode = 'live' and enabled and call_md5 = md5(call_sql)) <> 2 then
+    raise exception 'post-check: the rollup targets are not live'; end if;
   perform set_config('cf.diag', v_o, true);
 end $$;
