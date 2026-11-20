@@ -315,13 +315,13 @@ select cron.schedule('aer-det-sweep', '3-58/5 * * * *', 'select security.aer_det
 where not exists (select 1 from cron.job where jobname = 'aer-det-sweep');
 
 insert into pipeline.component_register (kind, name, layer, area, purpose, status, replaces, introduced_in) values
-  ('job', 'aer-det-sweep', 'Layer 3', 'Admission checks', 'Sweeps stored course pages with the deterministic academic entry reader and proposes the readings, every 5 minutes', 'active', '{}', '20261120160000'),
-  ('table', 'pipeline.aer_det_academic_pages', 'Layer 3', 'Admission checks', 'Stored pages read by the deterministic academic entry reader and what became of each', 'active', '{}', '20261120160000'),
-  ('table', 'pipeline.aer_det_academic_readings', 'Layer 3', 'Admission checks', 'Academic entry readings with their verbatim quotes (no English tests)', 'active', '{}', '20261120160000'),
-  ('table', 'pipeline.aer_det_sweep_calls', 'Layer 3', 'Admission checks', 'Worker calls the sweep sent and their collected answers', 'active', '{}', '20261120160000'),
-  ('function', 'security.aer_det_record_v2', 'Layer 3', 'Admission checks', 'Writes the academic readings of pages the deterministic reader read', 'active', '{}', '20261120160000'),
-  ('function', 'security.aer_det_propose_v1', 'Layer 3', 'Admission checks', 'Proposes academic readings as course entry rows and a Layer 4 item', 'active', '{}', '20261120160000'),
-  ('function', 'security.aer_det_sweep_v1', 'Layer 3', 'Admission checks', 'One tick of the deterministic academic reader sweep', 'active', '{}', '20261120160000')
+  ('job', 'aer-det-sweep', 'Layer 3', 'Admission checks', 'Sweeps stored course pages with the deterministic academic entry reader and proposes the readings, every 5 minutes', 'active', '{}', '20261120163000'),
+  ('table', 'pipeline.aer_det_academic_pages', 'Layer 3', 'Admission checks', 'Stored pages read by the deterministic academic entry reader and what became of each', 'active', '{}', '20261120163000'),
+  ('table', 'pipeline.aer_det_academic_readings', 'Layer 3', 'Admission checks', 'Academic entry readings with their verbatim quotes (no English tests)', 'active', '{}', '20261120163000'),
+  ('table', 'pipeline.aer_det_sweep_calls', 'Layer 3', 'Admission checks', 'Worker calls the sweep sent and their collected answers', 'active', '{}', '20261120163000'),
+  ('function', 'security.aer_det_record_v2', 'Layer 3', 'Admission checks', 'Writes the academic readings of pages the deterministic reader read', 'active', '{}', '20261120163000'),
+  ('function', 'security.aer_det_propose_v1', 'Layer 3', 'Admission checks', 'Proposes academic readings as course entry rows and a Layer 4 item', 'active', '{}', '20261120163000'),
+  ('function', 'security.aer_det_sweep_v1', 'Layer 3', 'Admission checks', 'One tick of the deterministic academic reader sweep', 'active', '{}', '20261120163000')
 on conflict do nothing;
 
 -- 6. post-checks. The synthetic proposal runs inside a block that is rolled back (it raises P0099 at the end), so nothing it writes stays.

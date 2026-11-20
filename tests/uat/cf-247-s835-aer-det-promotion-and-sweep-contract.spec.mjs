@@ -1,9 +1,9 @@
 // Guards: S835 automated deterministic academic AER promotion and scheduled sweep (Platform Admin 20 Nov 2026 15:08 AEDT; Decision 276: the AI and Boost aer_entry readers stay shadow only; G1 job catalogued; G2 no number in a job command; G3 no public object; housekeeping s42; AER and English are separate)
-// CF-247 S835. Migration 20261120160000_cf247_s835_aer_det_academic_promotion_and_sweep.sql, reader aer-det-v1.3, worker mode aer_det_read.
+// CF-247 S835. Migration 20261120163000_cf247_s835_aer_det_academic_promotion_and_sweep.sql, reader aer-det-v1.3, worker mode aer_det_read.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261120160000_cf247_s835_aer_det_academic_promotion_and_sweep.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261120163000_cf247_s835_aer_det_academic_promotion_and_sweep.sql', 'utf8')
 const READER = fs.readFileSync('supabase/functions/coverage-sweep/aer-det-reader.ts', 'utf8')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const RUN = fs.readFileSync('scripts/aer-det-read.mjs', 'utf8')
