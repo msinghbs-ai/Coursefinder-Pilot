@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 s880 (Platform Admin 20 Nov 2026 17:00): merge a pull request labelled `automerge` once it is mergeable and every check is green,
+# CF-247 s880 (Platform Admin 20 Nov 2026 17:00; one-off checks report without failing, s881): merge a pull request labelled `automerge` once it is mergeable and every check is green,
 # then delete its branch. Used by .github/workflows/auto-merge.yml in this repository and, byte for byte, in coursefinder-admin.
 #
 #   PR=<number> MODE=wait|once REPO=<owner/name> scripts/ci/auto-merge.sh
@@ -26,6 +26,8 @@ SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/null}"
 
 say() { echo "$1"; echo "- $1" >> "$SUMMARY"; }
 comment() { gh api "repos/$REPO/issues/$PR/comments" -f body="$1" >/dev/null 2>&1 || true; }
+# a stop: the waiting run (MODE=wait) comments once and fails; a one-off check (MODE=once, run on every finished check suite) only reports
+stop() { say "$1"; if [ "$MODE" = wait ]; then comment "$2"; exit 1; fi; exit 0; }
 
 deadline=$(( $(date +%s) + WAIT_MINUTES * 60 ))
 [ "$MODE" = wait ] && sleep 30   # fixed: let the checks of a new push register before the first look
@@ -40,7 +42,7 @@ while :; do
   head=$(jq -r .head.sha <<<"$pr"); ref=$(jq -r .head.ref <<<"$pr"); title=$(jq -r .title <<<"$pr")
   mergeable=$(jq -r .mergeable <<<"$pr"); mstate=$(jq -r .mergeable_state <<<"$pr")
   if [ "$mergeable" = false ] || [ "$mstate" = dirty ]; then
-    say "#$PR has merge conflicts with main."; comment "Auto-merge stopped: this pull request conflicts with \`main\`. Update the branch; the next push starts the wait again."; exit 1
+    stop "#$PR has merge conflicts with main." "Auto-merge stopped: this pull request conflicts with \`main\`. Update the branch; the next push starts the wait again." 
   fi
 
   runs=$(gh api "repos/$REPO/commits/$head/check-runs?per_page=100&filter=latest" --jq "[.check_runs[] | select(.name != \"$SELF\")]")
@@ -60,7 +62,7 @@ while :; do
   fi
 
   if [ -n "$failed" ] || [ "$sstate" = failure ] || [ "$sstate" = error ]; then
-    say "#$PR has failing checks: ${failed:-commit status $sstate}."; comment "Auto-merge stopped: failing checks (${failed:-commit status $sstate}). Fix and push; the next push starts the wait again."; exit 1
+    stop "#$PR has failing checks: ${failed:-commit status $sstate}." "Auto-merge stopped: failing checks (${failed:-commit status $sstate}). Fix and push; the next push starts the wait again." 
   fi
   if [ -z "$pending" ] && [ -z "$cancelled" ] && [ "$total" -ge "$MIN_CHECKS" ] && { [ "$sstate" = success ] || [ "$scount" = 0 ]; } \
      && [ "$dry_ok" = yes ] && [ "$mergeable" = true ]; then
