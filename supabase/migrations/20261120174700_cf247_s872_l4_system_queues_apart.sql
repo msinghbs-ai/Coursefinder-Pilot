@@ -92,8 +92,7 @@ begin
                        else 'other' end)
                      when v_kind = 'aer_review' then (case when exists (select 1 from pipeline.layer4_item_groups x where x.kind = 'aer_review' and x.ref = i.ref and x.grp = 'B' and x.state = 'waiting')
                                                             then 'aerb:' else 'aer:' end) || coalesce(substring(i.why from 'did not admit this: ([a-z_]+)'), 'other')
-                     else v_kind || ':' || lower(i.clause) end gkey,
-                i.sys
+                     else v_kind || ':' || lower(i.clause) end gkey
            from i),
        k2 as (select (case when k.sys and v_kind <> 'aer_review' then 'sys~' else '' end) || k.gkey gkey, k.created_at, k.ref, k.clause from k),
        g as (

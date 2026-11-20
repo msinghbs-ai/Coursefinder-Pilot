@@ -9,7 +9,7 @@ import{ExternalLink}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button}from'./ui-kit'
 import{checkDescription,isEdited,stripBanned,holdReason,markBanned}from'./lib/description-check.js'
-import{cdRailOf}from'./lib/l4-rules.js'
+import{cdRailOf,plainHold}from'./lib/l4-rules.js'
 import HelpButton from'./HelpDrawer' // S1-UX s827: the ? help drawer, on the hold banner (S1-RM-Design, 20 Nov 2026 13:07)
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
@@ -40,7 +40,7 @@ export function HoldBanner({it,candidate,rules,label=''}){
 // the ? help and the machine reason under Technical detail. The card's own decisions stay as they are.
 export function CardHold({it,label}){
   return <div className="dea-hold dea-hold-card" role="note" data-dea-hold="card" data-l4-hold>
-    <strong>Main hold reason: {label}</strong>
+    <strong>Main hold reason: {plainHold(label)}</strong>
     <span className="dea-hold-help"><HelpButton topic="layer4" label="Help: deciding a held item"/></span>
     {it?.why&&<details className="dea-tech"><summary>Technical detail</summary><p className="l4i-why" data-dea-hold-code>{it.why}</p></details>}
   </div>
