@@ -73,3 +73,11 @@ export function strongIdentity(basis: string | null | undefined, country: string
   if (country.toUpperCase() === "AU") return b === "cricos_code" || b === "adapter_code";
   return b === "nzqa_code" || b === "adapter_code";
 }
+
+/** s894: a stored copy of the held address may prove it only when it is a course page, not a "not found" or "no longer offered" one (identity is checked by the caller). */
+export function storedCopyAnswer(p: { text: string; year: number | null; markers: string[] }): { ok: boolean; reason: string } {
+  if (!p.text || p.text.trim().length < 200) return { ok: false, reason: "empty" };
+  const low = p.text.toLowerCase();
+  const hit = p.markers.map((m) => String(m || "").toLowerCase().trim()).filter(Boolean).find((m) => low.includes(m.replace("{year}", String(p.year ?? ""))));
+  return hit ? { ok: false, reason: `says: ${hit}` } : { ok: true, reason: "stored_copy" };
+}
