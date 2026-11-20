@@ -14,7 +14,8 @@
 --   3 The 119 items not proved are due again at once (their check time is moved back), so the next runs try them with the stored copy.
 -- Not changed: the consumer API (G3 75 functions and 48 relations, read before and after), the manual locks (7,585, checked before and after), the jobs (no new
 -- job; 137 active), the rule's other checks (locked, refused before, own host, archived handbook). Nothing dropped or deleted. $0.
--- Numbering: spec s894; migration 20261121080000, above the live head 20261120235000.
+-- Numbering: spec s894; migration 20261121093000. First issued as 20261121080000, a version S1-ELR-Central-Policy applied first (#1443, s895-s896): the file was
+-- never applied under that version, so it is issued again above the live head 20261121090000 (s900). Deploy on merge refused the duplicate and ran nothing.
 -- Replaces: security.link_rollover_claim_v1 (by security.link_rollover_claim_v2 in the tick).
 -- Retires: security.link_rollover_claim_v1 (component register: retiring, replaced_by security.link_rollover_claim_v2, retire_after 5 Dec 2026).
 set local lock_timeout = '5s';

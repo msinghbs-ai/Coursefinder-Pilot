@@ -4530,6 +4530,7 @@ async function handle(req: Request): Promise<Response> {
         }
         // s894 (Platform Admin 21 Nov 2026 07:35): no live read proved the course, so the stored copy already bound to the held address is read from the evidence
         // store ($0, no fetch); it proves the held address only by the same identity rule and with none of the "not found / no longer offered" words.
+        // (deployed with migration 20261121093000: the first deploy of this change stopped on a shared migration version and deployed nothing)
         const heldCand = yearCandidates(it.url, now).find((x) => x.held);
         if (!chosen && heldCand && it.stored_path) {
           try {

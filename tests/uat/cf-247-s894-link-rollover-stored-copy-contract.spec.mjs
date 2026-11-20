@@ -5,12 +5,13 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { storedCopyAnswer } from '../../supabase/functions/coverage-sweep/link-rollover.ts'
 
-const MIG = fs.readFileSync('supabase/migrations/20261121080000_cf247_s894_link_rollover_stored_copy_tuning.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261121093000_cf247_s894_link_rollover_stored_copy_tuning.sql', 'utf8')
 const code = MIG.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const MODE = IX.slice(IX.indexOf('if (mode === "link_year_rollover") {'), IX.indexOf('if (mode === "read") {'))
 
-test('s894 migration: 8 items a call, claim v2 with the stored copy, md5-guarded edits, G3 and locks, nothing dropped', () => {
+test('s894 migration: one file per version; 8 items a call, claim v2 with the stored copy, md5-guarded edits, G3 and locks, nothing dropped', () => {
+  expect(fs.readdirSync('supabase/migrations').filter(f => f.startsWith('20261121080000')).length).toBe(1)  // the s894 file no longer shares s895-s896's version
   expect(code).toContain("set value = '8'::jsonb")
   expect(code).toContain("if security.pipeline_num_v1('link_rollover.items_per_call', 15) <> 8 then raise exception")
   expect(code).toContain("p.read_status = 'read' and lower(p.url) = lower(u.url) and nullif(ea.storage_path, '') is not null")
