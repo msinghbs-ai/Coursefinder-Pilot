@@ -45,15 +45,15 @@ Keep the catalogue right: decide what waits for a person, correct records by han
 
 ## 5. Where to start
 
-- Dashboard › Waiting for you: the Inbox total opens Layer 4 Review by kind; work the oldest first.
+- Layer 4 Review › Review by rule: choose the queue and the largest rule group; work one card at a time.
 - Layer 1 Register › + Add source › Continue a draft: finish the mapping, then tell a Platform Admin it is ready to activate.
 
 ## 6. Common tasks
 
 ### Work the Inbox
 
-1. Open Layer 4 Review › Inbox (from Dashboard › Waiting for you).
-2. Pick a kind; read the quote and the source page; decide it, or correct the record, where your role allows.
+1. Open Layer 4 Review (Review by rule opens first).
+2. Pick a queue and a rule group; read the quote and the source page; decide it, or correct the record, where your role allows.
 3. The decision is kept with who, when and why.
 
 ### Fix the incomplete providers in a country

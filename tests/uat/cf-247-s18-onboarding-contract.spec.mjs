@@ -140,7 +140,7 @@ test.describe('mocked browser', () => {
   test('no banner when all is fine', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#dashboard')
-    await expect(page.locator('[data-waiting]')).toBeVisible()
+    await expect(page.locator('[data-db-role]')).toBeVisible() // s836: the Dashboard has no Waiting for you
     await expect(page.locator('[data-credit-banner]')).toHaveCount(0)
   })
 

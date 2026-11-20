@@ -67,12 +67,12 @@ test.describe('mocked browser', () => {
     await expect(page.locator('.m-searchbox input')).toHaveValue('Master of Nursing')
   })
 
-  test('Curator: Waiting for you without the operator rows; the role guide opens from the Dashboard', async ({ page }) => {
+  test('Curator: the cards without Active failures (s836: no Waiting for you); the role guide opens from the Dashboard', async ({ page }) => {
     await mockAdmin(page, { rank: 3, role: 'curator' })
     await page.goto('/#dashboard')
     await expect(page.locator('[data-db-role="curator"]')).toBeVisible()
-    await expect(page.locator('[data-waiting]')).toBeVisible()
-    await expect(page.locator('[data-queue="failed_jobs"], [data-queue="failed_automations"]')).toHaveCount(0)
+    await expect(page.locator('[data-waiting]')).toHaveCount(0)
+    await expect(page.locator('[data-db-failures]')).toHaveCount(0)
     await expect(page.locator('[data-db-search]')).toHaveCount(0)
     await page.locator('[data-db-role-guide]').click()
     await expect(page.locator('[data-role-guides]')).toBeVisible()
@@ -81,17 +81,6 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-role-guide-pages]')).not.toContainText('Users & roles')
   })
 
-  test('Platform Admin: Waiting for your approval lists an edition ready to publish and the email route', async ({ page }) => {
-    await mockAdmin(page)
-    await page.route('https://example.supabase.co/rest/v1/rpc/admin_destination_overview', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ editions_list: [{ edition_id: 'e1', country_code: 'AU', domain: 'city_profiles', edition_label: 'ABS Regional population 2024-25', status: 'draft', terms_status: 'approved', rows: 102, rows_approved: 102 }] }) }))
-    await page.route('https://example.supabase.co/rest/v1/rpc/admin_email_delivery_read', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ delivery: { email_provider: 'supabase', key_saved: false, from_email: '', sender_name: 'StudySearch' } }) }))
-    await page.goto('/#dashboard')
-    const a = page.locator('[data-db-approvals]')
-    await expect(a.locator('[data-db-approval="ed:e1"]')).toContainText('ABS Regional population 2024-25')
-    await expect(a.locator('[data-db-approval="ed:e1"]')).toContainText('102 of 102 rows approved')
-    await expect(a.locator('[data-db-approval="mail"]')).toContainText('Supabase Built-in')
-    await expect(page.locator('[data-waiting]')).toBeVisible()
-  })
 
   test('Create user: four steps, inline email check, the role\'s permissions, a confirmation', async ({ page }) => {
     await mockAdmin(page)

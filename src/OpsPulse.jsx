@@ -3,6 +3,8 @@
 // connected flow track, a health meter and the queued count in each stage, and the selected stage's action panel) and Active failures.
 // Every figure comes from the stored ops pulse that admin_read 'platform_health' already returns (pulse key, s823 migration 20261120140000); these
 // components make no read of their own. A stage action opens the existing screen where that stage's governed controls live.
+// s838 (Platform Admin 20 Nov 2026 14:41): stages 2 and 3 also show their rate against the normal rate (capture rate, auto-clean pass rate), from the
+// same stored pulse (rates, migration 20261120145000).
 import React,{useState}from'react'
 import{Activity,ArrowRight,Gauge,Inbox,Landmark,LibraryBig,OctagonAlert,ScanLine,Sparkles,Wallet}from'lucide-react'
 import{STAGES,activeFailures,flowReach,kpiCards,stageCards}from'./lib/ops-pulse.js'
@@ -39,11 +41,13 @@ export function PipelineBoard({pulse}){
         <span className="op-stage-status"><i className={`op-dot tone-${c.tone}`}/>{c.words}</span>
         <span className="op-stage-q"><b data-stage-queued>{fmt(c.queued)}</b><small>{c.queuedLabel}</small></span>
         <span className="op-stage-meter"><small>{c.meter}</small><Meter pct={c.meterPct} label={c.meterText}/><small data-stage-meter>{c.meterText}</small></span>
+        {c.rate&&<span className={`op-stage-meter op-rate tone-${c.rate.tone}`} data-stage-rate={c.rate.key}><small>{c.rate.label}</small><Meter pct={c.rate.pct} label={c.rate.text}/><small>{c.rate.text}</small></span>}
       </button>
       {i<cards.length-1&&<span className={`op-arrow${i+1<reach?' on':''}`} aria-hidden="true"><ArrowRight size={18}/></span>}
     </li>)}</ol>
     <div className={`op-panel tone-${s.tone}`} data-stage-panel={s.n} aria-live="polite">
       <p><strong>{s.name}</strong> — {s.words}.{s.attention.length?` Needs attention: ${s.attention.map(a=>a.label||a.key).join(', ')}.`:''}</p>
+      {s.rate&&<p className="op-hint" data-stage-panel-rate>{s.rate.label}: {s.rate.text}.</p>}
       <p className="op-hint">{s.actionHint}</p>
       <div className="op-actions"><a className="op-btn" href={s.href} data-stage-action={s.key}>{s.action}<ArrowRight size={14}/></a><a className="op-btn ghost" href={s.href}>Open {s.screen}</a></div>
     </div>

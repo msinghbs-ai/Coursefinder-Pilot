@@ -126,7 +126,7 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-db-pulse] [data-kpi]')).toHaveCount(5)
     await expect(page.locator('[data-db-pulse] .op-badge svg')).toHaveCount(5)
     await expect(page.locator('[data-db-pulse] [data-country-bar]')).toHaveCount(3)
-    await expect(page.locator('[data-db-failures] li')).toHaveCount(2)
+    await expect(page.locator('[data-db-failures="0"]')).toContainText('No failure or warning needs a person') // s836: genuine failures only (this answer has no open issue)
   })
 
   test('s826 Layer 4: Waiting, grouped by rule groups the page, previews a batch and narrows the list; the cards keep their own bars', async ({ page }) => {
@@ -156,7 +156,7 @@ test.describe('mocked browser', () => {
 
   test('? help: the header opens three steps for the screen and Escape closes it', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await page.locator('[data-help-open="layer4"]').first().click()
     const d = page.locator('[data-help-drawer="layer4"]')
     await expect(d.locator('[data-help-steps="3"] li')).toHaveCount(3)

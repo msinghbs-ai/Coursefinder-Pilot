@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.35; reviewed-release=2.16.67; source-commit=37bf57965b36; content-sha256=71f7392352259185006699a6ef7d05305a4775f75bd025f823f14718d6a29126 -->
+<!-- sop-export: id=operator-sop; version=2.36; reviewed-release=2.16.68; source-commit=99025a5944af+local; content-sha256=516854f670fe629116d9cf57e148a00b74155fd7db7315e9d1ff34c93be2086e -->
 # StudySearch – Operator SOP
 
-**Version:** 2.35 (reviewed for platform release v2.16.67)  
+**Version:** 2.36 (reviewed for platform release v2.16.68)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -47,7 +47,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | # | Who | Do | Why | Done when |
 |---|---|---|---|---|
 | 1 | Pipeline Operator | Scheduled jobs › Task manager › Background jobs: note any job Failing or Paused and any Workers sending back errors; open a job to see the universities it is working on; mark errors you have dealt with as seen. _(Scheduled jobs › Task manager)_ | The fastest view of a stopped stage (Progress › Running now was retired in v2.15.301; this is the same board). | Nothing Failing without a note. |
-| 2 | Curator | Dashboard › Waiting for you: review items, scholarships to link, onboarding stopped or needing a person, reference sites not reachable, key dates coming up. _(Dashboard)_ | Today's queue for people. | You know what to work first. |
+| 2 | Curator | Layer 4 Review › Review by rule: choose the queue, then the largest rule group; read the card's main hold reason and decide or correct it, card by card. _(Layer 4 Review)_ | Today's queue for people. | You know what to work first. |
 | 3 | Pipeline Operator | Scheduled jobs › Automations: "Failed in the last 24 hours". Read each last error (Platform guide › Signal → action), note the job, the error and when, and hand it on: the PIM Admin paces, pauses or runs it again (the Platform Admin for an automation marked Platform Admin). Do not change its pace or pause it yourself. _(Scheduled jobs › Automations)_ | A failing job stops its stage. | Each failure recorded and handed to the PIM Admin, or raised with the Platform Admin. |
 
 ### Morning: review queues
@@ -118,6 +118,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.36 | 20 Nov 2026 | v2.16.68 | Layer 4 Review opens on Review by rule: the rule groups cover the whole queue, one card at a time with Previous and Next, Preview the batch lists the exact records; By university, By kind, Grid and Decided are under Other views. Cards: amber Main hold reason, banned words marked in yellow, the cleaned text above Remove "word" & Admit, and one bar (Save Edit & Admit, Approve As-Is, Reject on the right). The Dashboard no longer lists Waiting for you. |
 | 2.35 | 20 Nov 2026 | v2.16.67 | Layer 4 › Inbox: Waiting, grouped by rule, on the left groups the cards on the page by the check that holds them; Preview the batch, Show only these, then decide each card on its own bar (or use Grid › Grouped decisions for a server-checked group). A ? on the main screens opens three steps. |
 | 2.34 | 20 Nov 2026 | v2.16.62 | Layer 4 › Inbox, University and Course description cards: Edit & Approve opens the text with the page's own words, the official page link and live counts; Approve As-Is admits the machine text unchanged, Save Edit & Admit admits your text as human input, locked by hand. Held universities with no machine text are opened for writing there. New page Data & Governance › Human Edits & Periodic Audit: My Human Edits and All Human Edits (Admin Governance) with Unacknowledged and Due for 6-month re-review badges; Acknowledge & Keep Lock, Re-Verify by Machine (reads nothing again, changes nothing), Edit & Re-Lock, and for the Platform Admin Release Lock to Machine. |
 | 2.33 | 19 Nov 2026 | v2.16.50 | Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. |

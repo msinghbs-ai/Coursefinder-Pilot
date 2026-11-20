@@ -185,7 +185,7 @@ test.describe('mocked browser', () => {
       if (b.p_action === 'decide') return route.fulfill({ status: 400, json: { code: '23505', message: held } })
       return route.fulfill({ json: {} })
     })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     const item = page.locator('[data-l4-item="aer_review"]')
     await expect(item.locator('[data-l4-aer-rows]')).toContainText('India | CBSE Year 12 | 75%')
     await item.locator('[data-l4-choice="approve_except"]').click()

@@ -46,7 +46,7 @@ Own the platform: approve and publish, activate sources, set limits and settings
 
 ## 5. Where to start
 
-- Dashboard › Waiting for your approval: what only you can do, then Platform at a glance.
+- Dashboard: the five cards and Active failures, then Layer 1 Register and Layer 4 Review for what only you can do.
 - Follow the Platform Admin SOP (Guides › Platform Admin SOP) for the daily routine.
 
 ## 6. Common tasks

@@ -8,7 +8,7 @@ import React,{useEffect,useState}from'react'
 import{ExternalLink}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button}from'./ui-kit'
-import{checkDescription,isEdited,stripBanned,holdReason}from'./lib/description-check.js'
+import{checkDescription,isEdited,stripBanned,holdReason,markBanned}from'./lib/description-check.js'
 import HelpButton from'./HelpDrawer' // S1-UX s827: the ? help drawer, on the hold banner (S1-RM-Design, 20 Nov 2026 13:07)
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
@@ -34,7 +34,18 @@ export function HoldBanner({it,candidate,rules}){
   </div>
 }
 
-// s821 (Platform Admin 20 Nov 2026 10:21): one action bar per description card. Remove "word" & Admit (only when the candidate is held for banned
+// s838 (Platform Admin 20 Nov 2026 14:40): the same amber Main hold reason banner on every other card (AER and the rest): the rule in plain English,
+// the ? help and the machine reason under Technical detail. The card's own decisions stay as they are.
+export function CardHold({it,label}){
+  return <div className="dea-hold dea-hold-card" role="note" data-dea-hold="card" data-l4-hold>
+    <strong>Main hold reason: {label}</strong>
+    <span className="dea-hold-help"><HelpButton topic="layer4" label="Help: deciding a held item"/></span>
+    {it?.why&&<details className="dea-tech"><summary>Technical detail</summary><p className="l4i-why" data-dea-hold-code>{it.why}</p></details>}
+  </div>
+}
+
+// s821 (Platform Admin 20 Nov 2026 10:21): one action bar per description card. s838 (20 Nov 2026 14:40): Remove "word" & Admit sits under its cleaned-text
+// preview, so the bar is three buttons in one row: Save Edit & Admit, Approve As-Is and Reject set apart on the right. Remove "word" & Admit (only when the candidate is held for banned
 // words and the cleaned text passes every check), Save Edit & Admit (once the edited text passes), Approve As-Is (when nothing needs changing), and
 // Reject, set apart (passed in as `reject`, the card's own Reject choice and its reason step). The Inbox no longer repeats Approve as read and Reject below.
 export default function DescriptionEditAdmit({it,d,isCourse,rank,onDone,onCancel,reject=null}){
@@ -52,7 +63,12 @@ export default function DescriptionEditAdmit({it,d,isCourse,rank,onDone,onCancel
   const reasonOk=reason.trim().length>=5,low=rank<4
   return <div className="dea" data-dea={isCourse?'course':'provider'} data-dea-ref={it.ref}>
     {!held&&<HoldBanner it={it} candidate={original} rules={r}/>}
-    {canStrip&&<div className="dea-strip" data-dea-strip><small>With {strip.removed.map(w=>`"${w}"`).join(', ')} removed (nothing else changed; every check passes):</small><p data-dea-strip-text>{strip.text}</p></div>}
+    {/* s838: the proposed text, each word from the lists marked in soft yellow */}
+    {!held&&banned.length>0&&<div className="dea-proposed" data-dea-proposed><small>Proposed text</small>
+      <p>{markBanned(original,r.words).map((x,i)=>x.word?<mark key={i} className="dea-ban" data-dea-ban-mark={x.word}>{x.text}</mark>:<React.Fragment key={i}>{x.text}</React.Fragment>)}</p></div>}
+    {/* s838: the cleaned text directly above the primary Remove "word" & Admit (the action bar below keeps three buttons) */}
+    {canStrip&&<div className="dea-strip" data-dea-strip><small>With {strip.removed.map(w=>`"${w}"`).join(', ')} removed (nothing else changed; every check passes):</small><p data-dea-strip-text>{strip.text}</p>
+      <Button compact variant="primary" disabled={low||!!busy} onClick={removeAdmit} title="Admits the text with the banned word removed and locks it by hand" data-dea-remove-admit>{busy==='strip'?'Saving…':`Remove ${strip.removed.map(w=>`"${w}"`).join(', ')} & Admit`}</Button></div>}
     <p className="dea-head"><strong>Edit &amp; Approve</strong> <small>{held?'No machine text was proposed (the reading was held): write the description from the official page.':'Edit the text if it needs it, or approve it as read.'}</small></p>
     <label className="dea-field"><span>{isCourse?'Course description':'University description'}</span>
       <textarea value={text} onChange={e=>setText(e.target.value)} rows={isCourse?3:6} aria-label="Description to admit" data-dea-text/></label>
@@ -64,7 +80,6 @@ export default function DescriptionEditAdmit({it,d,isCourse,rank,onDone,onCancel
     <label className="dea-lock"><input type="checkbox" checked={lock} onChange={e=>setLock(e.target.checked)} data-dea-lock/> Lock the description by hand when the edited text is admitted (automation will not change it; review due in {rules?.review_months||6} months)</label>
     <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Why (kept with the decision, at least 5 characters)" aria-label="Reason" data-dea-reason/>
     <div className="dea-actions" data-dea-bar>
-      {canStrip&&<Button compact variant="primary" disabled={low||!!busy} onClick={removeAdmit} title="Admits the text with the banned word removed and locks it by hand" data-dea-remove-admit>{busy==='strip'?'Saving…':`Remove ${strip.removed.map(w=>`"${w}"`).join(', ')} & Admit`}</Button>}
       <Button compact variant="primary" disabled={low||!!busy||!edited||!c?.ok||!reasonOk} onClick={()=>save(false)} title={!edited?'Change the text first, or use Approve As-Is':!c?.ok?'The edited text does not pass the checks':''} data-dea-save>{busy==='edit'?'Saving…':'Save Edit & Admit'}</Button>
       <Button compact disabled={low||!!busy||held||edited||!reasonOk} onClick={()=>save(true)} title={held?'There is no machine text to approve':edited?'The text was changed: Save Edit & Admit, or undo the change':''} data-dea-asis>{busy==='asis'?'Saving…':'Approve As-Is'}</Button>
       {reject&&<span className="dea-bar-gap" aria-hidden="true"/>}{reject}

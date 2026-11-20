@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.79; reviewed-release=2.16.67; source-commit=37bf57965b36; content-sha256=841a718312792705164128b0acad09f53e7cf606a0205b6a4851846bd4e654d0 -->
+<!-- sop-export: id=admin-sop; version=2.80; reviewed-release=2.16.68; source-commit=99025a5944af+local; content-sha256=979ccaaa9fb67f6dd2d6bc10450b1cd4d64482a87757b2f47f8351c35a79a5eb -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.79 (reviewed for platform release v2.16.67)  
+**Version:** 2.80 (reviewed for platform release v2.16.68)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -55,7 +55,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 4 | Platform Admin | Same card, Refused today, by university: a university held by the scholarship cap, or with Search held (an adapter check, for example Victoria University and Adelaide University), needs its adapter or website checked; then press Search again with a reason. Directory site and fewer than 30 courses are the platform keeping credits off waste, not faults. _(Models & services)_ | Refusals show where credits would have gone; a held top-50 university is lost coverage. | No top-50 university is held without a note. |
 | 5 | Platform Admin | Platform health › Health checks: read the 4-stage pipeline under the summary (an amber or red stage first, then open the screen it names), clear every Critical, and read each Warning and fix it or note why it can wait. _(Platform health › Health checks)_ | The checks run every 10 minutes over jobs, queues, budgets and the database. | No Critical open. |
 | 6 | Platform Admin | Scheduled jobs › Automations: "Failed in the last 24 hours". Open each failed job and read its last error (Platform guide › Signal → action). _(Scheduled jobs › Automations)_ | A job failing every run means its stage has stopped. | Every repeated failure is fixed, paused with a note, or raised with the platform engineer. |
-| 7 | Platform Admin | Dashboard › Waiting for you: note universities ready to admit, onboarding stopped or needing a person, review items and scholarships to link. _(Dashboard)_ | One list of everything waiting for a person. | You know today's queue. |
+| 7 | Platform Admin | Dashboard: read the five cards and Active failures (genuine failures and warnings, worst first), then open Layer 4 Review › Review by rule and note the largest rule groups. _(Dashboard)_ | One view of what is failing and what waits for a person. | You know today's queue. |
 
 ### Morning: decisions only you can make
 
@@ -140,6 +140,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.80 | 20 Nov 2026 | v2.16.68 | Dashboard: start from the five cards and Active failures (genuine failures and warnings only); Waiting for your approval, Waiting for you and Also are gone. Layer 4 Review opens on Review by rule: every waiting item of a queue grouped by its rule, one card at a time, Preview the batch, and one confirmed batch for Contains a banned word only. Platform health: Page Capture and AI Extraction & Auto-Clean show their rate against normal. |
 | 2.79 | 20 Nov 2026 | v2.16.67 | Platform health › Health checks: the 4-stage pipeline (Official Registers, Page Capture, AI Extraction & Auto-Clean, Live Catalogue) under the summary; start with an amber or red stage and open the screen it names. The Dashboard shows five cards with a bar per country. A ? on the main screens opens three steps for that screen. |
 | 2.78 | 20 Nov 2026 | v2.16.65 | Catalogue › Providers › More filters › Main campus (Set, Unset, No active campus). Tied main campuses were settled by the registered city, the register head office address, then the earliest registered of co-located campuses; NZ and CA courses with no campus took their provider's only campus. Weekly: Main campus Unset, choose the main campus for each. |
 | 2.77 | 20 Nov 2026 | v2.16.62 | Layer 4 › Inbox, University and Course description cards: Edit & Approve opens the text with the page's own words, the official page link and live counts; Approve As-Is admits the machine text unchanged, Save Edit & Admit admits your text as human input, locked by hand. Held universities with no machine text are opened for writing there. New page Data & Governance › Human Edits & Periodic Audit: My Human Edits and All Human Edits (Admin Governance) with Unacknowledged and Due for 6-month re-review badges; Acknowledge & Keep Lock, Re-Verify by Machine (reads nothing again, changes nothing), Edit & Re-Lock, and for the Platform Admin Release Lock to Machine. Weekly: All Human Edits, Due for 6-month re-review; acknowledge, re-verify or release each. |

@@ -105,7 +105,7 @@ test.describe('mocked browser', () => {
       return route.fulfill({ json: {} })
     })
     await page.route('https://example.supabase.co/rest/v1/rpc/layer4_aer_review_read', (route) => route.fulfill({ json: { review_item_id: ITEM, kind, status: 'pending', can_decide: true, lineage: {}, ...read } }))
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     return page.locator('[data-l4-item="aer_review"]')
   }
   const row = (id, q) => ({ id, status: 'proposed', country: 'US', qualification: 'USA American College Test (ACT)', quote: q })

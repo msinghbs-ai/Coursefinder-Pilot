@@ -54,7 +54,7 @@ test('the Inbox offers Save Edit & Admit at rank 4 through public.admin_layer4_i
 })
 
 test('the card: Edit & Approve opens the editor with the quotes, the source link, live counts and the two buttons', () => {
-  expect(INBOX).toContain("import DescriptionEditAdmit,{HeldUniversities}from'./DescriptionEditAdmit'")
+  expect(INBOX).toContain("import DescriptionEditAdmit,{CardHold,HeldUniversities}from'./DescriptionEditAdmit'")
   expect(INBOX).toContain("cdChoices(choices.filter(c=>c.key!=='edit_approve'),isCourseDescription(d))")
   expect(INBOX).toContain('data-l4-choice="edit_approve">Edit &amp; Approve</button>')
   expect(INBOX).toContain('<DescriptionEditAdmit it={it} d={d} isCourse={isCourseDescription(d)} rank={rank}')

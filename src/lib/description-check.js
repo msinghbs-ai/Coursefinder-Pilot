@@ -65,3 +65,12 @@ export function ruleCandidates(items,listWords){
   for(const x of items||[]){if(!x||!x.original)continue;for(const w of removedWords(x.original,x.current||x.edited))count.set(w,(count.get(w)||0)+1)}
   return [...count.entries()].map(([word,n])=>({word,n,on_list:list.has(word)})).sort((a,b)=>b.n-a.n||a.word.localeCompare(b.word))
 }
+
+// CF-247 s838 (Platform Admin 20 Nov 2026 14:40): the proposed text in pieces, with each word from the lists marked (shown in soft yellow on the card).
+// The same word match as bannedIn: whole words, any case. Returns [{text, word}] where word is the list word for a marked piece, '' otherwise.
+export function markBanned(text,words){const t=String(text||''),ws=[...new Set((words||[]).map(x=>String(x).trim()).filter(Boolean))].sort((a,b)=>b.length-a.length)
+  if(!t||!ws.length)return[{text:t,word:''}]
+  const re=new RegExp(`(^|[^A-Za-z0-9])(${ws.map(esc).join('|')})(?=$|[^A-Za-z0-9])`,'gi'),out=[];let last=0,m
+  while((m=re.exec(t))){const at=m.index+m[1].length;if(at>last)out.push({text:t.slice(last,at),word:''});out.push({text:m[2],word:m[2].toLowerCase()});last=at+m[2].length;re.lastIndex=last}
+  if(last<t.length)out.push({text:t.slice(last),word:''})
+  return out}

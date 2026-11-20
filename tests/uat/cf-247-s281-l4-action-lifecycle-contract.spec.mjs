@@ -110,7 +110,7 @@ test.describe('desktop', () => {
   test('the RMIT card shows what was done, when, the result, why it is pending and what is next; the repeat is not offered', async ({ page }) => {
     await mockAdmin(page, { rank: 6 })
     await card(page, { lifecycle: () => LC({ at: T('Wed 4 Nov 2026, 12:17 pm AEDT'), by: 'reviewer', action: 'reread_stored', ref: 'audit #28863', result: { outcome: 'queued' } }), decide: () => ({}) })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await page.locator('[data-l4-uni="RMIT University"] [data-l4-pill="aer_review"]').click()
     const c = page.locator('[data-l4-item="aer_review"]')
     await expect(c.locator('[data-l4-stage]')).toHaveText('Failed: still pending')
@@ -130,7 +130,7 @@ test.describe('desktop', () => {
       lifecycle: () => LC(decided ? { at: ack.at, by: 'reviewer', action: 'open_intervention', ref: 'audit #30001', result: { outcome: 'human_input', headline: ack.headline } } : null),
       decide: () => { decided = true; return { ok: true, kind: 'aer_review', choice: 'open_intervention', event_id: 30001, ack } },
     })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await page.locator('[data-l4-uni="RMIT University"] [data-l4-pill="aer_review"]').click()
     const c = page.locator('[data-l4-item="aer_review"]')
     await expect(c.locator('[data-l4-stage]')).toBeVisible()
@@ -157,7 +157,7 @@ test.describe('automatic reconciliation', () => {
         poll: done ? null : { every_seconds: 5, max: 10 },
         recovery: { attempt: 3, at: T('Wed 4 Nov 2026, 1:10 pm AEDT'), result: { headline: done ? 'Recovery completed — still held under E13' : 'Recovery queued — 13:10 AEDT' } } } } })
     page.on('request', (r) => { if (r.url().endsWith('/rpc/admin_layer4_inbox') && r.postDataJSON()?.p_action === 'summary') summaries++ })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await page.locator('[data-l4-uni="RMIT University"] [data-l4-pill="aer_review"]').click()
     const c = page.locator('[data-l4-item="aer_review"]')
     await expect(c.locator('[data-l4-last-recovery]')).toContainText('Attempt 3: Recovery queued — 13:10 AEDT')
@@ -175,7 +175,7 @@ test.describe('phone @responsive', () => {
     expect(w, 'this test must run at phone width (chromium-mobile)').toBeLessThanOrEqual(480)
     await mockAdmin(page, { rank: 6 })
     await card(page, { lifecycle: () => LC({ at: T('Wed 4 Nov 2026, 12:17 pm AEDT'), by: 'reviewer', action: 'reread_stored', ref: 'audit #28863', result: { outcome: 'already_requested', reason: 'Already requested: recovery action 1 at Wed 4 Nov 2026, 12:17 pm AEDT. Now: the reader refused it at Wed 4 Nov 2026, 12:18 pm AEDT: the corrected read was cut at the row limit (E13).', alternative: 'Open human input with the dropped requirements, or ask the Platform Admin for a row limit for this university (Settings › Pipeline settings, entry.max_rows_by_provider)' } }), decide: () => ({}) })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await page.locator('[data-l4-uni="RMIT University"] [data-l4-pill="aer_review"]').click()
     const c = page.locator('[data-l4-item="aer_review"]')
     await expect(c.locator('[data-l4-ack="already_requested"]')).toContainText('row limit')

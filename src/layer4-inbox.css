@@ -185,3 +185,32 @@
 .l4i-checks li[data-state=fail]{border-left-color:var(--cf-red-750)}
 .l4i-checks li[data-state=pass]{border-left-color:var(--cf-green-700)}
 .dea-hold{position:relative}.dea-hold-help{position:absolute;top:6px;right:6px}
+/* CF-247 s838 (Platform Admin 20 Nov 2026 14:40): the amber Main hold reason banner on every held card, banned words marked in soft yellow in the
+   proposed text, and one action bar in one row (Reject set apart on the right) */
+.dea-hold{border-color:var(--cf-amber-200);background:var(--cf-amber-50)}
+.dea-proposed{margin:0 0 8px;padding:8px 10px;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg);background:var(--cf-surface,var(--cf-slate-50))}
+.dea-proposed p{margin:4px 0 0;line-height:1.55}
+mark.dea-ban{background:var(--cf-amber-100);color:inherit;padding:0 2px;border-radius:3px;box-shadow:inset 0 -2px 0 var(--cf-amber-300)}
+.dea-strip [data-dea-remove-admit]{margin-top:8px}
+.dea-actions{flex-wrap:nowrap;align-items:center}
+.dea-actions>*{white-space:nowrap}
+/* CF-247 s837 (Platform Admin 20 Nov 2026 14:40): Review by rule, the default view: the rule rail on the left, one focused card on the right */
+.l4i-view .l4i-other-toggle{border-style:dashed;color:var(--cf-text-2)}
+.l4i-view .l4i-other-toggle.open{border-style:solid}
+.l4i-view button.l4i-other{font-size:var(--cf-fs-xs,12px);padding:4px 9px}
+.l4f{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr);gap:16px;align-items:start}
+.l4f-rail{border:1px solid var(--cf-border);border-radius:12px;padding:12px;background:var(--cf-surface);position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+.l4f-main{min-width:0;display:grid;gap:10px}
+.l4f-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.l4f-head small{color:var(--cf-text-2)}
+.l4f-nav{display:flex;gap:6px}
+.l4f-late{color:var(--cf-amber-800)}
+.l4f-batch{margin-top:12px;padding-top:12px;border-top:1px solid var(--cf-slate-100);flex-direction:column;align-items:flex-start}
+.l4f-preview{border:1px solid var(--cf-amber-200);border-radius:12px;padding:12px;background:var(--cf-white);box-shadow:var(--cf-shadow-md)}
+.l4f-preview header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.l4f-recs{margin:0 0 10px;padding-left:20px;display:grid;gap:8px;max-height:420px;overflow:auto}
+.l4f-recs p{margin:3px 0 0}
+.l4f-rec-clean{padding-left:8px;border-left:3px solid var(--cf-green-500,var(--cf-slate-300))}
+.l4f-rec-hold small,.l4f-rec-why{color:var(--cf-text-2)}
+.l4f-run{margin:0 0 8px}
+@media (max-width:820px){.l4f{grid-template-columns:1fr}.l4f-rail{position:static;max-height:none}}

@@ -24,7 +24,6 @@ test('retired: Live activity page, Pilot panel, Dashboard health strip, Layers a
   expect(fs.existsSync('src/LiveActivity.jsx')).toBe(false)
   const dash = read('src/Dashboard.jsx')
   for (const gone of ['db-health', 'title="Layers"', 'title="Recent activity"', "adminRead('platform_health')", "adminRead('layer_status_summary')"]) expect(dash).not.toContain(gone)
-  expect(dash).toContain('data-dashboard-progress')
   const ob = read('src/ProviderOnboarding.jsx')
   expect(ob).not.toContain('export function Pilot(')
   expect(ob).not.toContain('data-onboarding-progress-link') // v2.15.300: the Onboarding list retired
@@ -99,14 +98,4 @@ test.describe('mocked browser', () => {
     await expect(page).toHaveURL(/#environment$/)
   })
 
-  test('Dashboard keeps Waiting for you and the four tiles, and links to Progress; Task manager links to Running now', async ({ page }) => {
-    await mockAdmin(page)
-    await page.goto('/#dashboard')
-    await expect(page.locator('[data-dashboard-progress] a').first()).toHaveAttribute('href', '#layer-2-discovery') // SS-020 step 4: Progress is on Operations
-    await expect(page.locator('[data-dashboard-progress] a')).toHaveCount(1) // SS-020 step 4: progress and what is running are one place
-    await expect(page.locator('.db-health')).toHaveCount(0)
-    await page.goto('/#scheduled-jobs?tab=tasks')
-    await expect(page.locator('[data-task-running-link] a')).toHaveAttribute('href', '#layer-2-discovery') // v2.15.301
-    await expect(page.locator('[data-running-now]')).toHaveCount(0)
-  })
 })

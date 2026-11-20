@@ -35,7 +35,7 @@ test.describe('mocked browser', () => {
     await expect(page.getByText('Not authorised')).toBeVisible()
     await expect(handoff(page)).toContainText('Evidence opens from Curator (rank 3)')
     await expect(handoff(page)).toContainText('Ask a Curator')
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await expect(handoff(page)).toContainText('Layer 4 Review opens from Curator (rank 3)')
     expect(aer.some((c) => ['update', 'add', 'lifecycle', 'reread'].includes(c.action))).toBe(false)
   })
