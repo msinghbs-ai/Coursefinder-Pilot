@@ -31,7 +31,7 @@ import Layer4Grid from'./Layer4Grid' // CF-247 UI/UX audit Phase 5 (18 Nov 2026)
 import{CdList,CdPanel,CdWhy,ChecksLine,ReasonChips,cdChoices,isCourseDescription,useCdQueue}from'./CourseDescriptionPanel' // CF-247 course descriptions (6 Nov 2026): reconcile, ready first, the sample
 import Layer4RuleGroups from'./Layer4RuleGroups' // CF-247 S1-UX s826: Waiting, grouped by rule (left panel; the cards and their action bars are unchanged)
 import DescriptionEditAdmit,{CardHold,HeldUniversities}from'./DescriptionEditAdmit' // CF-247 s802/s803: Edit & Approve, held universities; s838: CardHold
-import Layer4Focus from'./Layer4Focus' // CF-247 s837: the default view, Waiting grouped by rule (whole queue) and one focused card
+import Layer4Focus,{AerRecoveryAction}from'./Layer4Focus' // CF-247 s837: the default view, Waiting grouped by rule (whole queue) and one focused card
 import{defaultKind,holdLabelOf}from'./lib/l4-rules.js'
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
@@ -242,7 +242,8 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh,holdLabel=''}){
   const go=async()=>{setBusy(true);setErr('');try{const r=await rpc('decide',{kind:it.kind,ref:it.ref,choice:open.key,reason,value});setAck(r?.ack||null);setRev(v=>v+1);if(r&&r.ok===false){setFollow(r.request||'More is needed before this can go ahead.');return}setFollow('');setOpen(null);onDone?.(r)}catch(e){setErr(e.message)}finally{setBusy(false)}}
   return <article ref={box} className={`l4i-item${it.late?' late':''}`} data-l4-item={it.kind} data-l4-ref={it.ref}>
     <header><StatusChip value={it.kind} tone={it.late?'warning':'info'} label={d.field_code==='course_description_first_read'?'Course description':k.label}/>{showProvider&&it.provider&&<strong className="l4i-prov">{it.provider}</strong>}{it.subject&&<span className="l4i-subj">{it.subject}</span>}{d.course_code&&<span className="l4i-code" title={d.code_label==="Course code"?"Course code":"CRICOS code"} data-l4-code>{d.code_label||"CRICOS"} {d.course_code}</span>}<small>{fmtDate(it.created_at)} · {days(it.created_at)} d · <span data-l4-refshow title={it.ref}>Ref {String(it.ref).slice(0,8)}</span></small></header>
-    {!(editKind&&editing)&&<CardHold it={it} label={holdLabelOf(it,holdLabel)}/>}{/* s820: an open description card shows the plain hold reason (DescriptionEditAdmit HoldBanner) instead */}
+    {!(editKind&&editing)&&<CardHold it={it} label={holdLabelOf(it,holdLabel)}/>}
+    {it.reread&&<AerRecoveryAction it={it} rank={rank} onDone={r=>onDone?.(r)} onError={onError}/>}{/* s870: never a dead-end card */}{/* s820: an open description card shows the plain hold reason (DescriptionEditAdmit HoldBanner) instead */}
     <ItemLifecycle kind={it.kind} refId={it.ref} ack={ack} seen={seen} onSettled={()=>{setRev(v=>v+1);onRefresh?.()}}/>
     {(d.evidence_id||d.course_id)&&!aerItem&&<p className="l4i-evid" data-l4-evidence><small>
       {d.evidence_id?<><a href={hrefFor('evidence','',{evidence_id:d.evidence_id})} data-l4-evidence-link>Stored copy</a>{d.captured_at?` captured ${fmtDate(d.captured_at)}`:''}{d.newer_copy?<em className="l4i-match warn" data-l4-newer> a newer copy of this page exists</em>:''}{d.source_url?<> · <a href={d.source_url} target="_blank" rel="noreferrer">source <ExternalLink size={11}/></a></>:null}</>:'No stored copy is linked to this item'}

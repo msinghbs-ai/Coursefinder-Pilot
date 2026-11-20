@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.492 — 20 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.70** (Platform Admin 20 Nov 2026 16:28, chat S1-RM-Design). CF-247 s870: `security.aer_det_reread_v1` (check / apply / fetch) through three new read or act actions of `public.admin_layer4_inbox`; a technical-recovery AER course read with a bound stored copy is superseded and re-read by aer-det-v1.3 ($0), and one with no stored page goes on the Course page needed list; the rule groups key technical-recovery AER items `aerb:` so the rail shows System recovery / Re-read available apart from Waiting for a reviewer; the deterministic proposer no longer counts a superseded earlier read. s871: the stale partial-table holds re-queued once (1,818 at the rolled-back live dry run). Migration `20261120145500` (no public object; G3 75/48; md5-guarded edits; index for the item trigger's row lookup).
+
 ## 0.1.491 — 20 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.69** (S1-UI-Parity follow-up s839, found in the signed-in check of v2.16.68): a course description card's Main hold reason names its rule in plain English in every view (`cdRailOf`, `src/lib/l4-rules.js`; `HoldBanner` takes the rule group's name), and Preview the batch reads the chosen rule's records as soon as the rule is chosen (`src/Layer4Focus.jsx`), so it opens in under 300 ms. No migration.
