@@ -1,4 +1,4 @@
-# CF-247 s870 (Platform Admin 20 Nov 2026 17:00): no session stops to ask for a merge or a branch clean-up.
+# CF-247 s880 (Platform Admin 20 Nov 2026 17:00): no session stops to ask for a merge or a branch clean-up.
 # A pull request labelled `automerge` is squash-merged once it is mergeable and every check is green (scripts/ci/auto-merge.sh decides;
 # a new migration also needs its rolled-back live dry run), and its branch is deleted. Because a merge made with GITHUB_TOKEN does not start
 # the push-to-main workflows, the script starts them itself: Deploy on merge (exact before/after commits), Security gates, Deployed UAT and,

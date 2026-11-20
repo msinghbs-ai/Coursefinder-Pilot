@@ -10,7 +10,7 @@
 # The target is always the repository variable SUPABASE_PROJECT_REF (the Pilot); the demo project can never be targeted.
 # Consumer API (Decision 266): its functions deploy only when their own folder changes, and test S57 blocks any such change that is not
 # recorded as approved.
-# CF-247 s870 (20 Nov 2026): a merge made by the Auto-merge workflow (GITHUB_TOKEN) does not start push workflows, so Auto-merge starts this
+# CF-247 s880 (20 Nov 2026): a merge made by the Auto-merge workflow (GITHUB_TOKEN) does not start push workflows, so Auto-merge starts this
 # one by workflow_dispatch with the exact commits before and after the merge; `after` must already be on main.
 name: Deploy on merge
 on:

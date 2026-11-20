@@ -1,4 +1,4 @@
-// Guards: CF-247 s870 (Platform Admin 20 Nov 2026 17:00, chat S1-Build): a pull request labelled `automerge` merges itself on green checks
+// Guards: CF-247 s880 (Platform Admin 20 Nov 2026 17:00, chat S1-Build): a pull request labelled `automerge` merges itself on green checks
 // (and, for a migration, a passing rolled-back dry run), its branch is deleted, the push-to-main workflows are started for it, and throwaway
 // probe branches are cleaned up; CLAUDE.md tells every session to merge this way and never ask a person to merge
 import { test, expect } from '@playwright/test'

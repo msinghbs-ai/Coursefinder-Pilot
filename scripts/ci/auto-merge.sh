@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 s870 (Platform Admin 20 Nov 2026 17:00): merge a pull request labelled `automerge` once it is mergeable and every check is green,
+# CF-247 s880 (Platform Admin 20 Nov 2026 17:00): merge a pull request labelled `automerge` once it is mergeable and every check is green,
 # then delete its branch. Used by .github/workflows/auto-merge.yml in this repository and, byte for byte, in coursefinder-admin.
 #
 #   PR=<number> MODE=wait|once REPO=<owner/name> scripts/ci/auto-merge.sh

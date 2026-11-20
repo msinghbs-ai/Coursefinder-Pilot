@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 s870 (Platform Admin 20 Nov 2026 17:00): no throwaway probe branch is left behind.
+# CF-247 s880 (Platform Admin 20 Nov 2026 17:00): no throwaway probe branch is left behind.
 #  1 After a rolled-back dry run started by hand (workflow_dispatch) finishes on a branch whose name ends in -probe or -diag, that branch is
 #    deleted, unless a pull request is open from it or a newer commit arrived after the run started (then the next run cleans it).
 #  2 Sweep: any other branch whose name ends in -probe, with no open pull request and no commit for SWEEP_HOURS, is deleted.
