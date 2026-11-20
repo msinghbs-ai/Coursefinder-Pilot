@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.493 — 20 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.71** (Platform Admin 20 Nov 2026 17:13, chat S1-RM-Design: universal minimum-effort Layer 4 overhaul). CF-247 s872: the rule groups key every item an existing rule settles or the platform is recovering (layer4-groups A or B) `sys~` in every queue, so the rail shows Human Action Required apart from System Queues (Auto-Recovering) (migration `20261120174700`, md5-guarded replacement of `security.layer4_rule_groups_v1`). s873: one card contract for the 19 queues (`plainHold`, `orderChoices`/`choiceRole` in `src/lib/l4-rules.js`; Save Edit & Admit on value-entry decisions). s874: Preview & Settle Batch on every rule group with a generic settle (one decision, one reason, typed SETTLE n; never AER, departures or descriptions). CI contract test over all 19 queues.
+
 ## 0.1.492 — 20 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.70** (Platform Admin 20 Nov 2026 16:28, chat S1-RM-Design). CF-247 s870: `security.aer_det_reread_v1` (check / apply / fetch) through three new read or act actions of `public.admin_layer4_inbox`; a technical-recovery AER course read with a bound stored copy is superseded and re-read by aer-det-v1.3 ($0), and one with no stored page goes on the Course page needed list; the rule groups key technical-recovery AER items `aerb:` so the rail shows System recovery / Re-read available apart from Waiting for a reviewer; the deterministic proposer no longer counts a superseded earlier read. s871: the stale partial-table holds re-queued once (1,818 at the rolled-back live dry run). Migration `20261120145500` (no public object; G3 75/48; md5-guarded edits; index for the item trigger's row lookup).

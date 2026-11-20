@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.36; reviewed-release=2.16.70; source-commit=8d457a68191b+local; content-sha256=38742bea382cee26569d3a32086efd7a8198aadd344392df565fc7a720bcffd0 -->
+<!-- sop-export: id=operator-sop; version=2.37; reviewed-release=2.16.71; source-commit=339dec0f0d16+local; content-sha256=1402f57d9b2b4da18d2cc1d0365c563849db6f9d5cc0c0ba739986470abb9146 -->
 # StudySearch – Operator SOP
 
-**Version:** 2.36 (reviewed for platform release v2.16.70)  
+**Version:** 2.37 (reviewed for platform release v2.16.71)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -118,6 +118,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.37 | 20 Nov 2026 | v2.16.71 | Layer 4 Review: work Human Action Required; leave System Queues (Auto-Recovering) to the platform unless a card offers Re-read from stored copy ($0). Every card: the Main hold reason in plain English and one action bar. Preview & Settle Batch on a rule group settles it with one decision, one reason and the typed confirmation. |
 | 2.36 | 20 Nov 2026 | v2.16.68 | Layer 4 Review opens on Review by rule: the rule groups cover the whole queue, one card at a time with Previous and Next, Preview the batch lists the exact records; By university, By kind, Grid and Decided are under Other views. Cards: amber Main hold reason, banned words marked in yellow, the cleaned text above Remove "word" & Admit, and one bar (Save Edit & Admit, Approve As-Is, Reject on the right). The Dashboard no longer lists Waiting for you. |
 | 2.35 | 20 Nov 2026 | v2.16.67 | Layer 4 › Inbox: Waiting, grouped by rule, on the left groups the cards on the page by the check that holds them; Preview the batch, Show only these, then decide each card on its own bar (or use Grid › Grouped decisions for a server-checked group). A ? on the main screens opens three steps. |
 | 2.34 | 20 Nov 2026 | v2.16.62 | Layer 4 › Inbox, University and Course description cards: Edit & Approve opens the text with the page's own words, the official page link and live counts; Approve As-Is admits the machine text unchanged, Save Edit & Admit admits your text as human input, locked by hand. Held universities with no machine text are opened for writing there. New page Data & Governance › Human Edits & Periodic Audit: My Human Edits and All Human Edits (Admin Governance) with Unacknowledged and Due for 6-month re-review badges; Acknowledge & Keep Lock, Re-Verify by Machine (reads nothing again, changes nothing), Edit & Re-Lock, and for the Platform Admin Release Lock to Machine. |

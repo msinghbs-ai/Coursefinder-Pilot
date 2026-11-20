@@ -220,3 +220,15 @@ mark.dea-ban{background:var(--cf-amber-100);color:inherit;padding:0 2px;border-r
 .l4f-sec-recovery .l4r-grp{border-style:dashed}
 .l4f-recovery{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px;padding:8px 10px;border:1px solid var(--cf-amber-200);border-radius:var(--cf-radius-lg);background:var(--cf-amber-50)}
 .l4f-recovery small{color:var(--cf-text-2);flex:1 1 240px}
+/* CF-247 s873 (Platform Admin 20 Nov 2026 17:13): one action bar on every card: admit first, then edit and re-categorise, the set-aside choices on the right */
+.l4i-bar{align-items:center}
+.l4i-bar-gap{flex:1 1 auto}
+.l4i-choices button.role-primary{border-color:var(--cf-indigo-500);font-weight:600}
+.l4i-choices button.role-aside{color:var(--cf-red-700,var(--cf-text-2))}
+/* s874: each rule group with its own Preview & Settle Batch; the settle step */
+.l4f-grp-row{display:flex;gap:4px;align-items:stretch}
+.l4f-grp-row .l4r-grp{flex:1 1 auto}
+.l4f-grp-settle{margin-top:6px;border:1px solid var(--cf-border);border-radius:8px;background:var(--cf-white);padding:0 8px;cursor:pointer;color:var(--cf-text-2)}
+.l4f-grp-settle:focus-visible{outline:3px solid var(--cf-blue-600);outline-offset:2px}
+.l4f-settle{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px}
+.l4f-settle select,.l4f-settle input{min-height:30px}
