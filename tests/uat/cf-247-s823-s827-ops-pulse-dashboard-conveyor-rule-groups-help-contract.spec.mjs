@@ -156,7 +156,7 @@ test.describe('mocked browser', () => {
 
   test('? help: the header opens three steps for the screen and Escape closes it', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await page.locator('[data-help-open="layer4"]').first().click()
     const d = page.locator('[data-help-drawer="layer4"]')
     await expect(d.locator('[data-help-steps="3"] li')).toHaveCount(3)

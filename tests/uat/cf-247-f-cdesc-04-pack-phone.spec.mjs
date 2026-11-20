@@ -55,7 +55,7 @@ async function openPack(page, calls) {
     if (b.p_action === 'items') return route.fulfill({ json: { total: 2, offset: 0, limit: 25, items: [ITEM(1), ITEM(2)] } })
     return route.fulfill({ json: {} })
   })
-  await page.goto('/#layer-4-review')
+  await page.goto('/#layer-4-review?view=university')
   await expect(page.locator('[data-l4-inbox]')).toBeVisible()
   await page.locator('[data-l4-pill="provider_description"]').first().click()
 }

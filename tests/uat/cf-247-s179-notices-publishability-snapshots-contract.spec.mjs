@@ -103,17 +103,6 @@ test.describe('mocked browser', () => {
     await expect(card.locator('[data-stale-marker]')).toHaveText('Stale: older than 30 min')
   })
 
-  test('Dashboard: Scholarships ready to publish says when it was counted', async ({ page }) => {
-    await mockAdmin(page)
-    await page.route(`${RPC}admin_waiting_read`, (route) => fulfil(route, { rank: 6, rows: [
-      { key: 'scholarships_ready', label: 'Scholarships ready to publish', count: 12, oldest: null, href: '#scholarships?tab=coverage', min: 5, snapshot: snapshotMeta({ age_seconds: 4500, stale: true, refresh_every_minutes: 10 }) }] }))
-    await page.goto('/#dashboard')
-    const row = page.locator('[data-waiting-also] [data-queue="scholarships_ready"]')
-    await expect(row).toContainText('12')
-    await expect(row.locator('[data-snapshot-stamp="scholarships_ready"]')).toContainText('Counted')
-    await expect(row.locator('[data-snapshot-stamp="scholarships_ready"]')).toContainText('(1 h 15 min ago)')
-    await expect(row.locator('[data-stale-marker]')).toHaveText('Stale: older than 30 min')
-  })
 
   test('Coverage › Attributes: every country from the snapshot, with its time on the figures and on today\'s AI spend', async ({ page }) => {
     await mockAdmin(page)

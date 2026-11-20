@@ -85,7 +85,7 @@ test.describe('phone screens @responsive', () => {
       if (b.p_action === 'decide') return route.fulfill({ json: { ok: true, returns: 'The hold is released; the site is mapped again and onboarding starts again' } })
       return route.fulfill({ json: {} })
     })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await expect(page.locator('[data-l4-inbox]')).toBeVisible()
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
     const item = page.locator('[data-l4-item="pages_not_found"]')

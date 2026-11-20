@@ -127,7 +127,7 @@ test.describe('settlement on a phone @responsive', () => {
       return route.fulfill({ json: { ready: 91, limit: 25, offset: 0, items: [ready(0), ready(1)] } })
     })
     await page.route('https://example.supabase.co/rest/v1/rpc/layer4_aer_review_read', (route) => route.fulfill({ json: { kind: 'course_entry_first_read', status: 'pending', completeness_gate: { complete: true }, rows: [] } }))
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await page.locator('[data-l4-uni="RMIT University (RMIT)"] [data-l4-pill="aer_review"]').click()
     await expect(page.locator('[data-l4-aer-summary]')).toContainText('303 pending · 91 ready to decide · 27 technically held · 184 need evidence or input')
     await expect(page.locator('[data-l4-aer-ready-first]')).toHaveAttribute('aria-pressed', 'true')
