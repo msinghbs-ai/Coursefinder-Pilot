@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { feeAiParsed, feeAiRequest, hasFeeAmount, noNul } from "./fees.ts";
 import { answerLimit, errorCost, readAnswer, readError, type ReadType } from "./answer.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { detRead, detUncovered, AER_DET_VERSION } from "./aer-det-reader.ts";
+import { detRead, detUncovered, AER_DET_VERSION } from "./aer-det-reader.ts"; import { elrRead, ELR_DET_VERSION } from "./elr-det-reader.ts";  // s840: ELR reader on this line so the worker's line references stay
 import { clean, currencyFor, domainFitsName, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, pageDataItems, robotsAllows, siteNameMatch, staleCalendarUrl, titleOf } from "./extract.ts";
 // v0.17.32: same normalising as extract.ts siteNorm (kept here so the shared extract.ts, used by other functions, is unchanged)
 import { structRead, structLines, STRUCT_DET_VERSION } from "./struct-det-reader.ts"; // s861: deterministic course structure reader (duration, study load, delivery mode)
@@ -4601,6 +4601,25 @@ async function handle(req: Request): Promise<Response> {
     // source_snapshot, written by mode read) into the plain-text page Boost reads (evidence provider_course_page_text at coverage-text/<course>/<hash>.txt),
     // for active courses still lacking a study load or a description, in Boost priority-matrix order (public.svc_page_text_next_v1). No Firecrawl and no
     // AI: the text is the readers' own htmlToText. A text shorter than the setting page_text.min_chars is recorded too_short and not offered again.
+    // s840 (20 Nov 2026, CF-247 session S1-ELR, Platform Admin 15:10 and 15:21 AEDT): read-only mode elr_det_read. The caller (the job elr-det-sweep through
+    // security.elr_det_sweep_tick_v1, or the workflow elr-det-read.yml) sends stored course pages (course_id, evidence_id, storage_path); each is read from storage, turned to text
+    // and read by elr-det-reader.ts (English tests only; no model, no fetch). Nothing is written here: the database reads this answer back and its one writer,
+    // security.elr_det_record_v1, records the readings and promotes only those that pass every gate. The worker's own version line is unchanged (the extractor is ELR_DET_VERSION).
+    if (mode === "elr_det_read") {
+      const items: { course_id: string; evidence_id: string; storage_path: string }[] = (Array.isArray(body.items) ? body.items : []).slice(0, 40);  // fixed: bound on one call (CPU and response size)
+      const pages: unknown[] = [];
+      await pool(items, 4, async (it) => {
+        try {
+          if (Date.now() - t0 > BUDGET_MS) { pages.push({ course_id: it.course_id, evidence_id: it.evidence_id, error: "call_time_used" }); return }
+          const { data, error } = await c.storage.from("evidence").download(it.storage_path); if (error || !data) throw Error(error?.message || "missing");
+          const b = new Uint8Array(await data.arrayBuffer());
+          const raw = b[0] === 0x1f && b[1] === 0x8b ? await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text() : new TextDecoder().decode(b);
+          const text = /<\w+[\s>]/.test(raw.slice(0, 2000)) ? htmlToText(raw) : raw;
+          pages.push({ course_id: it.course_id, evidence_id: it.evidence_id, chars: text.length, sha256: await sha256(new TextEncoder().encode(text)), readings: elrRead(text) });
+        } catch (e) { pages.push({ course_id: it.course_id, evidence_id: it.evidence_id, error: (e instanceof Error ? e.message : String(e)).slice(0, 160) }) }
+      });
+      return j({ ok: true, mode, extractor: ELR_DET_VERSION, pages, ms: Date.now() - t0, worker: WORKER, workerVersion: VERSION });
+    }
     if (mode === "page_text") {
       const next = await rpc("svc_page_text_next_v1", { p_limit: Math.max(1, Math.floor(Number(body.limit) || 1)) });
       const items: { course_id: string; evidence_id: string; storage_path: string }[] = Array.isArray(next?.items) ? next.items : [];
@@ -4625,7 +4644,7 @@ async function handle(req: Request): Promise<Response> {
       });
       return j({ ok: true, mode, items: items.length, tally, ms: Date.now() - t0, workerVersion: WORKER });
     }
-    return j({ ok: false, error: "supported modes: aer_det_read, struct_det_read, page_text, credential_read, site_check, fee_ai, discover, read, central_find, ai_match, reidentify, directory_capture, id_qualify, openrouter_key, reference_capture, site_hint_verify, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect, scholarship_listing, scholarship_ai, central_ai, entry_ai, entry_inspect, openrouter_balance", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: aer_det_read, struct_det_read, elr_det_read, page_text, credential_read, site_check, fee_ai, discover, read, central_find, ai_match, reidentify, directory_capture, id_qualify, openrouter_key, reference_capture, site_hint_verify, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect, scholarship_listing, scholarship_ai, central_ai, entry_ai, entry_inspect, openrouter_balance", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }

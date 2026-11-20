@@ -1,0 +1,41 @@
+# English requirement sweep (CF-247 s842, session S1-ELR; Platform Admin 20 Nov 2026 15:10 AEDT). $0: no model, no Firecrawl.
+# status: reads security.elr_det_status_v1() (English coverage of active AU, NZ and CA courses and what the sweep has done). run: calls the job elr-det-sweep's own run every
+# minute for the given minutes (a governed Run Now on a bounded workload), then reads the status back. Through the Management API with no prompt (17 Nov 2026 22:05 mandate).
+name: English requirement sweep
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "status (read only) or run"
+        required: true
+        default: "status"
+      minutes:
+        description: "Minutes to run (run only, 1 to 50)"
+        required: true
+        default: "10"
+      confirm_project:
+        description: "Type the Pilot project ref to confirm"
+        required: true
+concurrency:
+  group: elr-det-read
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - name: Confirm the project
+        run: |
+          if [ -z "$REF" ]; then echo "::error::Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
+          if [ "${{ inputs.confirm_project }}" != "$REF" ]; then echo "::error::Refused: the typed project ref does not match the Pilot"; exit 1; fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Sweep
+        run: node scripts/elr-det-read.mjs "${{ inputs.mode }}" "${{ inputs.minutes }}"
