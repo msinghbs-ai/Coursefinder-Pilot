@@ -65,13 +65,13 @@ begin
   end if;
   return jsonb_build_object('reason', v_reason, 'offset', v_off, 'total', (select count(*) from security.layer4_aer_hold_base_v1() h where h.code = v_reason),
     'items', coalesce((select jsonb_agg(q.x order by q.pn nulls last, q.ct nulls last, q.hid) from (
-       select jsonb_build_object('id', h.id, 'course', coalesce(c.title, '—'), 'provider', coalesce(pr.name, '—'), 'country', co.iso_alpha2,
-                                 'checked_at', h.checked_at, 'why', left(coalesce(h.reason, ''), 300)) x, pr.name pn, c.title ct, h.id hid
+       select jsonb_build_object('id', h.id, 'course', coalesce(c.display_title, c.canonical_title, '—'), 'provider', coalesce(pr.name, '—'), 'country', co.iso_alpha2,
+                                 'checked_at', h.checked_at, 'why', left(coalesce(h.reason, ''), 300)) x, pr.name pn, coalesce(c.display_title, c.canonical_title) ct, h.id hid
          from security.layer4_aer_hold_base_v1() h
          left join catalogue.courses c on c.id = h.entity_id and h.field_code = 'course_entry_first_read'
          left join catalogue.providers pr on pr.id = coalesce(c.provider_id, case when h.field_code <> 'course_entry_first_read' then h.entity_id end)
          left join ref.countries co on co.id = pr.country_id
-        where h.code = v_reason order by pr.name nulls last, c.title nulls last, h.id offset v_off limit v_lim) q), '[]'::jsonb));
+        where h.code = v_reason order by pr.name nulls last, coalesce(c.display_title, c.canonical_title) nulls last, h.id offset v_off limit v_lim) q), '[]'::jsonb));
 end $f$;
 revoke all on function security.layer4_aer_hold_reasons_v1(jsonb) from public, anon, authenticated;
 comment on function security.layer4_aer_hold_reasons_v1(jsonb) is 'S831: why each pending AER item waits (latest stored machine check), and the items behind one reason; read only; called by public.admin_layer4_aer_queue';
