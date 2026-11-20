@@ -1,4 +1,4 @@
-// Guards: CF-247 s881 (Platform Admin 20 Nov 2026 17:14 and 17:15, chat S1-Build): active pg_cron jobs at most 136 with 0 unregistered — six
+// Guards: CF-247 s881 (Platform Admin 20 Nov 2026 17:14 and 17:15, chat S1-Build): active pg_cron jobs at most 136 with 0 unregistered — seven
 // jobs with no work left are switched off and marked retiring only while their evidence holds, the protected sweeps and pipelines stay on,
 // nothing is unscheduled or dropped by the migration; one-off auto-merge checks report without failing
 import { test, expect } from '@playwright/test'
@@ -6,10 +6,10 @@ import fs from 'node:fs'
 
 const MIG = fs.readFileSync('supabase/migrations/20261120181000_cf247_s881_retire_idle_cron_jobs.sql', 'utf8')
 const MERGE = fs.readFileSync('scripts/ci/auto-merge.sh', 'utf8')
-const SIX = ['boost-benchmark', 'lean-sections-eval', 'lean-qualify', 'aer-v2-shadow', 'course-url-fill', 'reread-pilot']
+const SEVEN = ['boost-benchmark', 'lean-sections-eval', 'lean-qualify', 'aer-v2-shadow', 'course-url-fill', 'reread-pilot', 'course-description-stale-retire']
 
-test('only the six idle jobs, each switched off only while its evidence holds', () => {
-  expect(MIG).toContain(`j.jobname in (${SIX.map((s) => `'${s}'`).join(', ')})`)
+test('only the seven idle jobs, each switched off only while its evidence holds', () => {
+  for (const j of SEVEN) expect(MIG).toContain(`when '${j}' then`)
   for (const s of [
     "v_ok := coalesce(security.boost_benchmark_gate_v1() ->> 'reason', '') = 'nothing left to do'",
     "v_ok := not exists (select 1 from pipeline.lean_section_eval_cases c where c.state = 'pending');",
@@ -17,6 +17,7 @@ test('only the six idle jobs, each switched off only while its evidence holds', 
     "v_ok := security.pipeline_num_v1('aer.v2_shadow_on', 0) = 0;",
     "v_ok := security.pipeline_num_v1('course_url.fill_enabled', 1) <> 1;",
     "v_ok := not coalesce((security.toolset_setting('pipeline', 'reread.pilot_enabled') #>> '{}')::boolean, false)",
+    "v_ok := security.pipeline_num_v1('enrich.course_description_stale_supersede_on', 0) < 1;",
     "raise notice 's881: % kept on: its evidence no longer holds', r.jobname;",
   ]) expect(MIG).toContain(s)
 })
