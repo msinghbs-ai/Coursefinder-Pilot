@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.488 — 20 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.66** (Platform Admin 20 Nov 2026 10:21, chat S1-RM-Design). CF-247 s819: `security.description_strip_words_v1` and a word-strip recovery in `security.provider_description_machine_admit_v1` (migration `20261120121000`, md5-guarded): a university description declined only for a promotional word of `pdesc.superlatives` has the word removed (quotes unchanged, nothing added) and the same validation and machine gate run again; the live list is stated in the description prompt (`wordsNote`, registry v7, migration `20261120121100`); Human Edits shows rule-tuning candidates. s820/s821: plain-English hold banner, Remove "word" & Admit, one action bar on description cards. s817/s818: Platform Health opens on an executive view (health, AI spend against the daily cap, blockers, Layer 4 waiting) and Needs attention (failed jobs, stuck work, connections down), worked out from the existing `platform_health` payload; every technical section is under Technical details. No new public function, table or view; consumer API 75 functions and 48 relations, no drift. (The Layer 4 decision time-outs, s813, were fixed by S1-Build in #1410.)
+
 ## 0.1.487 — 20 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.65** (Platform Admin 20 Nov 2026 09:55 and 10:48, chat S1-Build). CF-247 s818: Catalogue › Providers Main campus filter (admin_providers_page_v3 primary_campus); tied main campuses settled by the registered city, the register head office address and the earliest registered co-located campus (security.campus_primary_tiebreak_v1); NZ and CA courses with no campus linked to their provider's only campus; NZ campus regions from campus names. No consumer API change.

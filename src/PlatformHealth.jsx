@@ -14,6 +14,8 @@ import{scrubInternals}from'./lib/errors'
 import{PAGES,resolveTarget}from'./nav-map'
 import{describeSchedule}from'./automation-schedule'
 import{FRESHNESS_WORDS,checkFreshness}from'./guide/operatingWords'
+import{execSummary,needsAttention,OVERALL_WORDS}from'./health-exec'
+import'./platform-health-exec.css'
 // SS-016 UR-11 (Platform Admin 1 Nov 2026 22:01): each check says which run measured it (checkFreshness: This run, From an earlier run, No result yet)
 const describeEvery=m=>m%1440===0?`${m/1440} day${m===1440?'':'s'}`:m%60===0?`${m/60} hour${m===60?'':'s'}`:`${m} minutes`
 
@@ -85,6 +87,8 @@ export default function PlatformHealth({onError}){
   const fresh=checkFreshness(data.checks),earlier=(data.checks||[]).filter(c=>fresh(c)!=='current').length
   const checks=[...(data.checks||[]).map(withoutLayer3)].sort((a,b)=>({critical:0,warning:1,ok:2,skipped:3}[a.status]??9)-({critical:0,warning:1,ok:2,skipped:3}[b.status]??9)||String(a.area).localeCompare(String(b.area)))
   return <>
+    <ExecView data={data} tone={tone}/>
+    <details className="ph-tech" data-ph-technical><summary><strong>Technical details</strong> <small>every check ({fmtNumber(checks.length)}), the issues by area, scheduled job names, raw messages, alerts, the weekly scorecard and the last 14 days</small></summary>
     <section className={`m-panel ph-overall tone-${tone}`}>
       <div className="ph-overall-head"><StatusDot tone={tone} label={HEALTH_WORDS[tone]}/><div><h2 data-health-heading>{PAGE_WORDS[tone]}</h2><p>Checked {fmtDateTime(data.generated_at)} · {fmtNumber(checks.length)} checks{earlier?<span data-health-earlier={earlier}> · {fmtNumber(earlier)} from an earlier run or with no result yet (see Checked)</span>:null}</p></div><Button compact onClick={load} disabled={state==='loading'}><RefreshCw size={14}/>Check again</Button></div>
       <div className="cf-metric-grid">
@@ -108,6 +112,30 @@ export default function PlatformHealth({onError}){
     <AlertsPanel alerts={alerts} onChange={loadAlerts} onError={onError}/>
     <Scorecard alerts={alerts}/>
     <HealthHistory history={data.history||[]}/>
+    </details>
+  </>
+}
+
+// CF-247 s817 (Platform Admin 20 Nov 2026 10:07): what a Platform Admin needs to decide, in plain English, first. The top summary (overall health,
+// AI spend in the last 24 hours against the daily cap, blockers, Layer 4 review items waiting with a link) and Needs attention (failed scheduled
+// jobs, stuck work, connections down). Read from the same platform_health payload; nothing new is read or written.
+const EXEC_TONE={ok:'success',warning:'warning',critical:'danger',unknown:'neutral'}
+export function ExecView({data,tone}){
+  const s=execSummary(data),items=needsAttention(data),pct=s.spendShare!=null?Math.round(s.spendShare*100):null
+  return <>
+    <section className={`m-panel ph-exec tone-${tone}`} data-ph-exec>
+      <div className="ph-exec-grid">
+        <div className="ph-exec-tile" data-ph-exec-overall={s.overall}><span>Overall health</span><StatusDot tone={tone} label={OVERALL_WORDS[s.overall]}/><strong>{OVERALL_WORDS[s.overall]}</strong><small>Checked {fmtDateTime(data.generated_at)}</small></div>
+        <div className="ph-exec-tile" data-ph-exec-spend><span>AI spend, last 24 hours</span><strong>{s.spend!=null?`US$${s.spend.toFixed(2)}`:'Not reported'}</strong><small>{s.cap?`of the US$${fmtNumber(s.cap)} daily cap${pct!=null?` (${pct}%)`:''}`:'No daily cap reported'}</small>{pct!=null&&<span className="ph-exec-bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Share of the daily cap"><i style={{width:`${pct}%`}}/></span>}</div>
+        <div className="ph-exec-tile" data-ph-exec-blockers><span>Active blockers</span><strong>{fmtNumber(s.blockers)}</strong><small>{s.blockers?'broken now; listed below':'nothing broken'}</small></div>
+        <div className="ph-exec-tile" data-ph-exec-layer4><span>Layer 4 review items waiting</span><strong>{s.layer4!=null?fmtNumber(s.layer4):'—'}</strong><small><a className="cf-link" href="#layer-4-review" data-ph-exec-layer4-link>Open Layer 4 Review</a></small></div>
+      </div>
+    </section>
+    <section className="m-panel ph-attention" data-ph-attention>
+      <SectionTitle icon={AlertTriangle} title="Needs attention" subtitle="Only failed jobs, stuck work and connections that are down. Everything else is under Technical details."/>
+      {items.length?<ul className="ph-attention-list">{items.map((x,n)=><li key={n} data-ph-attention-item={x.kind} data-ph-attention-tone={x.tone}><StatusChip value={x.tone} tone={x.tone==='critical'?'danger':'warning'} label={x.tone==='critical'?'Broken':'Attention'}/><div><strong>{x.title}</strong><p>{x.why}</p>{x.fix&&<ScreenLink href={x.fix}/>}</div></li>)}</ul>
+        :<Empty icon={CheckCircle2} text="Nothing needs attention: no failed jobs, no stuck work and every connection answers."/>}
+    </section>
   </>
 }
 

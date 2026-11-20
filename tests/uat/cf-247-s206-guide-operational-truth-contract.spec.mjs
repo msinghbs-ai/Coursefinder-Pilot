@@ -317,6 +317,7 @@ test.describe('mocked browser (SS-016 22:01)', () => {
         { key: 'edge_deployed', area: 'edge functions', label: 'Edge functions deployed', status: 'ok', detail: {}, checked_at: null } ] }) })
     })
     await page.goto('/#platform-health')
+    await page.locator('[data-ph-technical] > summary').click()  // s817: the technical sections sit under Technical details
     await expect(page.locator('[data-check-freshness="current"]')).toContainText('This run')
     await expect(page.locator('[data-check-freshness="earlier"]')).toContainText('From an earlier run')
     const missing = page.locator('tr', { has: page.locator('[data-check-freshness="missing"]') })

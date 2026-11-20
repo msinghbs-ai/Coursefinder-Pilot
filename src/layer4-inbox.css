@@ -164,3 +164,14 @@
 .dea-held-list ul{list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:320px;overflow:auto}
 .dea-held-list li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;border-bottom:1px solid var(--cf-slate-150);padding:4px 0}
 .dea-held-list li span{min-width:0;overflow-wrap:anywhere}
+/* s820/s821 (20 Nov 2026): plain hold reason, the cleaned preview and one action bar on description cards */
+.dea-hold{display:grid;gap:4px;margin:0 0 8px;padding:8px 10px;border-radius:var(--cf-radius-lg);border:1px solid var(--cf-slate-200);background:var(--cf-slate-50)}
+.dea-hold-banned,.dea-hold-refused_word{border-color:var(--cf-amber-200,var(--cf-slate-200));background:var(--cf-amber-50)}
+.dea-hold code{font-size:var(--cf-fs-sm);padding:0 4px;border-radius:4px;background:var(--cf-slate-100)}
+.dea-tech summary{cursor:pointer;color:var(--cf-slate-500);font-size:var(--cf-fs-xs)}
+.dea-strip{margin:0 0 8px;padding:8px 10px;border-left:3px solid var(--cf-green-500,var(--cf-slate-300));background:var(--cf-slate-50)}
+.dea-strip p{margin:4px 0 0}
+.dea-bar-gap{flex:1 1 auto}
+.l4i-reject{color:var(--cf-red-700,var(--cf-slate-900));border:1px solid var(--cf-slate-300);background:transparent;border-radius:var(--cf-radius-md,6px);padding:4px 10px}
+.dea-minor{display:flex;gap:12px;margin:4px 0 0}
+.dea-link{background:none;border:0;padding:0;color:var(--cf-slate-600);text-decoration:underline;cursor:pointer;font-size:var(--cf-fs-xs)}

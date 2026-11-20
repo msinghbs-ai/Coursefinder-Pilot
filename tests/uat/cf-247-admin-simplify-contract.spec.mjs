@@ -107,6 +107,7 @@ test.describe('mocked browser', () => {
   test('Platform health shows status, issues, checks and history; dot in the top bar', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#platform-health')
+    await page.locator('[data-ph-technical] > summary').click()  // s817: the technical sections sit under Technical details
     await expect(page.getByRole('heading', { name: 'Some checks need attention' })).toBeVisible() // UI audit Phase 1: the heading does not repeat the health dot's sentence
     await expect(page.getByText('Open issues')).toBeVisible()
     await expect(page.locator('.ph-checks tbody tr')).toHaveCount(8)

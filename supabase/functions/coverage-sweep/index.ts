@@ -3259,8 +3259,8 @@ async function handle(req: Request): Promise<Response> {
       const model = String(w.model || ""), pageChars = Number(w.page_chars) || 16000, minQuote = Number(w.min_quote_chars) || 20;
       // v0.69.0: the prompt from Settings (a version string and its text), or null for the built-in prompt v2
       const prompt = w.prompt && typeof w.prompt.system === "string" && w.prompt.system.trim().length >= 200 && w.prompt.version ? { version: String(w.prompt.version), system: String(w.prompt.system) } : null;  // fixed: the table's own minimum
-      const buildRequest = (it: any, rec: any, page: string) => prompt ? promptRequest(model, prompt.system, String(it.provider || ""), String(rec.url || ""), page, maxTokens, w.length)
-        : descriptionRequest(model, String(it.provider || ""), String(rec.url || ""), page, maxTokens, w.length, Number(w.verbatim_span_max_chars));
+      const buildRequest = (it: any, rec: any, page: string) => prompt ? promptRequest(model, prompt.system, String(it.provider || ""), String(rec.url || ""), page, maxTokens, w.length, ws["enrich.course_description_marketing_words"])
+        : descriptionRequest(model, String(it.provider || ""), String(rec.url || ""), page, maxTokens, w.length, Number(w.verbatim_span_max_chars), ws["enrich.course_description_marketing_words"]);
       const patterns: string[] = (w.about_patterns || []).map(String);
       const maxTokens = wsNum(DESCRIPTION_ANSWER_KEY, 1500), ors = orStats(), out: any[] = [], tally: Record<string, number> = {};
       let cost = 0;

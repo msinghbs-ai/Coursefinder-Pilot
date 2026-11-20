@@ -515,11 +515,11 @@ export const PROMPT_SCHEMA = {
     reason: { type: "string" },
   },
 } as const;
-export function promptRequest(model: string, system: string, provider: string, url: string, page: string, maxTokens: number, length?: DescriptionLength) {
+export function promptRequest(model: string, system: string, provider: string, url: string, page: string, maxTokens: number, length?: DescriptionLength, words?: unknown) {
   return {
     model, temperature: 0, max_tokens: maxTokens, provider: { data_collection: "deny", require_parameters: true },  // pinned: one model, never a router
     response_format: { type: "json_schema", json_schema: { name: "provider_description_prompt", strict: true, schema: PROMPT_SCHEMA } },
-    messages: [{ role: "system", content: system }, { role: "user", content: `Provider: ${provider}\nPage: ${url}\n${lengthNote(length)}\nPage text:\n${fenceSourceText(page)}` }],
+    messages: [{ role: "system", content: system }, { role: "user", content: `Provider: ${provider}\nPage: ${url}\n${lengthNote(length)}${wordsNote(words)}\nPage text:\n${fenceSourceText(page)}` }],
   };
 }
 // each sentence keeps its passages joined (" … ") as its quote; on_page only when every passage stands on the page (each proven on its own)
@@ -556,11 +556,11 @@ export function copyNote(maxVerbatimChars: number | null | undefined): string {
   const n = Number.isInteger(Number(maxVerbatimChars)) && Number(maxVerbatimChars) > 0 ? Number(maxVerbatimChars) : null;
   return n ? `Copy limit: keep each sentence short (under ${n} characters) and never repeat ${n} or more characters in a row from its quote.\n` : "";
 }
-export function descriptionRequest(model: string, provider: string, url: string, page: string, maxTokens: number, length?: DescriptionLength, maxVerbatimChars?: number) {
+export function descriptionRequest(model: string, provider: string, url: string, page: string, maxTokens: number, length?: DescriptionLength, maxVerbatimChars?: number, words?: unknown) {
   return {
     model, temperature: 0, max_tokens: maxTokens, provider: { data_collection: "deny", require_parameters: true },  // pinned: one model, never a router
     response_format: { type: "json_schema", json_schema: { name: "provider_description", strict: true, schema: DESCRIPTION_SCHEMA } },
-    messages: [{ role: "system", content: DESCRIPTION_SYSTEM }, { role: "user", content: `Provider: ${provider}\nPage: ${url}\n${lengthNote(length)}${copyNote(maxVerbatimChars)}\nPage text:\n${fenceSourceText(page)}` }],
+    messages: [{ role: "system", content: DESCRIPTION_SYSTEM }, { role: "user", content: `Provider: ${provider}\nPage: ${url}\n${lengthNote(length)}${copyNote(maxVerbatimChars)}${wordsNote(words)}\nPage text:\n${fenceSourceText(page)}` }],
   };
 }
 
@@ -648,4 +648,11 @@ export function descriptionAnswer(d: any, maxTokens: number): { ok: true; a: any
     if (Number.isFinite(out) && maxTokens > 0 && out >= maxTokens) return cut("used all of");
     return { ok: false, cost, error: `unreadable_answer: provider_description (${e instanceof Error ? e.message : String(e)})`.slice(0, 300) };
   }
+}
+
+// CF-247 s819 (Platform Admin 20 Nov 2026 10:21): the promotional words the database refuses, stated to the model up front so it avoids them
+// (setting enrich.course_description_marketing_words, sent with the worker settings; the same list as pdesc.superlatives). Empty when no list is held.
+export function wordsNote(words: unknown): string {
+  const list = Array.isArray(words) ? [...new Set(words.map((w) => String(w).trim()).filter(Boolean))] : [];
+  return list.length ? `Words not allowed: ${list.join(", ")}. Do not use any of them in a sentence, even when the page does; state the same fact plainly.\n` : "";
 }
