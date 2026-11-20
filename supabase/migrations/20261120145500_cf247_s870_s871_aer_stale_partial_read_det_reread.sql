@@ -5,7 +5,7 @@
 -- skips a course while the AI read's proposed rows or its Layer 4 item stand (has_rows, earlier_read).
 --   s870 security.aer_det_reread_v1: one rule for "re-read from the stored copy". A pending course first read held as technical recovery, not an
 --        audit sample, not read by the deterministic reader already, with no manual lock and with a bound stored copy is superseded (Layer 4 item
---        status superseded with its supersession row, the read's proposed entry rows inactive with their reason, the readiness and group rows
+--        status superseded with its supersession row, the read's proposed entry rows inactive (by the item's own trigger), the readiness and group rows
 --        closed), and its course is opened again to aer-det-v1.3: the sweep (job aer-det-sweep) reads the stored copy (no model, no Firecrawl)
 --        and the proposer then proposes, through the unchanged machine rule and Layer 4. A course with no bound stored copy is put on the Course
 --        page needed list instead (security.course_page_needed_add_v1); the search lane runs it under its own daily share. Through three new
@@ -19,7 +19,8 @@
 --        changes), S677, audit samples, active rows (no-overwrite), manual locks (7,585) and every other kind are not touched.
 -- Numbering: specs s870-s871 (S1-RM-Design's s836-s839 are used; s840-s869 are held by S1-ELR, S1-Fees-Intakes and S1-Structure-Outcomes);
 -- migration 20261120145500, the last number of S1-RM-Design's window (Platform Admin 15:25 lane roster).
--- Objects (no new public function, table or view): function security.aer_det_reread_v1(text,uuid[],text,text); security.layer4_rule_groups_v1 replaced
+-- Objects (no new public function, table or view): function security.aer_det_reread_v1(text,uuid[],text,text); index
+-- catalogue.course_entry_requirements_proposed_review_item (proposed rows by review item; speeds the existing item trigger); security.layer4_rule_groups_v1 replaced
 -- (same signature); two md5-guarded edits: public.admin_layer4_inbox(text,jsonb) and security.aer_det_propose_v1(). G1: no new job (the existing
 -- aer-det-sweep does the reading). G2: no new value (the batch is layer4.rule_batch_max). G3: security.consumer_api_check_v1() read before and after
 -- (75 functions, 48 relations). Spend: none here; the re-read is deterministic (no model, no Firecrawl). Nothing is dropped or deleted.
@@ -37,6 +38,11 @@ begin
   end if;
 end $g$;
 
+-- the item trigger (security.course_entry_review_trg_v1) finds a decided item's proposed rows by provenance->>'review_item_id' with a full scan of
+-- catalogue.course_entry_requirements for every item (about 25 ms each; 1,900 items exceed the statement limit). An index on that key, for proposed
+-- rows only, makes it a lookup. Additive: no column, constraint or row of the table changes.
+create index if not exists course_entry_requirements_proposed_review_item on catalogue.course_entry_requirements ((provenance->>'review_item_id')) where status = 'proposed';
+
 create or replace function security.aer_det_reread_v1(p_action text, p_refs uuid[], p_reason text, p_actor text)
 returns jsonb language plpgsql security definer set search_path to '' as $function$
 declare v_ext constant text := 'aer-det-v1.3';  -- fixed: the deterministic reader that reads the stored copy (s835); a new reader ships with its own migration
@@ -46,16 +52,18 @@ begin
   if p_action not in ('check', 'apply', 'fetch') then raise exception 'INVALID_INPUT: unknown action' using errcode = '22023'; end if;
   for r in
     with i as (select x.id, x.status, x.field_code, x.entity_type, x.entity_id, x.proposed_value
-                 from pipeline.layer4_review_items x where x.id = any (coalesce(p_refs, '{}'::uuid[])))
+                 from pipeline.layer4_review_items x where x.id = any (coalesce(p_refs, '{}'::uuid[]))),
+         m as (select distinct on (a.review_item_id) a.review_item_id, a.reason_code from pipeline.aer_machine_admissions a
+                where a.review_item_id = any (coalesce(p_refs, '{}'::uuid[])) order by a.review_item_id, a.created_at desc)
     select i.*,
            (select g.grp || '/' || g.cls from pipeline.layer4_item_groups g where g.kind = 'aer_review' and g.ref = i.id::text and g.state = 'waiting') grp,
-           (select m.reason_code from pipeline.aer_machine_admissions m where m.review_item_id = i.id order by m.created_at desc limit 1) code,
+           m.reason_code code,
            (select p.evidence_id from pipeline.coverage_course_pages p where i.entity_type = 'course' and p.course_id = i.entity_id and p.status = 'bound' and p.evidence_id is not null
              order by p.bound_at desc nulls last limit 1) stored,
            (select p.url from pipeline.coverage_course_pages p where i.entity_type = 'course' and p.course_id = i.entity_id order by p.bound_at desc nulls last limit 1) page_url,
            exists (select 1 from pipeline.manual_locks l where i.entity_type = 'course' and l.entity = 'course' and l.entity_id = i.entity_id and l.field in ('entry_requirements', 'all')) locked,
            exists (select 1 from catalogue.courses c where i.entity_type = 'course' and c.id = i.entity_id and c.lifecycle_status = 'active') course_active
-      from i
+      from i left join m on m.review_item_id = i.id
   loop
     v_note := case
       when r.status <> 'pending' then 'not_waiting'
@@ -90,9 +98,9 @@ begin
       from pipeline.layer4_review_items x where x.id = any (v_ok) and x.status = 'superseded';
     update pipeline.layer4_item_readiness set item_status = 'superseded', readiness = 'closed', classified_at = now() where item_id = any (v_ok);
     update pipeline.layer4_item_groups set state = 'closed', closed_at = now() where kind = 'aer_review' and ref = any (array(select u::text from unnest(v_ok) u));
-    update catalogue.course_entry_requirements set status = 'inactive', status_reason = left('superseded: stale partial read, re-read from the stored copy by ' || v_ext || ' (' || p_reason || ')', 500), updated_at = now()
-     where status = 'proposed' and provenance->>'review_item_id' = any (array(select u::text from unnest(v_ok) u));
-    get diagnostics v_rows = row_count;
+    -- the read's proposed rows are set inactive by the item's own trigger (security.course_entry_review_trg_v1: a superseded item quarantines them)
+    select count(*) into v_rows from catalogue.course_entry_requirements
+     where status = 'inactive' and provenance->>'review_item_id' = any (array(select u::text from unnest(v_ok) u));
     update pipeline.aer_det_academic_pages set outcome = null, outcome_at = null
      where course_id = any (v_courses) and extractor = v_ext and outcome in ('has_rows', 'earlier_read');
     get diagnostics v_pages = row_count;
@@ -234,10 +242,12 @@ begin
   select count(*) into v_locks from pipeline.manual_locks;
   select count(*) into v_active from catalogue.course_entry_requirements where status = 'active';
   select count(*) into v_mx from pipeline.layer4_review_items where status = 'pending' and field_code in ('entry_matrix_first_run', 'entry_matrix_change');
-  select array_agg(i.id order by i.created_at) into v_refs
-    from pipeline.layer4_review_items i join pipeline.layer4_item_groups g on g.kind = 'aer_review' and g.ref = i.id::text and g.state = 'waiting' and g.grp = 'B'
-   where i.status = 'pending' and i.field_code = 'course_entry_first_read' and i.entity_type = 'course' and coalesce(i.proposed_value->>'reader', '') <> 'aer_det'
-     and (select m.reason_code from pipeline.aer_machine_admissions m where m.review_item_id = i.id order by m.created_at desc limit 1) = 'gate_incomplete';
+  with c as (select i.id, i.created_at
+               from pipeline.layer4_review_items i join pipeline.layer4_item_groups g on g.kind = 'aer_review' and g.ref = i.id::text and g.state = 'waiting' and g.grp = 'B'
+              where i.status = 'pending' and i.field_code = 'course_entry_first_read' and i.entity_type = 'course' and coalesce(i.proposed_value->>'reader', '') <> 'aer_det'),
+       m as (select distinct on (a.review_item_id) a.review_item_id, a.reason_code from pipeline.aer_machine_admissions a join c on c.id = a.review_item_id
+              order by a.review_item_id, a.created_at desc)
+  select array_agg(c.id order by c.created_at) into v_refs from c join m on m.review_item_id = c.id where m.reason_code = 'gate_incomplete';
   select count(*) into v_before from pipeline.layer4_review_items where status = 'pending' and field_code = 'course_entry_first_read';
   v_r := security.aer_det_reread_v1('apply', v_refs,
            'Platform Admin 20 Nov 2026 16:28 AEDT: stale partial-table hold (completeness gate, D-R3); re-read from the bound stored copy by the deterministic reader ($0)', 'migration 20261120145500 (s871)');
