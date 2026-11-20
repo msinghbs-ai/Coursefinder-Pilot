@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.34; reviewed-release=2.16.66; source-commit=8f81496ef2e0+local; content-sha256=c978cf20c1a4911c3fdcc3e83aa27918904224d75d86c84b028f63950745521e -->
+<!-- sop-export: id=operator-sop; version=2.35; reviewed-release=2.16.67; source-commit=1fce12a457f0; content-sha256=71f7392352259185006699a6ef7d05305a4775f75bd025f823f14718d6a29126 -->
 # StudySearch – Operator SOP
 
-**Version:** 2.34 (reviewed for platform release v2.16.66)  
+**Version:** 2.35 (reviewed for platform release v2.16.67)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -118,6 +118,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.35 | 20 Nov 2026 | v2.16.67 | Layer 4 › Inbox: Waiting, grouped by rule, on the left groups the cards on the page by the check that holds them; Preview the batch, Show only these, then decide each card on its own bar (or use Grid › Grouped decisions for a server-checked group). A ? on the main screens opens three steps. |
 | 2.34 | 20 Nov 2026 | v2.16.62 | Layer 4 › Inbox, University and Course description cards: Edit & Approve opens the text with the page's own words, the official page link and live counts; Approve As-Is admits the machine text unchanged, Save Edit & Admit admits your text as human input, locked by hand. Held universities with no machine text are opened for writing there. New page Data & Governance › Human Edits & Periodic Audit: My Human Edits and All Human Edits (Admin Governance) with Unacknowledged and Due for 6-month re-review badges; Acknowledge & Keep Lock, Re-Verify by Machine (reads nothing again, changes nothing), Edit & Re-Lock, and for the Platform Admin Release Lock to Machine. |
 | 2.33 | 19 Nov 2026 | v2.16.50 | Layer 4 › Inbox, Course description cards: read Why this is held first. Re-read (1-2 sentences) for a long or worded description, Approve all verified for provider when many of one university are from their own pages (type the count shown to confirm), Reject (bad page / wrong course) when the page is not the course. Course descriptions are now 1 to 2 sentences. |
 | 2.32 | 19 Nov 2026 | v2.16.47 | Around this course and Around this provider now show the approved city, career and visa figures to you as well. Accreditations show on the Provider detail. |
