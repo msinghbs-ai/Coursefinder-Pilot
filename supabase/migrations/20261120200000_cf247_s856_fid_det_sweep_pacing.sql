@@ -4,15 +4,17 @@
 --   were read, but (1) a tick that recorded the five replies of a batch (150 pages) in one transaction took 84 to 120 s, holding catalogue row locks that long; and
 --   (2) at 18:50 all five calls of one batch went to coverage-sweep at once and every one failed with WORKER_RESOURCE_LIMIT (HTTP 546), with the other lanes' sweeps
 --   on the same function. Those 150 pages are offered again in the next pass (their pages were never recorded).
--- What changes (the 100 to 250 course batch is unchanged): a new batch is cut into calls of fid.items_per_call that wait in pipeline.fid_det_runs as 'queued'; each
+-- First merged as 20261120193000 (Pilot #1437); Deploy on merge refused it before applying anything, because it widened a check with a top-level drop. That file
+--   was never applied and is removed; this file does the same without any drop: queued calls wait in their own table.
+-- What changes (the 100 to 250 course batch is unchanged): a new batch is cut into calls of fid.items_per_call that wait in pipeline.fid_det_call_queue; each
 --   minute the job sends at most one queued call while fewer than fid.calls_open_max are waiting for a reply, and records at most fid.replies_per_tick replies. A
 --   tick now records about 30 pages (about 20 s) and the worker sees at most two calls at a time from this lane. Throughput stays about 1,800 pages an hour.
--- Objects (no new public function, table or view): column pipeline.fid_det_runs.payload, state 'queued' on its check; function security.fid_det_tick_v1 replaced
+-- Objects (no new public function, table or view): table pipeline.fid_det_call_queue; function security.fid_det_tick_v1 replaced
 --   (signature unchanged; its live body is the one merged in 20261120175100, read back 19:18 AEDT); two settings; watchdog row fid_det counts queued and sent calls.
 -- G1: no new job. G2: both new values are settings. G3: no consumer API object; checked before and after (75 functions, 48 relations, no drift).
 -- Parity: newest migration on main 20261120181000 (S1-Build s881) read 20 Nov 2026 19:20 AEDT; lane block s850 to s859.
 -- Replaces: the s852 burst (every call of a batch sent in one tick, every reply recorded in one tick).
--- Retires: nothing. Nothing dropped, deleted or renamed (the state check is replaced by a wider one).
+-- Retires: nothing. Nothing dropped, deleted or renamed.
 -- Rollback: set fid.calls_open_max and fid.replies_per_tick to 5 (the old burst), or fid.sweep_on to 0.
 set local lock_timeout = '5s';
 
@@ -34,11 +36,17 @@ values
    'number', to_jsonb(1), 1, 5, 'replies', 999, 'Fees and intakes', 'fid-det-sweep (security.fid_det_tick_v1)', 'CF-247 s856 (Platform Admin 20 Nov 2026 19:15)')
 on conflict (toolset_key, key) do nothing;
 
-alter table pipeline.fid_det_runs add column if not exists payload jsonb;
-alter table pipeline.fid_det_runs drop constraint if exists fid_det_runs_state_check;
-alter table pipeline.fid_det_runs add constraint fid_det_runs_state_check check (state in ('queued', 'sent', 'recorded', 'failed', 'expired'));
-create index if not exists fid_det_runs_queued on pipeline.fid_det_runs (id) where state = 'queued';
-comment on column pipeline.fid_det_runs.payload is 'CF-247 s856: the pages of a call still waiting to be sent (state queued); cleared when the call is sent.';
+create table if not exists pipeline.fid_det_call_queue (
+  id bigserial primary key,
+  items integer not null,
+  payload jsonb not null,
+  created_at timestamptz not null default now(),
+  run_id bigint
+);
+create index if not exists fid_det_call_queue_waiting on pipeline.fid_det_call_queue (id) where run_id is null;
+alter table pipeline.fid_det_call_queue enable row level security;
+revoke all on table pipeline.fid_det_call_queue from public, anon, authenticated;
+comment on table pipeline.fid_det_call_queue is 'CF-247 s856: the calls of a deterministic fee, intake and deadline batch waiting to be sent (run_id null); job fid-det-sweep sends one a minute and sets run_id to the pipeline.fid_det_runs row it became.';
 
 create or replace function security.fid_det_tick_v1()
 returns jsonb language plpgsql security definer set search_path = '' as $function$
@@ -79,36 +87,40 @@ begin
   end loop;
   -- 2 a new batch, cut into queued calls, on its minute and only when nothing of the last batch is waiting or out
   if (extract(epoch from date_trunc('minute', now())) / 60)::bigint % greatest(security.pipeline_num_v1('fid.run_every_minutes', 5)::int, 1) = 0
-     and not exists (select 1 from pipeline.fid_det_runs where state in ('queued', 'sent')) then
+     and not exists (select 1 from pipeline.fid_det_runs where state = 'sent')
+     and not exists (select 1 from pipeline.fid_det_call_queue where run_id is null) then
     v_items := security.fid_det_batch_v1(security.pipeline_num_v1('fid.batch_size', 150)::int, v_ext);
     v_per := greatest(5, least(security.pipeline_num_v1('fid.items_per_call', 30)::int, 40));  -- fixed: the worker reads at most 40 pages a call
     v_n := jsonb_array_length(v_items);
     for i in 0 .. greatest(0, (v_n - 1) / v_per) loop
       exit when v_n = 0;
-      insert into pipeline.fid_det_runs(items, state, payload)
-      values (least(v_per, v_n - i * v_per), 'queued',
+      insert into pipeline.fid_det_call_queue(items, payload)
+      values (least(v_per, v_n - i * v_per),
               (select jsonb_agg(x) from jsonb_array_elements(v_items) with ordinality t(x, o) where o > i * v_per and o <= (i + 1) * v_per));
     end loop;
   end if;
   -- 3 send at most one queued call a minute, while fewer than fid.calls_open_max are waiting for a reply
   if (select count(*) from pipeline.fid_det_runs where state = 'sent') < v_open then
-    select id, payload into r from pipeline.fid_det_runs where state = 'queued' order by id limit 1 for update skip locked;
+    select id, items, payload into r from pipeline.fid_det_call_queue where run_id is null order by id limit 1 for update skip locked;
     if found then
-      v_req := pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'fid_det_read', 'run_id', r.id, 'items', r.payload));
-      update pipeline.fid_det_runs set request_id = v_req, state = 'sent', sent_at = now(), payload = null where id = r.id;
+      insert into pipeline.fid_det_runs(items) values (r.items) returning id into v_run;
+      v_req := pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'fid_det_read', 'run_id', v_run, 'items', r.payload));
+      update pipeline.fid_det_runs set request_id = v_req where id = v_run;
+      update pipeline.fid_det_call_queue set run_id = v_run where id = r.id;
       v_sent := 1;
     end if;
   end if;
-  return jsonb_build_object('recorded', v_rec, 'sent', v_sent, 'queued', (select count(*) from pipeline.fid_det_runs where state = 'queued'), 'fee_reader', v_settle);
+  return jsonb_build_object('recorded', v_rec, 'sent', v_sent, 'queued', (select count(*) from pipeline.fid_det_call_queue where run_id is null), 'fee_reader', v_settle);
 end $function$;
 comment on function security.fid_det_tick_v1() is 'CF-247 s852, paced by s856: job fid-det-sweep. Settles exhausted AI fee reader items (s850), records at most fid.replies_per_tick fid_det_read replies, cuts a new batch of stored course pages into queued calls on its minute, and sends one queued call a minute while fewer than fid.calls_open_max are out. $0: no model, no Firecrawl.';
 
 update pipeline.queue_watch
-   set pending_sql = 'select count(*) from pipeline.fid_det_runs where state in (''queued'', ''sent'')'
+   set pending_sql = 'select (select count(*) from pipeline.fid_det_runs where state = ''sent'') + (select count(*) from pipeline.fid_det_call_queue where run_id is null)'
  where key = 'fid_det';
 
 insert into pipeline.component_register (kind, name, layer, area, purpose, status, replaces, introduced_in) values
-  ('function', 'security.fid_det_tick_v1 (s856 pacing)', 'Layer 2', 'Fees and intakes', 'The deterministic sweep job, paced: one call a minute, one reply recorded a minute', 'active', '{}', '20261120193000')
+  ('function', 'security.fid_det_tick_v1 (s856 pacing)', 'Layer 2', 'Fees and intakes', 'The deterministic sweep job, paced: one call a minute, one reply recorded a minute', 'active', '{}', '20261120200000'),
+  ('table', 'pipeline.fid_det_call_queue', 'Layer 2', 'Fees and intakes', 'Calls of a deterministic batch waiting to be sent', 'active', '{}', '20261120200000')
 on conflict do nothing;
 
 -- post-checks: inside a subtransaction that is always rolled back (no row is left), a tick with two calls waiting sends one call and records at most one reply;
@@ -117,7 +129,7 @@ do $c$
 declare v jsonb; v_api jsonb; v_t timestamptz; v_ms numeric; v_sent int; v_recorded int;
 begin
   begin
-    insert into pipeline.fid_det_runs(items, state, payload) values (1, 'queued', '[]'::jsonb), (1, 'queued', '[]'::jsonb);
+    insert into pipeline.fid_det_call_queue(items, payload) values (1, '[]'::jsonb), (1, '[]'::jsonb);
     v_t := clock_timestamp();
     v := security.fid_det_tick_v1();
     v_ms := extract(epoch from clock_timestamp() - v_t) * 1000;
@@ -129,7 +141,7 @@ begin
   raise notice 's856 post-check: sent %, recorded %, % ms', v_sent, v_recorded, round(v_ms);
   if v_sent > 1 then raise exception 'post-check: a tick sent % calls (at most one)', v_sent; end if;
   if v_recorded > security.pipeline_num_v1('fid.replies_per_tick', 1) then raise exception 'post-check: a tick recorded % replies', v_recorded; end if;
-  if exists (select 1 from pipeline.fid_det_runs where payload = '[]'::jsonb) then raise exception 'post-check: a test call was left behind'; end if;
+  if exists (select 1 from pipeline.fid_det_call_queue where payload = '[]'::jsonb) then raise exception 'post-check: a test call was left behind'; end if;
   v_api := security.consumer_api_check_v1();
   if jsonb_array_length(coalesce(v_api->'drift', '[]'::jsonb)) <> 0 or (v_api->>'functions')::int <> 75 or (v_api->>'relations')::int <> 48 then
     raise exception 'post-check: the consumer API moved: %', v_api;
