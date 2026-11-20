@@ -1,10 +1,10 @@
--- CF-247 s913 to s915 (Platform Admin 21 Nov 2026 10:03 AEDT, chat S1-Fast-Admission, "accelerate verified data admission into live canonical
+-- CF-247 s914 to s916 (Platform Admin 21 Nov 2026 10:03 AEDT, chat S1-Fast-Admission, "accelerate verified data admission into live canonical
 -- tables today"): the partial entry-table admission goes live now instead of after a 24-hour shadow; verified course entry reads are no longer
 -- held back as audit samples; the admission and reconcile jobs run every 15 minutes; the $0 deterministic sweeps take three times the work.
 -- This decision brings forward the cutover the Platform Admin approved at 09:57 for 22 Nov 2026 09:30 AEDT (s912, chat S1-Coverage-Unlock-UI-Notes):
 -- that cutover is this change and is not made again.
 --
--- s913  Partial entry-table admission, live (rule aer-partial-admit of admission-rule-runner, every 15 minutes; it replaces the shadow
+-- s914  Partial entry-table admission, live (rule aer-partial-admit of admission-rule-runner, every 15 minutes; it replaces the shadow
 --       aer-uniwide-partial-shadow, s902/s912). For an entry-matrix first read waiting in Layer 4 that the machine admission stops only at the
 --       completeness gate (D-R3 gate_incomplete or the completeness guard), every earlier check has passed: no manual lock, no earlier rejection,
 --       not claimed, stored copy present and current, fetched from the official address, source on the provider's own website host, host not
@@ -15,12 +15,12 @@
 --       source with the same identity is superseded, as Approve except does (D4). Everything else stays proposed, and the item stays in Layer 4
 --       with a reason naming the countries the read did not cover and the rows held. A grid read stays held while aer.grid_machine_admission_on
 --       is 0. Ledger: pipeline.aer_matrix_machine_admissions (rule aer-partial-v1), so security.aer_matrix_machine_withdraw_v1 reverses it.
--- s914  Course entry reads (rule aer-machine-v1) and entry tables (aer-matrix-machine-v1): the audit sample is set to 0 per cent. 491 reads
+-- s915  Course entry reads (rule aer-machine-v1) and entry tables (aer-matrix-machine-v1): the audit sample is set to 0 per cent. 491 reads
 --       (1,450 rows) passed every check and were waiting only because they were drawn for the sample; they are admitted by the next runs. Their
 --       audit_sample ledger rows stay, so a person can still check them after admission and withdraw one (a withdrawal suspends the rule).
 --       Job aer-machine-admission moves from :24 and :54 to every 15 minutes (:06, :21, :36, :51). The deterministic proposer takes 150 courses
 --       a tick (was 50) and up to 1,200 waiting items (was 400; it was held at the cap of 400).
--- s915  Job aer-reconcile moves from :27 to every 15 minutes (:12, :27, :42, :57; single flight, 84 s p50). aer-det-sweep: a NUL escape in a
+-- s916  Job aer-reconcile moves from :27 to every 15 minutes (:12, :27, :42, :57; single flight, 84 s p50). aer-det-sweep: a NUL escape in a
 --       page's text failed every collected answer from 03:00 AEDT (71 of 72 calls), so the same 40 pages were sent again on every tick; the escape
 --       is now dropped before the cast (md5-guarded edit of security.aer_det_sweep_v1). Throughput three times: aer_det.sweep_calls 3 to 9 and
 --       sweep_max_open 4 to 12 (40 pages a call, unchanged); elr_det.in_flight_max 8 to 24, batch.elr_det_sweep 200 to 600 (25 pages a call,
@@ -43,33 +43,33 @@ set local lock_timeout = '5s'; -- fixed: lock wait guard for the cron, setting a
 do $pre$
 begin
   if md5(pg_get_functiondef('security.aer_det_sweep_v1()'::regprocedure)) <> '9856b441c16e408184e069bd5d8f1cbe' then
-    raise exception 's915 precondition: security.aer_det_sweep_v1 is not the s835 definition this change edits (md5 9856b441)';
+    raise exception 's916 precondition: security.aer_det_sweep_v1 is not the s835 definition this change edits (md5 9856b441)';
   end if;
   if not exists (select 1 from cron.job where jobname = 'aer-machine-admission' and schedule = '24,54 * * * *' and command = 'select security.aer_machine_run_v1()' and active) then
-    raise exception 's914 precondition: aer-machine-admission is not at 24,54 with its expected command';
+    raise exception 's915 precondition: aer-machine-admission is not at 24,54 with its expected command';
   end if;
   if not exists (select 1 from cron.job where jobname = 'aer-reconcile' and schedule = '27 * * * *' and active
                    and command = 'select security.aer_reconcile_v1(security.pipeline_num_v1(''batch.aer_reconcile'', 5000)::int)') then
-    raise exception 's915 precondition: aer-reconcile is not at :27 with its expected command';
+    raise exception 's916 precondition: aer-reconcile is not at :27 with its expected command';
   end if;
   if not exists (select 1 from pipeline.admission_rules where rule_code = 'aer-uniwide-partial-shadow' and enabled) then
-    raise exception 's913 precondition: the shadow rule aer-uniwide-partial-shadow is not registered and on';
+    raise exception 's914 precondition: the shadow rule aer-uniwide-partial-shadow is not registered and on';
   end if;
 end $pre$;
 
--- 1. s913 settings
+-- 1. s914 settings
 insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
  ('pipeline', 'aer.partial_admit_on', 'Entry requirements: admit verified rows of an incomplete entry table',
   '1: every 15 minutes, for an entry-table read stopped only by completeness, admit each university-wide or course row that passes every machine row rule (official host, stored copy, verbatim quote with the minimum, mapped level and grade scale, no manual lock, no conflicting active row); the countries the read did not cover and the rows held stay in Layer 4. 0: off.',
   'number', '1'::jsonb, 0, 1, 'on/off', 1501, 'Entry requirements', 'security.aer_partial_admit_v1 (rule aer-partial-admit)',
-  'CF-247 s913 (Platform Admin 21 Nov 2026 10:03, S1-Fast-Admission): partial admission live today, no 24-hour shadow'),
+  'CF-247 s914 (Platform Admin 21 Nov 2026 10:03, S1-Fast-Admission): partial admission live today, no 24-hour shadow'),
  ('pipeline', 'batch.aer_partial_admit', 'Entry requirements: entry-table reads looked at a run (partial admission)',
   'Most entry-matrix reads waiting in Layer 4 that one partial admission run looks at, oldest first.',
   'number', '200'::jsonb, 1, 500, 'items', 1502, 'Entry requirements', 'security.aer_partial_admit_v1 (rule aer-partial-admit)',
-  'CF-247 s913 (Platform Admin 21 Nov 2026 10:03)')
+  'CF-247 s914 (Platform Admin 21 Nov 2026 10:03)')
 on conflict (toolset_key, key) do nothing;
 
--- 2. s913 the rule
+-- 2. s914 the rule
 create or replace function security.aer_partial_admit_v1() returns jsonb
 language plpgsql security definer set search_path to '' as $f$
 declare
@@ -131,14 +131,14 @@ begin
       -- D4: an active row of the same source with the same identity is replaced by the admitted row
       update catalogue.provider_entry_matrix m set status = 'superseded', status_reason = 'replaced by run ' || v_run.id,
              provenance = coalesce(m.provenance, '{}'::jsonb) || jsonb_build_object('aer_supersede', jsonb_build_object('review_item_id', r.id, 'run_id', v_run.id,
-               'replaced_by_row_id', p.id, 'decision', 'partial admission (aer-partial-v1, s913)', 'at', now())),
+               'replaced_by_row_id', p.id, 'decision', 'partial admission (aer-partial-v1, s914)', 'at', now())),
              updated_at = now()
         from catalogue.provider_entry_matrix p
        where p.id = any(v_ok) and p.row_hash = m.row_hash
          and m.provider_id = v_run.provider_id and m.source_id = v_run.source_id and m.status = 'active' and m.run_id is distinct from v_run.id;
       get diagnostics v_sup = row_count;
       update catalogue.provider_entry_matrix m set status = 'active', status_reason = null,
-             provenance = coalesce(m.provenance, '{}'::jsonb) || jsonb_build_object('partial_admission', jsonb_build_object('rule', 'aer-partial-v1', 'change', 's913',
+             provenance = coalesce(m.provenance, '{}'::jsonb) || jsonb_build_object('partial_admission', jsonb_build_object('rule', 'aer-partial-v1', 'change', 's914',
                'review_item_id', r.id, 'run_id', v_run.id, 'countries_not_read', to_jsonb(v_miss), 'at', now())),
              updated_at = now()
        where m.id = any(v_ok) and m.status = 'proposed';
@@ -147,7 +147,7 @@ begin
       if v_on <> cardinality(v_ok) or v_after <> cardinality(v_ok) then
         raise exception 'aer-partial: read-back found % active of % admitted rows', v_after, cardinality(v_ok);
       end if;
-      v_reason := format('Partial admission (aer-partial-v1, s913, Platform Admin 21 Nov 2026 10:03): %s row(s) of this read admitted from the provider''s own source %s (host %s, content hash %s); each passed every machine row rule. Held for a person: countries not read: %s; %s row(s) held (%s).',
+      v_reason := format('Partial admission (aer-partial-v1, s914, Platform Admin 21 Nov 2026 10:03): %s row(s) of this read admitted from the provider''s own source %s (host %s, content hash %s); each passed every machine row rule. Held for a person: countries not read: %s; %s row(s) held (%s).',
                          v_on, coalesce(c->'checks'->>'source_url', ''), coalesce(security.site_host_v1(c->'checks'->>'source_url'), '?'), left(coalesce(c->'checks'->>'content_hash', ''), 12),  -- fixed: a short hash prefix for reading
                          coalesce(nullif(array_to_string(v_miss, ', '), ''), 'none named'), v_heldn, v_held::text);
       insert into pipeline.aer_matrix_machine_admissions (review_item_id, provider_id, run_id, mode, outcome, rule, reason_code, reason, checks, rows_admitted, actor)
@@ -162,7 +162,7 @@ begin
        where id = r.id and status = 'pending';
       insert into pipeline.admin_control_events (area, action, target, detail, actor)
       values ('layer4', 'aer_partial_admit', 'pipeline.layer4_review_items', jsonb_build_object('review_item_id', r.id, 'provider_id', r.entity_id, 'run_id', v_run.id,
-              'rows_admitted', v_on, 'superseded', v_sup, 'held_back', v_heldn, 'countries_not_read', to_jsonb(v_miss), 'rule', 'aer-partial-v1', 'change', 's913',
+              'rows_admitted', v_on, 'superseded', v_sup, 'held_back', v_heldn, 'countries_not_read', to_jsonb(v_miss), 'rule', 'aer-partial-v1', 'change', 's914',
               'auto', true, 'actor_kind', 'machine'), v_sys);
       v_items := v_items + 1; v_rows := v_rows + v_on;
     exception when others then
@@ -173,57 +173,57 @@ begin
                             'ms', round(extract(epoch from clock_timestamp() - v_t0) * 1000));
 end $f$;
 revoke all on function security.aer_partial_admit_v1() from public, anon, authenticated;
-comment on function security.aer_partial_admit_v1() is 'CF-247 s913 (Platform Admin 21 Nov 2026 10:03): rule aer-partial-admit (aer-partial-v1). For an entry-matrix first read waiting in Layer 4 that the machine admission stops only at completeness, admits each proposed university-wide or course row that passes every machine row rule, has no course manual lock, no conflicting active row and no shared identity; the rest and the countries not read stay with a person. Ledger aer_matrix_machine_admissions (reversible by security.aer_matrix_machine_withdraw_v1), control event, Layer 4 reason.';
+comment on function security.aer_partial_admit_v1() is 'CF-247 s914 (Platform Admin 21 Nov 2026 10:03): rule aer-partial-admit (aer-partial-v1). For an entry-matrix first read waiting in Layer 4 that the machine admission stops only at completeness, admits each proposed university-wide or course row that passes every machine row rule, has no course manual lock, no conflicting active row and no shared identity; the rest and the countries not read stay with a person. Ledger aer_matrix_machine_admissions (reversible by security.aer_matrix_machine_withdraw_v1), control event, Layer 4 reason.';
 
 insert into pipeline.automation_catalogue (jobname, area, sort, label, description, control_rank, batch_editable, layer23_stage) values
  ('aer-partial-admit', 'Admission', 22, 'Entry requirements: admit verified rows of an incomplete entry table',
-  'Every 15 minutes (:14, :29, :44, :59), as a rule of admission-rule-runner: while aer.partial_admit_on is 1, looks at up to batch.aer_partial_admit entry-matrix reads waiting in Layer 4 that only completeness stops, and admits each university-wide or course row that passes every machine row rule (official host, current stored copy, verbatim quote with the minimum, mapped level and grade scale, no manual lock, no conflicting active row). The countries the read did not cover and the rows held stay in Layer 4 (s913, live 21 Nov 2026; replaces the shadow aer-uniwide-partial-shadow).',
+  'Every 15 minutes (:14, :29, :44, :59), as a rule of admission-rule-runner: while aer.partial_admit_on is 1, looks at up to batch.aer_partial_admit entry-matrix reads waiting in Layer 4 that only completeness stops, and admits each university-wide or course row that passes every machine row rule (official host, current stored copy, verbatim quote with the minimum, mapped level and grade scale, no manual lock, no conflicting active row). The countries the read did not cover and the rows held stay in Layer 4 (s914, live 21 Nov 2026; replaces the shadow aer-uniwide-partial-shadow).',
   6, true, null)
 on conflict (jobname) do nothing;
 
 insert into pipeline.admission_rules (rule_code, legacy_job, call_sql, call_md5, schedule, priority, mode, budget_ms, expected_ms, note)
 values ('aer-partial-admit', 'aer-partial-admit', 'select security.aer_partial_admit_v1()', md5('select security.aer_partial_admit_v1()'),
-        '14,29,44,59 * * * *', 60, 'live', 60000, 30000, 'CF-247 s913: partial entry-table admission, live 21 Nov 2026 (Platform Admin 10:03, S1-Fast-Admission); replaces the shadow aer-uniwide-partial-shadow')
+        '14,29,44,59 * * * *', 60, 'live', 60000, 30000, 'CF-247 s914: partial entry-table admission, live 21 Nov 2026 (Platform Admin 10:03, S1-Fast-Admission); replaces the shadow aer-uniwide-partial-shadow')
 on conflict (rule_code) do nothing;
 
 -- the shadow is replaced: switched off, its rows kept, retiring after the retention window
-update pipeline.admission_rules set enabled = false, note = coalesce(note, '') || ' | switched off by s913 (20261121140000): replaced by aer-partial-admit', updated_at = now()
+update pipeline.admission_rules set enabled = false, note = coalesce(note, '') || ' | switched off by s914 (20261121150000): replaced by aer-partial-admit', updated_at = now()
  where rule_code = 'aer-uniwide-partial-shadow' and enabled;
 update pipeline.platform_toolset_settings set value = to_jsonb(0), updated_at = now(),
-       reason = 'CF-247 s913 (Platform Admin 21 Nov 2026 10:03): the shadow is replaced by the live rule aer-partial-admit (aer.partial_admit_on)'
+       reason = 'CF-247 s914 (Platform Admin 21 Nov 2026 10:03): the shadow is replaced by the live rule aer-partial-admit (aer.partial_admit_on)'
  where toolset_key = 'pipeline' and key = 'aer.uniwide_partial_shadow_on' and value = to_jsonb(1);
 update pipeline.component_register set status = 'retiring', replaced_by = case when name = 'pipeline.aer_uniwide_partial_shadow' then 'nothing: kept as the shadow record' else 'security.aer_partial_admit_v1 (rule aer-partial-admit)' end,
        retire_after = current_date + security.pipeline_num_v1('hygiene.retire_after_days', 14)::int, updated_at = now(),
-       note = 'switched off by s913 (20261121140000): the partial admission went live without the 24-hour shadow (Platform Admin 21 Nov 2026 10:03)'
+       note = 'switched off by s914 (20261121150000): the partial admission went live without the 24-hour shadow (Platform Admin 21 Nov 2026 10:03)'
  where name in ('aer-uniwide-partial-shadow', 'security.aer_uniwide_partial_shadow_v1', 'security.aer_uniwide_partial_shadow_report_v1') and status = 'active';
 
 insert into pipeline.component_register (kind, name, layer, area, purpose, status, replaces, introduced_in) values
- ('job', 'aer-partial-admit', 'Layer 4', 'Admission', 'CF-247 s913: partial entry-table admission (admission-rule-runner rule, every 15 minutes)', 'active', '{aer-uniwide-partial-shadow}', '20261121140000'),
- ('function', 'security.aer_partial_admit_v1', 'Layer 4', 'Admission', 'CF-247 s913: the partial admission run', 'active', '{security.aer_uniwide_partial_shadow_v1}', '20261121140000')
+ ('job', 'aer-partial-admit', 'Layer 4', 'Admission', 'CF-247 s914: partial entry-table admission (admission-rule-runner rule, every 15 minutes)', 'active', '{aer-uniwide-partial-shadow}', '20261121150000'),
+ ('function', 'security.aer_partial_admit_v1', 'Layer 4', 'Admission', 'CF-247 s914: the partial admission run', 'active', '{security.aer_uniwide_partial_shadow_v1}', '20261121150000')
 on conflict do nothing;
 
--- 3. s914 audit samples off; admission every 15 minutes; the proposer takes three times the work
+-- 3. s915 audit samples off; admission every 15 minutes; the proposer takes three times the work
 update pipeline.platform_toolset_settings set value = to_jsonb(0), updated_at = now(),
-       reason = 'CF-247 s914 (Platform Admin 21 Nov 2026 10:03): a read that passes every check is admitted, not held for a sample; its audit_sample ledger row stays for a check after admission'
+       reason = 'CF-247 s915 (Platform Admin 21 Nov 2026 10:03): a read that passes every check is admitted, not held for a sample; its audit_sample ledger row stays for a check after admission'
  where toolset_key = 'pipeline' and key in ('aer.machine_audit_pct', 'aer.matrix_machine_audit_pct') and value = to_jsonb(5);
-update pipeline.platform_toolset_settings set value = to_jsonb(150), updated_at = now(), reason = 'CF-247 s914 (Platform Admin 21 Nov 2026 10:03): three times the courses proposed a tick'
+update pipeline.platform_toolset_settings set value = to_jsonb(150), updated_at = now(), reason = 'CF-247 s915 (Platform Admin 21 Nov 2026 10:03): three times the courses proposed a tick'
  where toolset_key = 'pipeline' and key = 'aer_det.propose_per_run' and value = to_jsonb(50);
-update pipeline.platform_toolset_settings set value = to_jsonb(1200), updated_at = now(), reason = 'CF-247 s914 (Platform Admin 21 Nov 2026 10:03): the proposer was held at 400 waiting items; three times the room'
+update pipeline.platform_toolset_settings set value = to_jsonb(1200), updated_at = now(), reason = 'CF-247 s915 (Platform Admin 21 Nov 2026 10:03): the proposer was held at 400 waiting items; three times the room'
  where toolset_key = 'pipeline' and key = 'aer_det.propose_max_pending' and value = to_jsonb(400);
 
--- 4. s915 throughput of the $0 deterministic sweeps (each range widened to take the new value)
-update pipeline.platform_toolset_settings set max_value = 12, value = to_jsonb(9), updated_at = now(), reason = 'CF-247 s915 (Platform Admin 21 Nov 2026 10:03): three times the worker calls a tick (40 pages a call, unchanged)'
+-- 4. s916 throughput of the $0 deterministic sweeps (each range widened to take the new value)
+update pipeline.platform_toolset_settings set max_value = 12, value = to_jsonb(9), updated_at = now(), reason = 'CF-247 s916 (Platform Admin 21 Nov 2026 10:03): three times the worker calls a tick (40 pages a call, unchanged)'
  where toolset_key = 'pipeline' and key = 'aer_det.sweep_calls' and value = to_jsonb(3);
-update pipeline.platform_toolset_settings set max_value = 16, value = to_jsonb(12), updated_at = now(), reason = 'CF-247 s915 (Platform Admin 21 Nov 2026 10:03): three times the calls open at once'
+update pipeline.platform_toolset_settings set max_value = 16, value = to_jsonb(12), updated_at = now(), reason = 'CF-247 s916 (Platform Admin 21 Nov 2026 10:03): three times the calls open at once'
  where toolset_key = 'pipeline' and key = 'aer_det.sweep_max_open' and value = to_jsonb(4);
-update pipeline.platform_toolset_settings set max_value = 24, value = to_jsonb(24), updated_at = now(), reason = 'CF-247 s915 (Platform Admin 21 Nov 2026 10:03): three times the English reader calls in flight (25 pages a call, unchanged)'
+update pipeline.platform_toolset_settings set max_value = 24, value = to_jsonb(24), updated_at = now(), reason = 'CF-247 s916 (Platform Admin 21 Nov 2026 10:03): three times the English reader calls in flight (25 pages a call, unchanged)'
  where toolset_key = 'pipeline' and key = 'elr_det.in_flight_max' and value = to_jsonb(8);
-update pipeline.platform_toolset_settings set max_value = 600, value = to_jsonb(600), updated_at = now(), reason = 'CF-247 s915 (Platform Admin 21 Nov 2026 10:03): three times the English pages claimed a tick'
+update pipeline.platform_toolset_settings set max_value = 600, value = to_jsonb(600), updated_at = now(), reason = 'CF-247 s916 (Platform Admin 21 Nov 2026 10:03): three times the English pages claimed a tick'
  where toolset_key = 'pipeline' and key = 'batch.elr_det_sweep' and value = to_jsonb(200);
-update pipeline.platform_toolset_settings set max_value = 20, value = to_jsonb(18), updated_at = now(), reason = 'CF-247 s915 (Platform Admin 21 Nov 2026 10:03): three times the central English sources in one call (one call at a time, unchanged)'
+update pipeline.platform_toolset_settings set max_value = 20, value = to_jsonb(18), updated_at = now(), reason = 'CF-247 s916 (Platform Admin 21 Nov 2026 10:03): three times the central English sources in one call (one call at a time, unchanged)'
  where toolset_key = 'pipeline' and key = 'batch.elr_central' and value = to_jsonb(6);
 
--- 5. s915 aer-det-sweep: a NUL escape no longer fails the whole answer (md5-guarded above; only the cast line changes)
+-- 5. s916 aer-det-sweep: a NUL escape no longer fails the whole answer (md5-guarded above; only the cast line changes)
 create or replace function security.aer_det_sweep_v1() returns jsonb
 language plpgsql security definer set search_path to ''
 as $f$
@@ -247,7 +247,7 @@ begin
     end if;
     begin
       if resp.timed_out or resp.error_msg is not null or resp.status_code >= 300 then raise exception 'call failed'; end if;
-      -- s915 (21 Nov 2026): a NUL escape (\u0000) in a page's text cannot be cast to jsonb, which failed the whole call and sent the same pages
+      -- s916 (21 Nov 2026): a NUL escape (\u0000) in a page's text cannot be cast to jsonb, which failed the whole call and sent the same pages
       -- again on every tick (71 of 72 calls failed from 03:00 AEDT); the escape is dropped before the cast, nothing else is changed
       v_body := regexp_replace(resp.content, '(?<!\\)\\u0000', '', 'g')::jsonb;
       if v_body->>'extractor' is distinct from v_ext then
@@ -288,10 +288,10 @@ begin
   v_prop := security.aer_det_propose_v1();
   return jsonb_build_object('collected', v_got, 'calls_sent', v_sent, 'open_calls', v_open, 'propose', v_prop);
 end $f$;
-comment on function security.aer_det_sweep_v1() is 'CF-247 s835/s915: one tick of the job aer-det-sweep. Collects the answers of earlier worker calls (mode aer_det_read, no model, no Firecrawl; a NUL escape in page text is dropped before the cast, s915), records the academic readings, sends the next stored pages, then proposes the readings through security.aer_det_propose_v1. No AI or Firecrawl spend.';
+comment on function security.aer_det_sweep_v1() is 'CF-247 s835/s916: one tick of the job aer-det-sweep. Collects the answers of earlier worker calls (mode aer_det_read, no model, no Firecrawl; a NUL escape in page text is dropped before the cast, s916), records the academic readings, sends the next stored pages, then proposes the readings through security.aer_det_propose_v1. No AI or Firecrawl spend.';
 revoke all on function security.aer_det_sweep_v1() from public, anon, authenticated;
 
--- 6. s914/s915 schedules: same commands, every 15 minutes
+-- 6. s915/s916 schedules: same commands, every 15 minutes
 do $sched$
 declare v_adm bigint; v_rec bigint;
 begin
@@ -299,18 +299,18 @@ begin
   select jobid into v_rec from cron.job where jobname = 'aer-reconcile' and command = 'select security.aer_reconcile_v1(security.pipeline_num_v1(''batch.aer_reconcile'', 5000)::int)';
   perform cron.alter_job(v_adm, schedule => '6,21,36,51 * * * *');
   perform cron.alter_job(v_rec, schedule => '12,27,42,57 * * * *');
-  update pipeline.automation_catalogue set description = description || ' Every 15 minutes from 21 Nov 2026 (:06, :21, :36, :51; s914, was :24 and :54).'
-   where jobname = 'aer-machine-admission' and description not like '%s914%';
-  update pipeline.automation_catalogue set description = description || ' Every 15 minutes from 21 Nov 2026 (:12, :27, :42, :57; s915, was hourly at :27).'
-   where jobname = 'aer-reconcile' and description not like '%s915%';
+  update pipeline.automation_catalogue set description = description || ' Every 15 minutes from 21 Nov 2026 (:06, :21, :36, :51; s915, was :24 and :54).'
+   where jobname = 'aer-machine-admission' and description not like '%s915%';
+  update pipeline.automation_catalogue set description = description || ' Every 15 minutes from 21 Nov 2026 (:12, :27, :42, :57; s916, was hourly at :27).'
+   where jobname = 'aer-reconcile' and description not like '%s916%';
   insert into pipeline.admin_control_events (area, action, target, detail, actor)
-  values ('scheduler', 'job_reschedule', 'aer-machine-admission', jsonb_build_object('change', 's914', 'from', '24,54 * * * *', 'to', '6,21,36,51 * * * *'), null),
-         ('scheduler', 'job_reschedule', 'aer-reconcile', jsonb_build_object('change', 's915', 'from', '27 * * * *', 'to', '12,27,42,57 * * * *'), null),
-         ('admission', 'rule_cutover', 'aer-partial-admit', jsonb_build_object('change', 's913', 'replaces', 'aer-uniwide-partial-shadow', 'decision', 'Platform Admin 21 Nov 2026 10:03 AEDT, S1-Fast-Admission'), null);
+  values ('scheduler', 'job_reschedule', 'aer-machine-admission', jsonb_build_object('change', 's915', 'from', '24,54 * * * *', 'to', '6,21,36,51 * * * *'), null),
+         ('scheduler', 'job_reschedule', 'aer-reconcile', jsonb_build_object('change', 's916', 'from', '27 * * * *', 'to', '12,27,42,57 * * * *'), null),
+         ('admission', 'rule_cutover', 'aer-partial-admit', jsonb_build_object('change', 's914', 'replaces', 'aer-uniwide-partial-shadow', 'decision', 'Platform Admin 21 Nov 2026 10:03 AEDT, S1-Fast-Admission'), null);
 end $sched$;
 
 -- 7. post-checks, then the first partial admission run now (the cutover is live on deploy)
-do $s913$
+do $s914$
 declare v_jobs int := (select count(*) from cron.job where active); v_locks int := (select count(*) from pipeline.manual_locks); v_res jsonb; v_bad text;
 begin
   if (select schedule from cron.job where jobname = 'aer-machine-admission') <> '6,21,36,51 * * * *'
@@ -334,5 +334,5 @@ begin
               where a.rule = 'aer-partial-v1' and a.created_at >= now() and m.course_id is not null
                 and exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = m.course_id and l.field in ('entry_requirements', 'all'))) then
     raise exception 'post-check: a row of a locked course was admitted'; end if;
-  raise notice 's913-s915: first partial admission run %; % active jobs; % manual locks', v_res, v_jobs, v_locks;
-end $s913$;
+  raise notice 's914-s916: first partial admission run %; % active jobs; % manual locks', v_res, v_jobs, v_locks;
+end $s914$;
