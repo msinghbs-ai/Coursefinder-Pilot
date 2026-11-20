@@ -26,6 +26,7 @@ import{GroupBar,GroupList,recordNavigation}from'./Layer4Groups' // CF-247 mandat
 import{ItemLifecycle}from'./Layer4ItemLifecycle' // CF-247 decision 12:24: action lifecycle, times and acknowledgement on every card
 import{layer4DeepLinkCursor}from'./layer4-deep-link'
 import AerCourseLinks from'./AerCourseLinks' // CF-247 F-AER.08 step 3: course links of a university's entry tables
+import Layer4HoldReasons from'./Layer4HoldReasons' // CF-247 s831: why AER items are held, and the audit sample
 import Layer4Grid from'./Layer4Grid' // CF-247 UI/UX audit Phase 5 (18 Nov 2026): the review grid, saved views and the quote/value drawer
 import{CdList,CdPanel,CdWhy,ChecksLine,ReasonChips,cdChoices,isCourseDescription,useCdQueue}from'./CourseDescriptionPanel' // CF-247 course descriptions (6 Nov 2026): reconcile, ready first, the sample
 import DescriptionEditAdmit,{HeldUniversities}from'./DescriptionEditAdmit' // CF-247 s802/s803: Edit & Approve, held universities
@@ -139,6 +140,7 @@ export default function Layer4Inbox({onError,routeParams}){
       <Button compact onClick={()=>{loadSum();loadUnis(offset);loadItems(cur)}}><RefreshCw size={14}/>Refresh</Button>
     </div>
     {note&&<p className="l4i-note" role="status">{note}</p>}
+    {kind==='aer_review'&&(view==='university'||view==='kind')&&<Layer4HoldReasons kinds={kinds} targetDays={sum.target_days} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>}
     {view==='grid'?<Layer4Grid kinds={kinds} targetDays={sum.target_days} rank={sum.rank} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
     view==='group'?<GroupList group={grp} refresh={gtick} renderItem={it=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={r=>{decided(r);setGtick(x=>x+1)}} onError={onError} onRefresh={()=>{loadSum();setGtick(x=>x+1)}}/>}/>:
     view==='decided'?<Decided items={items} kinds={kinds}/>:view==='kind'&&!kind?<Empty text="Choose a kind above to see its items across every university."/>:

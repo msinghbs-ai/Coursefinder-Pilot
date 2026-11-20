@@ -14,11 +14,12 @@ import{Button,EmptyInline,Pager,StatusChip,fmtDate,fmtNumber}from'./ui-kit'
 import{DEFAULT_COLS,GRID_COLUMNS,quoteValuePairs,toCsv,urlOf}from'./lib/layer4-grid'
 import Layer4GroupDecide from'./Layer4GroupDecide'
 import Layer4Clusters from'./Layer4Clusters' // v2.16.43: clusters by kind, university, reason and quote
+import AerRuleChecks from'./AerRuleChecks' // S831: the rule checks of an AER course entry read
 import{CountryFlag}from'./ProviderListParts' // s767: the drawn flags of Catalogue › Providers
 
 const call=async(fn,args)=>{const{data,error}=await supabase.rpc(fn,args);if(error)throw new Error(error.message);return data}
 const QUOTE_CAP=4 // the review column shows the first quotes; the table below lists every row
-function Drawer({target,kinds,targetDays,renderItem,onClose,onDecided,nav}){
+export function Drawer({target,kinds,targetDays,renderItem,onClose,onDecided,nav}){
   const[t,setT]=useState(null),[err,setErr]=useState(''),[tick,setTick]=useState(0)
   useEffect(()=>{setT(null);setErr('');call('admin_layer4_item_trace_v1',{p_kind:target.kind,p_ref:target.ref}).then(setT).catch(e=>setErr(e.message))},[target.kind,target.ref,tick])
   const it=t?.item,pairs=useMemo(()=>quoteValuePairs(it),[it])
@@ -50,6 +51,7 @@ function Drawer({target,kinds,targetDays,renderItem,onClose,onDecided,nav}){
           {it.suggestion&&<p className="l4g-rv-sug"><strong>Suggested next step:</strong> {it.suggestion}</p>}
         </div>
       </section>}
+      {it&&target.kind==='aer_review'&&<section data-l4g-rule-checks><h3>Rule checks</h3><AerRuleChecks id={target.ref}/></section>}
       {it&&t.waiting&&renderItem&&<section data-l4g-decide><h3>Decide</h3>
         <p className="l4g-sub">The decisions below are this kind's own (Approve, Edit and approve, Reject or Hold, each with a reason). Nothing is decided by moving between items.</p>
         {renderItem({...it,late:Number(targetDays)>0&&Date.now()-new Date(it.created_at).getTime()>Number(targetDays)*86400000},r=>{onDecided?.(r);setTick(x=>x+1)})}

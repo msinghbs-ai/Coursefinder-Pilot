@@ -175,3 +175,12 @@
 .l4i-reject{color:var(--cf-red-700,var(--cf-slate-900));border:1px solid var(--cf-slate-300);background:transparent;border-radius:var(--cf-radius-md,6px);padding:4px 10px}
 .dea-minor{display:flex;gap:12px;margin:4px 0 0}
 .dea-link{background:none;border:0;padding:0;color:var(--cf-slate-600);text-decoration:underline;cursor:pointer;font-size:var(--cf-fs-xs)}
+
+/* CF-247 s831: Why items are held, and the rule checks in the Source quote drawer */
+.l4i-hold{margin:12px 0;padding:12px;border:1px solid var(--cf-border,#d9dee5);border-radius:8px}
+.l4i-hold h3,.l4i-hold h4{margin:0 0 6px}
+.l4i-hold tr.on td{background:var(--cf-surface-2,#f3f6fa)}
+.l4i-checks{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.l4i-checks li{padding:6px 8px;border-left:3px solid var(--cf-border,#c7ced8);background:var(--cf-surface-2,#f7f9fb)}
+.l4i-checks li[data-state=fail]{border-left-color:#b42318}
+.l4i-checks li[data-state=pass]{border-left-color:#1a7f37}
