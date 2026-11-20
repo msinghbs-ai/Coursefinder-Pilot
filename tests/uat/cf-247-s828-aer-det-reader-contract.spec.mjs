@@ -1,8 +1,8 @@
 // Guards: S828 and S829 deterministic English and academic entry reader (Platform Admin 20 Nov 2026 10:51 AEDT, Decision 2; Decision 276 kept: shadow readings only, AER v1 frozen, every gate unchanged): a pure reader with no model, fetch or write; every reading's quote is on the page text word for word.
-// CF-247 S828 (reader) and S829 (precision rules, aer-det-v1.1). Module supabase/functions/coverage-sweep/aer-det-reader.ts.
+// CF-247 S828 (reader) and S829 (precision rules) and S832 (collapsed-row guard, aer-det-v1.2). Module supabase/functions/coverage-sweep/aer-det-reader.ts.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-import { detRead, detUnits, AER_DET_VERSION } from '../../supabase/functions/coverage-sweep/aer-det-reader.ts'
+import { detRead, detUnits, detCollapsed, AER_DET_VERSION } from '../../supabase/functions/coverage-sweep/aer-det-reader.ts'
 
 const SRC = fs.readFileSync('supabase/functions/coverage-sweep/aer-det-reader.ts', 'utf8')
 const keys = (t) => detRead(t).map((r) => r.key)
@@ -10,7 +10,7 @@ const one = (t, k) => detRead(t).find((r) => r.key === k)
 
 test('the module is pure: no model, fetch, storage, database or environment access', () => {
   expect(SRC).not.toMatch(/\bfetch\s*\(|openrouter|firecrawl|Deno\.|supabase|\.rpc\(|\.storage\b|XMLHttpRequest/i)
-  expect(AER_DET_VERSION).toBe('aer-det-v1.1')
+  expect(AER_DET_VERSION).toBe('aer-det-v1.2')
 })
 
 test('English tests: IELTS with band minimum, TOEFL iBT, PTE, OET, CELPIP and Cambridge', () => {
@@ -101,4 +101,32 @@ test('s829 recall: IELTS band minimums in the wordings pages use', () => {
   expect(b('IELTS minimum of 6.5 overall, 6.0 each band.')).toBe(6)
   expect(b('IELTS 6.5 overall.')).toBe(null)
   expect(b('IELTS 6.0 with no band below 7.0.')).toBe(null)  // never above the overall
+})
+
+test('s832 collapsed rows: a flattened table line is skipped, and a value is never taken across another test or qualification', () => {
+  // PTE beside LANGUAGECERT: the 50 belongs to LANGUAGECERT, not to PTE
+  expect(keys('PTE Academic and LANGUAGECERT Academic accepted; LANGUAGECERT Academic 60')).not.toContain('pte')
+  expect(keys('PTE Academic: 58 overall. LANGUAGECERT Academic: 60 overall.')).toContain('pte')
+  expect(one('PTE Academic: 58 overall. LANGUAGECERT Academic: 60 overall.', 'pte').value).toEqual({ overall: 58 })
+  // two degree titles on one line: skipped entirely
+  const two = 'Bachelor of Business Year 12 with a score of 60 Bachelor of Commerce Year 12 with a score of 70'
+  expect(detCollapsed(two)).toBe(true)
+  expect(detRead(two)).toEqual([])
+  // a table separator beside two tests or qualifications: skipped
+  const tab = 'IELTS 6.5 | TOEFL 79 | PTE 58'
+  expect(detCollapsed(tab)).toBe(true)
+  expect(detRead(tab)).toEqual([])
+  // three tests on a long line: skipped; the same on a short line is read, each against its own value
+  expect(detCollapsed('IELTS 6.5, TOEFL 79, PTE 58')).toBe(false)
+  expect(detCollapsed('IELTS 6.5, TOEFL 79, PTE 58 ' + 'x'.repeat(200))).toBe(true)
+  const short = detRead('IELTS 6.5, TOEFL 79, PTE 58')
+  expect(short.map((r) => r.key)).toContain('ielts')
+  // Canadian average beside an NCUK point score is not read as the Canadian average
+  expect(keys('Ontario Secondary School Diploma with NCUK 112 points; foundation average 75%')).not.toContain('ca_secondary')
+  expect(one('Applicants need an Ontario Secondary School Diploma with an average of 75%.', 'ca_secondary').value).toEqual({ average_percent: 75 })
+  // a quote never runs into the next qualification
+  const r = one('NCEA Level 3 with 60 credits at Level 3 and University Entrance.', 'ncea_l3')
+  expect(r.quote).not.toMatch(/University Entrance/)
+  // every quote is still on the text
+  for (const x of detRead('IELTS 6.5 overall. NCEA Level 3 with 60 credits.')) expect('IELTS 6.5 overall. NCEA Level 3 with 60 credits.'.includes(x.quote)).toBe(true)
 })

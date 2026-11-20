@@ -2,7 +2,7 @@
 // proficiency tests and the academic entry qualifications a stored course page states in words. No model, no fetch, no write: it takes the page's text and returns readings, each with a
 // verbatim quote that is a substring of that text (checked here, so a reading can never carry words the page does not hold). Readings are SHADOW readings: they are recorded beside Layer 4 and
 // are never admitted by this module (Decision 276: AER v1 is frozen and AER v2 admits only through its own gates; the completeness gate, audit sample, page identity and manual locks are untouched).
-export const AER_DET_VERSION = "aer-det-v1.1" // v1.1 (20 Nov 2026, s829): Year 12 needs a stated value; University Entrance and NCEA L3 read a same-clause window of 120 characters with a stated credit count and never inside an English-test sentence; IELTS band minimums read in more wordings
+export const AER_DET_VERSION = "aer-det-v1.2" // v1.2 (20 Nov 2026, s832): a collapsed table line (two or more degree titles, a table separator beside two or more tests or qualifications, or three or more tests or qualifications on a line over 200 characters) is skipped, and a value is never taken across another test or qualification; v1.1 (20 Nov 2026, s829): Year 12 needs a stated value; University Entrance and NCEA L3 read a same-clause window of 120 characters with a stated credit count and never inside an English-test sentence; IELTS band minimums read in more wordings
 
 export type DetReading = {
   kind: "english_test" | "academic_entry"
@@ -56,6 +56,33 @@ function ieltsBandMin(u: string, overall: number): number | null {
 function clause(u: string, at: number): string { const w = u.slice(at, at + 120); const e = w.search(/[.;](?=\s+[A-Z(]|$)/); return (e > 0 ? w.slice(0, e + 1) : w).trim() }
 const ENGLISH_TEST = /\b(?:IELTS|TOEFL|PTE|OET|CELPIP|Cambridge|Duolingo)\b/i
 
+// s832 (aer-det-v1.2): the tests and qualifications a page names beside each other. A reading takes its value only from words that name its own test or qualification, so a score that
+// belongs to LANGUAGECERT, NCUK, an IB Diploma or a foundation course is never read as the course's IELTS, PTE, Year 12 or Canadian average. When a line is a flattened table (several programmes or
+// tests on one line) the reader skips it rather than guess which score belongs to which row.
+const FAMILIES: [string, RegExp][] = [
+  ["ielts", /\bIELTS\b/i], ["toefl", /\bTOEFL\b/i], ["pte", /\bPTE\b/i], ["oet", /\bOET\b/], ["celpip", /\bCELPIP\b/i],
+  ["cambridge", /\b(?:Cambridge|C1 Advanced|C2 Proficiency|CAE|CPE)\b/i], ["duolingo", /\bDuolingo\b/i], ["languagecert", /\bLANGUAGECERT\b/i],
+  ["atar", /\bATAR\b/], ["year12", /\b(?:Year 12|Victorian Certificate of Education|VCE|HSC|Higher School Certificate|QCE|Queensland Certificate of Education|South Australian Certificate of Education|SACE|WACE|Tasmanian Certificate of Education|TCE|NTCET|ACT Senior Secondary)\b/],
+  ["ncea", /\bNCEA\b/], ["ue", /\bUniversity Entrance\b/i], ["ca", /\b(?:Ontario Secondary School Diploma|OSSD|Grade 12|secondary school diploma|high school diploma|senior matriculation|BC Dogwood|Baccalaur[eé]at)/i],
+  ["gpa", /\b(?:GPA|grade point average)\b/i], ["ncuk", /\bNCUK\b/], ["alevel", /\bA[- ]?levels?\b/i], ["ib", /\bInternational Baccalaureate\b|\bIB Diploma\b/],
+]
+const OWN: Record<string, string> = { ielts: "ielts", toefl_ibt: "toefl", pte: "pte", oet: "oet", celpip: "celpip", cambridge: "cambridge", atar: "atar", year12: "year12", ncea_l3: "ncea", university_entrance: "ue", ca_secondary: "ca", bachelor_gpa: "gpa" }
+function families(s: string): Set<string> { const o = new Set<string>(); for (const [id, re] of FAMILIES) if (re.test(s)) o.add(id); return o }
+const DEGREE = /\b(?:Bachelor|Master|Graduate Certificate|Graduate Diploma|Diploma|Associate Degree|Doctor)\s+of\s+[A-Z][\w&-]*(?:\s+[A-Z&][\w&-]*){0,3}/g
+export function detCollapsed(u: string): boolean {
+  const titles = new Set([...u.matchAll(DEGREE)].map((x) => x[0].toLowerCase()))
+  if (titles.size >= 2) return true
+  const f = families(u).size
+  if (/\||\t/.test(u) && f >= 2) return true
+  return f >= 3 && u.length > 200
+}
+// the text from a match to the start of the next other test or qualification; a quote or a value never runs into another one
+function untilOther(u: string, at: number, own: string): string {
+  let end = u.length
+  for (const [id, re] of FAMILIES) { if (id === own) continue; const g = new RegExp(re.source, re.flags.replace("g", "")); const m = g.exec(u.slice(at + 1)); if (m && at + 1 + m.index < end) end = at + 1 + m.index }
+  return u.slice(at, end)
+}
+
 const RULES: Rule[] = [
   { key: "ielts", kind: "english_test", re: /\bIELTS\b(?:\s+Academic)?[^.\n]{0,90}?\b([4-9](?:\.[05])?)\b/i, make: (m, u) => {
       const overall = N(m[1]); if (!inRange(overall, 4, 9) || (overall * 2) % 1 !== 0) return null
@@ -77,11 +104,24 @@ const RULES: Rule[] = [
 export function detRead(text: string): DetReading[] {
   const seen = new Set<string>(), out: DetReading[] = []
   for (const u of detUnits(text)) {
+    if (detCollapsed(u)) continue  // s832: a flattened table line is skipped, never guessed
     for (const r of RULES) {
       const m = u.match(r.re); if (!m) continue
-      const q = r.win ? clause(u, m.index ?? 0) : u
-      const value = r.make(m, q); if (!value) continue
-      if (!text.includes(q)) continue  // the quote must be on the page word for word
+      const own = OWN[r.key]
+      const at = m.index ?? 0
+      let q: string, value: ReturnType<Rule["make"]>
+      if (r.win) {
+        q = untilOther(clause(u, at), 0, own).replace(/[\s,;]+(?:and|or|plus|with)?\s*$/i, "").trim()
+        value = r.make(m, q)
+      } else {
+        // the words from the test name to its value name no other test or qualification
+        const other = [...families(m[0])].filter((id) => id !== own)
+        if (other.length) continue
+        q = u
+        value = r.make(m, untilOther(u, at, own))
+      }
+      if (!value) continue
+      if (!q || !text.includes(q)) continue  // the quote must be on the page word for word
       const k = r.key + "|" + q
       if (seen.has(k)) continue
       seen.add(k)
