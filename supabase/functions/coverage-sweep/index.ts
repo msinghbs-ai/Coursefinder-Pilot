@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { feeAiParsed, feeAiRequest, hasFeeAmount, noNul } from "./fees.ts";
 import { answerLimit, errorCost, readAnswer, readError, type ReadType } from "./answer.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { detRead, detUncovered, AER_DET_VERSION } from "./aer-det-reader.ts"; import { elrRead, ELR_DET_VERSION } from "./elr-det-reader.ts"; import { fidRead, FID_DET_VERSION } from "./fid-det-reader.ts";  // s840: ELR reader on this line so the worker's line references stay (s851: fid-det-reader added on the same line)
+import { detRead, detUncovered, AER_DET_VERSION } from "./aer-det-reader.ts"; import { elrRead, ELR_DET_VERSION } from "./elr-det-reader.ts"; import { centralRead, ELR_CENTRAL_VERSION } from "./elr-central-reader.ts"; import { fidRead, FID_DET_VERSION } from "./fid-det-reader.ts";  // s840: ELR reader on this line so the worker's line references stay (s851: fid-det-reader added on the same line)
 import { clean, currencyFor, domainFitsName, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, pageDataItems, robotsAllows, siteNameMatch, staleCalendarUrl, titleOf } from "./extract.ts";
 // v0.17.32: same normalising as extract.ts siteNorm (kept here so the shared extract.ts, used by other functions, is unchanged)
 import { structRead, structLines, STRUCT_DET_VERSION } from "./struct-det-reader.ts"; // s861: deterministic course structure reader (duration, study load, delivery mode)
@@ -4638,6 +4638,25 @@ async function handle(req: Request): Promise<Response> {
       });
       return j({ ok: true, mode, extractor: FID_DET_VERSION, run_id: body.run_id ?? null, pages: out, ms: Date.now() - t0, worker: WORKER, workerVersion: VERSION });
     }
+    // s884 (20 Nov 2026, CF-247 session S1-ELR-Central, Platform Admin 22:07 AEDT): read-only mode elr_central_read. The caller (the job elr-det-sweep through
+    // security.elr_det_sweep_tick_v1) sends stored central English requirement pages (fact_source_id, provider_id, evidence_id, storage_path); each is read from storage
+    // and read by elr-central-reader.ts (tiers undergraduate, postgraduate, research, VET; no model, no fetch). Nothing is written here: the database reads the answer back
+    // and security.elr_central_record_v1 turns it into a proposal on the governed English policy route.
+    if (mode === "elr_central_read") {
+      const items: { fact_source_id: string; provider_id: string; evidence_id: string; storage_path: string }[] = (Array.isArray(body.items) ? body.items : []).slice(0, 20);  // fixed: bound on one call
+      const pages: unknown[] = [];
+      await pool(items, 4, async (it) => {
+        try {
+          if (Date.now() - t0 > BUDGET_MS) { pages.push({ ...it, error: "call_time_used" }); return }
+          const { data, error } = await c.storage.from("evidence").download(it.storage_path); if (error || !data) throw Error(error?.message || "missing");
+          const b = new Uint8Array(await data.arrayBuffer());
+          const raw = b[0] === 0x1f && b[1] === 0x8b ? await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text() : new TextDecoder().decode(b);
+          const text = /<\w+[\s>]/.test(raw.slice(0, 2000)) ? htmlToText(raw) : raw;
+          pages.push({ fact_source_id: it.fact_source_id, provider_id: it.provider_id, evidence_id: it.evidence_id, chars: text.length, sha256: await sha256(new TextEncoder().encode(text)), reading: centralRead(text) });
+        } catch (e) { pages.push({ fact_source_id: it.fact_source_id, provider_id: it.provider_id, evidence_id: it.evidence_id, error: (e instanceof Error ? e.message : String(e)).slice(0, 160) }) }
+      });
+      return j({ ok: true, mode, extractor: ELR_CENTRAL_VERSION, pages, ms: Date.now() - t0, worker: WORKER, workerVersion: VERSION });
+    }
     if (mode === "page_text") {
       const next = await rpc("svc_page_text_next_v1", { p_limit: Math.max(1, Math.floor(Number(body.limit) || 1)) });
       const items: { course_id: string; evidence_id: string; storage_path: string }[] = Array.isArray(next?.items) ? next.items : [];
@@ -4662,7 +4681,7 @@ async function handle(req: Request): Promise<Response> {
       });
       return j({ ok: true, mode, items: items.length, tally, ms: Date.now() - t0, workerVersion: WORKER });
     }
-    return j({ ok: false, error: "supported modes: aer_det_read, struct_det_read, elr_det_read, page_text, credential_read, site_check, fee_ai, discover, read, central_find, ai_match, reidentify, directory_capture, id_qualify, openrouter_key, reference_capture, site_hint_verify, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect, scholarship_listing, scholarship_ai, central_ai, entry_ai, entry_inspect, openrouter_balance", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: aer_det_read, struct_det_read, elr_det_read, elr_central_read, page_text, credential_read, site_check, fee_ai, discover, read, central_find, ai_match, reidentify, directory_capture, id_qualify, openrouter_key, reference_capture, site_hint_verify, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect, scholarship_listing, scholarship_ai, central_ai, entry_ai, entry_inspect, openrouter_balance", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
