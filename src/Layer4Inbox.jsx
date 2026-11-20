@@ -187,7 +187,7 @@ export default function Layer4Inbox({onError,routeParams}){
             <small>{fmtNumber(readyOff+1)}–{fmtNumber(readyOff+(ready.items||[]).length)} of {fmtNumber(aerSum.review_ready)} ready, oldest first</small>
             <Button compact disabled={readyOff+(ready.items||[]).length>=Number(aerSum.review_ready)} onClick={()=>{const o=readyOff+Number(ready.limit||25);setReadyOff(o);loadReady(o)}}>Next</Button></div>}</div>:
         !items?<Loading compact/>:(items.items||[]).length===0?<Empty text="Nothing left here."/>:
-          <Layer4RuleGroups items={items.items} render={it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={view==='kind'} rank={sum.rank} onDone={decided} onError={onError} onRefresh={()=>{loadSum();loadItems(cur)}}/>}/>}
+          <Layer4RuleGroups items={items.items} kinds={kinds} onSettled={r=>{setNote(`Batch: ${r.admitted} settled${r.failed?`, ${r.failed} not settled`:''}.`);loadSum();loadUnis(offset);loadItems(cur)}} render={it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={view==='kind'} rank={sum.rank} onDone={decided} onError={onError} onRefresh={()=>{loadSum();loadItems(cur)}}/>}/>}
         {!showReady&&!showCd&&items&&view!=='decided'&&(cur||items.more===true||Number(items.total)>(items.items||[]).length)&&(()=>{const b=Number(items.before||0),n=(items.items||[]).length,t=Number(items.total||0)
           return <div className="l4i-pager" data-l4-pager><Button compact disabled={!cur} onClick={prev} data-l4-prev>Previous</Button>
             <small data-l4-range>{n?`${fmtNumber(b+1)}–${fmtNumber(b+n)}`:'0'} of {fmtNumber(t)}, oldest first</small>

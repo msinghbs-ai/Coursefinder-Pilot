@@ -95,3 +95,6 @@
 .op-rate{border-top:1px dashed var(--cf-slate-200);padding-top:6px}
 .op-stage .op-rate.tone-ok .op-meter i{background:var(--cf-blue-600)}
 .op-stage .op-rate.tone-warn .op-meter i{background:var(--cf-amber-500)}
+/* s892: Preview & Settle Batch on a By university rule group */
+.l4r-settle{display:flex;flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;border-top:1px solid var(--cf-border)}
+.l4r-settle select,.l4r-settle input{font:inherit;padding:4px 6px;border:1px solid var(--cf-border);border-radius:6px}
