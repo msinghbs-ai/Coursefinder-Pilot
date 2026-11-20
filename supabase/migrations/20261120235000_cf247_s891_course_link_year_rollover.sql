@@ -202,7 +202,7 @@ begin
              result = jsonb_build_object('http', q.status_code, 'timed_out', q.timed_out, 'error', left(coalesce(q.error_msg, q.content, ''), 300)) where id = q.id;
       v_bad := v_bad + 1;
     end if;
-    update pipeline.link_rollover_checks set outcome = 'lost', checked_at = now() where request_id = q.id and outcome = 'sent';
+    update pipeline.link_rollover_checks set outcome = 'lost', checked_at = now() - make_interval(days => 365) where request_id = q.id and outcome = 'sent';  -- fixed: an item a failed call did not answer is due again at once
   end loop;
   -- 2 calls with no answer in time are given up; their items go back to the queue
   with l as (update pipeline.link_rollover_requests set status = 'lost', finished_at = now()

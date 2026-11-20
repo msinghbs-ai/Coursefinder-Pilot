@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { settleChoices } from '../../src/lib/l4-rules.js'
 
-const RG = fs.readFileSync('src/Layer4RuleGroups.jsx', 'utf8')
+const RG = fs.readFileSync('src/Layer4SettleBox.jsx', 'utf8'), PANEL = fs.readFileSync('src/Layer4RuleGroups.jsx', 'utf8')
 const IN = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8')
 const LINK = [{ key: 'keep', label: 'Keep the page we hold' }, { key: 'use', label: 'Use the new page' }, { key: 'enter', input: 'url', label: 'Enter another address' }, { key: 'refuse', label: 'Refuse this proposal' }]
 
@@ -16,7 +16,8 @@ test('s892: Course link groups can be settled; entry requirements and descriptio
 })
 
 test('s892: the university view passes the queues and shows the settle box with a typed confirmation, one decide per card', () => {
-  expect(IN).toContain('<Layer4RuleGroups items={items.items} kinds={kinds} onSettled=')
+  expect(IN).toContain('<Layer4RuleGroups items={items.items} renderSettle={pv=>settleFor(pv,kinds,')
+  expect(PANEL).toContain('{renderSettle?.(pv)}'); expect(PANEL).not.toMatch(/supabase|rpc\(/)  // the panel itself still reads and decides nothing (s826)
   expect(RG).toContain("settleChoices(ks[0],kinds?.[ks[0]]?.choices)")
   expect(RG).toContain('const n=list.length,word=`SETTLE ${n}`')
   expect(RG).toContain("disabled={!sc||why.trim().length<5||typed.trim()!==word||run?.busy}")
