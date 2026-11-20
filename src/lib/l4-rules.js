@@ -37,7 +37,7 @@ export const firstSentence=why=>String(why||'').trim().split(/(?<=[.;])\s+/)[0].
 export function groupLabel(g){const k=String(g?.key||'').replace(/^sys~/,'')
   if(k.startsWith('cd:'))return CD_RAIL[k.slice(3)]||CD_RAIL.other
   if(k.startsWith('aer:')||k.startsWith('aerb:')){const c=k.slice(k.indexOf(':')+1);return g?.label||AER_RAIL[c]||prettyCode(c)}
-  return g?.label||firstSentence(k.slice(k.indexOf(':')+1))||'Held by a check'}
+  return plainHold(g?.label||firstSentence(k.slice(k.indexOf(':')+1)))}  // s873: plain English, codes to words
 
 /** The main hold reason of one card in plain English (the rule group's name when the card is shown from a group). */
 export function holdLabelOf(it,groupName){if(groupName)return groupName

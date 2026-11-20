@@ -37,7 +37,7 @@ test('four decisions on a course description, in order and named for what they d
   expect(P.cdChoices(all, false).map((c) => c.key)).toEqual(['approve', 'reject'])
   // s802 (20 Nov 2026): Edit & Approve opens the editor; its edit_approve choice is not one of the card's listed decisions
   expect(INBOX).toContain("const cdChoiceList=it.kind==='provider_description'?cdChoices(choices.filter(c=>c.key!=='edit_approve'),isCourseDescription(d)):choices")
-  expect(INBOX).toContain('{cdChoiceList.map(c=>')
+  expect(INBOX).toContain('{orderChoices(cdChoiceList).map((c,i,all)=>') // s873: the standard bar keeps this order (admit, re-read, approve all, then Reject set aside)
   expect(INBOX).toContain("{open.input==='count'&&<input")
   expect(code).toContain("select pg_temp.edit_all('security.layer4_inbox_kinds_v1()', '8c820d6912a240ece0e731221261e6de', 'e56cf8d360ff6413638a77dd3a34d8ac'")
   expect(code).toContain('{"key": "reread", "label": "Re-read (1-2 sentences)"')

@@ -1,20 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.70'
-export const PACKAGE_VERSION='0.1.492'
+export const UI_VERSION='2.16.71'
+export const PACKAGE_VERSION='0.1.493'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'20 Nov 2026',
-  title:'Entry requirements: no dead-end cards; re-read stale partial reads from the stored copy at no cost',
+  title:'Layer 4 Review: one card shape for every queue, human action apart from system queues, and Preview & Settle Batch',
   changes:[
-    'Layer 4 Review lists entry requirement items the platform is recovering under System recovery / Re-read available, apart from Waiting for a reviewer, and their status says System recovery.',
-    'A course read held by the completeness gate with a stored copy of its page offers Re-read from stored copy ($0): the stale read is replaced and the stored copy is read again by the deterministic reader, with no AI and no Firecrawl. With no stored page it offers Queue stored-page fetch.',
-    'Preview the batch on a System recovery rule re-reads or queues its records after a confirmation. These actions are the Platform Admin\'s.'
+    'In every Layer 4 queue the rule rail has Human Action Required and System Queues (Auto-Recovering): items an existing rule settles or the platform is recovering no longer sit among the decisions.',
+    'Every card has the same shape: the Main hold reason in plain English (machine codes only under Technical detail) and one action bar: admit first, then enter-a-value decisions (Save Edit & Admit) and re-categorise, and the set-aside decisions on the right.',
+    'Every rule group has Preview & Settle Batch: it lists the records and, where the queue allows it, settles them with one decision, one reason and a typed confirmation; each record is still decided on its own. Entry requirements, departures and descriptions are never settled as a batch.'
   ],
   bugFixes:[
-    'About 1,800 entry requirement cards held by the completeness gate showed no action at all. The stale partial reads are re-queued for the deterministic reader once on release; entry matrices, audit samples, locked courses and active rows are not touched.'
+    'Hold reasons showed machine wording such as "Machine rule … did not admit this: gate_incomplete" or D-R3; the headline is now plain English.'
   ]
 }
 
