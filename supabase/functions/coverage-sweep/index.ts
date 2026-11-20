@@ -4657,6 +4657,7 @@ async function handle(req: Request): Promise<Response> {
         tally[status] = (tally[status] || 0) + 1;
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
+    }
     // CF-247 s906 (S1-ELR-Bands-And-Crawl, 21 Nov 2026): read-only, $0 (no model, no fetch, no write). The English band each stored course page names, among the bands its
     // university's central English page defines (elr-band-reader.ts); the database records and gates the readings from this reply (security.elr_band_record_v1).
     if (mode === "elr_band_read") {
@@ -4710,7 +4711,6 @@ async function handle(req: Request): Promise<Response> {
         }
       });
       return j({ ok: true, mode, extractor: "elr-central-fetch-v1.0", fetched: out, ms: Date.now() - t0, worker: WORKER, workerVersion: VERSION });
-    }
     }
     // v1.0.15 (18 Nov 2026, CF-247 S2-Build, Platform Admin 10:12): mode page_text turns the stored HTML copy of a bound course page (evidence
     // source_snapshot, written by mode read) into the plain-text page Boost reads (evidence provider_course_page_text at coverage-text/<course>/<hash>.txt),
