@@ -59,7 +59,7 @@ test('the size of what one call returns is capped', () => {
 })
 
 test('the worker mode is read only: stored pages by path, no model, no web fetch, no database call, no file written', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.32"')  // v1.0.25 from s721  // v1.0.19 from s674
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.33"')  // v1.0.25 from s721  // v1.0.19 from s674
   expect(mode.length).toBeGreaterThan(200)
   expect(mode).toContain('.slice(0, BOOST_INSPECT_MAX_PAGES)')
   expect(mode).toContain('!p.includes("..")')

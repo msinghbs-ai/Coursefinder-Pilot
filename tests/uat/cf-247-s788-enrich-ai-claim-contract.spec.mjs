@@ -29,7 +29,8 @@ test('the post-checks prove the plan and the time without leasing anything', () 
 })
 
 test('enrich_ai answers a busy database with a structured 503 and keeps other errors as they were', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.32"; // v1.0.32 (20 Nov 2026, CF-247 s815, session S1-AER')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.33";')  // the worker version only; later releases add their line before v1.0.32's
+  expect(IX).toContain('// v1.0.32 (20 Nov 2026, CF-247 s815, session S1-AER')
   expect(IX).toContain('const BUSY_DB = /canceling statement due to (statement|lock) timeout|could not serialize access|deadlock detected|could not obtain lock/i;')
   expect(IX).toContain('if (BUSY_DB.test(msg)) return j({ ok: false, mode, status: "busy", retry: true, error: msg.slice(0, 200), worker: WORKER }, 503);')
   expect(IX).toContain('        throw e;\n      }\n')
