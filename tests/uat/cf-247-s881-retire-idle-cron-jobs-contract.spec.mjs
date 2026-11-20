@@ -1,6 +1,6 @@
 // Guards: CF-247 s881 (Platform Admin 20 Nov 2026 17:14 and 17:15, chat S1-Build): active pg_cron jobs at most 136 with 0 unregistered — seven
 // jobs with no work left are switched off and marked retiring only while their evidence holds, the protected sweeps and pipelines stay on,
-// nothing is unscheduled or dropped by the migration; one-off auto-merge checks report without failing
+// nothing is unscheduled or dropped by the migration; one-off auto-merge checks report without failing, and a cancelled check is re-run once
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
@@ -43,4 +43,10 @@ test('auto-merge: a one-off check on a finished check suite reports a stop witho
   expect(MERGE).toContain('stop() { say "$1"; if [ "$MODE" = wait ]; then comment "$2"; exit 1; fi; exit 0; }')
   expect(MERGE).toContain('stop "#$PR has failing checks: ${failed:-commit status $sstate}."')
   expect(MERGE).toContain('stop "#$PR has merge conflicts with main."')
+})
+
+test('auto-merge: a workflow cancelled by a concurrency cancel is re-run once, never while a newer run is queued', () => {
+  expect(MERGE).toContain('select($l != null and $l.conclusion == "cancelled" and (map(select(.status != "completed")) | length) == 0) | $l.id')
+  expect(MERGE).toContain('case " $RERUN " in *" $id "*) continue ;; esac')
+  expect(MERGE).toContain('gh api -X POST "repos/$REPO/actions/runs/$id/rerun"')
 })
