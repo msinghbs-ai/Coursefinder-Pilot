@@ -94,7 +94,7 @@ test.describe('mocked browser', () => {
     await expect(pv.locator('[data-l4-batch-rec]')).toHaveCount(2)
     await expect(pv.locator('mark.dea-ban')).toHaveCount(2)
     await expect(pv.locator('[data-l4-batch-clean]').first()).toContainText('Technology University Sydney is a university of technology in Sydney.')
-    await expect(pv.locator('[data-l4-batch-ms]')).toContainText(/read in \d+ ms/)
+    await expect(pv.locator('[data-l4-batch-ms]')).toContainText(/shown in \d+ ms/)
     expect(calls.filter((c) => c.p_action === 'decide')).toHaveLength(0)
     await pv.locator('[data-l4-batch-admit]').click()                         // the first click only asks for confirmation
     expect(calls.filter((c) => c.p_action === 'decide')).toHaveLength(0)

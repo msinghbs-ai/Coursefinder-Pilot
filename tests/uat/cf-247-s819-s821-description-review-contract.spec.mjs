@@ -55,7 +55,7 @@ test('s820: the main hold reason in plain English; the code under Technical deta
   expect(holdCode(why)).toBe('validation_refused_word')
   expect(holdReason(why, 'UTS is an innovative university.', { words: W })).toMatchObject({ kind: 'banned', title: 'Contains 1 banned word', words: ['innovative'] })
   expect(holdReason('Machine rule pdesc-machine-v1 did not admit this: validation_first_sentence', 'A university in Sydney.', { words: W }).title).toBe('The first sentence does not name the university')
-  expect(EDIT).toContain('Main hold reason: {h.title}'); expect(EDIT).toContain('<summary>Technical detail</summary>')
+  expect(EDIT).toContain('Main hold reason: {title}') // s839: the rule's plain name when the code is a course description hold; expect(EDIT).toContain('<summary>Technical detail</summary>')
 })
 
 test('s819: rule-tuning candidates count the words reviewers removed and mark those already on the list', () => {

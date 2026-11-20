@@ -5,7 +5,7 @@
 // layer4.rule_batch_max) in one keyed read. Only a description group held for a banned word may then be admitted as one batch: each record with
 // the words removed, one decide call per record with its own reason, after the confirmation. Every other group is worked card by card (AER has no
 // bulk approval, S1-AER s831). The older views (By university, By kind, Grid, Decided) are behind the Other views toggle in src/Layer4Inbox.jsx.
-import React,{useEffect,useMemo,useState}from'react'
+import React,{useEffect,useMemo,useRef,useState}from'react'
 import{ChevronLeft,ChevronRight,Eye,Layers,X}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,fmtNumber}from'./ui-kit'
@@ -41,11 +41,16 @@ export default function Layer4Focus({kinds,kind,rank,onError,onDecided,renderIte
   useEffect(()=>{if(cur&&cards[cur]===false)setGone(s=>new Set([...s,cur]))},[cur,cards]) // decided elsewhere since the groups were read
   const done=r=>{setGone(s=>new Set([...s,cur]));onDecided?.(r)}
   const total=Math.max(0,(Number(g?.total)||0)-gone.size),sel=groups.find(x=>x.key===key)
+  // s839 (20 Nov 2026): the batch is read as soon as a rule is chosen, so Preview the batch opens at once from what is already read
+  const pre=useRef(null)
+  const batchRead=x=>{const want=(x.refs||[]).filter(r=>!gone.has(r)).slice(0,Number(g?.batch_max)||50),sig=`${x.key}|${want.join(',')}`
+    if(pre.current?.sig!==sig)pre.current={sig,want,p:Promise.all([rpc('rule_group_items',{kind,refs:want}),batchAdmits(x)?descriptionRules():Promise.resolve(null)])}
+    pre.current.p.catch(()=>{if(pre.current?.sig===sig)pre.current=null});return pre.current}
+  useEffect(()=>{if(sel)batchRead(sel)},[key,g])
   const openPreview=async()=>{if(!sel)return;const t0=now();setPv({key:sel.key,items:null});setRun(null)
-    try{const want=(sel.refs||[]).filter(r=>!gone.has(r)).slice(0,Number(g?.batch_max)||50)
-      const[d,ru]=await Promise.all([rpc('rule_group_items',{kind,refs:want}),batchAdmits(sel)?descriptionRules():Promise.resolve(null)])
-      setRules(ru);setPv({key:sel.key,items:d.items||[],ms:Math.round(now()-t0),server_ms:d.ms,asked:want.length})}
-    catch(e){setPv(null);onError?.(e.message)}}
+    try{const b=batchRead(sel),[d,ru]=await b.p
+      setRules(ru);setPv({key:sel.key,items:d.items||[],ms:Math.round(now()-t0),server_ms:d.ms,asked:b.want.length})}
+    catch(e){pre.current=null;setPv(null);onError?.(e.message)}}
   const admitBatch=async list=>{setRun({done:0,failed:[],total:list.length,busy:true})
     let ok=0;const failed=[]
     for(const x of list){try{await rpc('decide',{kind:x.it.kind,ref:x.it.ref,choice:'edit_approve',value:x.c.text,set_manual_lock:true,
@@ -93,7 +98,7 @@ function BatchPreview({pv,group,rules,rank,run,onAdmit,onWork,onClose}){
   return <div className="l4f-preview" role="dialog" aria-label={`Preview the batch: ${name}`} data-l4-batch-preview={pv.key}>
     <header><strong>Preview the batch: {name}</strong><button type="button" className="hd-x" onClick={onClose} aria-label="Close the preview" data-l4-batch-close><X size={15}/></button></header>
     {!pv.items?<Loading compact label="Reading the records…"/>:<>
-      <p className="l4r-sub" data-l4-batch-ms>{fmtNumber(list.length)} record{list.length===1?'':'s'}{Number(group?.n)>list.length?` (the oldest ${fmtNumber(list.length)} of ${fmtNumber(group.n)})`:''}, read in {fmtNumber(pv.ms)} ms{pv.server_ms!=null?` (database ${fmtNumber(pv.server_ms)} ms)`:''}.
+      <p className="l4r-sub" data-l4-batch-ms>{fmtNumber(list.length)} record{list.length===1?'':'s'}{Number(group?.n)>list.length?` (the oldest ${fmtNumber(list.length)} of ${fmtNumber(group.n)})`:''}, shown in {fmtNumber(pv.ms)} ms{pv.server_ms!=null?` (database ${fmtNumber(pv.server_ms)} ms)`:''}.
         {admits?' Each is admitted with the marked words removed, one decision each with its reason, and locked by hand. A record whose cleaned text fails a check is left for a person.':
           pv.key.startsWith('aer:')?' Entry requirement items are decided one card at a time: there is no batch approval.':' These are decided one card at a time.'}</p>
       <ol className="l4f-recs">{list.map(({it,c})=><li key={it.ref} data-l4-batch-rec={it.ref} data-l4-batch-ok={c?String(c.ok):undefined}>
