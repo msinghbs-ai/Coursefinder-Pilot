@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261120150000_cf247_s840_elr_det_reader_promotion.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261120170000_cf247_s840_elr_det_reader_promotion.sql', 'utf8')
 const fn = (name) => { const a = MIG.indexOf(`create or replace function ${name}(`); return MIG.slice(a, MIG.indexOf('$f$;', a)) }
 
 test('housekeeping: replaces and retires lines, no drop, delete or truncate at top level, a comment on every new table', () => {

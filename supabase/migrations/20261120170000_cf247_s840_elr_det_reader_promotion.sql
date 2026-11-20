@@ -28,7 +28,8 @@
 --   functions security.elr_det_claim_v1(int), security.elr_det_record_v1(jsonb,text), security.elr_det_sweep_tick_v1(), security.elr_det_status_v1(); one job elr-det-sweep;
 --   settings batch.elr_det_sweep, elr_det.pages_per_call, elr_det.in_flight_max, elr_det.audit_pct, elr_det.promote_on, elr_det.sweep_on, elr_det.request_lost_minutes.
 -- G1: the job is in pipeline.automation_catalogue and the component register. G2: every size and limit is a setting; the job command holds no number.
--- Parity: head 20261120143000 (2,219 rows) read live 20 Nov 2026 15:12 AEDT; this file is in the S1-ELR slot 20261120150000 to 20261120152900.
+-- Parity: head 20261120143000 (2,219 rows) read live 20 Nov 2026 15:12 AEDT; written in the S1-ELR slot (20261120150000), renumbered 20261120170000 to stay strictly
+--   above the live head (20261120163000, S1-AER) and the open lanes' files (163500 S1-Structure-Outcomes, 165000 and 165100 S1-Fees-Intakes, 145000 S1-UI-Parity).
 -- Replaces: the per-course and per-course-per-policy english_group_match_v1 calls of provider_english_plan_v1 when no binding exists (the call stays for policies that have one).
 -- Retires: nothing. Nothing dropped, deleted or renamed. Spend: none (no model, no Firecrawl).
 -- Rollback: setting elr_det.sweep_on 0 stops the sweep; elr_det.promote_on 0 records without promoting; a promoted row carries source_requirement_key 'elr-det:<test>' and can be
@@ -551,16 +552,16 @@ select cron.schedule('elr-det-sweep', '2-59/5 * * * *', 'select security.elr_det
 where not exists (select 1 from cron.job where jobname = 'elr-det-sweep');
 
 insert into pipeline.component_register (kind, name, layer, area, purpose, status, replaces, introduced_in) values
-  ('job', 'elr-det-sweep', 'Layer 2', 'English requirements', 'Reads stored course pages for English requirements and promotes verified readings every 5 minutes', 'active', '{}', '20261120150000'),
-  ('table', 'pipeline.elr_det_pages', 'Layer 2', 'English requirements', 'Pages the deterministic English reader was sent or has read, with the outcome', 'active', '{}', '20261120150000'),
-  ('table', 'pipeline.elr_det_readings', 'Layer 2', 'English requirements', 'English test readings with verbatim quotes and the gate outcome', 'active', '{}', '20261120150000'),
-  ('table', 'pipeline.elr_det_requests', 'Layer 2', 'English requirements', 'Worker calls of the English requirement sweep', 'active', '{}', '20261120150000'),
-  ('table', 'pipeline.elr_det_state', 'Layer 2', 'English requirements', 'The sweep''s keyset cursor (one row)', 'active', '{}', '20261120150000'),
-  ('function', 'security.elr_det_claim_v1', 'Layer 2', 'English requirements', 'Next gap course pages for the English reader (indexed keyset)', 'active', '{}', '20261120150000'),
-  ('function', 'security.elr_det_quote_ok_v1', 'Layer 2', 'English requirements', 'A reading''s quote names its test and prints its values', 'active', '{}', '20261120150000'),
-  ('function', 'security.elr_det_record_v1', 'Layer 2', 'English requirements', 'Records English readings and promotes, reviews or holds them by the gates', 'active', '{}', '20261120150000'),
-  ('function', 'security.elr_det_sweep_tick_v1', 'Layer 2', 'English requirements', 'One run of the English requirement sweep', 'active', '{}', '20261120150000'),
-  ('function', 'security.elr_det_status_v1', 'Layer 2', 'English requirements', 'English requirement coverage and sweep outcomes (read only)', 'active', '{}', '20261120150000')
+  ('job', 'elr-det-sweep', 'Layer 2', 'English requirements', 'Reads stored course pages for English requirements and promotes verified readings every 5 minutes', 'active', '{}', '20261120170000'),
+  ('table', 'pipeline.elr_det_pages', 'Layer 2', 'English requirements', 'Pages the deterministic English reader was sent or has read, with the outcome', 'active', '{}', '20261120170000'),
+  ('table', 'pipeline.elr_det_readings', 'Layer 2', 'English requirements', 'English test readings with verbatim quotes and the gate outcome', 'active', '{}', '20261120170000'),
+  ('table', 'pipeline.elr_det_requests', 'Layer 2', 'English requirements', 'Worker calls of the English requirement sweep', 'active', '{}', '20261120170000'),
+  ('table', 'pipeline.elr_det_state', 'Layer 2', 'English requirements', 'The sweep''s keyset cursor (one row)', 'active', '{}', '20261120170000'),
+  ('function', 'security.elr_det_claim_v1', 'Layer 2', 'English requirements', 'Next gap course pages for the English reader (indexed keyset)', 'active', '{}', '20261120170000'),
+  ('function', 'security.elr_det_quote_ok_v1', 'Layer 2', 'English requirements', 'A reading''s quote names its test and prints its values', 'active', '{}', '20261120170000'),
+  ('function', 'security.elr_det_record_v1', 'Layer 2', 'English requirements', 'Records English readings and promotes, reviews or holds them by the gates', 'active', '{}', '20261120170000'),
+  ('function', 'security.elr_det_sweep_tick_v1', 'Layer 2', 'English requirements', 'One run of the English requirement sweep', 'active', '{}', '20261120170000'),
+  ('function', 'security.elr_det_status_v1', 'Layer 2', 'English requirements', 'English requirement coverage and sweep outcomes (read only)', 'active', '{}', '20261120170000')
 on conflict do nothing;
 
 -- post-checks: the plans are unchanged row for row and quick, the claim is quick, the job is scheduled and catalogued, the settings exist, the consumer API has not moved
