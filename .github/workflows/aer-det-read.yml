@@ -17,6 +17,10 @@ on:
         description: "AU, NZ, CA or all"
         required: true
         default: "all"
+      concurrency:
+        description: "Worker calls at the same time (1 to 12)"
+        required: true
+        default: "6"
       confirm_project:
         description: "Type the Pilot project ref to confirm"
         required: true
@@ -42,7 +46,7 @@ jobs:
         with:
           node-version: 22
       - name: Read
-        run: node scripts/aer-det-read.mjs "${{ inputs.mode }}" "${{ inputs.pages }}" "${{ inputs.country }}"
+        run: node scripts/aer-det-read.mjs "${{ inputs.mode }}" "${{ inputs.pages }}" "${{ inputs.country }}" "${{ inputs.concurrency }}"
       - uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:
