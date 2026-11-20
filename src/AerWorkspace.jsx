@@ -16,6 +16,7 @@ import{Button,StatusChip,FilterChip,Pager,Loading,EmptyInline,fmtDate,fmtDateTim
 import{DataTable,FilterSelect}from'./DataTable'
 import{ReasonAction}from'./ProviderOnboarding'
 import AerReadNow from'./AerReadNow'
+import AttachmentNotes from'./AttachmentNotes'
 import{SourceAttach,SourceDiscovery,useSourceMeta,classLabels}from'./AerSourceManage'
 import{hrefFor}from'./nav-map'
 import{Overlay}from'./Overlay'
@@ -120,7 +121,7 @@ function useFilters(view,defaults,overrides={}){
 }
 
 // ----------------------------------------------------------------------------------------------- Provider entry matrix
-const MATRIX_NAMES={provider_id:'Provider',country:'Country',level:'Study level',status:'Status',matrix_kind:'Kind',band:'Band',q:'Search',edition:'Edition',intake_year:'Intake year',read_state:'Read'}
+const MATRIX_NAMES={provider_id:'Provider',destination:'Destination country',country:'Source country',scope:'Applies to',level:'Study level',status:'Status',matrix_kind:'Kind',band:'Band',q:'Search',edition:'Edition',intake_year:'Intake year',read_state:'Read'}
 const MATRIX_FIELDS=[
   {key:'qualification',label:'Qualification',width:260},
   {key:'level_label',label:'Level (as published)',width:160},
@@ -135,14 +136,14 @@ const MATRIX_FIELDS=[
 ]
 export function MatrixView({rank,onError,navigate,routeParams}){
   const o=useOptions(onError)
-  const{f,set,clear,labels,offset,setOffset,sortBy}=useFilters('matrix',{provider_id:'',country:'',level:'',status:'active',matrix_kind:'',band:'',q:'',edition:'',intake_year:'',read_state:'',sort:'provider',direction:'asc'},{provider_id:routeParams?.get?.('provider')||''})
+  const{f,set,clear,labels,offset,setOffset,sortBy}=useFilters('matrix',{provider_id:'',destination:'',country:'',scope:'',level:'',status:'active',matrix_kind:'',band:'',q:'',edition:'',intake_year:'',read_state:'',sort:'provider',direction:'asc'},{provider_id:routeParams?.get?.('provider')||''})
   const[refresh,setRefresh]=useState(0),[open,setOpen]=useState(null),[edit,setEdit]=useState(false),[adding,setAdding]=useState(false)
   const args=useMemo(()=>({...f,offset,page_size:PAGE}),[JSON.stringify(f),offset])
   const[d,busy,err,setD]=useList('matrix_list',args,onError,refresh)
   const rows=d?.rows||[]
   const all=[
     {key:'provider_name',label:'Provider',width:220,sortKey:'provider',render:r=><span className="m-cell-title"><strong>{r.provider_name}</strong>{r.course_code&&<small>{r.course_code}</small>}</span>},
-    {key:'country',label:'Country',width:120,sortKey:'country',render:r=><span title={r.country_name}>{r.country} <small>{short(r.country_name,18)}</small></span>},
+    {key:'country',label:'Source country',width:120,sortKey:'country',render:r=><span title={r.country_name}>{r.country} <small>{short(r.country_name,18)}</small></span>},
     {key:'level_label',label:'Level',width:160,sortKey:'level',render:r=><span>{r.level_label||'—'}{r.level_code&&<small> · {r.level_code}</small>}</span>},
     {key:'qualification',label:'Qualification',width:280,sortKey:'qualification',render:r=><span className="aer-wrap">{r.qualification}</span>},
     {key:'band',label:'Band',width:100,sortKey:'band',render:r=>r.band||'—'},
@@ -163,7 +164,7 @@ export function MatrixView({rank,onError,navigate,routeParams}){
     <AerSummary providerId={f.provider_id} onError={onError} refreshKey={refresh}/>
     {f.provider_id&&<AerReadNow providerId={f.provider_id} onChanged={()=>setRefresh(r=>r+1)} onError={onError}/>}
     <section className="m-panel m-catalogue-panel">
-      <div className="m-workspace-head"><div><h2>Provider entry matrix</h2><p>The requirement each provider publishes for a student's country of prior education. Only active rows reach the website.</p></div>
+      <div className="m-workspace-head"><div><h2>Provider entry matrix</h2><p>The requirement each provider publishes for a student's country of prior education (the source country). A row with no course applies university-wide. Only active rows reach the website.</p></div>
         <div className="m-result-count">{busy?<><span className="m-spinner"/>Loading…</>:<><strong>{fmtNumber(Number(d?.total||0))}</strong><span>matching</span></>}</div></div>
       <div className="m-search-row">
         <TextFilter label="Search qualification, quote or level" value={f.q} onChange={v=>set('q',v,v)} placeholder="Search qualification, quote or level"/>
@@ -173,7 +174,10 @@ export function MatrixView({rank,onError,navigate,routeParams}){
       </div>
       <div className="m-filter-bar" data-aer-filters="matrix">
         <FilterSelect label="Provider" value={f.provider_id} onChange={(v,l)=>set('provider_id',v,l)} options={(o.providers||[]).map(p=>opt(p.id,p.name))}/>
-        <FilterSelect label="Country" value={f.country} onChange={(v,l)=>set('country',v,l)} options={orderAerCountries(o.countries).map(c=>opt(c.code,c.name,c.code))}/>
+        {/* CF-247 s901: Destination country is where the provider is; Source country (was "Country") is where the student's prior qualification is from */}
+        <FilterSelect label="Destination country" value={f.destination} onChange={(v,l)=>set('destination',v,l)} options={(o.destinations||[]).map(c=>opt(c.code,c.name,c.code))}/>
+        <FilterSelect label="Source country" value={f.country} onChange={(v,l)=>set('country',v,l)} options={orderAerCountries(o.countries).map(c=>opt(c.code,c.name,c.code))}/>
+        <FilterSelect label="Applies to" value={f.scope} onChange={(v,l)=>set('scope',v,l)} options={[opt('university','University-wide (no course)'),opt('course','One course')]}/>
         <FilterSelect label="Study level" value={f.level} onChange={(v,l)=>set('level',v,l)} options={[...(o.levels||[]).map(l=>opt(l.code,l.name,l.code)),...(o.level_labels||[]).map(l=>opt(l,l,'as published'))]}/>
         <FilterSelect label="Status" value={f.status} emptyLabel="Any status" onChange={(v,l)=>set('status',v,l)} options={(o.statuses||[]).map(s=>opt(s,ROW_PILL[s]?.[1]||s))}/>
         <FilterSelect label="Kind" value={f.matrix_kind} onChange={(v,l)=>set('matrix_kind',v,l)} options={(o.matrix_kinds||[]).map(k=>opt(k,KIND_LABEL[k]||k))}/>
@@ -219,7 +223,7 @@ export function CourseView({rank,onError,routeParams}){
     {key:'score',label:'Score and basis',width:170,sortKey:'score',render:r=>r.min_entry_score!=null?<span>{Number(r.min_entry_score)} <small>({r.min_entry_score_basis})</small></span>:(minText(r)||'—')},
     {key:'band',label:'Band',width:100,render:r=>r.band||'—'},
     {key:'audience',label:'For',width:120,render:r=>r.audience},
-    {key:'country',label:'Country',width:100,render:r=>r.country||'Any'},
+    {key:'country',label:'Source country',width:100,render:r=>r.country||'Any'},
     {key:'as_at',label:'As at',width:110,sortKey:'as_at',render:r=>fmtDate(r.as_at)},
     {key:'status',label:'Status',width:170,sortKey:'status',render:r=><span className="aer-status"><RowPill status={r.status} title={r.status_reason||undefined}/>{r.manual&&<small>by hand</small>}{r.status==='proposed'&&<a className="cf-link" href={l4Href(r)} onClick={e=>e.stopPropagation()}>Layer 4</a>}</span>},
     {key:'quote',label:'Quote',width:260,render:r=><small className="aer-wrap">“{short(r.quote,120)}”</small>},
@@ -629,8 +633,10 @@ export function ResolveView({onError,routeParams,rank}){
 }
 
 export default function AerWorkspace({tab,rank,onError,navigate,routeParams}){
-  if(tab==='course')return <CourseView rank={rank} onError={onError} routeParams={routeParams}/>
-  if(tab==='sources')return <SourcesView rank={rank} onError={onError} routeParams={routeParams}/>
-  if(tab==='resolve')return <ResolveView onError={onError} routeParams={routeParams} rank={rank}/>
-  return <MatrixView rank={rank} onError={onError} navigate={navigate} routeParams={routeParams}/>
+  // CF-247 s901: the counsellor notes sit above every tab, closed on load
+  const body=tab==='course'?<CourseView rank={rank} onError={onError} routeParams={routeParams}/>
+    :tab==='sources'?<SourcesView rank={rank} onError={onError} routeParams={routeParams}/>
+    :tab==='resolve'?<ResolveView onError={onError} routeParams={routeParams} rank={rank}/>
+    :<MatrixView rank={rank} onError={onError} navigate={navigate} routeParams={routeParams}/>
+  return <div className="m-page-stack" data-aer-workspace={tab||'matrix'}><AttachmentNotes focus="aer"/>{body}</div>
 }

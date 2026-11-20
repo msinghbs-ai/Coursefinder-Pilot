@@ -66,7 +66,7 @@ test('the read: rank 4 and above over the API, summary and paged rows, build tim
 test('the screen: Resolution inspection shows the register to rank 4 and above, with counts by outcome and a full CSV download', () => {
   expect(ui).toContain("export function ResolveView({onError,routeParams,rank}){")
   expect(ui).toContain('{Number(rank||0)>=4&&<OutcomeRegister/>}')
-  expect(ui).toContain("if(tab==='resolve')return <ResolveView onError={onError} routeParams={routeParams} rank={rank}/>")
+  expect(ui).toContain(":tab==='resolve'?<ResolveView onError={onError} routeParams={routeParams} rank={rank}/>") // s901: the tabs share the notes panel
   expect(ui).toContain("supabase.rpc('admin_aer_outcomes',{p_args:args})")
   expect(ui).toContain("outcomes({part:'rows',offset:off})")
   expect(ui).toContain('if(!(d.rows||[]).length||off>=total)break')

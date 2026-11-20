@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.496 — 21 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.74** (S1-Coverage-Unlock-UI-Notes s901 to s903): counsellor notes panel (closed by default) on Course detail, Entry requirements and Scholarships; Provider entry matrix filters Destination country, Source country (was Country) and Applies to; Course detail shows the university-wide entry table. Migrations `20261121100000` (admin_aer, md5-guarded), `20261121101000` (university-wide partial admission in shadow, rule aer-uniwide-partial-shadow) and `20261121102000` (on-demand cap and one coverage window, at most 20,000 Firecrawl credits).
+
 ## 0.1.495 — 20 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.73** (S1-CourseLink-2027-CRICOS s891 to s893): rule course_link_year_rollover_v1 tries held Course link pages with an old year in their address at 2027, 2026 and 2025, then as held, and admits the newest that answers on the provider's own host and proves the exact CRICOS code (plain reads, $0), with the page stored at once; it runs inside the job link-refresh (no new job). Layer 4 Review › By university: Preview & Settle Batch on single-queue rule groups. Migration `20261120235000`; worker mode link_year_rollover.
