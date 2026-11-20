@@ -1,9 +1,9 @@
 // Guards: S861 automated deterministic course structure promotion and scheduled sweep (Platform Admin 20 Nov 2026 15:19 AEDT, S1-Structure-Outcomes, $0; no overwrite, manual locks kept, page identity, shared pages and disagreements to Layer 4; G1 job catalogued; G2 no number in a job command; G3 no public object; housekeeping s42)
-// CF-247 S861. Migration 20261120161000_cf247_s861_struct_det_promotion_and_sweep.sql, reader struct-det-v1.0, worker mode struct_det_read.
+// CF-247 S861. Migration 20261120163500_cf247_s861_struct_det_promotion_and_sweep.sql, reader struct-det-v1.0, worker mode struct_det_read.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261120161000_cf247_s861_struct_det_promotion_and_sweep.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261120163500_cf247_s861_struct_det_promotion_and_sweep.sql', 'utf8')
 const NOCOMMENT = MIG.replace(/^--.*$/gm, '')
 const PROMOTE = NOCOMMENT.slice(NOCOMMENT.indexOf('function security.struct_det_promote_v1'), NOCOMMENT.indexOf('function security.struct_det_sweep_v1'))
 

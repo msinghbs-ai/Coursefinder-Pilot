@@ -22,7 +22,7 @@
 -- to be rebuilt in search.course_documents through the existing search-course-refresh job.
 -- Not admitted here, by design: NZQF level and credits (no catalogue field holds them), trimester and credit-point lengths (not a catalogue unit), PGWP
 -- eligibility (no register of eligible programmes is held). They are reported as gaps, not invented.
--- Parity before writing (read live 20 Nov 2026 15:26 AEDT): head 20261120143000; numbered above Pilot #1423 (20261120160000, S1-AER) inside this lane's block.
+-- Parity before writing (read live 20 Nov 2026 16:00 AEDT): head 20261120163000 (S1-AER s835, Pilot #1423, merged and applied 15:49); this lane's reserved block (20261120160000 to 20261120162900) now lies below the live head, so this change is numbered 20261120163500, strictly above it, with the reason recorded in the admin repository.
 -- Replaces: nothing.
 -- Retires: nothing.
 set local lock_timeout = '5s';
@@ -349,14 +349,14 @@ select cron.schedule('struct-det-sweep', '1-56/5 * * * *', 'select security.stru
 where not exists (select 1 from cron.job where jobname = 'struct-det-sweep');
 
 insert into pipeline.component_register (kind, name, layer, area, purpose, status, replaces, introduced_in) values
-  ('job', 'struct-det-sweep', 'Layer 3', 'Admission checks', 'Sweeps stored course pages with the deterministic course structure reader and admits agreed values, every 5 minutes', 'active', '{}', '20261120161000'),
-  ('table', 'pipeline.struct_det_pages', 'Layer 3', 'Admission checks', 'Stored pages read by the course structure reader and what became of each', 'active', '{}', '20261120161000'),
-  ('table', 'pipeline.struct_det_readings', 'Layer 3', 'Admission checks', 'Duration, study load and delivery mode readings with their verbatim quotes', 'active', '{}', '20261120161000'),
-  ('table', 'pipeline.struct_det_outcomes', 'Layer 3', 'Admission checks', 'Each structure decision: admitted (before and after), held or sent to Layer 4', 'active', '{}', '20261120161000'),
-  ('table', 'pipeline.struct_det_sweep_calls', 'Layer 3', 'Admission checks', 'Worker calls the structure sweep sent and their collected answers', 'active', '{}', '20261120161000'),
-  ('function', 'security.struct_det_record_v1', 'Layer 3', 'Admission checks', 'Writes the readings of pages the course structure reader read', 'active', '{}', '20261120161000'),
-  ('function', 'security.struct_det_promote_v1', 'Layer 3', 'Admission checks', 'Admits agreed structure values into empty fields, or sends them to Layer 4', 'active', '{}', '20261120161000'),
-  ('function', 'security.struct_det_sweep_v1', 'Layer 3', 'Admission checks', 'One tick of the course structure reader sweep', 'active', '{}', '20261120161000')
+  ('job', 'struct-det-sweep', 'Layer 3', 'Admission checks', 'Sweeps stored course pages with the deterministic course structure reader and admits agreed values, every 5 minutes', 'active', '{}', '20261120163500'),
+  ('table', 'pipeline.struct_det_pages', 'Layer 3', 'Admission checks', 'Stored pages read by the course structure reader and what became of each', 'active', '{}', '20261120163500'),
+  ('table', 'pipeline.struct_det_readings', 'Layer 3', 'Admission checks', 'Duration, study load and delivery mode readings with their verbatim quotes', 'active', '{}', '20261120163500'),
+  ('table', 'pipeline.struct_det_outcomes', 'Layer 3', 'Admission checks', 'Each structure decision: admitted (before and after), held or sent to Layer 4', 'active', '{}', '20261120163500'),
+  ('table', 'pipeline.struct_det_sweep_calls', 'Layer 3', 'Admission checks', 'Worker calls the structure sweep sent and their collected answers', 'active', '{}', '20261120163500'),
+  ('function', 'security.struct_det_record_v1', 'Layer 3', 'Admission checks', 'Writes the readings of pages the course structure reader read', 'active', '{}', '20261120163500'),
+  ('function', 'security.struct_det_promote_v1', 'Layer 3', 'Admission checks', 'Admits agreed structure values into empty fields, or sends them to Layer 4', 'active', '{}', '20261120163500'),
+  ('function', 'security.struct_det_sweep_v1', 'Layer 3', 'Admission checks', 'One tick of the course structure reader sweep', 'active', '{}', '20261120163500')
 on conflict do nothing;
 
 -- 6. post-checks. The synthetic promotion runs inside a block that is rolled back (it raises P0099 at the end), so nothing it writes stays.
