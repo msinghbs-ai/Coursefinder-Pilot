@@ -1,0 +1,89 @@
+# CF-247 s870 (Platform Admin 20 Nov 2026 17:00): no session stops to ask for a merge or a branch clean-up.
+# A pull request labelled `automerge` is squash-merged once it is mergeable and every check is green (scripts/ci/auto-merge.sh decides;
+# a new migration also needs its rolled-back live dry run), and its branch is deleted. Because a merge made with GITHUB_TOKEN does not start
+# the push-to-main workflows, the script starts them itself: Deploy on merge (exact before/after commits), Security gates, Deployed UAT and,
+# for release files, Release Currentness Deployed.
+# Throwaway probe branches are deleted after their dry run (scripts/ci/probe-branch-cleanup.sh), and idle *-probe branches are swept.
+# The same merge script and workflow (without the deploy hand-off and the probe job) run in coursefinder-admin.
+name: Auto-merge
+
+on:
+  pull_request:
+    types: [labeled, synchronize, reopened]
+  check_suite:
+    types: [completed]
+  workflow_run:
+    workflows: ["Database migration dry run (rolled back)"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number to check and merge now
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+  checks: read
+  statuses: read
+
+jobs:
+  wait-and-merge:
+    name: auto-merge
+    if: >-
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'automerge')
+        && github.event.pull_request.head.repo.full_name == github.repository)
+      || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 130
+    concurrency:
+      group: auto-merge-pr-${{ github.event.pull_request.number || inputs.pr }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for green checks, merge and hand off to the main-branch workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number || inputs.pr }}
+          MODE: wait
+          MIN_CHECKS: '5'
+          POST_MERGE: pilot
+        run: bash scripts/ci/auto-merge.sh
+
+  on-check-suite:
+    name: auto-merge
+    if: github.event_name == 'check_suite' && github.event.check_suite.head_branch != 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Merge any labelled pull request on this commit that is now green
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.check_suite.head_sha }}
+        run: |
+          for pr in $(gh api "repos/$REPO/commits/$SHA/pulls" --jq '.[] | select(.state == "open" and any(.labels[]; .name == "automerge")) | .number'); do
+            PR=$pr MODE=once MIN_CHECKS=5 POST_MERGE=pilot bash scripts/ci/auto-merge.sh
+          done
+
+  probe-cleanup:
+    name: probe branch clean-up
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: probe-branch-cleanup
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Delete the probe branch of this dry run and sweep idle probe branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: bash scripts/ci/probe-branch-cleanup.sh
