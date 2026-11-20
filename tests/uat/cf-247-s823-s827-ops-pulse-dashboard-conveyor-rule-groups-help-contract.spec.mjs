@@ -50,7 +50,8 @@ test('s826: cards are grouped by the rule that holds them; one group, or groups 
   expect(groupsWorthShowing(g)).toBe(true)
   expect(groupsWorthShowing(ruleGroups(items.slice(2, 4)))).toBe(false)
   const inbox = read('src/Layer4Inbox.jsx'), side = read('src/Layer4RuleGroups.jsx')
-  expect(inbox).toContain('<Layer4RuleGroups items={items.items} render={it=><Item key={`${it.kind}:${it.ref}`}')
+  expect(inbox).toContain('<Layer4RuleGroups items={items.items} renderSettle={pv=>settleFor(pv,kinds,')  // s892: the Inbox gives the settle box (Layer4SettleBox.jsx); the panel still decides nothing
+  expect(inbox).toContain('render={it=><Item key={`${it.kind}:${it.ref}`}')
   expect(side).not.toMatch(/supabase|rpc\(|adminRead/) // reads nothing, decides nothing
   expect(side).toContain('href="#layer-4-review?view=grid"')
 })

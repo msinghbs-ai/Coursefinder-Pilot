@@ -3,13 +3,15 @@
 // reason), largest first. Preview the batch lists a group's cards; Show only these narrows the list to them, so a recurring pattern is worked through
 // in one pass. It reads nothing and decides nothing: every card keeps S1-RM-Design's single-record card and action bar (s819-s821, Pilot PR 1411), and
 // a server-checked group is decided in one step on Grid › Grouped decisions (s646). Shown only when it groups something.
+// s892 (20 Nov 2026, CF-247 session S1-CourseLink-2027-CRICOS, Platform Admin 22:58): the preview of a group may carry a settle box (renderSettle, given by the
+// Inbox: Layer4SettleBox.jsx); this panel itself still reads and decides nothing.
 import React,{useMemo,useState}from'react'
 import{Layers}from'lucide-react'
 import{fmtNumber}from'./lib/format.js'
 import{groupsWorthShowing,ruleGroups}from'./lib/ops-pulse.js'
 import'./ops-pulse.css'
 
-export default function Layer4RuleGroups({items,render}){
+export default function Layer4RuleGroups({items,render,renderSettle}){
   const groups=useMemo(()=>ruleGroups(items),[items]),[rule,setRule]=useState(''),[preview,setPreview]=useState('')
   const g=groups.find(x=>x.key===rule),pv=groups.find(x=>x.key===preview)
   if(!groupsWorthShowing(groups))return <>{(items||[]).map(render)}</>
@@ -29,6 +31,7 @@ export default function Layer4RuleGroups({items,render}){
             <button type="button" className="op-btn sm" onClick={()=>setRule(pv.key)} disabled={rule===pv.key} data-l4-rule-only>{rule===pv.key?'Showing only these':`Show only these ${fmtNumber(pv.n)}`}</button>
             <a className="op-btn ghost sm" href="#layer-4-review?view=grid" data-l4-rule-grid>Grouped decisions</a>
           </div>
+          {renderSettle?.(pv)}
         </div>}
       </div>
     </aside>
