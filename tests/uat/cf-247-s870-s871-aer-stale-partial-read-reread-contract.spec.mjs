@@ -32,7 +32,7 @@ test('s870: the card action and the recovery groups', () => {
   expect(isRecoveryGroup({ key: 'aerb:gate_incomplete' })).toBe(true); expect(isRecoveryGroup({ key: 'aer:audit_sample' })).toBe(false)
   expect(groupLabel({ key: 'aerb:gate_incomplete', label: 'Completeness gate (partial table read)' })).toBe('Completeness gate (partial table read)')
   expect(groupLabel({ key: 'aerb:no_bound_page' })).toBe('No stored page bound')
-  expect(fs.readFileSync('src/Layer4ItemLifecycle.jsx', 'utf8')).toContain("lc.group==='B'?`System recovery${kind==='aer_review'?': re-read available':''}`:lc.stage_label")
+  expect(fs.readFileSync('src/Layer4ItemLifecycle.jsx', 'utf8')).toContain("lc.group==='B'?'System recovery: the platform is working on it':lc.stage_label") // s875: entry matrices in recovery have no re-read
 })
 
 const KINDS = { aer_review: { label: 'Entry requirements', order: 1, choices: [{ key: 'approve', label: 'Approve all rows', rank: 6, returns: 'x' }, { key: 'reject', label: 'Reject', rank: 6, returns: 'x' }] } }

@@ -70,7 +70,7 @@ export function ItemLifecycle({kind,refId,ack,seen=true,onSettled}){
     <dl className="l4lc-times l4lc-summary" data-l4-summary>
       <dt>First entered Layer 4</dt><dd data-l4-time="first_entered">{t.first_entered?.text||'—'}</dd>
       {lc.group_label&&<><dt>Person needed</dt><dd data-l4-group={lc.group}>{lc.group_label}: {lc.person_needed}</dd></>}
-      <dt>Status</dt><dd><span className={`l4lc-chip tone-${lc.group==='B'?'warning':TONE[lc.stage]||'info'}`} data-l4-stage>{lc.group==='B'?`System recovery${kind==='aer_review'?': re-read available':''}`:lc.stage_label}</span>{/* s870: a technical-recovery item is never shown as waiting for a reviewer */}{lc.why_pending&&<span data-l4-why-pending> {lc.why_pending}</span>}</dd>
+      <dt>Status</dt><dd><span className={`l4lc-chip tone-${lc.group==='B'?'warning':TONE[lc.stage]||'info'}`} data-l4-stage>{lc.group==='B'?'System recovery: the platform is working on it':lc.stage_label}</span>{/* s870/s875: a technical-recovery item is never shown as waiting for a reviewer; a re-read, when there is one, is the card's own button */}{lc.why_pending&&<span data-l4-why-pending> {lc.why_pending}</span>}</dd>
       <dt>Last reviewer action</dt><dd data-l4-last-reviewer>{last&&last.by==='reviewer'?`${label(last.action)} · ${last.at?.text||''}`:(t.last_reviewer_action?.text||'none yet')}</dd>
       {rc&&<><dt>Last recovery</dt><dd data-l4-last-recovery>{`Attempt ${rc.attempt}: ${rc.result?.headline||label(rc.result?.outcome)} · ${rc.at?.text||''}`}</dd></>}
       {lc.open&&<><dt>Next</dt><dd data-l4-next>{lc.next?.text||'—'}{lc.next?.at?.text?` (${lc.next.at.text})`:''}{lc.owner?` · ${lc.owner}`:''}</dd></>}

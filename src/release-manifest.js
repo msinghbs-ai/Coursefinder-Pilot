@@ -1,20 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.71'
-export const PACKAGE_VERSION='0.1.493'
+export const UI_VERSION='2.16.72'
+export const PACKAGE_VERSION='0.1.494'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'20 Nov 2026',
-  title:'Layer 4 Review: one card shape for every queue, human action apart from system queues, and Preview & Settle Batch',
+  title:'Clearer status on cards the platform is recovering',
   changes:[
-    'In every Layer 4 queue the rule rail has Human Action Required and System Queues (Auto-Recovering): items an existing rule settles or the platform is recovering no longer sit among the decisions.',
-    'Every card has the same shape: the Main hold reason in plain English (machine codes only under Technical detail) and one action bar: admit first, then enter-a-value decisions (Save Edit & Admit) and re-categorise, and the set-aside decisions on the right.',
-    'Every rule group has Preview & Settle Batch: it lists the records and, where the queue allows it, settles them with one decision, one reason and a typed confirmation; each record is still decided on its own. Entry requirements, departures and descriptions are never settled as a batch.'
+    'A card in System Queues says "System recovery: the platform is working on it"; Re-read from stored copy ($0) shows only on cards that can be re-read.'
   ],
   bugFixes:[
-    'Hold reasons showed machine wording such as "Machine rule … did not admit this: gate_incomplete" or D-R3; the headline is now plain English.'
+    'Entry-matrix cards in recovery said "re-read available" although only course reads can be re-read from a stored copy.'
   ]
 }
 
