@@ -1,4 +1,4 @@
-// Guards: S861 automated deterministic course structure promotion and scheduled sweep (Platform Admin 20 Nov 2026 15:19 AEDT, S1-Structure-Outcomes, $0; no overwrite, manual locks kept, page identity, shared pages and disagreements to Layer 4; G1 job catalogued; G2 no number in a job command; G3 no public object; housekeeping s42)
+// Guards: S861 automated deterministic course structure promotion and scheduled sweep (Platform Admin 20 Nov 2026 15:19 AEDT, S1-Structure-Outcomes, $0; no overwrite, manual locks kept, page identity, shared pages and disagreements to Layer 4; G1 job catalogued; G2 no number in a job command; G3 no public object; housekeeping s42; s862 shared-page check indexed under 300 ms)
 // CF-247 S861. Migration 20261120163500_cf247_s861_struct_det_promotion_and_sweep.sql, reader struct-det-v1.0, worker mode struct_det_read.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -71,4 +71,15 @@ test('post-checks: a rolled-back synthetic promotion admits the agreed duration,
   expect(pc).toContain('post-check: a disagreeing delivery mode was admitted')
   expect(pc).toContain('post-check: the synthetic read was not rolled back')
   expect(pc).toContain("raise notice 's861 send query: % ms'")
+})
+
+test('s862: the shared-page test is two indexed EXISTS with the same result, guarded by the live definition and timed under 300 ms', () => {
+  const M2 = fs.readFileSync('supabase/migrations/20261120172000_cf247_s862_struct_det_shared_check_index.sql', 'utf8')
+  expect(M2).toMatch(/^-- Replaces:/m)
+  expect(M2).toMatch(/^-- Retires:/m)
+  expect(M2).toContain("create index if not exists coverage_course_pages_bound_evidence_idx on pipeline.coverage_course_pages (evidence_id) where status = 'bound';")
+  expect(M2).toContain("if md5(v_def) is distinct from 'bf0bc0d643a0df2cdabeb37b688ea3d7'")
+  expect(M2).toContain("post-check: the shared pages differ")
+  expect(M2).toContain("if v_ms > 300 then raise exception")
+  expect(M2.replace(/^--.*$/gm, '')).not.toMatch(/\bdrop\s+(table|function|index)\b|\bdelete\s+from\b|\btruncate\b|\bgrant\b/i)
 })
