@@ -8,7 +8,10 @@
 // reported in discipline_higher, so the plan holds those courses for a person. Named awards ("Bachelor of …") and pathway lines are not defaults either.
 import { elrRead, elrUnits, type ElrKey, type ElrReading } from "./elr-det-reader.ts"
 
-export const ELR_CENTRAL_VERSION = "elr-central-v1.0"
+export const ELR_CENTRAL_VERSION = "elr-central-v1.1"
+// v1.1 (21 Nov 2026, session S1-ELR-Central-Policy, Platform Admin 07:48 AEDT): tables whose columns are study levels and whose rows are tests; "a score of 6.5 in IELTS"
+// (value before the test name); and the values found without a study level are reported (untiered, with the page's band or level scheme flagged) so a page that
+// sorts courses into English bands is told apart from a page that states no test at all. Nothing else changes; tiers stay strict.
 export type Tier = "undergraduate" | "postgraduate" | "research" | "vet"
 export type CentralReq = { test_code: string; overall_score: number; component_scores: Record<string, number>; quote: string }
 export type CentralReading = {
@@ -17,6 +20,9 @@ export type CentralReading = {
   discipline_higher: { discipline: string; quote: string }[]
   tiers_seen: Tier[]
   readings: number
+  values_found: number              // every test value on the page, with or without a study level (v1.1)
+  untiered: string[]                // up to 5 lines with a value but no study level (v1.1)
+  bands: boolean                    // the page sorts courses into English bands or levels (v1.1)
 }
 
 const CODE: Record<ElrKey, string> = { ielts: "IELTS", toefl_ibt: "TOEFL_IBT", pte: "PTE", oet: "OET", celpip: "CELPIP", cambridge: "CAE" }
@@ -61,6 +67,30 @@ function tableRows(lines: string[], i: number): { text: string; quote: string; l
   return out
 }
 
+// a markdown table whose header names study levels and whose rows name tests ("| Test | Undergraduate | Postgraduate |" / "| IELTS Academic | 6.0 (5.5) | 6.5 (6.0) |")
+function tierColumnRows(lines: string[], i: number): { tier: Tier; text: string; quote: string }[] | null {
+  const head = lines[i]
+  if (!/^\s*\|.*\|\s*$/.test(head) || TEST_NAME.test(head) || !/^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1] || "")) return null
+  const cells = (l: string) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim())
+  const hs = cells(head).map((h) => { const t = tiersOf(h); return t.length === 1 && !disciplineOf(h) ? t[0] : null })
+  if (!hs.some((t, k) => k > 0 && t)) return null
+  const out: { tier: Tier; text: string; quote: string }[] = []
+  for (let j = i + 2; j < lines.length && /^\s*\|.*\|\s*$/.test(lines[j]); j++) {
+    const cs = cells(lines[j])
+    if (!TEST_NAME.test(cs[0] || "")) continue
+    hs.forEach((t, k) => { if (k > 0 && t && cs[k]) out.push({ tier: t, text: `${cs[0]}: ${cs[k]} overall.`, quote: lines[j].trim() }) })
+  }
+  return out
+}
+// "an overall score of 6.5 in IELTS (Academic)": the value comes before the test name; read it as "IELTS 6.5 overall", quoted by the line itself
+const BEFORE = /(\d{1,3}(?:\.\d)?)\s*(?:overall\s*)?(?:or (?:above|higher|more)\s*)?(?:in|on|for|from)\s+(?:the\s+|an?\s+)?(IELTS(?: Academic)?|TOEFL(?: iBT)?|PTE(?: Academic)?|Pearson Test of English(?: Academic)?|CELPIP)\b/gi
+function valueFirst(u: string): string {
+  let extra = ""
+  for (const m of u.matchAll(BEFORE)) extra += ` ${m[2]} ${m[1]} overall.`
+  return extra ? u + " |" + extra : u
+}
+const BANDS = /\b(?:English (?:language )?(?:band|level|category|group)s?|band [A-F1-9]\b|level [1-6]\b|category [A-F1-9]\b|group [A-F1-9]\b)/i
+
 // split a line that names two or more tiers into clauses, one tier each ("6.0 for undergraduate and 6.5 for postgraduate coursework", "Undergraduate: 6.0; postgraduate: 6.5");
 // a clause without a test name takes the test named last before it on the line
 function clauses(u: string): string[] {
@@ -77,7 +107,8 @@ export function centralRead(text: string): CentralReading {
   const lines = text.split(/\n/)
   type Hit = { tier: Tier; r: ElrReading; quote: string }
   const hits: Hit[] = [], disc: { discipline: string; quote: string }[] = [], seen = new Set<Tier>()
-  let ctx: Tier[] = [], ctxDisc: string | null = null, n = 0
+  let ctx: Tier[] = [], ctxDisc: string | null = null, n = 0, found = 0
+  const untiered: string[] = []
   const take = (tiers: Tier[], rs: ElrReading[], quote: string, discipline: string | null) => {
     for (const r of rs) {
       if (r.flags.includes("pathway")) continue
@@ -89,6 +120,13 @@ export function centralRead(text: string): CentralReading {
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i], line = raw.trim()
     if (!line) continue
+    const cols = tierColumnRows(lines, i)
+    if (cols) {
+      for (const c of cols) { const rs = elrRead(c.text).map((r) => ({ ...r, quote: c.quote })); found += rs.length; take([c.tier], rs, c.quote, ctxDisc) }
+      let j = i + 2; while (j < lines.length && /^\s*\|.*\|\s*$/.test(lines[j])) j++
+      i = j - 1
+      continue
+    }
     const rows = tableRows(lines, i)
     if (rows) {
       for (const row of rows) {
@@ -97,9 +135,10 @@ export function centralRead(text: string): CentralReading {
         const named = NAMED_AWARD.test(row.label)
         let tiers = tiersOf(row.label)
         if (!tiers.length) tiers = ctx
+        const rs = elrRead(row.text).map((r) => ({ ...r, quote: row.quote })); found += rs.length
         if (named && !d) continue
-        if (!tiers.length && !d) continue
-        take(tiers, elrRead(row.text).map((r) => ({ ...r, quote: row.quote })), row.quote, d)
+        if (!tiers.length && !d) { if (rs.length && untiered.length < 5) untiered.push(row.quote.slice(0, 200)); continue }
+        take(tiers, rs, row.quote, d)
       }
       i += rows.length + 1
       continue
@@ -110,20 +149,22 @@ export function centralRead(text: string): CentralReading {
       if (t.length || d) { ctx = t; ctxDisc = d } else if (/^#{1,3}\s/.test(line)) { ctx = []; ctxDisc = null }
       continue
     }
-    for (const u of elrUnits(raw)) {
-      if (!TEST_NAME.test(u) || PATHWAY.test(u)) continue
+    for (const u0 of elrUnits(raw)) {
+      if (!TEST_NAME.test(u0) || PATHWAY.test(u0)) continue
+      const u = valueFirst(u0)
       const d = disciplineOf(u) ?? ctxDisc
       const named = NAMED_AWARD.test(u)
       const own = tiersOf(u)
       if (named && !d) continue
       if (own.length >= 2 && !ALL.test(u)) {
         // one requirement for each tier the line names
-        for (const p of clauses(u)) { const t = tiersOf(p); if (t.length === 1) take(t, elrRead(p).map((r) => ({ ...r, quote: u })), u, disciplineOf(p) ?? (d && disciplineOf(u) ? null : d)) }
+        for (const p of clauses(u)) { const t = tiersOf(p); const rs = elrRead(p).map((r) => ({ ...r, quote: u0 })); found += rs.length; if (t.length === 1) take(t, rs, u0, disciplineOf(p) ?? (d && disciplineOf(u) ? null : d)) }
         continue
       }
       const tiers = own.length ? own : ALL.test(u) ? (["undergraduate", "postgraduate"] as Tier[]) : ctx
-      if (!tiers.length && !d) continue
-      take(tiers, elrRead(u), u, d)
+      const rs = elrRead(u).map((r) => ({ ...r, quote: u0 })); found += rs.length
+      if (!tiers.length && !d) { if (rs.length && untiered.length < 5) untiered.push(u0.slice(0, 200)); continue }
+      take(tiers, rs, u0, d)
     }
   }
   // one value per tier and test; two values are a conflict and the test is left out of that tier
@@ -143,5 +184,5 @@ export function centralRead(text: string): CentralReading {
     }
     if (reqs.length) defaults[t] = reqs
   }
-  return { defaults, conflicts, discipline_higher: disc.slice(0, 20), tiers_seen: TIERS.filter((t) => seen.has(t)), readings: n }
+  return { defaults, conflicts, discipline_higher: disc.slice(0, 20), tiers_seen: TIERS.filter((t) => seen.has(t)), readings: n, values_found: found, untiered, bands: BANDS.test(text) }
 }

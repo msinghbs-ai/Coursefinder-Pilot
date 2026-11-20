@@ -15,7 +15,7 @@ const code = (t, tier) => (centralRead(t).defaults[tier] || []).map((r) => [r.te
 
 test('the module is pure: no model, fetch, storage, database or environment access', () => {
   expect(SRC).not.toMatch(/\bfetch\s*\(|openrouter|firecrawl|Deno\.|supabase|\.rpc\(|\.storage\b/i)
-  expect(ELR_CENTRAL_VERSION).toBe('elr-central-v1.0')
+  expect(ELR_CENTRAL_VERSION).toMatch(/^elr-central-v1\.\d+$/)
 })
 
 test('each tier gets its own value under its own heading; decimals and quotes are kept', () => {
