@@ -53,6 +53,7 @@ test.describe('mocked browser', () => {
       return r.fulfill({ json: { ...platformHealth, issues: [{ id: 'q1', area: 'Queues', title: 'Find course pages has not moved for 3 hours', detail: {}, severity: 'warning', check_key: 'queue_watch:course_page_search', last_seen: '2026-11-18T01:00:00Z', first_seen: '2026-11-18T01:00:00Z', occurrences: 1, acknowledged_at: null }] } })
     })
     await page.goto('/#platform-health')
+    await page.locator('[data-ph-technical] > summary').click()  // s817: the technical sections sit under Technical details
     const link = page.locator('[data-issue-fix]').first()
     await expect(link).toHaveText('Go to Platform health › Queues & yield')
     await expect(page.getByText('Work queues', { exact: false })).toHaveCount(0)

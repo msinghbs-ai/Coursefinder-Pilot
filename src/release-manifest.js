@@ -1,17 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.65'
-export const PACKAGE_VERSION='0.1.487'
+export const UI_VERSION='2.16.66'
+export const PACKAGE_VERSION='0.1.488'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'20 Nov 2026',
-  title:'Main campus filter on Catalogue › Providers',
+  title:'Clearer description review, automatic removal of banned words and a Platform Health summary',
   changes:[
-    'Catalogue › Providers › More filters › Main campus: Set, Unset (the provider has active campuses but none is the main one) or No active campus.',
-    'Tied main campuses were settled by the registered city, then the register head office address, then the earliest registered of campuses in one city; the rest stay Unset for a person.',
-    'New Zealand and Canadian courses with no campus now show their provider\'s only campus; New Zealand campuses whose name names one region now carry it.'
+    'Description cards show the main hold reason in plain English at the top, with one-click Remove "word" & Admit when a banned word is the only problem.',
+    'Each description card has one action bar: Remove "word" & Admit, Save Edit & Admit, Approve As-Is and, set apart, Reject. The duplicate buttons underneath are gone.',
+    'University descriptions held only for a promotional word on the readers\' list are admitted automatically with the word removed, after the same checks; the word list is also given to the reader up front.',
+    'Human Edits lists the words reviewers remove most often, marked as already on the list or a candidate to add.',
+    'Platform Health opens on a plain-English summary (health, AI spend against the daily cap, blockers, Layer 4 waiting) and Needs attention (failed jobs, stuck work, connections down); everything technical is under Technical details.'
   ],
   bugFixes:[]
 }

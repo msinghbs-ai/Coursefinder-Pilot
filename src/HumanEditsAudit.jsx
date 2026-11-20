@@ -14,7 +14,7 @@ import React,{useEffect,useState}from'react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,Metric,StatusChip,fmtDate,fmtNumber}from'./ui-kit'
 import{CheckLine,descriptionRules}from'./DescriptionEditAdmit'
-import{checkDescription}from'./lib/description-check.js'
+import{checkDescription,ruleCandidates}from'./lib/description-check.js'
 import'./human-edits.css'
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
@@ -42,6 +42,7 @@ export default function HumanEditsAudit({tab,rank,onError}){
       <Metric label="Unacknowledged" value={fmtNumber(c.unacknowledged??0)} tone={Number(c.unacknowledged)?'warning':'success'} detail="not yet acknowledged"/>
       <Metric label="Due for 6-month re-review" value={fmtNumber(c.due??0)} tone={Number(c.due)?'warning':'success'} detail="180 days or more since the edit or acknowledgement"/>
     </section>
+    <RuleTuning items={items}/>
     <div className="he-bar">
       <div className="he-pills" role="group" aria-label="Show">{HE_FILTERS.map(([k,l])=><button key={k} type="button" className={filter===k?'on':''} aria-pressed={filter===k} onClick={()=>setFilter(k)} data-he-filter={k}>{l}{k==='unacknowledged'&&Number(c.unacknowledged)?<span className="he-badge" data-he-badge="unacknowledged">{fmtNumber(c.unacknowledged)}</span>:null}{k==='due'&&Number(c.due)?<span className="he-badge" data-he-badge="due">{fmtNumber(c.due)}</span>:null}</button>)}</div>
       <select value={entity} onChange={e=>setEntity(e.target.value)} aria-label="Description" data-he-entity><option value="">University and course</option><option value="provider">University descriptions</option><option value="course">Course descriptions</option></select>
@@ -107,4 +108,20 @@ function EditDetail({x,rank,busy,act}){
       <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Why (at least 5 characters)" aria-label="Reason" data-he-edit-reason/>
       <Button compact variant="primary" disabled={!!busy||!ok||reason.trim().length<5} onClick={()=>act('human_edits_edit',[x.id],{text:text.trim(),reason:reason.trim()})} data-he-edit-save>{busy==='human_edits_edit'?'Saving…':'Save new revision and re-lock'}</Button></div>}
   </div>
+}
+
+// s819 (Platform Admin 20 Nov 2026 10:21): rule-tuning candidates. The words reviewers removed most often when they edited a description before admitting
+// it. A word already on the readers' list is now removed automatically before Layer 4; a word that is not on it is a candidate to add (Settings › Pipeline
+// settings, Platform Admin, with a reason). Worked out on this page from the edits shown; nothing is written.
+function RuleTuning({items}){
+  const[rules,setRules]=useState(null)
+  useEffect(()=>{descriptionRules().then(setRules).catch(()=>{})},[])
+  const words=[...(rules?.provider?.words||[]),...(rules?.course?.words||[])],rows=ruleCandidates(items,words).slice(0,12)
+  if(!items.length)return null
+  return <details className="he-tuning" data-he-tuning open={rows.some(r=>!r.on_list)||undefined}>
+    <summary><strong>Rule-tuning candidates</strong> <small>{rows.length?`${rows.filter(r=>!r.on_list).length} word(s) reviewers removed that are not on the list yet`:'No word removed yet'}</small></summary>
+    {rows.length>0&&<table className="he-tuning-table"><thead><tr><th>Word removed</th><th>Edits</th><th>On the readers' list?</th></tr></thead>
+      <tbody>{rows.map(r=><tr key={r.word} data-he-tuning-word={r.word}><td><code>{r.word}</code></td><td>{fmtNumber(r.n)}</td><td>{r.on_list?'Yes: removed automatically before Layer 4':'No: a candidate to add (Settings › Pipeline settings)'}</td></tr>)}</tbody></table>}
+    <p><small>Counted from the edits listed above. Adding a word changes what the readers refuse and remove; it is a Platform Admin decision with a reason.</small></p>
+  </details>
 }
