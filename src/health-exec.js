@@ -52,3 +52,23 @@ export function needsAttention(h) {
   const order = { critical: 0, warning: 1 }
   return out.sort((a, b) => (order[a.tone] ?? 9) - (order[b.tone] ?? 9))
 }
+
+// CF-247 s836 (Platform Admin 20 Nov 2026 14:40, S1-UI-Parity): the Dashboard's Active failures. Genuine failures and warnings only, from the open
+// issues the Platform Health read already returns (no extra read): each issue is read through needsAttention above (a job whose last run failed or
+// that is failing, stuck work, a connection that fails), and any other open critical or warning issue keeps its own title. Coverage watchdogs
+// ("Fields below target are moving", field_stalled), a job that failed now and then but whose last run worked, Layer 3 (retired) and notes are left out.
+const FAIL_HREF = { job: '#scheduled-jobs', stuck: '#platform-health', connection: '#platform-health', check: '#platform-health' }
+export function dashboardFailures(h) {
+  const out = [], issues = Array.isArray(h?.issues) ? h.issues : []
+  for (const i of issues) {
+    const k = String(i.check_key || '')
+    if (i.severity !== 'critical' && i.severity !== 'warning') continue
+    if (/^field_stalled(:|$)/.test(k) || /(^|:)layer3_/.test(k)) continue
+    const r = needsAttention({ issues: [i] })[0]
+    if (r) { out.push({ ...r, key: k, href: FAIL_HREF[r.kind] }); continue }
+    if (k.startsWith('cron:failed:') || k.startsWith('queue_watch:')) continue
+    out.push({ kind: 'check', key: k, tone: i.severity, title: String(i.title || k).replace(/\s*\([^)]*\)\s*$/, ''), why: '', href: FAIL_HREF.check })
+  }
+  const order = { critical: 0, warning: 1 }
+  return out.sort((a, b) => (order[a.tone] ?? 9) - (order[b.tone] ?? 9))
+}

@@ -1,9 +1,9 @@
 -- CF-247 S1-UI-Parity (Platform Admin 20 Nov 2026 14:40 and 14:41, chat S1-RM-Design): the database side of the Dashboard and Layer 4 Review parity
 -- with the approved s820-s827 mockup.
---   s834 Dashboard spend card. The stored ops pulse took the daily AI cap from the budgets check's openrouter_daily_ceiling_usd, which the check no
+--   s836 Dashboard spend card. The stored ops pulse took the daily AI cap from the budgets check's openrouter_daily_ceiling_usd, which the check no
 --        longer writes; it writes ai_daily_ceiling_usd (US$14.00 today). The card therefore said "cap not set". The pulse now takes
 --        ai_daily_ceiling_usd first and the older key second (one fragment of security.ops_pulse_refresh_v1, md5-guarded).
---   s835 Layer 4 Review, "Waiting, grouped by rule" across the whole queue of a kind, not only the cards on the loaded page. Two new read-only actions
+--   s837 Layer 4 Review, "Waiting, grouped by rule" across the whole queue of a kind, not only the cards on the loaded page. Two new read-only actions
 --        of public.admin_layer4_inbox (md5-guarded: one inserted branch, signature unchanged), answered by the new security.layer4_rule_groups_v1:
 --        rule_groups  every waiting item of one built-in kind (optionally one university), grouped by the rule that holds it: course and university
 --                     descriptions by their hold code (a refused word is its own group, "Contains a banned word"), AER items by the machine rule's
@@ -12,7 +12,7 @@
 --        rule_group_items  the full cards of up to layer4.rule_batch_max of those refs, by key (the keyed read of security.layer4_inbox_items_v2),
 --                     for the focused card and Preview the batch.
 --        Nothing is decided here: every decision still goes through the Inbox's own decide action, one record at a time, with its reason.
---   s836 Platform Health rate meters. The stored pulse gains rates (security.ops_pulse_rates_v1): pages captured in the last
+--   s838 Platform Health rate meters. The stored pulse gains rates (security.ops_pulse_rates_v1): pages captured in the last
 --        pulse.rate_window_hours against the normal rate of the pulse.baseline_days before it, and the auto-clean pass rate (machine admissions of
 --        course and university descriptions and AER, admitted against all decided) in the same window against the same baseline. It is built in the
 --        5-minute ops-pulse-refresh job, so the screens make no extra read.
@@ -38,19 +38,19 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
 values
   ('pipeline', 'layer4.rule_group_refs_max', 'Layer 4 rule groups: items listed per group',
    'Waiting, grouped by rule lists the oldest items of each group up to this many, so a reviewer can work through a group card by card. The group''s count is always the full count.',
-   'number', to_jsonb(500), 50, 5000, 'items', 890, 'Layer 4', 'security.layer4_rule_groups_v1 (rule_groups)', 'CF-247 s835 (Platform Admin 20 Nov 2026 14:40)'),
+   'number', to_jsonb(500), 50, 5000, 'items', 890, 'Layer 4', 'security.layer4_rule_groups_v1 (rule_groups)', 'CF-247 s837 (Platform Admin 20 Nov 2026 14:40)'),
   ('pipeline', 'layer4.rule_batch_max', 'Layer 4 rule groups: records in one batch preview',
    'Preview the batch shows at most this many records, and a batch decision acts on exactly the records shown, one decision each.',
-   'number', to_jsonb(50), 5, 200, 'records', 891, 'Layer 4', 'security.layer4_rule_groups_v1 (rule_group_items)', 'CF-247 s835 (Platform Admin 20 Nov 2026 14:40)'),
+   'number', to_jsonb(50), 5, 200, 'records', 891, 'Layer 4', 'security.layer4_rule_groups_v1 (rule_group_items)', 'CF-247 s837 (Platform Admin 20 Nov 2026 14:40)'),
   ('pipeline', 'pulse.rate_window_hours', 'Ops pulse rates: window measured',
    'Platform Health compares what happened in this many recent hours (pages captured, auto-clean pass rate) with the normal rate before it.',
-   'number', to_jsonb(24), 1, 168, 'hours', 982, 'Platform health', 'security.ops_pulse_rates_v1 (job ops-pulse-refresh)', 'CF-247 s836 (Platform Admin 20 Nov 2026 14:41)'),
+   'number', to_jsonb(24), 1, 168, 'hours', 982, 'Platform health', 'security.ops_pulse_rates_v1 (job ops-pulse-refresh)', 'CF-247 s838 (Platform Admin 20 Nov 2026 14:41)'),
   ('pipeline', 'pulse.baseline_days', 'Ops pulse rates: days that set the normal rate',
    'The normal rate is the average over this many days before the measured window.',
-   'number', to_jsonb(7), 1, 60, 'days', 983, 'Platform health', 'security.ops_pulse_rates_v1 (job ops-pulse-refresh)', 'CF-247 s836 (Platform Admin 20 Nov 2026 14:41)')
+   'number', to_jsonb(7), 1, 60, 'days', 983, 'Platform health', 'security.ops_pulse_rates_v1 (job ops-pulse-refresh)', 'CF-247 s838 (Platform Admin 20 Nov 2026 14:41)')
 on conflict do nothing;
 
--- s835: whole-queue rule groups and keyed cards (read only)
+-- s837: whole-queue rule groups and keyed cards (read only)
 create or replace function security.layer4_rule_groups_v1(p_action text, p_args jsonb, p_kinds jsonb, p_target int)
 returns jsonb language plpgsql stable security definer set search_path to '' as $function$
 declare v_kind text := nullif(p_args->>'kind', ''); v_prov uuid := nullif(p_args->>'provider_id', '')::uuid;
@@ -121,9 +121,9 @@ begin
   return v_out;
 end $function$;
 revoke all on function security.layer4_rule_groups_v1(text, jsonb, jsonb, int) from public, anon, authenticated;
-comment on function security.layer4_rule_groups_v1(text, jsonb, jsonb, int) is 'CF-247 s835: Layer 4 Review, Waiting grouped by rule across the whole queue of one built-in kind (rule_groups) and the cards of up to layer4.rule_batch_max refs (rule_group_items). Read only; reached through public.admin_layer4_inbox (Curator or above).';
+comment on function security.layer4_rule_groups_v1(text, jsonb, jsonb, int) is 'CF-247 s837: Layer 4 Review, Waiting grouped by rule across the whole queue of one built-in kind (rule_groups) and the cards of up to layer4.rule_batch_max refs (rule_group_items). Read only; reached through public.admin_layer4_inbox (Curator or above).';
 
--- s836: capture and auto-clean rates against their normal rate, for the stored pulse
+-- s838: capture and auto-clean rates against their normal rate, for the stored pulse
 create or replace function security.ops_pulse_rates_v1()
 returns jsonb language plpgsql stable security definer set search_path to '' as $function$
 declare v_h int := security.pipeline_num_v1('pulse.rate_window_hours', 24)::int; v_d int := security.pipeline_num_v1('pulse.baseline_days', 7)::int;
@@ -151,7 +151,7 @@ begin
   return jsonb_build_object('window_hours', v_h, 'baseline_days', v_d, 'capture', v_cap, 'autoclean', v_ac, 'errors', v_err);
 end $function$;
 revoke all on function security.ops_pulse_rates_v1() from public, anon, authenticated;
-comment on function security.ops_pulse_rates_v1() is 'CF-247 s836: pages captured and the auto-clean pass rate in the last pulse.rate_window_hours against the normal rate of the pulse.baseline_days before it. Built into the stored ops pulse by security.ops_pulse_refresh_v1; a part that fails is null and named in errors.';
+comment on function security.ops_pulse_rates_v1() is 'CF-247 s838: pages captured and the auto-clean pass rate in the last pulse.rate_window_hours against the normal rate of the pulse.baseline_days before it. Built into the stored ops pulse by security.ops_pulse_refresh_v1; a part that fails is null and named in errors.';
 
 create or replace function pg_temp.cf_edit_def(p_sig regprocedure, p_md5 text, p_old text[], p_new text[])
 returns void language plpgsql as $f$
@@ -166,21 +166,21 @@ begin
   execute v_def;
 end $f$;
 
--- s834 and s836: security.ops_pulse_refresh_v1 (md5 read live 20 Nov 2026 14:42, after s823): the cap key and the rates
+-- s836 and s838: security.ops_pulse_refresh_v1 (md5 read live 20 Nov 2026 14:42, after s823): the cap key and the rates
 select pg_temp.cf_edit_def('security.ops_pulse_refresh_v1()'::regprocedure, '8aa5a729fc1f07f06543a6ab057c1a72',
   array[$o$'cap_usd', h.detail->'openrouter_daily_ceiling_usd',$o$,
         $o$'stages', v_stages, 'checks', v_checks),$o$],
   array[$n$'cap_usd', coalesce(h.detail->'ai_daily_ceiling_usd', h.detail->'openrouter_daily_ceiling_usd'),$n$,
         $n$'stages', v_stages, 'checks', v_checks, 'rates', security.ops_pulse_rates_v1()),$n$]);
 
--- s835: public.admin_layer4_inbox (md5 read live 20 Nov 2026 14:42, after s819 #1416 and s831 #1418): the two read-only rule group actions
+-- s837: public.admin_layer4_inbox (md5 read live 20 Nov 2026 14:42, after s819 #1416 and s831 #1418): the two read-only rule group actions
 select pg_temp.cf_edit_def('public.admin_layer4_inbox(text,jsonb)'::regprocedure, 'f458ded21b5c91dbb92a5ac0c9e185b9',
   array[$o$    return security.s812_bulk_admin_v1(p_action, p_args);  -- s812
   end if;$o$],
   array[$n$    return security.s812_bulk_admin_v1(p_action, p_args);  -- s812
   end if;
   if p_action in ('rule_groups', 'rule_group_items') then
-    return security.layer4_rule_groups_v1(p_action, p_args, v_kinds, v_target);  -- CF-247 s835: Waiting, grouped by rule (read only)
+    return security.layer4_rule_groups_v1(p_action, p_args, v_kinds, v_target);  -- CF-247 s837: Waiting, grouped by rule (read only)
   end if;$n$]);
 
 -- post-checks
@@ -214,12 +214,12 @@ begin
       raise exception 'post-check: the pulse still has no daily cap';
     end if;
     if v_p->'rates' is null then raise exception 'post-check: the pulse has no rates'; end if;
-    raise exception 'cf-s834-undo %', coalesce(v_p->'budget'->>'cap_usd', '-');
+    raise exception 'cf-s836-undo %', coalesce(v_p->'budget'->>'cap_usd', '-');
   exception when others then
-    if sqlerrm not like 'cf-s834-undo%' then raise; end if;
+    if sqlerrm not like 'cf-s836-undo%' then raise; end if;
     v_o := v_o || '; pulse cap ' || substr(sqlerrm, 14) || ' (rolled back)';
   end;
-  raise notice 'CF-247 s834-s836 post-checks: %', v_o;
+  raise notice 'CF-247 s836-s838 post-checks: %', v_o;
 end $c$;
 
 do $g$

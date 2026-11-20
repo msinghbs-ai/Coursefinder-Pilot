@@ -30,7 +30,9 @@ import Layer4HoldReasons from'./Layer4HoldReasons' // CF-247 s831: why AER items
 import Layer4Grid from'./Layer4Grid' // CF-247 UI/UX audit Phase 5 (18 Nov 2026): the review grid, saved views and the quote/value drawer
 import{CdList,CdPanel,CdWhy,ChecksLine,ReasonChips,cdChoices,isCourseDescription,useCdQueue}from'./CourseDescriptionPanel' // CF-247 course descriptions (6 Nov 2026): reconcile, ready first, the sample
 import Layer4RuleGroups from'./Layer4RuleGroups' // CF-247 S1-UX s826: Waiting, grouped by rule (left panel; the cards and their action bars are unchanged)
-import DescriptionEditAdmit,{HeldUniversities}from'./DescriptionEditAdmit' // CF-247 s802/s803: Edit & Approve, held universities
+import DescriptionEditAdmit,{CardHold,HeldUniversities}from'./DescriptionEditAdmit' // CF-247 s802/s803: Edit & Approve, held universities; s838: CardHold
+import Layer4Focus from'./Layer4Focus' // CF-247 s837: the default view, Waiting grouped by rule (whole queue) and one focused card
+import{defaultKind,holdLabelOf}from'./lib/l4-rules.js'
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
 // SS-016 role simulation (1 Nov 2026): the rank a choice needs, as public.admin_layer4_inbox decides it: its own rank, else rank 4
@@ -66,7 +68,7 @@ const readSel=()=>{try{return JSON.parse(sessionStorage.getItem(SEL)||'null')}ca
 export default function Layer4Inbox({onError,routeParams}){
   const want=routeParams?.get?.('kind')||'',wantProvider=routeParams?.get?.('provider')||'',wantView=routeParams?.get?.('view')||'',wantRef=routeParams?.get?.('ref')||'',wantAt=routeParams?.get?.('review_at')||'' // v2.15.343: the Dashboard opens the Inbox by kind (?view=kind)
   const[grp,setGrp]=useState(''),[gtick,setGtick]=useState(0)
-  const[sum,setSum]=useState(null),[view,setView]=useState(wantProvider?'university':want?'kind':['kind','grid','decided'].includes(wantView)?wantView:'university') /* v2.16.39: ?view=grid and ?view=decided open those views (Evidence links here) */,[kind,setKind]=useState(want),[q,setQ]=useState('')
+  const[sum,setSum]=useState(null),[view,setView]=useState(wantProvider?'university':want&&wantView!=='focus'?'kind':['kind','grid','decided','university','focus'].includes(wantView)?wantView:'focus') /* v2.16.39: ?view=grid and ?view=decided open those views (Evidence links here); s837: the default is focus (Waiting, grouped by rule) */,[kind,setKind]=useState(want),[q,setQ]=useState('')
   const[unis,setUnis]=useState(null),[offset,setOffset]=useState(0),[pick,setPick]=useState(null),[items,setItems]=useState(null),[note,setNote]=useState('')
   const[cur,setCur]=useState(null),[stack,setStack]=useState([]),restored=useRef(readPos()),hold=useRef(true)
   const linkedPosition=useRef('')
@@ -79,7 +81,7 @@ export default function Layer4Inbox({onError,routeParams}){
   const loadSum=()=>rpc('summary').then(setSum).catch(e=>onError?.(e.message))
   const loadUnis=(o=offset)=>{if(!sum)return;setUnis(null);rpc('universities',{kind,q,limit:UPAGE,offset:o}).then(d=>{setUnis(d);if(view==='university'&&!pick&&d.items?.[0]){const s=sel0.current;sel0.current=null
     setPick(wantProvider?(d.items.find(u=>u.provider_id===wantProvider)||{provider_id:wantProvider,name:'University'}):s?.pick?.provider_id?s.pick:d.items[0])}}).catch(e=>onError?.(e.message))}
-  const loadItems=(c=cur)=>{if(view==='group'||view==='grid'){setItems(null);return}if(view==='decided'){setItems(null);rpc('decided',{limit:100}).then(setItems).catch(e=>onError?.(e.message));return}if(view==='kind'&&!kind){setItems(null);return}if(view==='university'&&!pick){setItems(null);return}if(!sum)return;setItems(null)
+  const loadItems=(c=cur)=>{if(view==='group'||view==='grid'||view==='focus'){setItems(null);return}if(view==='decided'){setItems(null);rpc('decided',{limit:100}).then(setItems).catch(e=>onError?.(e.message));return}if(view==='kind'&&!kind){setItems(null);return}if(view==='university'&&!pick){setItems(null);return}if(!sum)return;setItems(null)
     rpc('items',{...(view==='kind'?{kind}:{provider_id:pick.provider_id,...((uk||kind)?{kind:uk||kind}:{})}),limit:IPAGE,...(c||{})}).then(setItems).catch(e=>onError?.(e.message))}
   const choose=(u,k)=>{setPick(u);setUk(k||'');setNote('')}
   useEffect(()=>{loadSum()},[])
@@ -121,8 +123,11 @@ export default function Layer4Inbox({onError,routeParams}){
   const cdOn=(view==='university'&&!!pick&&uk==='provider_description')||(view==='kind'&&kind==='provider_description')
   const cdq=useCdQueue(cdOn,view==='university'&&pick&&uk==='provider_description'?pick.provider_id:null),showCd=cdOn&&!!cdq.mode
   const decided=r=>{setNote(outcomeText(r));loadSum();loadItems(cur);loadAer();if(cdOn){cdq.loadSum();if(cdq.mode)cdq.loadList()}if(showReady)loadReady();if(view==='university')rpc('universities',{kind,q,limit:UPAGE,offset}).then(setUnis).catch(()=>{})}
+  // s837: the focused view opens on a queue (descriptions first when any wait)
+  useEffect(()=>{if(view==='focus'&&sum&&!kind){const k=defaultKind(sum.by_kind,sum.kinds);if(k)setKind(k)}},[view,!sum])
+  const[others,setOthers]=useState(false)
   if(!sum)return <Loading label="Reading what needs a person…"/>
-  const bk=sum.by_kind||{}
+  const bk=sum.by_kind||{},focus=view==='focus',showOthers=others||!focus
   return <div className="l4i" data-l4-inbox>
     <section className="l4i-tiles">
       <Metric label="Waiting for a person" value={fmtNumber(sum.total)} detail={`${fmtNumber(sum.universities)} universities`} icon={Inbox}/>
@@ -130,19 +135,24 @@ export default function Layer4Inbox({onError,routeParams}){
     </section>
     {/* SS-020 step 4 (Decision 269, 3 Nov 2026): review readiness header line, moved from Coverage › Attributes */}
     <ReviewReadinessLine/>
-    <GroupBar active={view==='group'?grp:''} onPick={g=>{setGrp(g);setView('group');setNote('')}} refresh={gtick} total={sum.total}/>
+    {!focus&&<GroupBar active={view==='group'?grp:''} onPick={g=>{setGrp(g);setView('group');setNote('')}} refresh={gtick} total={sum.total}/>}
     <div className="l4i-kinds" role="toolbar" aria-label="Kinds of decision">
-      <button type="button" className={!kind?'on':''} onClick={()=>setKind('')}>All ({fmtNumber(sum.total)})</button>
+      {!focus&&<button type="button" className={!kind?'on':''} onClick={()=>setKind('')}>All ({fmtNumber(sum.total)})</button>}
       {order.filter(k=>bk[k]?.n).map(k=><button key={k} type="button" className={kind===k?'on':''} data-l4-kind={k} onClick={()=>setKind(k)}>{kinds[k].label} ({fmtNumber(bk[k].n)})</button>)}
     </div>
     <div className="l4i-bar">
-      <div className="l4i-view">{[['university','By university'],['kind','By kind'],['grid','Grid'],['decided','Decided']].map(([v,l])=><button key={v} type="button" className={view===v?'on':''} onClick={()=>{setView(v);setNote('')}}>{l}</button>)}</div>
+      {/* s837: Review by rule is the default; the older views are behind Other views (shown while one of them is open) */}
+      <div className="l4i-view" role="group" aria-label="View"><button type="button" className={focus?'on':''} aria-pressed={focus} onClick={()=>{setView('focus');setOthers(false);setNote('')}} data-l4-view="focus">Review by rule</button>
+        <button type="button" className={`l4i-other-toggle${showOthers?' open':''}`} aria-expanded={showOthers} onClick={()=>setOthers(v=>!v)} data-l4-other-views>Other views</button>
+        {showOthers&&[['university','By university'],['kind','By kind'],['grid','Grid'],['decided','Decided']].map(([v,l])=><button key={v} type="button" className={`l4i-other${view===v?' on':''}`} aria-pressed={view===v} onClick={()=>{setView(v);setNote('')}} data-l4-view={v}>{l}</button>)}</div>
       {view==='university'&&<label className="l4i-search"><Search size={14}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Find a university…" aria-label="Find a university"/></label>}
       <Button compact onClick={()=>{loadSum();loadUnis(offset);loadItems(cur)}}><RefreshCw size={14}/>Refresh</Button>
     </div>
     {note&&<p className="l4i-note" role="status">{note}</p>}
     {kind==='aer_review'&&(view==='university'||view==='kind')&&<Layer4HoldReasons kinds={kinds} targetDays={sum.target_days} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>}
-    {view==='grid'?<Layer4Grid kinds={kinds} targetDays={sum.target_days} rank={sum.rank} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
+    {focus?<Layer4Focus kinds={kinds} kind={kind} rank={sum.rank} onError={onError} onOtherView={v=>{setView(v);setNote('')}} onDecided={r=>{if(!r?.batch)setNote(outcomeText(r));else setNote(`Batch: ${r.admitted} admitted${r.failed?`, ${r.failed} not admitted`:''}.`);loadSum()}}
+      renderItem={(it,done,hold)=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} holdLabel={hold} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
+    view==='grid'?<Layer4Grid kinds={kinds} targetDays={sum.target_days} rank={sum.rank} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
     view==='group'?<GroupList group={grp} refresh={gtick} renderItem={it=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={r=>{decided(r);setGtick(x=>x+1)}} onError={onError} onRefresh={()=>{loadSum();setGtick(x=>x+1)}}/>}/>:
     view==='decided'?<Decided items={items} kinds={kinds}/>:view==='kind'&&!kind?<Empty text="Choose a kind above to see its items across every university."/>:
     <div className={view==='university'?'l4i-split':''}>
@@ -187,7 +197,7 @@ export default function Layer4Inbox({onError,routeParams}){
   </div>
 }
 
-function Item({it,k,showProvider,rank,onDone,onError,onRefresh}){
+function Item({it,k,showProvider,rank,onDone,onError,onRefresh,holdLabel=''}){
   const[open,setOpen]=useState(null),[reason,setReason]=useState(''),[value,setValue]=useState(''),[busy,setBusy]=useState(false),[err,setErr]=useState('')
   const d=it.detail||{}
   const[ack,setAck]=useState(null),[rev,setRev]=useState(0) // CF-247 decision 12:24 §4: the server's acknowledgement of the last decision here
@@ -232,7 +242,7 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh}){
   const go=async()=>{setBusy(true);setErr('');try{const r=await rpc('decide',{kind:it.kind,ref:it.ref,choice:open.key,reason,value});setAck(r?.ack||null);setRev(v=>v+1);if(r&&r.ok===false){setFollow(r.request||'More is needed before this can go ahead.');return}setFollow('');setOpen(null);onDone?.(r)}catch(e){setErr(e.message)}finally{setBusy(false)}}
   return <article ref={box} className={`l4i-item${it.late?' late':''}`} data-l4-item={it.kind} data-l4-ref={it.ref}>
     <header><StatusChip value={it.kind} tone={it.late?'warning':'info'} label={d.field_code==='course_description_first_read'?'Course description':k.label}/>{showProvider&&it.provider&&<strong className="l4i-prov">{it.provider}</strong>}{it.subject&&<span className="l4i-subj">{it.subject}</span>}{d.course_code&&<span className="l4i-code" title={d.code_label==="Course code"?"Course code":"CRICOS code"} data-l4-code>{d.code_label||"CRICOS"} {d.course_code}</span>}<small>{fmtDate(it.created_at)} · {days(it.created_at)} d · <span data-l4-refshow title={it.ref}>Ref {String(it.ref).slice(0,8)}</span></small></header>
-    {!(editKind&&editing)&&<p className="l4i-why">{it.why}</p>}{/* s820: an open description card shows the plain hold reason (DescriptionEditAdmit HoldBanner) instead */}
+    {!(editKind&&editing)&&<CardHold it={it} label={holdLabelOf(it,holdLabel)}/>}{/* s820: an open description card shows the plain hold reason (DescriptionEditAdmit HoldBanner) instead */}
     <ItemLifecycle kind={it.kind} refId={it.ref} ack={ack} seen={seen} onSettled={()=>{setRev(v=>v+1);onRefresh?.()}}/>
     {(d.evidence_id||d.course_id)&&!aerItem&&<p className="l4i-evid" data-l4-evidence><small>
       {d.evidence_id?<><a href={hrefFor('evidence','',{evidence_id:d.evidence_id})} data-l4-evidence-link>Stored copy</a>{d.captured_at?` captured ${fmtDate(d.captured_at)}`:''}{d.newer_copy?<em className="l4i-match warn" data-l4-newer> a newer copy of this page exists</em>:''}{d.source_url?<> · <a href={d.source_url} target="_blank" rel="noreferrer">source <ExternalLink size={11}/></a></>:null}</>:'No stored copy is linked to this item'}
