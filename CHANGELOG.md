@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.487 — 20 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.65** (Platform Admin 20 Nov 2026 09:55 and 10:48, chat S1-Build). CF-247 s818: Catalogue › Providers Main campus filter (admin_providers_page_v3 primary_campus); tied main campuses settled by the registered city, the register head office address and the earliest registered co-located campus (security.campus_primary_tiebreak_v1); NZ and CA courses with no campus linked to their provider's only campus; NZ campus regions from campus names. No consumer API change.
+
 ## 0.1.486 — 20 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.64** (Platform Admin 20 Nov 2026 08:06, chat S1-RM-Design). CF-247 s812 (UnoPim grid actions and per-field provenance): the Providers bulk bar gains Queue to Intake Run & Validate (a hand-off list on Layer 2/3 Operations; nothing is run) and Flag primary campus (Platform Admin; preview, then apply with a reason; one audit event; the B2 rule for the ticked providers only, skipping providers that already have a primary campus, have it locked, tie or are outside AU, NZ and CA). Provider and Course drawers show Human Locked pills from the lock table. Migration `20261120104000` adds `security.s812_bulk_admin_v1` and three actions of the existing `public.admin_layer4_inbox` (one md5-guarded in-place edit, signature unchanged) and the setting `bulk.primary_campus_max`; no new public function, table or view; consumer API 75 functions and 48 relations, no drift. Register and AI verified are shown only for the description, the one field that records its source; the other fields' source is not recorded per field.

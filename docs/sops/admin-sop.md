@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.77; reviewed-release=2.16.64; source-commit=6980e7f027aa+local; content-sha256=ab255cc7625849acc07554d6da91a12331e0e68b0be58ef73a11362cd552fd5a -->
+<!-- sop-export: id=admin-sop; version=2.78; reviewed-release=2.16.65; source-commit=f33633de73a3+local; content-sha256=b50f97d28e1b25e5eb2523a642af30411814b7af8aed43e6509d22e2eac8027e -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.77 (reviewed for platform release v2.16.64)  
+**Version:** 2.78 (reviewed for platform release v2.16.65)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -140,6 +140,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.78 | 20 Nov 2026 | v2.16.65 | Catalogue › Providers › More filters › Main campus (Set, Unset, No active campus). Tied main campuses were settled by the registered city, the register head office address, then the earliest registered of co-located campuses; NZ and CA courses with no campus took their provider's only campus. Weekly: Main campus Unset, choose the main campus for each. |
 | 2.77 | 20 Nov 2026 | v2.16.62 | Layer 4 › Inbox, University and Course description cards: Edit & Approve opens the text with the page's own words, the official page link and live counts; Approve As-Is admits the machine text unchanged, Save Edit & Admit admits your text as human input, locked by hand. Held universities with no machine text are opened for writing there. New page Data & Governance › Human Edits & Periodic Audit: My Human Edits and All Human Edits (Admin Governance) with Unacknowledged and Due for 6-month re-review badges; Acknowledge & Keep Lock, Re-Verify by Machine (reads nothing again, changes nothing), Edit & Re-Lock, and for the Platform Admin Release Lock to Machine. Weekly: All Human Edits, Due for 6-month re-review; acknowledge, re-verify or release each. |
 | 2.76 | 19 Nov 2026 | v2.16.58 | Layer 4 Review › Grid: the Country and Provider type pills show the drawn flag, the country code and how many items wait with that pill chosen. The item drawer shows the proposed value, the verbatim quote with its source link and the exact machine hold reason side by side, with the kind's own decisions beneath; Previous and Next, or J and K, move to the next or previous item and never decide anything. |
 | 2.75 | 19 Nov 2026 | v2.16.53 | Layer 4 › Inbox › Grid: Country pills (All, Australia, New Zealand, Canada) and Provider type pills (All, University, VET / College, School, HEI) narrow the rows, the count and Export CSV. They are not saved in a view. |
