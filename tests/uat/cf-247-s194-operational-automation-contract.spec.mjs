@@ -78,6 +78,7 @@ test.describe('mocked browser', () => {
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_read', async (route) => (route.request().postDataJSON() || {}).p_operation === 'platform_health'
       ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...F.platformHealth, issues: [...F.platformHealth.issues, warn] }) }) : route.fallback())
     await page.goto('/#platform-health')
+    await page.locator('[data-ph-technical] > summary').click()  // s817: the technical sections sit under Technical details
     const panel = page.locator('[data-platform-alerts]')
     await expect(panel.locator('[data-alert-delivery="off"]')).toContainText('nothing leaves the platform until the Platform Admin approves a destination')
     await expect(panel.locator('[data-alert-row="held"]')).toHaveCount(2)
@@ -102,6 +103,7 @@ test.describe('mocked browser', () => {
   test('a viewer sees the alerts and scorecard but cannot acknowledge or send a test alert', async ({ page }) => {
     await mockAdmin(page, { rank: 4 })
     await page.goto('/#platform-health')
+    await page.locator('[data-ph-technical] > summary').click()  // s817: the technical sections sit under Technical details
     await expect(page.locator('[data-platform-alerts]')).toBeVisible()
     await expect(page.locator('[data-alert-test]')).toHaveCount(0)
     await expect(page.locator('[data-ack-issue]')).toHaveCount(0)

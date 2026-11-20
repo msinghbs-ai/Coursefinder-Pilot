@@ -8,7 +8,7 @@ import React,{useEffect,useState}from'react'
 import{ExternalLink}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button}from'./ui-kit'
-import{checkDescription,isEdited}from'./lib/description-check.js'
+import{checkDescription,isEdited,stripBanned,holdReason}from'./lib/description-check.js'
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
 let RULES=null,RULES_P=null
@@ -23,16 +23,34 @@ export function CheckLine({text,rules,label='Checks'}){
       {!c.ok&&<><br/><span data-dea-problems>{c.problems.join('; ')}</span></>}</small></p>
 }
 
-export default function DescriptionEditAdmit({it,d,isCourse,rank,onDone,onCancel}){
+// s820 (Platform Admin 20 Nov 2026 10:21): the main hold reason in plain English at the top of the card; the machine rule's code under Technical detail
+export function HoldBanner({it,candidate,rules}){
+  const h=holdReason(it?.why,candidate,rules)
+  return <div className={`dea-hold dea-hold-${h.kind}`} role="note" data-dea-hold={h.kind}>
+    <strong>Main hold reason: {h.title}{h.words?.length?<> — {h.words.map((w,i)=><React.Fragment key={w}>{i?', ':''}<code data-dea-hold-word>{w}</code></React.Fragment>)}</>:null}</strong>
+    {it?.why&&<details className="dea-tech"><summary>Technical detail</summary><small data-dea-hold-code>{it.why}</small></details>}
+  </div>
+}
+
+// s821 (Platform Admin 20 Nov 2026 10:21): one action bar per description card. Remove "word" & Admit (only when the candidate is held for banned
+// words and the cleaned text passes every check), Save Edit & Admit (once the edited text passes), Approve As-Is (when nothing needs changing), and
+// Reject, set apart (passed in as `reject`, the card's own Reject choice and its reason step). The Inbox no longer repeats Approve as read and Reject below.
+export default function DescriptionEditAdmit({it,d,isCourse,rank,onDone,onCancel,reject=null}){
   const original=String(d.proposed?.description||''),held=!original.trim()
   const[text,setText]=useState(original),[lock,setLock]=useState(true),[reason,setReason]=useState(''),[busy,setBusy]=useState(''),[err,setErr]=useState(''),[rules,setRules]=useState(RULES)
   useEffect(()=>{descriptionRules().then(setRules).catch(e=>setErr(e.message))},[])
   const r=rules?.[isCourse?'course':'provider'],c=r?checkDescription(text,r):null,edited=isEdited(text,original)
   const sentences=Array.isArray(d.proposed?.sentences)?d.proposed.sentences:[],url=d.proposed?.source_url||d.source_url
+  const banned=r?checkDescription(original,r).banned:[],strip=r&&banned.length?stripBanned(original,r.words):null
+  const stripCheck=strip?.changed?checkDescription(strip.text,r):null,canStrip=!!(strip?.changed&&stripCheck?.ok&&!edited)
+  const removeAdmit=async()=>{setBusy('strip');setErr('')
+    try{const out=await rpc('decide',{kind:it.kind,ref:it.ref,choice:'edit_approve',value:strip.text,set_manual_lock:true,reason:`Removed banned word${strip.removed.length===1?'':'s'}: ${strip.removed.join(', ')}`});onDone?.(out)}catch(e){setErr(e.message)}finally{setBusy('')}}
   const save=async asIs=>{setBusy(asIs?'asis':'edit');setErr('')
     try{const out=await rpc('decide',{kind:it.kind,ref:it.ref,choice:'edit_approve',value:asIs?original:text.trim(),set_manual_lock:lock,reason:reason.trim()});onDone?.(out)}catch(e){setErr(e.message)}finally{setBusy('')}}
   const reasonOk=reason.trim().length>=5,low=rank<4
   return <div className="dea" data-dea={isCourse?'course':'provider'} data-dea-ref={it.ref}>
+    {!held&&<HoldBanner it={it} candidate={original} rules={r}/>}
+    {canStrip&&<div className="dea-strip" data-dea-strip><small>With {strip.removed.map(w=>`"${w}"`).join(', ')} removed (nothing else changed; every check passes):</small><p data-dea-strip-text>{strip.text}</p></div>}
     <p className="dea-head"><strong>Edit &amp; Approve</strong> <small>{held?'No machine text was proposed (the reading was held): write the description from the official page.':'Edit the text if it needs it, or approve it as read.'}</small></p>
     <label className="dea-field"><span>{isCourse?'Course description':'University description'}</span>
       <textarea value={text} onChange={e=>setText(e.target.value)} rows={isCourse?3:6} aria-label="Description to admit" data-dea-text/></label>
@@ -43,12 +61,13 @@ export default function DescriptionEditAdmit({it,d,isCourse,rank,onDone,onCancel
     <p className="dea-src"><small>Official page: {url?<a href={url} target="_blank" rel="noreferrer" data-dea-source>{url} <ExternalLink size={11}/></a>:'none held'}</small></p>
     <label className="dea-lock"><input type="checkbox" checked={lock} onChange={e=>setLock(e.target.checked)} data-dea-lock/> Lock the description by hand when the edited text is admitted (automation will not change it; review due in {rules?.review_months||6} months)</label>
     <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Why (kept with the decision, at least 5 characters)" aria-label="Reason" data-dea-reason/>
-    <div className="dea-actions">
+    <div className="dea-actions" data-dea-bar>
+      {canStrip&&<Button compact variant="primary" disabled={low||!!busy} onClick={removeAdmit} title="Admits the text with the banned word removed and locks it by hand" data-dea-remove-admit>{busy==='strip'?'Saving…':`Remove ${strip.removed.map(w=>`"${w}"`).join(', ')} & Admit`}</Button>}
       <Button compact variant="primary" disabled={low||!!busy||!edited||!c?.ok||!reasonOk} onClick={()=>save(false)} title={!edited?'Change the text first, or use Approve As-Is':!c?.ok?'The edited text does not pass the checks':''} data-dea-save>{busy==='edit'?'Saving…':'Save Edit & Admit'}</Button>
       <Button compact disabled={low||!!busy||held||edited||!reasonOk} onClick={()=>save(true)} title={held?'There is no machine text to approve':edited?'The text was changed: Save Edit & Admit, or undo the change':''} data-dea-asis>{busy==='asis'?'Saving…':'Approve As-Is'}</Button>
-      {edited&&!held&&<Button compact onClick={()=>setText(original)} data-dea-undo>Undo changes</Button>}
-      <Button compact onClick={onCancel}>Close</Button>
+      {reject&&<span className="dea-bar-gap" aria-hidden="true"/>}{reject}
     </div>
+    <p className="dea-minor">{edited&&!held&&<button type="button" className="dea-link" onClick={()=>setText(original)} data-dea-undo>Undo changes</button>}<button type="button" className="dea-link" onClick={onCancel} data-dea-close>Close the editor</button></p>
     {low&&<p className="dea-err"><small>Admitting a description needs a Pipeline Operator or above.</small></p>}
     {err&&<p className="dea-err" role="alert" data-dea-error>{err}</p>}
   </div>

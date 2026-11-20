@@ -44,6 +44,7 @@ test('browser: Health checks shows no Layer 3 block and links Capacity to the Go
   await mockAdmin(page)
   await page.goto('/#platform-health')
   const main = page.locator('main')
+  await page.locator('[data-ph-technical] > summary').click()  // s817: the technical sections sit under Technical details
   await expect(main.getByText('Layer 4 review backlog grew by 809')).toBeVisible()
   await expect(main).not.toContainText('Layer 3')
   await expect(main).not.toContainText('stuck in reserved/interpreting')
