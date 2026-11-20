@@ -58,7 +58,7 @@ end $$;
 
 -- post-checks, as a signed-in Platform Admin: the rows are the same as the definition it replaced, and decisions are timed (rolled back)
 do $$
-declare v_admin uuid; v_o text := ''; v_ks text[]; v_a text; v_b text; r jsonb; it jsonb; pr text[]; t0 timestamptz; ms int; v_hs int; v_src text; v_pid uuid;
+declare v_admin uuid; v_lt text; v_o text := ''; v_ks text[]; v_a text; v_b text; r jsonb; it jsonb; pr text[]; t0 timestamptz; ms int; v_hs int; v_src text; v_pid uuid;
 begin
   -- the replaced definition, rebuilt as a temporary SQL function from the new text, gives the reference rows
   select p.prosrc into v_src from pg_proc p where p.oid = 'security.layer4_inbox_items_v2(uuid,text,text[],boolean)'::regprocedure;
@@ -84,6 +84,9 @@ begin
   select ur.user_id into v_admin from security.user_roles ur join security.roles ro on ro.code = ur.role_code
    where ro.status = 'active' and ro.rank >= 6 and (ur.expires_at is null or ur.expires_at > now()) order by ur.user_id limit 1;
   perform set_config('request.jwt.claims', jsonb_build_object('sub', v_admin::text, 'role', 'authenticated')::text, true);
+  -- a decision that waits on a lock another job holds (the search document writer) is reported, not waited for
+  v_lt := current_setting('lock_timeout');
+  perform set_config('lock_timeout', '5s', true);  -- fixed: post-check lock wait only, restored below
   foreach pr slice 1 in array array[['held_scholarship', 'not_international'], ['held_scholarship', 'publish'], ['aer_review', 'approve'],
                                     ['provider_description', 'approve'], ['course_link', 'use'], ['pages_not_found', 'release'], ['site_down', 'wait']] loop
     r := public.admin_layer4_inbox('items', jsonb_build_object('kind', pr[1], 'limit', 1)); it := r->'items'->0;
@@ -106,6 +109,7 @@ begin
     end;
   end loop;
   perform set_config('request.jwt.claims', '', true);
+  perform set_config('lock_timeout', v_lt, true);
   if v_hs is null then raise exception 'post-check: no held scholarship was decided'; end if;
   if v_hs > 1000 then raise exception 'post-check: a held scholarship decision took % ms', v_hs; end if;
   perform set_config('cf.diag', v_o, true);
