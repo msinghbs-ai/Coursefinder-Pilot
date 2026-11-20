@@ -15,6 +15,10 @@ import{PAGES,resolveTarget}from'./nav-map'
 import{describeSchedule}from'./automation-schedule'
 import{FRESHNESS_WORDS,checkFreshness}from'./guide/operatingWords'
 import{execSummary,needsAttention,OVERALL_WORDS}from'./health-exec'
+// CF-247 S1-UX s825 (Platform Admin 20 Nov 2026 10:46 and 11:24): the 4-stage pipeline board under the s817 executive view, from the stored ops pulse
+// (the pulse key of this same read, s823: no extra query). Shown only when the stored pulse is there; otherwise the page is exactly s817's.
+import{PipelineBoard,PulseStamp}from'./OpsPulse'
+import{pulseOf}from'./lib/ops-pulse.js'
 import'./platform-health-exec.css'
 // SS-016 UR-11 (Platform Admin 1 Nov 2026 22:01): each check says which run measured it (checkFreshness: This run, From an earlier run, No result yet)
 const describeEvery=m=>m%1440===0?`${m/1440} day${m===1440?'':'s'}`:m%60===0?`${m/60} hour${m===60?'':'s'}`:`${m} minutes`
@@ -88,6 +92,7 @@ export default function PlatformHealth({onError}){
   const checks=[...(data.checks||[]).map(withoutLayer3)].sort((a,b)=>({critical:0,warning:1,ok:2,skipped:3}[a.status]??9)-({critical:0,warning:1,ok:2,skipped:3}[b.status]??9)||String(a.area).localeCompare(String(b.area)))
   return <>
     <ExecView data={data} tone={tone}/>
+    {pulseOf(data)&&<section className="m-panel" data-health-pulse><SectionTitle title="How data moves today" subtitle="Official Registers, Page Capture, AI Extraction & Auto-Clean, Live Catalogue. Select a stage to see what it is doing and open the screen that controls it. Green: running normally; amber: slowed or due; red: stopped."/><PipelineBoard pulse={pulseOf(data)}/><PulseStamp pulse={pulseOf(data)}/></section>}
     <details className="ph-tech" data-ph-technical><summary><strong>Technical details</strong> <small>every check ({fmtNumber(checks.length)}), the issues by area, scheduled job names, raw messages, alerts, the weekly scorecard and the last 14 days</small></summary>
     <section className={`m-panel ph-overall tone-${tone}`}>
       <div className="ph-overall-head"><StatusDot tone={tone} label={HEALTH_WORDS[tone]}/><div><h2 data-health-heading>{PAGE_WORDS[tone]}</h2><p>Checked {fmtDateTime(data.generated_at)} · {fmtNumber(checks.length)} checks{earlier?<span data-health-earlier={earlier}> · {fmtNumber(earlier)} from an earlier run or with no result yet (see Checked)</span>:null}</p></div><Button compact onClick={load} disabled={state==='loading'}><RefreshCw size={14}/>Check again</Button></div>

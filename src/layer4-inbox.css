@@ -184,3 +184,4 @@
 .l4i-checks li{padding:6px 8px;border-left:3px solid var(--cf-slate-300);background:var(--cf-slate-50)}
 .l4i-checks li[data-state=fail]{border-left-color:var(--cf-red-750)}
 .l4i-checks li[data-state=pass]{border-left-color:var(--cf-green-700)}
+.dea-hold{position:relative}.dea-hold-help{position:absolute;top:6px;right:6px}

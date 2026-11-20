@@ -17,6 +17,12 @@ import{ArrowRight,Award,BookOpen,Building2,CalendarClock,CheckCircle2,ClipboardC
 import{adminRead,supabase}from'./lib/supabase'
 import{Button,Loading,Metric,SectionTitle,fmtDate,fmtDateTime,fmtNumber,rememberedStateKey}from'./ui-kit'
 import{guideForRank}from'./guide/roleGuides'
+// CF-247 S1-UX s824 (Platform Admin 20 Nov 2026 10:31, 10:46 and 11:24): the five KPI cards with icons and three country completeness bars (Curator and
+// above) and Active failures (operators and above), from the stored ops pulse (admin_read 'platform_health', a stored row); a Viewer or Counsellor
+// (rank 1-2) now makes no pipeline or telemetry read at all (OperatorToday and its admin_read 'dashboard' are not mounted for them)
+import{ActiveFailures,PulseStamp,PulseStrip}from'./OpsPulse'
+import{readPlatformHealth}from'./PlatformHealth'
+import{pulseOf}from'./lib/ops-pulse.js'
 import{clearRecent,readRecent,resumeRecent}from'./lib/recent-activity'
 import{plainError}from'./lib/errors'
 import SnapshotStamp from'./SnapshotStamp' // CF-247 W35: Scholarships ready to publish is counted from a cached snapshot
@@ -73,8 +79,15 @@ function OperatorToday({onError,rank=6}){
 }
 
 // v2.16.35: the role line at the top: who you are signed in as, what the role is for, and its guide
-function RoleLine({rank,navigate}){const g=guideForRank(rank)
-  return <section className="m-panel db-role" data-db-role={g.id}><div><span className="db-role-pill"><ShieldCheck size={14}/>{g.role} · rank {g.rank}</span><p className="sd-desc">{g.purpose}</p></div>
+function DashboardPulse({rank}){const[p,setP]=useState(undefined)
+  useEffect(()=>{let live=true;readPlatformHealth().then(h=>{if(live)setP(pulseOf(h))});return()=>{live=false}},[])
+  if(p===undefined)return <section className="m-panel" data-db-pulse="loading"><Loading label="Reading the stored figures…"/></section>
+  if(!p)return null
+  return <><section className="m-panel" data-db-pulse><PulseStrip pulse={p}/><PulseStamp pulse={p}/></section>
+    {rank>=4&&<section className="m-panel" data-db-failures><SectionTitle icon={XCircle} title="Active failures" subtitle="Every pipeline stage check that is slowed, due or stopped, with the screen to fix it."/><ActiveFailures pulse={p}/></section>}</>}
+const ROLE_ICON=r=>r<=2?Search:r===3?ClipboardCheck:ShieldCheck
+function RoleLine({rank,navigate}){const g=guideForRank(rank),RoleIcon=ROLE_ICON(Number(g.rank)||Number(rank)||1)
+  return <section className="m-panel db-role" data-db-role={g.id}><div><span className="db-role-pill"><RoleIcon size={14} aria-hidden="true"/>{g.role} · rank {g.rank}</span><p className="sd-desc">{g.purpose}</p></div>
     <Button compact onClick={()=>navigate?.('guide',{tab:'role-guides'})} data-db-role-guide><BookOpen size={14}/>Your role guide</Button></section>}
 
 // v2.16.35: Search the catalogue (Viewer and Counsellor): the text goes into the Courses list's remembered search, then Courses opens
@@ -133,7 +146,8 @@ export default function Dashboard({onError,rank=1,actorId='',navigate}){
     <RoleLine rank={r} navigate={navigate}/>
     {r<=2&&<SearchStart actorId={actorId} navigate={navigate}/>}
     <ContinueWhereLeft actorId={actorId}/>
+    {r>=3&&<DashboardPulse rank={r}/>}
     {r>=6&&<Approvals navigate={navigate}/>}
-    <OperatorToday onError={onError} rank={r}/>
+    {r>=3&&<OperatorToday onError={onError} rank={r}/>}
   </div>
 }
