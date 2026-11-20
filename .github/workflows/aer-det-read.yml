@@ -1,5 +1,5 @@
-# Deterministic English and academic entry reader (CF-247 S815, session S1-AER; Platform Admin 20 Nov 2026 10:51 AEDT, Decision 2). $0: no model, no Firecrawl. Reads stored course pages
-# (coverage-sweep mode aer_det_read, read only) in small batches and records SHADOW readings with their verbatim quotes (security.aer_det_record_v1). Nothing is admitted; the AER gates are untouched.
+# Deterministic academic entry reader (CF-247 S815 and S835, session S1-AER; Platform Admin 20 Nov 2026 10:51 and 15:08 AEDT: no English test). $0: no model, no Firecrawl. Reads stored course pages
+# (coverage-sweep mode aer_det_read, read only) in small batches and records SHADOW readings with their verbatim quotes (security.aer_det_record_v2). Nothing is admitted; the AER gates are untouched.
 # Through the Management API with no prompt (17 Nov 2026 22:05 mandate).
 name: AER deterministic entry reader
 on:
