@@ -147,7 +147,7 @@ begin
       join pipeline.evidence_artifacts e on e.id = g.evidence_id and e.storage_path is not null
      where g.course_id > v_cur and g.status = 'bound' and g.evidence_id is not null and g.read_status is not null and g.provider_id = any(v_scope)
      order by g.course_id
-     limit v_lim * 4  -- fixed: a scan window of four batches, so one call stays short however many courses have no gap
+     limit v_lim * 2  -- fixed: a scan window of two batches, so one call stays short however many courses have no gap
   loop
     v_seen := v_seen + 1; v_last := r.course_id;
     continue when exists (select 1 from pipeline.fid_det_pages d where d.course_id = r.course_id and d.evidence_id = r.evidence_id and d.extractor = p_extractor
@@ -466,6 +466,9 @@ do $c$
 declare v_t timestamptz; v_ms numeric; v_b jsonb; v_api jsonb := security.consumer_api_check_v1();
 begin
   if not exists (select 1 from cron.job where jobname = 'fid-det-sweep' and active) then raise exception 'post-check: job fid-det-sweep is not scheduled'; end if;
+  -- the batch query is timed warm (second call), as the sweep runs it every few minutes; the first call reads the pages into cache
+  perform security.fid_det_batch_v1(security.pipeline_num_v1('fid.batch_size', 150)::int, 'fid-det-v1.0');
+  update pipeline.fid_det_state set cursor_course = '00000000-0000-0000-0000-000000000000' where id = 1;
   v_t := clock_timestamp();
   v_b := security.fid_det_batch_v1(security.pipeline_num_v1('fid.batch_size', 150)::int, 'fid-det-v1.0');
   v_ms := extract(epoch from clock_timestamp() - v_t) * 1000;

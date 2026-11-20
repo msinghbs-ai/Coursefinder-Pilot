@@ -30,7 +30,7 @@ test('the batch is an indexed keyset of 100 to 250 courses with a gap, in the fe
   expect(b).toContain('security.provider_hidden_v1')
   expect(b).toContain('order by g.course_id')
   expect(b).toContain('v_lim int := greatest(1, least(coalesce(p_limit, 150), 250));')
-  expect(b).toContain('limit v_lim * 4  -- fixed: a scan window')
+  expect(b).toContain('limit v_lim * 2  -- fixed: a scan window')
   expect(b).not.toMatch(/or not exists \(select 1 from catalogue\.course_intakes/)
   expect(SQL).toContain("if v_ms > 300 then raise exception 'post-check: the batch query took % ms (limit 300)'")
 })
