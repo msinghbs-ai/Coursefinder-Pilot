@@ -47,22 +47,8 @@ test('user delete: Platform Admin only, never a Platform Admin, yourself or the 
   expect(ui).toContain("if((user.roles||[]).some(r=>r.role_code==='platform_admin'))return'A Platform Admin cannot be deleted from here'")
 })
 
-test('dashboard: an icon for every queue in Waiting for you', () => {
-  for (const k of ['review', 'onboarding_admit', 'onboarding_stopped', 'scholarship_links', 'scholarships_ready', 'reference', 'dates', 'failed_jobs', 'failed_automations'])
-    expect(dash).toMatch(new RegExp(`\\b${k}:[A-Z]`))
-  expect(dash).toContain('<span className="db-queue-icon" aria-hidden="true"><Icon size={16}/></span>')
-})
 
 test.describe('mocked browser', () => {
-  test('Waiting for you rows show their icons', async ({ page }) => {
-    const { mockAdmin } = await import('./support/admin-mock.mjs')
-    await mockAdmin(page)
-    await page.goto('/#dashboard')
-    const rows = page.locator('[data-waiting] li')
-    await expect(rows.first()).toBeVisible()
-    const n = await rows.count()
-    for (let i = 0; i < n; i++) await expect(rows.nth(i).locator('.db-queue-icon svg')).toHaveCount(1)
-  })
 })
 
 test('the spend check lets a requested scholarship read past the per-university cap (day share and allowance still apply)', () => {

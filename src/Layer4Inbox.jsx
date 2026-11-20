@@ -72,7 +72,7 @@ export default function Layer4Inbox({onError,routeParams}){
   const[unis,setUnis]=useState(null),[offset,setOffset]=useState(0),[pick,setPick]=useState(null),[items,setItems]=useState(null),[note,setNote]=useState('')
   const[cur,setCur]=useState(null),[stack,setStack]=useState([]),restored=useRef(readPos()),hold=useRef(true)
   const linkedPosition=useRef('')
-  const sel0=useRef(!want&&!wantProvider&&!wantView?readSel():null)
+  const sel0=useRef(!want&&!wantProvider&&(!wantView||wantView==='university')?readSel():null) // s837: also when By university is named
   const[uk,setUk]=useState(sel0.current?.uk||'') // a university's kind pill: that university's waiting items of that kind only
   const posKey=`${view}|${kind}|${pick?.provider_id||''}|${uk}`
   const kinds=sum?.kinds||{},order=useMemo(()=>Object.entries(kinds).sort((a,b)=>a[1].order-b[1].order).map(([k])=>k),[sum])

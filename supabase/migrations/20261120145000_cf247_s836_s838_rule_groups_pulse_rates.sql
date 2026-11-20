@@ -16,6 +16,8 @@
 --        pulse.rate_window_hours against the normal rate of the pulse.baseline_days before it, and the auto-clean pass rate (machine admissions of
 --        course and university descriptions and AER, admitted against all decided) in the same window against the same baseline. It is built in the
 --        5-minute ops-pulse-refresh job, so the screens make no extra read.
+-- Numbering (Platform Admin 20 Nov 2026 15:25, lane roster): S1-RM-Design holds specs s836-s839 and migrations up to 20261120145500; this is
+-- 20261120145000, above the live head 20261120143000 (s833). Renumbered from 20261120150000 / s834-s836, now held by S1-ELR and S1-AER.
 -- Objects (no new public function, table or view): functions security.layer4_rule_groups_v1(text,jsonb,jsonb,int), security.ops_pulse_rates_v1();
 -- two in-place edits: public.admin_layer4_inbox(text,jsonb) (md5-guarded, one inserted branch) and security.ops_pulse_refresh_v1() (md5-guarded, two
 -- fragments); four settings. G1: no new job (the rates ride the existing ops-pulse-refresh job). G2: the windows and limits are settings.

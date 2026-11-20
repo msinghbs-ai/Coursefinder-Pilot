@@ -88,13 +88,13 @@ test('s821: one action bar: Remove "innovative" & Admit admits the cleaned text 
     if (b.p_action === 'decide') return route.fulfill({ json: { ok: true, returns: 'Admitted.' } })
     return route.fulfill({ json: {} })
   })
-  await page.goto('/#layer-4-review')
+  await page.goto('/#layer-4-review?view=university')
   await expect(page.locator('[data-l4-inbox]')).toBeVisible()
   await page.locator('[data-l4-pill="provider_description"]').first().click()
   const card = page.locator('[data-l4-item="provider_description"]').first()
   await expect(card.locator('[data-dea-hold="banned"]')).toContainText('Main hold reason: Contains 1 banned word — innovative')
   await expect(card.locator('[data-dea-strip-text]')).toHaveText('Technology University Sydney is a university of technology in Sydney. It teaches courses in many fields.')
-  await expect(card.locator('[data-dea-bar] [data-dea-remove-admit]')).toHaveText('Remove "innovative" & Admit')
+  await expect(card.locator('[data-dea-strip] [data-dea-remove-admit]')).toHaveText('Remove "innovative" & Admit') // s838: under its cleaned-text preview
   await expect(card.locator('[data-l4-choice="approve"]')).toHaveCount(0)          // no duplicate Approve as read
   await expect(card.locator('[data-l4-choice="reject"]')).toHaveCount(1)           // Reject once, in the bar
   await expect(card.locator('[data-dea-bar] [data-l4-choice="reject"]')).toHaveCount(1)

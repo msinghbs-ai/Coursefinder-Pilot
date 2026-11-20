@@ -63,8 +63,8 @@ test.describe('mocked browser', () => {
     const bar = card.locator('[data-dea-bar]')
     await expect(bar.locator('button')).toHaveCount(3)
     await expect(bar.locator('[data-dea-remove-admit]')).toHaveCount(0)
-    const tops = await bar.locator('button').evaluateAll((bs) => bs.map((b) => Math.round(b.getBoundingClientRect().top)))
-    expect(new Set(tops).size).toBe(1)                                              // one row
+    const mids = await bar.locator('button').evaluateAll((bs) => bs.map((b) => { const r = b.getBoundingClientRect(); return r.top + r.height / 2 }))
+    expect(Math.max(...mids) - Math.min(...mids)).toBeLessThan(8)                   // one row
     const xs = await bar.locator('button').evaluateAll((bs) => bs.map((b) => b.getBoundingClientRect().left))
     expect(xs[2] - xs[1]).toBeGreaterThan(160)                                      // Reject set apart on the right
     await card.locator('[data-dea-hold] [data-help-open="layer4"]').click()

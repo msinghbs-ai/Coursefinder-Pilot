@@ -115,7 +115,7 @@ export const HELP_GUIDES={
     steps:['Find the stage that is not green in the 4-stage pipeline.','Select it to read what it is doing and why.','Use its action, which opens the screen where that stage’s controls live, or open System internals for the job-by-job view.'],
     who:'Curator and above can open this screen; pausing and running jobs needs a Pipeline Operator or above.'},
   layer4:{title:'Layer 4 Review',what:'Clear the decisions waiting on you',guide:'#platform-guide',
-    steps:['Pick a group: Ready for my decision first.','Read the main hold reason at the top of the card and check the page’s own words.','Decide with the one action bar: Save Edit & Admit, Approve As-Is or Reject. A banned word has a one-click Remove & Admit with a preview.'],
+    steps:['Choose a queue, then a rule on the left (Waiting, grouped by rule); Preview the batch shows its records.','Read the main hold reason at the top of the card and check the page’s own words.','Decide with the one action bar: Save Edit & Admit, Approve As-Is or Reject. A banned word has Remove & Admit under its cleaned text, or one confirmed batch.'],
     who:'Admitting needs a Pipeline Operator or above. Every decision keeps your name and your reason.'},
   catalogue:{title:'Catalogue',what:'Check and correct catalogue data',guide:'#platform-guide',
     steps:['Filter by country and completeness to find what needs attention.','Page 50 at a time with Next 50; filters stay quick on 36,000+ courses.','Open a row to edit. A field locked by hand shows a Human Locked pill and automation never changes it.'],

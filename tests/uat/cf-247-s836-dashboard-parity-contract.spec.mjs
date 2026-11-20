@@ -7,7 +7,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 import { dashboardFailures } from '../../src/health-exec.js'
 import { spendOf, withBudgetCap } from '../../src/lib/ops-pulse.js'
 
-const DB = fs.readFileSync('src/Dashboard.jsx', 'utf8')
+const SRC = fs.readFileSync('src/Dashboard.jsx', 'utf8'), DB = SRC.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n') // the code, not its history comments
 const MIG = fs.readFileSync('supabase/migrations/20261120145000_cf247_s836_s838_rule_groups_pulse_rates.sql', 'utf8')
 
 test('s836: the legacy sections are removed and the order is role line, pulse cards and failures, then Continue (3)', () => {

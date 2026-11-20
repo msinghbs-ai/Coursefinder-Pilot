@@ -147,7 +147,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page, { rank: 6 })
     const calls = []
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_layer4_inbox', inbox(6, calls))
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     const item = page.locator('[data-l4-item="aer_review"]')
     await expect(item.locator('[data-l4-aer-rows]')).toContainText('India | CBSE Year 12 | 75%')
     await expect(item.locator('[data-l4-aer-row="row-age"]')).toContainText('Applicants must be 17')
@@ -177,7 +177,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page, { rank: 3 })
     const calls = []
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_layer4_inbox', inbox(3, calls))
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     const item = page.locator('[data-l4-item="aer_review"]')
     await expect(item.locator('[data-l4-aer-rows]')).toContainText('China | Gao Kao | 75%')
     await expect(item.locator('[data-l4-aer-pa-only]')).toContainText('admitted or rejected by the Platform Admin (decision A3)')

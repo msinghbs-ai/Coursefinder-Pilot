@@ -41,7 +41,7 @@ test.describe('mocked browser', () => {
       if (b.p_action === 'decide') return route.fulfill({ json: { ok: true, returns: 'The ticked courses keep looking for their page' } })
       return route.fulfill({ json: {} })
     })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await expect(page.locator('[data-l4-uni="University of Waikato"]')).toContainText('No page published: first run')
     const item = page.locator('[data-l4-item="no_page_first_run"]')
     await expect(item.locator('[data-l4-sample]')).toContainText('Bachelor of Social Work (Level 7) (WI0858)')

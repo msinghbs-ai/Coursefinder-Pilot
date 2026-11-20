@@ -73,8 +73,8 @@ test.describe('mocked browser', () => {
     await expect(page).toHaveURL(/#layer-4-review\?kind=course_link$/) // v2.15.300: the Inbox on course links
     await expect(page.getByRole('tab', { name: 'Send back to AI' })).toHaveCount(0)
     await page.goto('/#dashboard')
-    // v2.15.266: the Layers tiles are retired; the Dashboard keeps Waiting for you and four tiles, none for Layer 3
-    await expect(page.locator('[data-waiting]')).toBeVisible()
+    // v2.15.266: the Layers tiles are retired; s836 (20 Nov 2026): the Dashboard is the role line, the cards and Continue, none for Layer 3
+    await expect(page.locator('[data-db-role]')).toBeVisible()
     await expect(page.locator('.db-home')).not.toContainText('Layer 3')
   })
 })

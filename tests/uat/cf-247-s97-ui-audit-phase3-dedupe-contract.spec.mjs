@@ -15,13 +15,6 @@ test('migration: additive scholarship figures on the dashboard read (md5-guarded
   expect(m).toContain("if n <> 1 then raise exception 'expected exactly one active campus with a street for a city, found %', n; end if;")
 })
 
-test('Dashboard: the Inbox is stated once and opens Layer 4 by kind; the Scholarships tile states published, active and retired', () => {
-  expect(dash).toContain('<li data-queue="inbox" data-inbox-total>')
-  expect(dash).not.toContain('data-inbox-kind={k}')
-  expect(dash).toContain("go('#layer-4-review?view=kind')")
-  expect(dash).toContain("value={fmtNumber(data?.scholarships_published??(data?.scholarships||0))}")
-  expect(dash).toContain("active · ${fmtNumber(Math.max(0,(data.scholarships||0)-(data.scholarships_active||0)))} retired")
-})
 
 test('Provider contacts has one header; the ranking-import kicker names its own screen; a register placeholder name is said plainly', () => {
   expect(pc).not.toContain('<h2>Provider Contacts</h2>')

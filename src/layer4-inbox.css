@@ -206,7 +206,7 @@ mark.dea-ban{background:var(--cf-amber-100);color:inherit;padding:0 2px;border-r
 .l4f-nav{display:flex;gap:6px}
 .l4f-late{color:var(--cf-amber-800)}
 .l4f-batch{margin-top:12px;padding-top:12px;border-top:1px solid var(--cf-slate-100);flex-direction:column;align-items:flex-start}
-.l4f-preview{border:1px solid var(--cf-amber-200);border-radius:12px;padding:12px;background:var(--cf-white);box-shadow:0 2px 10px rgb(15 23 42 / 8%)}
+.l4f-preview{border:1px solid var(--cf-amber-200);border-radius:12px;padding:12px;background:var(--cf-white);box-shadow:var(--cf-shadow-md)}
 .l4f-preview header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
 .l4f-recs{margin:0 0 10px;padding-left:20px;display:grid;gap:8px;max-height:420px;overflow:auto}
 .l4f-recs p{margin:3px 0 0}

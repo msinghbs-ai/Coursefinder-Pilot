@@ -1,21 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.67'
-export const PACKAGE_VERSION='0.1.489'
+export const UI_VERSION='2.16.68'
+export const PACKAGE_VERSION='0.1.490'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'20 Nov 2026',
-  title:'4-stage pipeline on Platform Health, Dashboard cards by country, Layer 4 rule groups and ? help',
+  title:'A cleaner Dashboard, Layer 4 Review by rule with one card at a time, and capture and auto-clean rates',
   changes:[
-    'Platform Health shows the 4-stage pipeline under the summary: Official Registers, Page Capture, AI Extraction & Auto-Clean and Live Catalogue, each with its status, what is queued and how many of its checks pass. Select a stage to see what it is doing and open the screen that controls it.',
-    'The Dashboard shows five cards with icons (system status, completeness with a bar for Australia, New Zealand and Canada, decisions waiting on you, active blockers and today\'s AI spend against the daily cap) and, for operators, Active failures. A Viewer or Counsellor sees catalogue search only.',
-    'Layer 4 Inbox: Waiting, grouped by rule, on the left groups the cards on the page by the check that holds them; Preview the batch lists a group and Show only these narrows the list to it.',
-    'A ? on the Dashboard, Platform Health, Layer 4 Review, Courses and Providers headers opens three steps for that screen and a link to the Platform guide.'
+    'The Dashboard is the role line, the five cards, Active failures and your 3 most recent items under Continue where you left off. Waiting for your approval, Waiting for you, Also and the four summary cards are gone.',
+    'Active failures lists genuine failures and warnings only (a job whose last run failed, stuck work, a connection or check failing), worst first, each with the screen that fixes it.',
+    'Layer 4 Review opens on Review by rule: every waiting item of a queue grouped by the rule that holds it, with one card at a time on the right. Preview the batch lists the exact records of a rule; only Contains a banned word can be admitted as one confirmed batch, one decision per record. By university, By kind, Grid and Decided are under Other views.',
+    'Every held card opens with the amber Main hold reason, banned words are marked in yellow in the proposed text, the cleaned text sits above Remove "word" & Admit, and the action bar is Save Edit & Admit, Approve As-Is and Reject set apart on the right.',
+    'Platform Health: Page Capture shows pages captured against the normal rate, and AI Extraction & Auto-Clean shows the auto-clean pass rate against normal, from the stored figures.'
   ],
   bugFixes:[
-    'Platform Health and the top-bar health dot read stored figures, rebuilt every 5 minutes, instead of counting the work tables on every open; workers that find nothing to do no longer add a log line on every call.'
+    'The Dashboard spend card showed "cap not set": it now shows today\'s spend against the US$14.00 daily cap, with its bar.'
   ]
 }
 

@@ -110,7 +110,7 @@ test.describe('desktop', () => {
   test('the three choices with counts; Technical recovery lists its cards with the person question and the evidence held', async ({ page }) => {
     const calls = []
     await screen(page, { calls })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await expect(page.locator('[data-l4-group-pick="C"]')).toContainText('Ready for my decision (3,934)')
     await expect(page.locator('[data-l4-group-pick="D"]')).toContainText('Information needed from me (329)')
     await expect(page.locator('[data-l4-group-pick="I"]')).toContainText('Human input needed requests (201)')
@@ -134,7 +134,7 @@ test.describe('phone @responsive', () => {
     expect(w, 'this test must run at phone width (chromium-mobile)').toBeLessThanOrEqual(480)
     const calls = []
     await screen(page, { calls })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     const pick = page.locator('[data-l4-group-pick="D"]')
     const b = await pick.boundingBox()
     expect(b.height, 'tap target').toBeGreaterThanOrEqual(24)

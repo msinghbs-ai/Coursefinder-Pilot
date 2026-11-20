@@ -24,7 +24,7 @@ test.describe('mocked browser', () => {
       return route.fulfill({ json: { total: 1, items: [{ kind: 'course_link', ref: 'r1', provider_id: 'p1', subject: 'Bachelor of Journalism', why: 'Different page', created_at: '2026-10-19T00:00:00Z',
         detail: { course_code: '115723J', before: ['https://adelaide.edu.au/study/degrees/bachelor-of-journalism/'], proposed: { course_url: 'https://adelaide.edu.au/study/degrees/bachelor-of-journalism-creative-writing/' } } }] } })
     })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     const it = page.locator('[data-l4-item="course_link"]')
     await expect(it.locator('[data-l4-code]')).toHaveText('CRICOS 115723J')
     await expect(it.locator('[data-l4-held] [data-l4-match]')).toHaveText('matches the course name')

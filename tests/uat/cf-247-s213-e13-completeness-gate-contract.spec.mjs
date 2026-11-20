@@ -122,7 +122,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page, { rank: 6 })
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_layer4_inbox', inbox(calls))
     await page.route('https://example.supabase.co/rest/v1/rpc/layer4_aer_review_read', (route) => route.fulfill({ json: read(gate) }))
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     return page.locator('[data-l4-item="aer_review"]')
   }
 

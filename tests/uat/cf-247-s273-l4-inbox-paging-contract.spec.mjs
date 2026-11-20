@@ -106,7 +106,7 @@ test.describe('mocked browser', () => {
   test('a kind pill shows only that university\'s waiting items of that kind, with the exact count; it stays through refresh, decisions and a reload; the name shows every kind', async ({ page }) => {
     await mockAdmin(page, { rank: 6 }); const calls = []
     await inbox(page, { calls })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await expect(page.locator('[data-l4-inbox]')).toBeVisible()
     const items = () => calls.filter((c) => c.p_action === 'items')
     await expect.poll(() => items().length).toBeGreaterThan(0)
@@ -140,7 +140,7 @@ test.describe('mocked browser', () => {
   test('E13: approval stays held; the card counts waiting rows and dropped requirements apart, shows the recovery detail, and offers only the recovery choices allowed', async ({ page }) => {
     await mockAdmin(page, { rank: 6 }); const calls = []
     await inbox(page, { calls })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await page.locator('[data-l4-uni="UNSW Sydney"] [data-l4-pill="aer_review"]').click()
     const card = page.locator('[data-l4-item="aer_review"]').first()
     await expect(card.locator('[data-l4-aer-gate="held"]')).toContainText('Requirements were dropped during extraction')
@@ -160,7 +160,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page, { rank: 6 }); const calls = []
     let tries = 0
     await inbox(page, { calls, decide: (a) => (++tries === 1 ? { ok: false, request: 'Enter the fee year as printed on the page' } : { ok: true, returns: 'The work resumes', event_id: 12 }) })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await page.locator('[data-l4-uni="UNSW Sydney"] [data-l4-pill="intervention"]').click()
     const card = page.locator('[data-l4-item="intervention"]')
     await expect(card.locator('[data-l4-section="issue"]')).toContainText('Issue')
@@ -195,7 +195,7 @@ test.describe('mocked browser', () => {
       await new Promise((r) => setTimeout(r, 150)); inflight--
       return route.fulfill({ json: AER_READ })
     })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await expect(page.locator('[data-l4-item="aer_review"]').first().locator('[data-l4-aer-gate="held"]')).toBeVisible()
     await page.waitForTimeout(1500)
     expect(aerCalls.length, 'cards below the screen are not read yet').toBeLessThan(25)
@@ -212,7 +212,7 @@ test.describe('phone @responsive', () => {
     const w = page.viewportSize()?.width || 9999
     expect(w, 'this test must run at phone width (chromium-mobile)').toBeLessThanOrEqual(480)
     await inbox(page, { calls })
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?view=university')
     await expect(page.locator('[data-l4-inbox]')).toBeVisible()
     const pill = page.locator('[data-l4-uni="UNSW Sydney"] [data-l4-pill="aer_review"]')
     await pill.scrollIntoViewIfNeeded()
