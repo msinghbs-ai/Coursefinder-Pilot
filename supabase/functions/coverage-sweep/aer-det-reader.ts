@@ -31,7 +31,7 @@ export function detUnits(text: string): string[] {
   return out
 }
 
-type Rule = { key: string; kind: DetReading["kind"]; re: RegExp; make: (m: RegExpMatchArray, u: string) => DetReading["value"] | null }
+type Rule = { key: string; kind: DetReading["kind"]; re: RegExp; make: (m: RegExpMatchArray, u: string) => Record<string, number | string | boolean | null> | null }
 
 const RULES: Rule[] = [
   { key: "ielts", kind: "english_test", re: /\bIELTS\b(?:\s+Academic)?[^.\n]{0,90}?\b([4-9](?:\.[05])?)\b/i, make: (m, u) => {
@@ -40,7 +40,7 @@ const RULES: Rule[] = [
       return { overall, band_min: band ? N(band[1]) : null } } },
   { key: "toefl_ibt", kind: "english_test", re: /\bTOEFL(?:\s*iBT)?\b[^.\n]{0,90}?\b(\d{2,3})\b/i, make: (m) => { const v = N(m[1]); return inRange(v, 32, 120) ? { overall: v } : null } },
   { key: "pte", kind: "english_test", re: /\bPTE(?:\s*Academic)?\b[^.\n]{0,90}?\b(\d{2})\b/i, make: (m) => { const v = N(m[1]); return inRange(v, 30, 90) ? { overall: v } : null } },
-  { key: "oet", kind: "english_test", re: /\bOET\b[^.\n]{0,90}?\b(?:grade\s+)?([A-E][+]?|[3-5]\d{2})\b(?!\w)/, make: (m) => (/^[A-E]\+?$/.test(m[1]) ? { grade: m[1] } : inRange(N(m[1]), 300, 500) ? { score: N(m[1]) } : null) },
+  { key: "oet", kind: "english_test", re: /\bOET\b[^.\n]{0,90}?\b(?:grade\s+)?([A-E][+]?|[3-5]\d{2})\b(?!\w)/, make: (m): Record<string, number | string> | null => { if (/^[A-E]\+?$/.test(m[1])) return { grade: m[1] }; return inRange(N(m[1]), 300, 500) ? { score: N(m[1]) } : null } },
   { key: "celpip", kind: "english_test", re: /\bCELPIP\b[^.\n]{0,90}?\b(\d{1,2})\b/i, make: (m) => { const v = N(m[1]); return inRange(v, 3, 12) ? { level: v } : null } },
   { key: "cambridge", kind: "english_test", re: /\b(?:Cambridge|C1 Advanced|C2 Proficiency|CAE|CPE)\b[^.\n]{0,100}?\b(1[5-9]\d|2[0-3]\d)\b/i, make: (m) => { const v = N(m[1]); return inRange(v, 160, 230) ? { score: v } : null } },
   { key: "atar", kind: "academic_entry", re: /\bATAR\b[^.\n]{0,70}?\b(\d{2}(?:\.\d{1,2})?)\b(?!\s*(?:%|per cent|credits))/i, make: (m) => { const v = N(m[1]); return inRange(v, 30, 99.95) && !(v >= 1990 && v <= 2100) ? { atar: v } : null } },

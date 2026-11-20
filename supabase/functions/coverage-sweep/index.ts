@@ -2907,7 +2907,7 @@ async function handle(req: Request): Promise<Response> {
       const out: unknown[] = [];
       await pool(items, 4, async (it) => {
         try {
-          if (Date.now() - t0 > BUDGET_MS) { out.push({ course_id: it.course_id, evidence_id: it.evidence_id, error: "budget" }); return }
+          if (Date.now() - t0 > BUDGET_MS) { out.push({ course_id: it.course_id, evidence_id: it.evidence_id, error: "call_time_used" }); return }
           const { data, error } = await c.storage.from("evidence").download(it.storage_path); if (error || !data) throw Error(error?.message || "missing");
           const b = new Uint8Array(await data.arrayBuffer());
           const raw = b[0] === 0x1f && b[1] === 0x8b ? await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text() : new TextDecoder().decode(b);
