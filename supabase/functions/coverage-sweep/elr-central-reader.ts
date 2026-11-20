@@ -1,0 +1,147 @@
+// CF-247 s884 (session S1-ELR-Central, Platform Admin 20 Nov 2026 22:07 AEDT, decision "populate the remaining Table 1 English gaps from each university's central
+// English requirements page via the governed provider English policy route"): elr-central-v1.0, a pure, deterministic reader of a stored central English requirements page.
+// It finds the requirement for each study-level tier the page states (undergraduate, postgraduate coursework, higher degree by research, VET/diploma), for IELTS, TOEFL iBT,
+// PTE Academic (decimals kept), OET, CELPIP and Cambridge, by acronym or spelled-out name, using the elr-det-v1.0 test reader. No model, no fetch, no write.
+// Strict tiers: a value is given to a tier only when its line, its table row or the heading it sits under names that tier, or the line says it applies to all courses
+// (undergraduate and postgraduate only). Two different values of one test for one tier are a conflict: that test is left out of the tier and reported.
+// Regulated disciplines (nursing, midwifery, medicine, allied health, education and teaching, law, social work) are never a tier default: a line about one of them is
+// reported in discipline_higher, so the plan holds those courses for a person. Named awards ("Bachelor of …") and pathway lines are not defaults either.
+import { elrRead, elrUnits, type ElrKey, type ElrReading } from "./elr-det-reader.ts"
+
+export const ELR_CENTRAL_VERSION = "elr-central-v1.0"
+export type Tier = "undergraduate" | "postgraduate" | "research" | "vet"
+export type CentralReq = { test_code: string; overall_score: number; component_scores: Record<string, number>; quote: string }
+export type CentralReading = {
+  defaults: Partial<Record<Tier, CentralReq[]>>
+  conflicts: { tier: Tier; test_code: string; values: number[] }[]
+  discipline_higher: { discipline: string; quote: string }[]
+  tiers_seen: Tier[]
+  readings: number
+}
+
+const CODE: Record<ElrKey, string> = { ielts: "IELTS", toefl_ibt: "TOEFL_IBT", pte: "PTE", oet: "OET", celpip: "CELPIP", cambridge: "CAE" }
+const TIERS: Tier[] = ["undergraduate", "postgraduate", "research", "vet"]
+const RESEARCH = /\b(?:higher degrees? by research|HDR|research degrees?|research (?:programs?|programmes?|students?|candidates?|candidature)|PhD|doctor(?:al|ate)?s?\b|doctor of philosophy|masters? (?:by|of) research|MPhil)\b/i
+const VET = /\b(?:VET|vocational(?: education)?|TAFE|advanced diplomas?|(?<!graduate |post-?graduate )diplomas?|certificates? (?:I{1,3}V?|IV|[1-4])\b|skills? sets?|apprenticeships?|traineeships?)\b/i
+const PG = /\b(?:post-?graduate|graduate (?:certificate|diploma)s?|masters?(?:'s)?(?! (?:by|of) research)|coursework|PG)\b/i
+const UG = /\b(?:under-?graduate|bachelors?(?:'s)?(?: degrees?)?|associate degrees?|UG)\b/i
+const ALL = /\b(?:all (?:undergraduate and postgraduate |)(?:courses|programs?|programmes?|applicants|students|degrees)|any (?:course|program|programme)|every (?:course|program|programme))\b/i
+const DISCIPLINE: [string, RegExp][] = [
+  ["nursing", /\bnurs(?:e|es|ing)\b/i], ["midwifery", /\bmidwi(?:fe|fery|ves)\b/i], ["medicine", /\b(?:medicine|medical|MBBS|MD)\b/i],
+  ["allied health", /\b(?:allied health|physiotherapy|occupational therapy|speech pathology|pharmacy|dentistry|dental|optometry|podiatry|paramedic(?:ine)?|radiograph\w*|dietetics|psychology)\b/i],
+  ["education", /\b(?:teach(?:er|ers|ing)|initial teacher education|(?:bachelor|master|graduate diploma) of education)\b/i], ["law", /\b(?:laws?|juris doctor|legal practice)\b/i], ["social work", /\bsocial work\b/i],
+]
+const NAMED_AWARD = /\b(?:Bachelor|Master|Doctor|Graduate (?:Certificate|Diploma)|Diploma|Advanced Diploma|Associate Degree|Certificate (?:I{1,3}V?|IV))\s+(?:of|in)\s+[A-Z]/
+const PATHWAY = /\b(?:foundation (?:program|programme|studies|year|course)|pathway|ELICOS|English language (?:course|program|programme|bridging)|bridging|direct entry|English for Academic Purposes|EAP\b|study abroad|exchange)\b/i
+const TEST_NAME = /\b(?:IELTS|TOEFL|PTE|OET|CELPIP|Cambridge|C1 Advanced|C2 Proficiency|Pearson|Occupational English Test)\b/i
+
+// the tiers a piece of text names (research first, so "doctoral" is not read as postgraduate coursework; "graduate diploma" is postgraduate, not VET)
+export function tiersOf(s: string): Tier[] {
+  const out: Tier[] = []
+  if (RESEARCH.test(s) && !/\bcoursework\b/i.test(s)) out.push("research")
+  const noPgDip = s.replace(/\b(?:graduate|post-?graduate) (?:certificate|diploma)s?\b/gi, " postgraduate ")
+  if (PG.test(noPgDip.replace(RESEARCH, " "))) out.push("postgraduate")
+  if (UG.test(s)) out.push("undergraduate")
+  if (VET.test(noPgDip)) out.push("vet")
+  return out
+}
+export function disciplineOf(s: string): string | null { for (const [d, re] of DISCIPLINE) if (re.test(s)) return d; return null }
+
+// a markdown table whose header names tests: each body row is read as "<test> <cell>" per column, quoted by its own row line
+function tableRows(lines: string[], i: number): { text: string; quote: string; label: string }[] | null {
+  const head = lines[i]
+  if (!/^\s*\|.*\|\s*$/.test(head) || !TEST_NAME.test(head) || !/^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1] || "")) return null
+  const cells = (l: string) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim())
+  const hs = cells(head), out: { text: string; quote: string; label: string }[] = []
+  for (let j = i + 2; j < lines.length && /^\s*\|.*\|\s*$/.test(lines[j]); j++) {
+    const cs = cells(lines[j]); let text = ""
+    hs.forEach((h, k) => { if (k > 0 && TEST_NAME.test(h) && cs[k]) text += `${h}: ${cs[k]} overall. ` })
+    out.push({ text, quote: lines[j].trim(), label: cs[0] || "" })
+  }
+  return out
+}
+
+// split a line that names two or more tiers into clauses, one tier each ("6.0 for undergraduate and 6.5 for postgraduate coursework", "Undergraduate: 6.0; postgraduate: 6.5");
+// a clause without a test name takes the test named last before it on the line
+function clauses(u: string): string[] {
+  const out: string[] = []; let last = ""
+  for (const c of u.split(/;|\.\s+|,\s*(?=and\b)|\band\b|,\s+(?=(?:under|post)?-?graduate|higher|research|vocational|VET|diploma)/i)) {
+    const t = c.trim(); if (!t) continue
+    const m = t.match(TEST_NAME); if (m) last = m[0]
+    out.push(m || !last ? t : `${last} ${t}`)
+  }
+  return out
+}
+
+export function centralRead(text: string): CentralReading {
+  const lines = text.split(/\n/)
+  type Hit = { tier: Tier; r: ElrReading; quote: string }
+  const hits: Hit[] = [], disc: { discipline: string; quote: string }[] = [], seen = new Set<Tier>()
+  let ctx: Tier[] = [], ctxDisc: string | null = null, n = 0
+  const take = (tiers: Tier[], rs: ElrReading[], quote: string, discipline: string | null) => {
+    for (const r of rs) {
+      if (r.flags.includes("pathway")) continue
+      n++
+      if (discipline) { disc.push({ discipline, quote }); continue }
+      for (const t of tiers) { hits.push({ tier: t, r, quote }); seen.add(t) }
+    }
+  }
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i], line = raw.trim()
+    if (!line) continue
+    const rows = tableRows(lines, i)
+    if (rows) {
+      for (const row of rows) {
+        if (PATHWAY.test(row.label)) continue
+        const d = disciplineOf(row.label) ?? ctxDisc
+        const named = NAMED_AWARD.test(row.label)
+        let tiers = tiersOf(row.label)
+        if (!tiers.length) tiers = ctx
+        if (named && !d) continue
+        if (!tiers.length && !d) continue
+        take(tiers, elrRead(row.text).map((r) => ({ ...r, quote: row.quote })), row.quote, d)
+      }
+      i += rows.length + 1
+      continue
+    }
+    const heading = /^#{1,6}\s/.test(line) || (line.length <= 90 && !TEST_NAME.test(line) && !/\d/.test(line))
+    if (heading) {
+      const t = tiersOf(line), d = disciplineOf(line)
+      if (t.length || d) { ctx = t; ctxDisc = d } else if (/^#{1,3}\s/.test(line)) { ctx = []; ctxDisc = null }
+      continue
+    }
+    for (const u of elrUnits(raw)) {
+      if (!TEST_NAME.test(u) || PATHWAY.test(u)) continue
+      const d = disciplineOf(u) ?? ctxDisc
+      const named = NAMED_AWARD.test(u)
+      const own = tiersOf(u)
+      if (named && !d) continue
+      if (own.length >= 2 && !ALL.test(u)) {
+        // one requirement for each tier the line names
+        for (const p of clauses(u)) { const t = tiersOf(p); if (t.length === 1) take(t, elrRead(p).map((r) => ({ ...r, quote: u })), u, disciplineOf(p) ?? (d && disciplineOf(u) ? null : d)) }
+        continue
+      }
+      const tiers = own.length ? own : ALL.test(u) ? (["undergraduate", "postgraduate"] as Tier[]) : ctx
+      if (!tiers.length && !d) continue
+      take(tiers, elrRead(u), u, d)
+    }
+  }
+  // one value per tier and test; two values are a conflict and the test is left out of that tier
+  const defaults: Partial<Record<Tier, CentralReq[]>> = {}, conflicts: CentralReading["conflicts"] = []
+  for (const t of TIERS) {
+    const byTest = new Map<string, Hit[]>()
+    for (const h of hits.filter((x) => x.tier === t)) { const c = CODE[h.r.key]; byTest.set(c, [...(byTest.get(c) || []), h]) }
+    const reqs: CentralReq[] = []
+    for (const [code, hs] of byTest) {
+      const vals = [...new Set(hs.map((h) => JSON.stringify(h.r.value)))]
+      if (vals.length > 1) { conflicts.push({ tier: t, test_code: code, values: [...new Set(hs.map((h) => h.r.value.overall ?? 0))] }); continue }
+      const v = hs[0].r.value
+      let overall = v.overall, comps: Record<string, number> = { ...(v.components || {}) }
+      if (code === "OET") { if (!v.components || Object.keys(v.components).length < 4) continue; overall = Math.min(...Object.values(v.components) as number[]) }
+      if (overall === undefined) continue
+      reqs.push({ test_code: code, overall_score: overall, component_scores: comps, quote: hs[0].quote.slice(0, 400) })
+    }
+    if (reqs.length) defaults[t] = reqs
+  }
+  return { defaults, conflicts, discipline_higher: disc.slice(0, 20), tiers_seen: TIERS.filter((t) => seen.has(t)), readings: n }
+}
