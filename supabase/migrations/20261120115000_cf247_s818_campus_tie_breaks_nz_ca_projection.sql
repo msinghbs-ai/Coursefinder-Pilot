@@ -4,7 +4,9 @@
 --    a. the official registered city: the campus in the provider's registered city (catalogue.providers.primary_city), when that narrows them;
 --    b. the statutory register head office: the campus at the provider's registered address and postcode, when that narrows them further;
 --    c. co-located campuses (all in one city): the earliest registered campus (lowest register campus code, then the oldest record).
---    One campus left -> it is the main campus, with its basis (registered_city_match, register_head_office_address, earliest_registered_campus).
+--    One campus left -> it is the main campus. Its primary_basis is highest_course_count (it is one of the tied highest; the column's allowed
+--    values are part of the catalogue and are not changed); the tie-break that chose it (registered_city_match, register_head_office_address,
+--    earliest_registered_campus) is kept for each provider in the audit row (pipeline.admin_control_events, campus_primary_tiebreak).
 --    Tied campuses in different cities with no register match stay unset for a person: Catalogue › Providers has a Main campus filter (Unset).
 -- 2. NZ and CA courses with no campus whose provider has exactly one active campus get that campus (course_campuses, primary), unless the
 --    course is online only (empty_reason_code online_only_no_campus) or locked; their search documents are queued for refresh.
@@ -61,7 +63,7 @@ begin
   select coalesce(jsonb_object_agg(b, n), '{}'::jsonb) into v_by from (select coalesce(x.basis, 'left_unset') b, count(*) n from jsonb_to_recordset(v_rows) x(basis text, campus_id uuid) group by 1) z;
   select coalesce(jsonb_object_agg(cc, n), '{}'::jsonb) into v_left from (select x.cc, count(*) n from jsonb_to_recordset(v_rows) x(cc text, basis text) where x.basis is null group by 1) z;
   if p_apply then
-    update catalogue.campuses k set is_primary = true, primary_basis = x.basis, updated_at = now()
+    update catalogue.campuses k set is_primary = true, primary_basis = 'highest_course_count', updated_at = now()
       from jsonb_to_recordset(v_rows) x(provider_id uuid, campus_id uuid, basis text)
      where x.basis is not null and k.id = x.campus_id and k.is_primary is distinct from true
        and not exists (select 1 from catalogue.campuses y where y.provider_id = x.provider_id and y.is_primary);
@@ -69,7 +71,9 @@ begin
     insert into pipeline.admin_control_events (area, action, target, detail, actor)
     values ('api_v3', 'campus_primary_tiebreak', 'catalogue.campuses.is_primary',
             jsonb_build_object('rule', 's818: tied campuses: registered city, then register head office address, then the earliest registered of co-located campuses',
-                               'marked', v_n, 'by_basis', v_by, 'left_unset_by_country', v_left, 'approved', 'Platform Admin 20 Nov 2026 09:55 and 10:48 AEDT'), auth.uid());
+                               'marked', v_n, 'by_basis', v_by, 'left_unset_by_country', v_left, 'approved', 'Platform Admin 20 Nov 2026 09:55 and 10:48 AEDT',
+                               'decisions', (select coalesce(jsonb_agg(jsonb_build_object('provider_id', x.provider_id, 'campus_id', x.campus_id, 'tiebreak', x.basis)), '[]'::jsonb)
+                                               from jsonb_to_recordset(v_rows) x(provider_id uuid, campus_id uuid, basis text) where x.basis is not null)), auth.uid());
   end if;
   return jsonb_build_object('applied', p_apply, 'tied_providers', jsonb_array_length(v_rows), 'marked', v_n, 'by_basis', v_by, 'left_unset_by_country', v_left);
 end $f$;
