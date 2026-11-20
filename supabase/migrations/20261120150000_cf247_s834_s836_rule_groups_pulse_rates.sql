@@ -7,7 +7,7 @@
 --        of public.admin_layer4_inbox (md5-guarded: one inserted branch, signature unchanged), answered by the new security.layer4_rule_groups_v1:
 --        rule_groups  every waiting item of one built-in kind (optionally one university), grouped by the rule that holds it: course and university
 --                     descriptions by their hold code (a refused word is its own group, "Contains a banned word"), AER items by the machine rule's
---                     hold code with S1-AER's plain label (security.layer4_aer_hold_reasons_v1), every other kind by the first clause of its reason.
+--                     hold code with S1-AER's plain label (security.layer4_aer_hold_reasons_v1), every other kind by the first sentence of its reason.
 --                     Each group lists its oldest refs, up to layer4.rule_group_refs_max.
 --        rule_group_items  the full cards of up to layer4.rule_batch_max of those refs, by key (the keyed read of security.layer4_inbox_items_v2),
 --                     for the focused card and Preview the batch.
@@ -84,7 +84,7 @@ begin
   with i as (
          select r.ref, r.created_at, r.why,
                 case when v_kind = 'provider_description' then coalesce(r.detail->'machine'->>'reason_code', r.detail->'proposed'->>'held_rule', '') end code,
-                regexp_replace(regexp_replace(btrim(coalesce(r.why, '')), '([.;:])\s.*$', '\1'), '[.;:]+$', '') clause
+                regexp_replace(regexp_replace(btrim(coalesce(r.why, '')), '([.;])\s.*$', '\1'), '[.;:]+$', '') clause
            from security.layer4_inbox_items_v2(v_prov, v_kind, null, v_kind = 'provider_description') r),
        k as (
          select i.*,
