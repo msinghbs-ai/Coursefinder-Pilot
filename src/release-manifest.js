@@ -1,16 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.73'
-export const PACKAGE_VERSION='0.1.495'
+export const UI_VERSION='2.16.74'
+export const PACKAGE_VERSION='0.1.496'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'20 Nov 2026',
-  title:'Course links move to the current year by themselves',
+  date:'21 Nov 2026',
+  title:'Counsellor notes and clearer entry requirement countries',
   changes:[
-    'Course link pages held because their address carries an old year are tried at 2027, 2026 and 2025, then as held; the newest that opens on the university\'s own site and shows the exact CRICOS code is admitted by itself, at no cost.',
-    'Layer 4 Review › By university: Preview & Settle Batch on a rule group of Course link cards (one decision, a reason, SETTLE n to confirm).'
+    'Course detail, Entry requirements and Scholarships have a closed Notes panel: how scholarships, entry requirements (AER) and English and register values attach to a course, and the exceptions. It opens in one click.',
+    'Entry requirements › Provider entry matrix: the Country filter is now Source country (where the student\'s prior qualification is from); a new Destination country filter (where the university is) and an Applies to filter (university-wide rows or one course\'s rows).',
+    'Course detail › Around this course › Entry requirements shows the university-wide entry table that applies to the course, and how many of its rows wait in Layer 4.'
   ],
   bugFixes:[]
 }

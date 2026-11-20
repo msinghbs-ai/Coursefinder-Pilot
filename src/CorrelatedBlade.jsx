@@ -62,6 +62,10 @@ export function CourseCorrelated({data,rank=0}){
   const sr=useRead(()=>reviewList('study_rule'),[reader],reader)
   const er=useRead(()=>rpc('admin_entry_requirements',{p_action:'course',p_args:{course_id:courseId}}),[courseId],!!courseId)
   const entry=(er.data?.rows||[]).filter(r=>!['rejected','inactive'].includes(String(r.status)))
+  // CF-247 s901: the university-wide entry table (rows with no course) applies to this course unless a course rule overrides it
+  const uwArgs=s=>({p_action:'matrix_list',p_args:{provider_id:providerId,scope:'university',status:s,page_size:1}})
+  const uwA=useRead(()=>rpc('admin_aer',uwArgs('active')),[providerId],!!providerId)
+  const uwP=useRead(()=>rpc('admin_aer',uwArgs('proposed')),[providerId],!!providerId)
   if(!courseId)return null
   const locs=campusLocalities(data.campuses,pd.data?.campuses),cc=cd.data?.country_code||null
   const careers=reader&&co.done&&!co.err?careerOutlook(data.field_code,co.data,{country:cc}):null
@@ -93,6 +97,11 @@ export function CourseCorrelated({data,rank=0}){
             <><ul className="cb-list">{entry.slice(0,3).map(r=><li key={r.id} data-vis={STUDENT_FACING_ENTRY.has(String(r.status))?undefined:'unapproved_entry'}><span>{kindLabel(r.kind)}</span><b>{r.min_entry_score!=null?`${r.min_entry_score} (${r.min_entry_score_basis})`:r.description}</b>
               {r.quote&&<small className="cb-int" data-vis="raw_quote">“{r.quote}”</small>}{r.status==='proposed'&&<small className="cb-int" data-vis="layer4_queue_state">waiting in Layer 4</small>}</li>)}</ul>
               {!entry.some(r=>STUDENT_FACING_ENTRY.has(String(r.status)))&&<p className="cb-empty" data-student-only data-cb-empty="entry-approved">{STUDENT_ONLY_EMPTY_ENTRY}</p>}</>}</div>
+        {uwA.done&&!uwA.err&&<p className="cb-sub" data-cb-entry-university={Number(uwA.data?.total||0)}>{Number(uwA.data?.total||0)>0
+          ?<>University-wide entry table: <b>{fmtNumber(Number(uwA.data.total))}</b> active row{Number(uwA.data.total)===1?'':'s'} for students' countries of prior education. They apply to this course unless a course rule above overrides them.</>
+          :'No university-wide entry table is active for this university.'}
+          {uwP.done&&!uwP.err&&Number(uwP.data?.total||0)>0&&<small className="cb-int" data-vis="layer4_queue_state" data-cb-entry-university-proposed={Number(uwP.data.total)}> {fmtNumber(Number(uwP.data.total))} waiting in Layer 4</small>}
+          {' '}<a className="cf-link" href={`#entry-requirements?provider=${providerId}`}>Open the table</a></p>}
       </Card>
     </div>
   </section>}

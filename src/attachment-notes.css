@@ -1,0 +1,8 @@
+/* CF-247 s901: counsellor notes, closed by default (AttachmentNotes.jsx) */
+.an-notes{border:1px solid var(--cf-slate-200);border-radius:8px;background:var(--m-surface-2,var(--cf-slate-50));padding:0 12px;min-width:0}
+.an-notes>summary{cursor:pointer;padding:8px 0;font-weight:600;color:var(--m-text,var(--cf-slate-850))}
+.an-notes[open]>summary{border-bottom:1px solid var(--cf-slate-200)}
+.an-body{display:grid;gap:10px;padding:10px 0 12px;max-width:78ch}
+.an-body h4{margin:0 0 4px;font-size:var(--cf-fs-sm,13px)}
+.an-body ol,.an-body ul{margin:0;padding-left:20px;display:grid;gap:4px}
+.an-body li{line-height:1.45;overflow-wrap:anywhere}

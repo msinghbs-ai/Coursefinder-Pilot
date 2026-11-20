@@ -54,7 +54,8 @@ async function watch(page) {
 
 // Reads the Course detail panels make on load (the task list and the course-description task list) are not an AI read or a started read; the guard is about the country change.
 // CF-247 AER read now (10 Nov 2026): the stage timeline's status read is a read, never the action (action run), and starts nothing
-const READ_ONLY_PANELS = c => (c.fn === 'admin_jobs' && c.action === 'read') || (c.fn === 'admin_enrich_fields' && c.action === 'description_tasks') || (c.fn === 'admin_aer_read_now' && c.args?.action === 'status')
+// s901: Course detail reads the university-wide entry table (admin_aer matrix_list, scope university), read only
+const READ_ONLY_PANELS = c => (c.fn === 'admin_aer' && c.action === 'matrix_list' && c.args?.scope === 'university') || (c.fn === 'admin_jobs' && c.action === 'read') || (c.fn === 'admin_enrich_fields' && c.action === 'description_tasks') || (c.fn === 'admin_aer_read_now' && c.args?.action === 'status')
 
 test.describe('mocked browser', () => {
   test('Course detail: the country selector is in the shared order, a change only asks the resolver, and the choice survives a reload', async ({ page }) => {
@@ -111,7 +112,7 @@ test.describe('mocked browser', () => {
       return route.fulfill({ json: {} })
     })
     await page.goto('/#entry-requirements')
-    await page.locator('.m-filter-select').getByRole('button', { name: /^Country/ }).click()
+    await page.locator('.m-filter-select').getByRole('button', { name: /^Source country/ }).click() // s901: the Country filter is Source country
     expect(await page.locator('.m-filter-popover > button span').allTextContents()).toEqual(['All', ...ORDER])
     await page.keyboard.press('Escape')
     await page.goto('/#entry-requirements?tab=resolve')

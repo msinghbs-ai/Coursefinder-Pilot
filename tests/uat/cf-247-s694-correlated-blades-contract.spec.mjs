@@ -47,7 +47,7 @@ test('adapters: campus to city, city profile with icon, careers empty state, vis
 test('zero schema: the sections read existing functions only, and no migration came with them', () => {
   const src = read('src/CorrelatedBlade.jsx')
   const rpcs = [...src.matchAll(/rpc\('([a-z0-9_]+)'/g)].map((x) => x[1]).filter((x, i, a) => a.indexOf(x) === i).sort()
-  expect(rpcs).toEqual(['admin_course_destination_read', 'admin_destination_review', 'admin_entry_requirements', 'admin_provider_destination_read'])
+  expect(rpcs).toEqual(['admin_aer', 'admin_course_destination_read', 'admin_destination_review', 'admin_entry_requirements', 'admin_provider_destination_read']) // s901: admin_aer matrix_list (read only) for the university-wide table
   expect(src).toContain('api.providerRankingHistory(providerId)')
   expect(src).not.toMatch(/\.from\(|\.(insert|update|upsert)\(/)
   expect(fs.readdirSync('supabase/migrations').filter((f) => /correlat|role_visib|metric_type/i.test(f))).toEqual([])
