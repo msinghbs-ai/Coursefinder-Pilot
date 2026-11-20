@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.491 — 20 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.69** (S1-UI-Parity follow-up s839, found in the signed-in check of v2.16.68): a course description card's Main hold reason names its rule in plain English in every view (`cdRailOf`, `src/lib/l4-rules.js`; `HoldBanner` takes the rule group's name), and Preview the batch reads the chosen rule's records as soon as the rule is chosen (`src/Layer4Focus.jsx`), so it opens in under 300 ms. No migration.
+
 ## 0.1.490 — 20 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.68** (Platform Admin 20 Nov 2026 14:40 and 14:41, chat S1-RM-Design, S1-UI-Parity; mockup s820-s827). CF-247 s836: the Dashboard is the role line, the five KPI cards, Active failures (genuine failures and warnings only, `dashboardFailures` in `src/health-exec.js`) and Continue where you left off (3 most recent); the legacy Approvals, Waiting for you, Also and summary cards are removed; the spend card takes the daily cap from `ai_daily_ceiling_usd`. s837: Layer 4 Review opens on Review by rule (`src/Layer4Focus.jsx`): whole-queue rule groups (`rule_groups`, `security.layer4_rule_groups_v1`), one focused card read by key (`rule_group_items`), Preview the batch, and a confirmed batch for banned-word descriptions only; older views behind Other views. s838: the amber Main hold reason on every card (`CardHold`), banned words marked inline, the cleaned text above Remove "word" & Admit, a three-button bar in one row; Platform Health stage rates from the stored pulse (`security.ops_pulse_rates_v1`). Migration `20261120145000` (no public object; G3 75/48 before and after; md5-guarded edits of `public.admin_layer4_inbox` and `security.ops_pulse_refresh_v1`).

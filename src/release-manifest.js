@@ -1,22 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.68'
-export const PACKAGE_VERSION='0.1.490'
+export const UI_VERSION='2.16.69'
+export const PACKAGE_VERSION='0.1.491'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'20 Nov 2026',
-  title:'A cleaner Dashboard, Layer 4 Review by rule with one card at a time, and capture and auto-clean rates',
+  title:'Plain hold reasons on course description cards and an instant batch preview',
   changes:[
-    'The Dashboard is the role line, the five cards, Active failures and your 3 most recent items under Continue where you left off. Waiting for your approval, Waiting for you, Also and the four summary cards are gone.',
-    'Active failures lists genuine failures and warnings only (a job whose last run failed, stuck work, a connection or check failing), worst first, each with the screen that fixes it.',
-    'Layer 4 Review opens on Review by rule: every waiting item of a queue grouped by the rule that holds it, with one card at a time on the right. Preview the batch lists the exact records of a rule; only Contains a banned word can be admitted as one confirmed batch, one decision per record. By university, By kind, Grid and Decided are under Other views.',
-    'Every held card opens with the amber Main hold reason, banned words are marked in yellow in the proposed text, the cleaned text sits above Remove "word" & Admit, and the action bar is Save Edit & Admit, Approve As-Is and Reject set apart on the right.',
-    'Platform Health: Page Capture shows pages captured against the normal rate, and AI Extraction & Auto-Clean shows the auto-clean pass rate against normal, from the stored figures.'
+    'Preview the batch on Layer 4 Review opens at once: the chosen rule\'s records are read as soon as you choose the rule.'
   ],
   bugFixes:[
-    'The Dashboard spend card showed "cap not set": it now shows today\'s spend against the US$14.00 daily cap, with its bar.'
+    'A course description card\'s Main hold reason showed the machine code (for example "identity margin thin"); it now names the rule in plain English in every view (for example Page match not clear enough).'
   ]
 }
 

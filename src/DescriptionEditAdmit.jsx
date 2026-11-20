@@ -9,6 +9,7 @@ import{ExternalLink}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button}from'./ui-kit'
 import{checkDescription,isEdited,stripBanned,holdReason,markBanned}from'./lib/description-check.js'
+import{cdRailOf}from'./lib/l4-rules.js'
 import HelpButton from'./HelpDrawer' // S1-UX s827: the ? help drawer, on the hold banner (S1-RM-Design, 20 Nov 2026 13:07)
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
@@ -25,10 +26,11 @@ export function CheckLine({text,rules,label='Checks'}){
 }
 
 // s820 (Platform Admin 20 Nov 2026 10:21): the main hold reason in plain English at the top of the card; the machine rule's code under Technical detail
-export function HoldBanner({it,candidate,rules}){
+export function HoldBanner({it,candidate,rules,label=''}){
   const h=holdReason(it?.why,candidate,rules)
+  const title=h.kind==='banned'?h.title:(label||cdRailOf(it)||h.title) // s839: the rule's plain name, never the machine code
   return <div className={`dea-hold dea-hold-${h.kind}`} role="note" data-dea-hold={h.kind}>
-    <strong>Main hold reason: {h.title}{h.words?.length?<> — {h.words.map((w,i)=><React.Fragment key={w}>{i?', ':''}<code data-dea-hold-word>{w}</code></React.Fragment>)}</>:null}</strong>
+    <strong>Main hold reason: {title}{h.kind==='banned'&&h.words?.length?<> — {h.words.map((w,i)=><React.Fragment key={w}>{i?', ':''}<code data-dea-hold-word>{w}</code></React.Fragment>)}</>:null}</strong>
     <span className="dea-hold-help"><HelpButton topic="layer4" label="Help: deciding a held description"/></span>
     {it?.why&&<details className="dea-tech"><summary>Technical detail</summary><small data-dea-hold-code>{it.why}</small></details>}
   </div>
@@ -48,7 +50,7 @@ export function CardHold({it,label}){
 // preview, so the bar is three buttons in one row: Save Edit & Admit, Approve As-Is and Reject set apart on the right. Remove "word" & Admit (only when the candidate is held for banned
 // words and the cleaned text passes every check), Save Edit & Admit (once the edited text passes), Approve As-Is (when nothing needs changing), and
 // Reject, set apart (passed in as `reject`, the card's own Reject choice and its reason step). The Inbox no longer repeats Approve as read and Reject below.
-export default function DescriptionEditAdmit({it,d,isCourse,rank,onDone,onCancel,reject=null}){
+export default function DescriptionEditAdmit({it,d,isCourse,rank,onDone,onCancel,reject=null,holdLabel=''}){
   const original=String(d.proposed?.description||''),held=!original.trim()
   const[text,setText]=useState(original),[lock,setLock]=useState(true),[reason,setReason]=useState(''),[busy,setBusy]=useState(''),[err,setErr]=useState(''),[rules,setRules]=useState(RULES)
   useEffect(()=>{descriptionRules().then(setRules).catch(e=>setErr(e.message))},[])
@@ -62,7 +64,7 @@ export default function DescriptionEditAdmit({it,d,isCourse,rank,onDone,onCancel
     try{const out=await rpc('decide',{kind:it.kind,ref:it.ref,choice:'edit_approve',value:asIs?original:text.trim(),set_manual_lock:lock,reason:reason.trim()});onDone?.(out)}catch(e){setErr(e.message)}finally{setBusy('')}}
   const reasonOk=reason.trim().length>=5,low=rank<4
   return <div className="dea" data-dea={isCourse?'course':'provider'} data-dea-ref={it.ref}>
-    {!held&&<HoldBanner it={it} candidate={original} rules={r}/>}
+    {!held&&<HoldBanner it={it} candidate={original} rules={r} label={holdLabel}/>}
     {/* s838: the proposed text, each word from the lists marked in soft yellow */}
     {!held&&banned.length>0&&<div className="dea-proposed" data-dea-proposed><small>Proposed text</small>
       <p>{markBanned(original,r.words).map((x,i)=>x.word?<mark key={i} className="dea-ban" data-dea-ban-mark={x.word}>{x.text}</mark>:<React.Fragment key={i}>{x.text}</React.Fragment>)}</p></div>}

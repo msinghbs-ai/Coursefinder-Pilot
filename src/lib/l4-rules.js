@@ -1,7 +1,8 @@
 // CF-247 s837 and s838 (Platform Admin 20 Nov 2026 14:40, S1-UI-Parity; mockup s820-s827): pure helpers (no React) for Layer 4 Review's default view,
 // "Waiting, grouped by rule" with one focused card. The groups come from the server across the whole queue of one kind (public.admin_layer4_inbox
 // rule_groups, security.layer4_rule_groups_v1, migration 20261120145000); these helpers only name them in plain English and order the queues.
-// Shared by src/Layer4Focus.jsx, src/DescriptionEditAdmit.jsx (CardHold) and the s837/s838 spec.
+// Shared by src/Layer4Focus.jsx, src/DescriptionEditAdmit.jsx (CardHold, HoldBanner) and the s837/s838/s839 specs.
+import{cdHoldKey}from'./cdesc-hold.js'
 
 // course and university descriptions: the rail's short names for the hold codes (src/lib/cdesc-hold.js keeps the full explanations)
 export const CD_RAIL={
@@ -58,3 +59,10 @@ export function defaultKind(byKind,kinds){const n=k=>Number(byKind?.[k]?.n)||0
 export function refsOf(groups,key){const gs=Array.isArray(groups)?groups:[]
   if(key)return (gs.find(g=>g.key===key)?.refs)||[]
   return gs.flatMap(g=>g.refs||[])}
+
+/** s839 (20 Nov 2026): the rail name of a course description card's own hold code, so the card's Main hold reason is plain English in every view
+ * (null when the card carries no known code, for example a university description, whose own reason wording is kept). */
+export function cdRailOf(it){const d=it?.detail||{},code=d?.machine?.reason_code??d?.proposed?.held_rule
+  if(!code)return null
+  const k=code==='policy_refused_word'?'banned_word':cdHoldKey(code,d)
+  return k==='other'?null:CD_RAIL[k]||null}
