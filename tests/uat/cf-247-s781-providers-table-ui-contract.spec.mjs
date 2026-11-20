@@ -101,7 +101,7 @@ test('Providers at 1280 px: logo or monogram, bold name with its code, one flag 
   expect(await inactive.evaluate(e => getComputedStyle(e).color)).toBe(await page.evaluate(() => { const s = document.createElement('span'); s.style.color = 'var(--cf-slate-700)'; document.body.appendChild(s); const c = getComputedStyle(s).color; s.remove(); return c }))
 })
 
-test('filters: five in the bar, eight in More filters with a count; a choice there goes to the server', async ({ page }) => {
+test('filters: five in the bar, nine in More filters with a count; a choice there goes to the server', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   const { reads } = await mount(page)
   const bar = page.locator('[data-provider-filters]')
@@ -110,7 +110,7 @@ test('filters: five in the bar, eight in More filters with a count; a choice the
   await expect(page.locator('[data-more-filters]')).toHaveCount(0)
   await page.locator('[data-more-filters-toggle]').click()
   const more = page.locator('[data-more-filters]')
-  expect((await more.locator('.m-filter-select small').allTextContents()).map(x => x.trim())).toEqual(['State / region', 'Publication', 'Adapter', 'Description quality', 'Description admission', 'Description source', 'Website feed', 'Zoho feed'])
+  expect((await more.locator('.m-filter-select small').allTextContents()).map(x => x.trim())).toEqual(['State / region', 'Publication', 'Adapter', 'Description quality', 'Description admission', 'Description source', 'Website feed', 'Zoho feed', 'Main campus'])  // s818 (20 Nov 2026): Main campus
   const f = more.locator('.m-filter-select').filter({ has: page.locator('small', { hasText: /^Website feed$/ }) })
   await f.locator('button.m-filter-button').click()
   await f.locator('.m-filter-popover button').nth(1).click()

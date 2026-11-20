@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.64'
-export const PACKAGE_VERSION='0.1.486'
+export const UI_VERSION='2.16.65'
+export const PACKAGE_VERSION='0.1.487'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'20 Nov 2026',
-  title:'Bulk queue to intake, bulk flag primary campus and Human Locked pills',
+  title:'Main campus filter on Catalogue › Providers',
   changes:[
-    'Providers: the bar for ticked providers can Queue to Intake Run & Validate. It hands the providers to Layer 2/3 Operations, where each is chosen in turn for the usual preview, fix and run. Nothing is run by the hand-off.',
-    'Providers: Platform Admins can Flag primary campus for the ticked providers. A preview shows the campus each would get or why it is skipped; Apply needs a reason and writes one audit event.',
-    'Provider and Course drawers show a Human Locked pill beside every tracked field a person has locked.'
+    'Catalogue › Providers › More filters › Main campus: Set, Unset (the provider has active campuses but none is the main one) or No active campus.',
+    'Tied main campuses were settled by the registered city, then the register head office address, then the earliest registered of campuses in one city; the rest stay Unset for a person.',
+    'New Zealand and Canadian courses with no campus now show their provider\'s only campus; New Zealand campuses whose name names one region now carry it.'
   ],
   bugFixes:[]
 }
