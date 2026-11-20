@@ -49,9 +49,12 @@ declare
   v_reason text := nullif(btrim(coalesce(p_args->>'reason', '')), '');
   v_off int := greatest(0, coalesce(nullif(p_args->>'offset', '')::int, 0));
   v_lim int := least(100, greatest(1, coalesce(nullif(p_args->>'limit', '')::int, 25))); -- fixed: bound on one page
+  v_out jsonb;
 begin
   if v_reason is null then
-    return jsonb_build_object('as_at', now(), 'total', (select count(*) from security.layer4_aer_hold_base_v1()),
+    with b as materialized (select * from security.layer4_aer_hold_base_v1()),
+         z as (select code, count(*) n from b group by 1)
+    select jsonb_build_object('as_at', now(), 'total', coalesce((select sum(n) from z), 0),
       'reasons', coalesce((select jsonb_agg(jsonb_build_object('code', z.code, 'n', z.n, 'label', case z.code
           when 'gate_incomplete' then 'Completeness gate (partial table read)'
           when 'audit_sample' then 'Audit sample (a person checks it)'
@@ -61,17 +64,20 @@ begin
           when 'matrix_first_run' then 'Provider matrix, first run'
           when 'matrix_change' then 'Provider matrix, change of an admitted table'
           when 'not_checked' then 'Not checked yet'
-          else 'Other' end) order by z.n desc) from (select b.code, count(*) n from security.layer4_aer_hold_base_v1() b group by 1) z), '[]'::jsonb));
+          else 'Other' end) order by z.n desc) from z), '[]'::jsonb)) into v_out;
+    return v_out;
   end if;
-  return jsonb_build_object('reason', v_reason, 'offset', v_off, 'total', (select count(*) from security.layer4_aer_hold_base_v1() h where h.code = v_reason),
-    'items', coalesce((select jsonb_agg(q.x order by q.pn nulls last, q.ct nulls last, q.hid) from (
-       select jsonb_build_object('id', h.id, 'course', coalesce(c.display_title, c.canonical_title, '—'), 'provider', coalesce(pr.display_name, pr.canonical_name, '—'), 'country', co.iso_alpha2,
-                                 'checked_at', h.checked_at, 'why', left(coalesce(h.reason, ''), 300)) x, coalesce(pr.display_name, pr.canonical_name) pn, coalesce(c.display_title, c.canonical_title) ct, h.id hid
-         from security.layer4_aer_hold_base_v1() h
-         left join catalogue.courses c on c.id = h.entity_id and h.field_code = 'course_entry_first_read'
-         left join catalogue.providers pr on pr.id = coalesce(c.provider_id, case when h.field_code <> 'course_entry_first_read' then h.entity_id end)
-         left join ref.countries co on co.id = pr.country_id
-        where h.code = v_reason order by coalesce(pr.display_name, pr.canonical_name) nulls last, coalesce(c.display_title, c.canonical_title) nulls last, h.id offset v_off limit v_lim) q), '[]'::jsonb));
+  with b as materialized (select * from security.layer4_aer_hold_base_v1() h where h.code = v_reason),
+       pg as (select b.id, b.reason, b.checked_at, coalesce(c.display_title, c.canonical_title) ct, coalesce(pr.display_name, pr.canonical_name) pn, co.iso_alpha2 cc
+                from b
+                left join catalogue.courses c on c.id = b.entity_id and b.field_code = 'course_entry_first_read'
+                left join catalogue.providers pr on pr.id = coalesce(c.provider_id, case when b.field_code <> 'course_entry_first_read' then b.entity_id end)
+                left join ref.countries co on co.id = pr.country_id
+               order by pr.display_name nulls last, coalesce(c.display_title, c.canonical_title) nulls last, b.id offset v_off limit v_lim)
+  select jsonb_build_object('reason', v_reason, 'offset', v_off, 'total', (select count(*) from b),
+    'items', coalesce((select jsonb_agg(jsonb_build_object('id', pg.id, 'course', coalesce(pg.ct, '—'), 'provider', coalesce(pg.pn, '—'), 'country', pg.cc,
+                         'checked_at', pg.checked_at, 'why', left(coalesce(pg.reason, ''), 300)) order by pg.pn nulls last, pg.ct nulls last, pg.id) from pg), '[]'::jsonb)) into v_out;
+  return v_out;
 end $f$;
 revoke all on function security.layer4_aer_hold_reasons_v1(jsonb) from public, anon, authenticated;
 comment on function security.layer4_aer_hold_reasons_v1(jsonb) is 'S831: why each pending AER item waits (latest stored machine check), and the items behind one reason; read only; called by public.admin_layer4_aer_queue';
