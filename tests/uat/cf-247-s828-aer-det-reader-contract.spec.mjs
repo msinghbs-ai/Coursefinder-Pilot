@@ -1,8 +1,8 @@
-// Guards: S828 and S829 deterministic English and academic entry reader (Platform Admin 20 Nov 2026 10:51 AEDT, Decision 2; Decision 276 kept: shadow readings only, AER v1 frozen, every gate unchanged): a pure reader with no model, fetch or write; every reading's quote is on the page text word for word.
-// CF-247 S828 (reader) and S829 (precision rules) and S832 (collapsed-row guard, aer-det-v1.2). Module supabase/functions/coverage-sweep/aer-det-reader.ts.
+// Guards: S828, S829, S832 and S834 deterministic academic entry reader (Platform Admin 20 Nov 2026 10:51 AEDT Decision 2 and 15:08 AEDT: AER and English are separate; Decision 276 kept): a pure reader with no model, fetch or write; every reading's quote is on the page text word for word; no English test is ever read here.
+// CF-247 S828 (reader), S829 (precision), S832 (collapsed-row guard) and S834 (academic only, aer-det-v1.3). Module supabase/functions/coverage-sweep/aer-det-reader.ts.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-import { detRead, detUnits, detCollapsed, AER_DET_VERSION } from '../../supabase/functions/coverage-sweep/aer-det-reader.ts'
+import { detRead, detUnits, detCollapsed, detUncovered, AER_DET_VERSION } from '../../supabase/functions/coverage-sweep/aer-det-reader.ts'
 
 const SRC = fs.readFileSync('supabase/functions/coverage-sweep/aer-det-reader.ts', 'utf8')
 const keys = (t) => detRead(t).map((r) => r.key)
@@ -10,26 +10,19 @@ const one = (t, k) => detRead(t).find((r) => r.key === k)
 
 test('the module is pure: no model, fetch, storage, database or environment access', () => {
   expect(SRC).not.toMatch(/\bfetch\s*\(|openrouter|firecrawl|Deno\.|supabase|\.rpc\(|\.storage\b|XMLHttpRequest/i)
-  expect(AER_DET_VERSION).toBe('aer-det-v1.2')
+  expect(AER_DET_VERSION).toBe('aer-det-v1.3')
 })
 
-test('English tests: IELTS with band minimum, TOEFL iBT, PTE, OET, CELPIP and Cambridge', () => {
+test('academic only: no English test is read, whatever the wording, and an academic value is never taken from an English sentence', () => {
   const t = [
-    'English language requirements',
     'IELTS Academic overall score of 6.5 with no individual band below 6.0.',
-    'TOEFL iBT: minimum score of 79, with a writing score of 21.',
-    'PTE Academic overall 58, no communicative skill below 50.',
-    'OET: grade B in each component.',
-    'CELPIP General: level 7 in each component.',
-    'Cambridge C1 Advanced: 176 overall.',
+    'TOEFL iBT: minimum score of 79.', 'PTE Academic overall 58.', 'OET: grade B in each component.', 'CELPIP General: level 7.', 'Cambridge C1 Advanced: 176 overall.',
+    'International English Language Testing System 6.5 and Pearson Test of English 58.',
   ].join('\n')
-  expect(one(t, 'ielts').value).toEqual({ overall: 6.5, band_min: 6 })
-  expect(one(t, 'toefl_ibt').value).toEqual({ overall: 79 })
-  expect(one(t, 'pte').value).toEqual({ overall: 58 })
-  expect(one(t, 'oet').value).toEqual({ grade: 'B' })
-  expect(one(t, 'celpip').value).toEqual({ level: 7 })
-  expect(one(t, 'cambridge').value).toEqual({ score: 176 })
-  expect(one(t, 'ielts').strength).toBe('stated_minimum')
+  expect(keys(t)).toEqual([])
+  for (const x of ['ielts', 'toefl_ibt', 'pte', 'oet', 'celpip', 'cambridge']) expect(SRC).not.toMatch(new RegExp('key: "' + x + '"'))
+  expect(keys('Year 12 with an IELTS 6.5 overall')).toEqual([])
+  expect(keys('IELTS 5.5 Academic (no lower than 5.0 in any subtest). Applicants need NCEA Level 3 and University Entrance.')).not.toContain('ncea_l3')
 })
 
 test('academic entry: ATAR, Year 12, NCEA Level 3, University Entrance, Canadian average, bachelor GPA', () => {
@@ -41,29 +34,50 @@ test('academic entry: ATAR, Year 12, NCEA Level 3, University Entrance, Canadian
     'Applicants need an Ontario Secondary School Diploma with an average of 75%.',
     'A bachelor degree with a GPA of 5.0 out of 7 is required.',
   ].join('\n')
-  expect(one(t, 'atar').value).toEqual({ atar: 70 })
-  expect(one(t, 'year12').value).toEqual({ value: 25 })
-  expect(one(t, 'ncea_l3').value).toEqual({ credits: 14 })
-  expect(one(t, 'university_entrance').value).toEqual({ credits: 14 })
+  expect(one(t, 'atar').value).toEqual({ atar: 70, basis: 'ATAR' })
+  expect(one(t, 'year12').value).toEqual({ value: 25, basis: 'score' })
+  expect(one(t, 'ncea_l3').value).toEqual({ credits: 14, basis: 'credits' })
+  expect(one(t, 'university_entrance').value).toEqual({ credits: 14, basis: 'credits' })
   expect(one(t, 'ca_secondary').value).toEqual({ average_percent: 75 })
   expect(one(t, 'bachelor_gpa').value).toEqual({ gpa: 5, scale: 7 })
 })
 
-test('no reading without a plausible value: out-of-range numbers, years, fees and navigation words give nothing', () => {
+test('s834 new rules: IB Diploma points, A-level grades and an Indian board average, each with its own quote', () => {
   const t = [
-    'IELTS preparation courses start in 2026.',
-    'IELTS 12.5 is not a score.',
-    'TOEFL scores are sent to the university by the test centre.',
-    'PTE 25 is below the scale.',
-    'ATAR 2026 results are released in December.',
-    'ATAR information evening, fee $450.',
-    'Apply now for Semester 1, 2027.',
+    'International Baccalaureate Diploma with a minimum of 30 points including three higher level subjects.',
+    'GCE A-levels with grades AAB, including Mathematics.',
+    'Applicants with CBSE or ISC must have an average of 75% in their Year 12 results.',
   ].join('\n')
+  expect(one(t, 'ib').value).toEqual({ points: 30, basis: 'points' })
+  expect(one(t, 'alevel').value).toEqual({ grades: 'AAB' })
+  expect(one(t, 'india_board').value).toEqual({ average_percent: 75 })
+  for (const x of detRead(t)) expect(t.includes(x.quote)).toBe(true)
+  expect(keys('IB Diploma accepted.')).toEqual([])
+  expect(keys('A-levels or equivalent are accepted.')).not.toContain('alevel')
+})
+
+test('s834 the credit count is never the level number: "42 level 3 credits" reads 42, "level 3 credits" alone gives nothing', () => {
+  expect(one('University Entrance approved subjects You must also gain a total of 42 level 3 credits which are from three subjects', 'university_entrance').value.credits).toBe(42)
+  expect(keys('University Entrance requires level 3 credits in approved subjects')).not.toContain('university_entrance')
+  expect(one('NCEA Level 3 comprised of 60 credits at NCEA Level 3 or above and 20 credits at NCEA Level 2', 'ncea_l3').value.credits).toBe(60)
+})
+
+test('s834 Year 12 needs a stated threshold: boilerplate, units and a bare mention give nothing; a score, mark, percentage or a grade with "or higher" gives a value', () => {
+  expect(keys('Prerequisites for admission may be specified in terms of levels of achievement in particular Year 12 subjects.')).toEqual([])
+  expect(keys('Completed an Australian Year 12 qualification or equivalent.')).toEqual([])
+  expect(keys('VCE Units 3 and 4 in English')).toEqual([])
+  expect(one('VCE or equivalent score of at least 30 in English (EAL)', 'year12').value.value).toBe(30)
+  expect(one('Year 12 with a minimum of 65% in Mathematics', 'year12').value.value).toBe(65)
+  expect(one('Year 12 English at grade C or higher', 'year12').value.grade).toBe('C')
+})
+
+test('no reading without a plausible value: out-of-range numbers, years, fees and navigation words give nothing', () => {
+  const t = ['ATAR 2026 results are released in December.', 'ATAR information evening, fee $450.', 'Apply now for Semester 1, 2027.', 'NCEA Level 3 is accepted.'].join('\n')
   expect(keys(t)).toEqual([])
 })
 
 test('every quote is a substring of the page text, unchanged, and no reading is duplicated', () => {
-  const t = 'Entry requirements\n\nYou need IELTS 6.5 overall (no band below 6.0). You also need a minimum ATAR of 75. IELTS 6.5 overall (no band below 6.0).\nYear 12 or equivalent is required.'
+  const t = 'Entry requirements\n\nYou need a minimum ATAR of 75. You also need a minimum ATAR of 75.\nYear 12 with a score of 60 is required.'
   const r = detRead(t)
   expect(r.length).toBeGreaterThan(0)
   for (const x of r) expect(t.includes(x.quote)).toBe(true)
@@ -72,61 +86,29 @@ test('every quote is a substring of the page text, unchanged, and no reading is 
 })
 
 test('a long line is cut at sentence ends and never inside a score', () => {
-  const long = 'Overview. ' + 'Lorem words here. '.repeat(40) + 'IELTS overall 7.0 is required. ' + 'More words follow. '.repeat(20)
+  const long = 'Overview. ' + 'Lorem words here. '.repeat(40) + 'A minimum ATAR of 70.5 is required. ' + 'More words follow. '.repeat(20)
   const r = detRead(long)
-  expect(r.map((x) => x.key)).toEqual(['ielts'])
+  expect(r.map((x) => x.key)).toEqual(['atar'])
   expect(r[0].quote.length).toBeLessThanOrEqual(320)
   expect(long.includes(r[0].quote)).toBe(true)
-  expect(r[0].value.overall).toBe(7)
+  expect(r[0].value.atar).toBe(70.5)
 })
 
-test('s829 precision: Year 12 boilerplate gives nothing; University Entrance and NCEA L3 never read inside an English-test sentence; the quote is the clause', () => {
-  const boiler = 'Prerequisites for admission may be specified in terms of levels of achievement in particular Year 12 subjects.'
-  expect(keys(boiler)).not.toContain('year12')
-  expect(keys('Completed an Australian Year 12 qualification or equivalent.')).not.toContain('year12')
-  const ielts = 'IELTS 5.5 Academic (no lower than 5.0 in any subtest) IELTS scores used must be valid for two years. Applicants need NCEA Level 3 and University Entrance.'
-  expect(keys(ielts)).not.toContain('ncea_l3')
-  expect(keys(ielts)).not.toContain('university_entrance')
-  const t = 'NCEA Level 3 with 60 credits at Level 3 and University Entrance.'
-  const r = one(t, 'ncea_l3'); expect(r.quote.length).toBeLessThanOrEqual(120); expect(t.includes(r.quote)).toBe(true)
-  expect(keys('Year 12 with an IELTS 6.5 overall')).not.toContain('year12')
-})
-
-test('s829 recall: IELTS band minimums in the wordings pages use', () => {
-  const b = (t) => one(t, 'ielts').value.band_min
-  expect(b('IELTS 5.5 Academic (no lower than 5.0 in any subtest)')).toBe(5)
-  expect(b('IELTS 6.5 overall with 6.0 in each band.')).toBe(6)
-  expect(b('IELTS 6.0 with no band less than 5.5.')).toBe(5.5)
-  expect(b('IELTS Academic Writing 7 Speaking 7 Reading 7 Listening 7 Overall band score 7')).toBe(7)
-  expect(b('IELTS minimum of 6.5 overall, 6.0 each band.')).toBe(6)
-  expect(b('IELTS 6.5 overall.')).toBe(null)
-  expect(b('IELTS 6.0 with no band below 7.0.')).toBe(null)  // never above the overall
-})
-
-test('s832 collapsed rows: a flattened table line is skipped, and a value is never taken across another test or qualification', () => {
-  // PTE beside LANGUAGECERT: the 50 belongs to LANGUAGECERT, not to PTE
-  expect(keys('PTE Academic and LANGUAGECERT Academic accepted; LANGUAGECERT Academic 60')).not.toContain('pte')
-  expect(keys('PTE Academic: 58 overall. LANGUAGECERT Academic: 60 overall.')).toContain('pte')
-  expect(one('PTE Academic: 58 overall. LANGUAGECERT Academic: 60 overall.', 'pte').value).toEqual({ overall: 58 })
-  // two degree titles on one line: skipped entirely
+test('s832 collapsed rows (kept in v1.3): a flattened table line is skipped, and a value is never taken across another qualification', () => {
   const two = 'Bachelor of Business Year 12 with a score of 60 Bachelor of Commerce Year 12 with a score of 70'
   expect(detCollapsed(two)).toBe(true)
   expect(detRead(two)).toEqual([])
-  // a table separator beside two tests or qualifications: skipped
-  const tab = 'IELTS 6.5 | TOEFL 79 | PTE 58'
+  const tab = 'ATAR 70 | NCEA Level 3 | University Entrance'
   expect(detCollapsed(tab)).toBe(true)
   expect(detRead(tab)).toEqual([])
-  // three tests on a long line: skipped; the same on a short line is read, each against its own value
-  expect(detCollapsed('IELTS 6.5, TOEFL 79, PTE 58')).toBe(false)
-  expect(detCollapsed('IELTS 6.5, TOEFL 79, PTE 58 ' + 'x'.repeat(200))).toBe(true)
-  const short = detRead('IELTS 6.5, TOEFL 79, PTE 58')
-  expect(short.map((r) => r.key)).toContain('ielts')
-  // Canadian average beside an NCUK point score is not read as the Canadian average
   expect(keys('Ontario Secondary School Diploma with NCUK 112 points; foundation average 75%')).not.toContain('ca_secondary')
-  expect(one('Applicants need an Ontario Secondary School Diploma with an average of 75%.', 'ca_secondary').value).toEqual({ average_percent: 75 })
-  // a quote never runs into the next qualification
   const r = one('NCEA Level 3 with 60 credits at Level 3 and University Entrance.', 'ncea_l3')
   expect(r.quote).not.toMatch(/University Entrance/)
-  // every quote is still on the text
-  for (const x of detRead('IELTS 6.5 overall. NCEA Level 3 with 60 credits.')) expect('IELTS 6.5 overall. NCEA Level 3 with 60 credits.'.includes(x.quote)).toBe(true)
+})
+
+test('s834 other requirements: a prerequisite, portfolio or interview line the reader does not read is carried as uncovered, never an English line', () => {
+  const t = 'A minimum ATAR of 70 is required.\nPrerequisite: Mathematics Methods units 3 and 4.\nApplicants must submit a portfolio.\nIELTS 6.5 overall; no interview needed for English.'
+  const u = detUncovered(t, detRead(t))
+  expect(u).toEqual(['Prerequisite: Mathematics Methods units 3 and 4.', 'Applicants must submit a portfolio.'])
+  expect(detUncovered('A minimum ATAR of 70 is required.', detRead('A minimum ATAR of 70 is required.'))).toEqual([])
 })
