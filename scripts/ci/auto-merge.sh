@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CF-247 s880 (Platform Admin 20 Nov 2026 17:00): merge a pull request labelled `automerge` once it is mergeable and every check is green,
+# CF-247 s880 (Platform Admin 20 Nov 2026 17:00; one-off checks report without failing, s881): merge a pull request labelled `automerge` once it is mergeable and every check is green,
 # then delete its branch. Used by .github/workflows/auto-merge.yml in this repository and, byte for byte, in coursefinder-admin.
 #
 #   PR=<number> MODE=wait|once REPO=<owner/name> scripts/ci/auto-merge.sh
@@ -7,7 +7,7 @@
 # "Green" (there is no branch protection, so the script decides): every latest check run on the head commit has finished as success,
 # skipped or neutral (this workflow's own runs aside), the commit status is not failing or pending, and at least MIN_CHECKS checks exist.
 # A pull request that adds a migration also needs the `live-dry-run` label and a successful `dry-run` check (merge on green CI plus a
-# rolled-back live dry run). A cancelled check is waited on (it is usually re-run); a failed one stops the wait with a comment.
+# rolled-back live dry run). A cancelled check is re-run once and waited on; a failed one stops the wait with a comment.
 #
 # A merge made with the workflow's GITHUB_TOKEN does not start the push-to-main workflows, so POST_MERGE=pilot starts them here:
 # Deploy on merge (with the exact before/after commits) when migrations or edge functions changed, Security gates, Deployed UAT, and
@@ -23,9 +23,12 @@ WAIT_MINUTES="${WAIT_MINUTES:-120}"   # fixed: the longest CI path (test evidenc
 POLL_SECONDS="${POLL_SECONDS:-60}"    # fixed: one poll a minute keeps several waiting pull requests inside the token's hourly API limit
 POST_MERGE="${POST_MERGE:-none}"
 SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/null}"
+RERUN=""
 
 say() { echo "$1"; echo "- $1" >> "$SUMMARY"; }
 comment() { gh api "repos/$REPO/issues/$PR/comments" -f body="$1" >/dev/null 2>&1 || true; }
+# a stop: the waiting run (MODE=wait) comments once and fails; a one-off check (MODE=once, run on every finished check suite) only reports
+stop() { say "$1"; if [ "$MODE" = wait ]; then comment "$2"; exit 1; fi; exit 0; }
 
 deadline=$(( $(date +%s) + WAIT_MINUTES * 60 ))
 [ "$MODE" = wait ] && sleep 30   # fixed: let the checks of a new push register before the first look
@@ -40,7 +43,7 @@ while :; do
   head=$(jq -r .head.sha <<<"$pr"); ref=$(jq -r .head.ref <<<"$pr"); title=$(jq -r .title <<<"$pr")
   mergeable=$(jq -r .mergeable <<<"$pr"); mstate=$(jq -r .mergeable_state <<<"$pr")
   if [ "$mergeable" = false ] || [ "$mstate" = dirty ]; then
-    say "#$PR has merge conflicts with main."; comment "Auto-merge stopped: this pull request conflicts with \`main\`. Update the branch; the next push starts the wait again."; exit 1
+    stop "#$PR has merge conflicts with main." "Auto-merge stopped: this pull request conflicts with \`main\`. Update the branch; the next push starts the wait again." 
   fi
 
   runs=$(gh api "repos/$REPO/commits/$head/check-runs?per_page=100&filter=latest" --jq "[.check_runs[] | select(.name != \"$SELF\")]")
@@ -60,11 +63,22 @@ while :; do
   fi
 
   if [ -n "$failed" ] || [ "$sstate" = failure ] || [ "$sstate" = error ]; then
-    say "#$PR has failing checks: ${failed:-commit status $sstate}."; comment "Auto-merge stopped: failing checks (${failed:-commit status $sstate}). Fix and push; the next push starts the wait again."; exit 1
+    stop "#$PR has failing checks: ${failed:-commit status $sstate}." "Auto-merge stopped: failing checks (${failed:-commit status $sstate}). Fix and push; the next push starts the wait again." 
   fi
   if [ -z "$pending" ] && [ -z "$cancelled" ] && [ "$total" -ge "$MIN_CHECKS" ] && { [ "$sstate" = success ] || [ "$scount" = 0 ]; } \
      && [ "$dry_ok" = yes ] && [ "$mergeable" = true ]; then
     break
+  fi
+  # a cancelled check is usually a concurrency cancel (adding a label starts a run that cancels the running one, then skips): re-run, once each,
+  # every workflow on this head whose latest real run was cancelled and that has nothing newer queued or running
+  if [ -n "$cancelled" ] && [ "$MODE" = wait ]; then
+    for id in $(gh api "repos/$REPO/actions/runs?head_sha=$head&per_page=100" --jq '.workflow_runs | group_by(.workflow_id)[]
+                 | (map(select(.conclusion != "skipped")) | sort_by(.created_at) | last) as $l
+                 | select($l != null and $l.conclusion == "cancelled" and (map(select(.status != "completed")) | length) == 0) | $l.id'); do
+      case " $RERUN " in *" $id "*) continue ;; esac
+      RERUN="$RERUN $id"
+      if gh api -X POST "repos/$REPO/actions/runs/$id/rerun" >/dev/null 2>&1; then say "Re-ran cancelled run $id."; fi
+    done
   fi
   why="checks $total (min $MIN_CHECKS); pending: ${pending:-none}; cancelled: ${cancelled:-none}; status: $sstate/$scount; dry run: $dry_ok; mergeable: $mergeable"
   if [ "$MODE" = once ] || [ "$(date +%s)" -ge "$deadline" ]; then
