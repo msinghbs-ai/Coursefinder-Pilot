@@ -8,7 +8,7 @@ const mig = fs.readFileSync('supabase/migrations-archive/20261113180000_cf247_we
 const STATUSES = ['known', 'no_official_calendar', 'month_only', 'not_on_course_page', 'course_page_not_verified', 'next_year_calendar_pending',
   'not_yet_read', 'own_calendar', 'conflicting_evidence', 'held_for_review', 'rolling']
 
-test('v3 is v2 with every action routed to website_v3_*; same key, rate limit and log', () => {
+test('v3 is v2 with every action routed to website_v3_*; its own key and log (s935), the same rate limit', () => {
   expect(v3).toContain('const API_VERSION = "website-v3";')
   expect(v3).toContain('case "search": fn = "website_v3_course_search";')
   expect(v3).toContain('fn = "website_v3_course"; args = ec ? { p_identifier: c, p_edu_country: ec } : { p_identifier: c };')
@@ -19,12 +19,15 @@ test('v3 is v2 with every action routed to website_v3_*; same key, rate limit an
     expect(mig, f).toContain(`public.website_v2_${f}(`)
   }
   expect(v3).not.toMatch(/fn = "website_v2_/)
-  for (const f of ['website_api_v2_auth', 'website_api_v2_rate', 'website_api_v2_log']) expect(v3).toContain(`svc.rpc("${f}"`)
-  expect(v3).toContain('p_action: action ? `v3:${action}` : action')
+  // s935 (Platform Admin 21 Nov 2026 13:11): v3 signs in and logs with its own (consumer, version) key; the rate limit is still the v2 counter, by key name
+  expect(v3).toContain('svc.schema("pipeline").rpc("api_key_auth_v1", { p_platform: "website", p_version: "v3",')
+  expect(v3).toContain('svc.schema("pipeline").rpc("api_request_log_v1", { p_platform: "website", p_version: "v3", p_key_name: keyName, p_action: action,')
+  expect(v3).toContain('svc.rpc("website_api_v2_rate"')
+  expect(v3).not.toMatch(/svc\.rpc\("website_api_v2_(auth|log)"/)
   // the body below the header differs from v2 only in the routed lines
   const body = (s) => s.slice(s.indexOf('import "jsr:'))
   const diff = body(v3).split('\n').filter((l, i) => l !== body(v2).split('\n')[i])
-  expect(diff.length).toBeLessThanOrEqual(14) // 20 Nov 2026 (s810, ASD ISM-1278): the INVALID_INPUT detail line differs too (v3 sends only the platform's own validation text). 17 Nov 2026 (roadmap schema pack, RM0E): the ACTIONS line now differs too (v3 adds the destination action, on the scholarships line)
+  expect(diff.length).toBeLessThanOrEqual(15) // 21 Nov 2026 (s935): the sign-in line differs too (v3 has its own key). 20 Nov 2026 (s810, ASD ISM-1278): the INVALID_INPUT detail line differs too (v3 sends only the platform's own validation text). 17 Nov 2026 (roadmap schema pack, RM0E): the ACTIONS line now differs too (v3 adds the destination action, on the scholarships line)
   expect(v2).toContain('const API_VERSION = "website-v2";')
 })
 
