@@ -29,7 +29,7 @@ test('s960: five application-route facts, read directly, into one draft edition 
   expect(facts.map((f) => f.title)).toHaveLength(5)
   expect(code).toContain(`'application_route', f.title, 'international student',\n       f.pattern, 'i', f.anchor, 'active', 'static', f.states,`)
   expect(code).toMatch(new RegExp(`'study_rules', '${EDITION.replace(/[()]/g, '\\$&')}', current_date, 'draft',`))
-  expect(code).toMatch(/'pending', null\n  from ref\.countries c/)
+  expect(code).toMatch(/'pending', now\(\)\n  from ref\.countries c/)
   expect(code).not.toMatch(/'rendered'|'published'|edition_publish|terms_status = 'approved'/)
   for (const f of facts) expect(f.url, f.title).toMatch(/^https:\/\/(www\.)?(studyaustralia\.gov\.au|uac\.edu\.au|vtac\.edu\.au|satac\.edu\.au)\//)
 })

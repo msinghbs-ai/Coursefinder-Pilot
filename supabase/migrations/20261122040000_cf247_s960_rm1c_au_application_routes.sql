@@ -83,7 +83,7 @@ select c.id, 'study_rules', 'Australian application routes (Study Australia and 
        'https://www.studyaustralia.gov.au/en/plan-your-studies/how-to-apply-to-study',
        'Australian Government (Study Australia); Universities Admissions Centre; Victorian Tertiary Admissions Centre; South Australian Tertiary Admissions Centre',
        'Application routes: Study Australia, How to apply to study (studyaustralia.gov.au), Australian Government. NSW and ACT route: Universities Admissions Centre (uac.edu.au). Victoria route: Victorian Tertiary Admissions Centre (vtac.edu.au). South Australia and Northern Territory route: South Australian Tertiary Admissions Centre (satac.edu.au).',
-       'pending', null
+       'pending', now()
   from ref.countries c
  where c.iso_alpha2 = 'AU'
    and not exists (select 1 from destination.editions e where e.edition_label = 'Australian application routes (Study Australia and admissions centres)');
