@@ -8,7 +8,7 @@ const src = (f) => fs.readFileSync(`src/${f}`, 'utf8')
 
 test('the Provider list of Entry requirements is every active provider, in name order, never cut (md5-guarded)', () => {
   expect(MIG).toContain("'0f4af8394ea36e6ef96df2e9130e0cc9'")
-  expect(MIG).toContain("'6861985ad411dd171fc25793f554214d'")
+  expect(MIG).toContain("'8aba9ae6ad9b8f21fd1996ae9d93aa82'")
   expect(MIG).toContain("where p.lifecycle_status = 'active' or mc9.provider_id is not null")
   expect(MIG).toContain("'active_rows', z.a, 'waiting_rows', z.w")
   const v_new = MIG.slice(MIG.indexOf('v_new constant text'), MIG.indexOf('$n$;'))

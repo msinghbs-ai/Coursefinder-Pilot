@@ -44,12 +44,12 @@ declare
                          or exists (select 1 from catalogue.course_entry_requirements x0 join catalogue.courses c0 on c0.id = x0.course_id where c0.provider_id = p.id)) z),$n$;
   v_c int;
 begin
-  if md5(v_def) = '6861985ad411dd171fc25793f554214d' then raise notice 's930: admin_aer already has this change'; return; end if;
+  if md5(v_def) = '8aba9ae6ad9b8f21fd1996ae9d93aa82' then raise notice 's930: admin_aer already has this change'; return; end if;
   if md5(v_def) <> '0f4af8394ea36e6ef96df2e9130e0cc9' then raise exception 'guard: % is not the text this change was written against (md5 %)', v_sig, md5(v_def); end if;
   select count(*) into v_c from regexp_matches(v_def, v_re, 'g');
   if v_c <> 1 then raise exception 'guard: the provider list must appear exactly once (found %)', v_c; end if;
   execute regexp_replace(v_def, v_re, replace(v_new, '\', '\\'));
-  if md5(pg_get_functiondef(v_sig::regprocedure)) <> '6861985ad411dd171fc25793f554214d' then raise exception 's930: admin_aer after the edit has md5 %', md5(pg_get_functiondef(v_sig::regprocedure)); end if;
+  if md5(pg_get_functiondef(v_sig::regprocedure)) <> '8aba9ae6ad9b8f21fd1996ae9d93aa82' then raise exception 's930: admin_aer after the edit has md5 %', md5(pg_get_functiondef(v_sig::regprocedure)); end if;
 end $e$;
 
 -- the rolling intake-year window (G2: a setting, not a number in code)

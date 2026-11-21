@@ -39,7 +39,7 @@ test('every catalogue country: Data Quality, Enrichment operations, Provider ass
   expect(mig).not.toMatch(/not in ?\('AU', ?'NZ'\)/)
   expect(fix).toContain('v_codes text[]:=security.catalogue_country_codes_v1();')
   expect(fix).not.toContain('any((select')
-  expect(read('src/data-quality-entry.jsx')).toContain("const DQ_COUNTRY={AU:'Australia',NZ:'New Zealand',CA:'Canada'}")
+  expect(read('src/data-quality-entry.jsx')).toContain('countryName(lk,c)') // s930: country names from the live lookups
   expect(read('src/KeyDates.jsx')).toContain("CA:'Canada'")
   expect(read('src/m2-3-intelligence-entry.jsx')).toContain('<option>CAD</option>')
   expect(read('src/ScholarshipRecord.jsx')).not.toContain('A$)')
