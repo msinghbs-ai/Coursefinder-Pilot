@@ -29,7 +29,7 @@ test('the screens: Courses shows group headings and one page; Entry requirements
   expect(m).toContain('const PAGE_OF={level:100}')
   expect(m).toContain('data-filter-group={x.group}')
   expect(m).toContain('{x.meta&&!x.group&&<small>{x.meta}</small>}')
-  expect(a).toContain('<FilterSelect label="Study level" value={f.level} onChange={(v,l)=>set(\'level\',v,l)} pageSize={60} options={levelOptions(o)}/>')
+  expect(a).toContain('<FilterSelect label="Study level" value={f.level} onChange={(v,l)=>set(\'level\',v,l)} pageSize={1000} options={levelOptions(o)}/>')
   expect(a).not.toContain("opt(l.code,l.name,l.code)")
   expect(d).toContain("help='',pageSize=10}")
 })

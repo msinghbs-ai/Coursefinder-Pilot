@@ -188,7 +188,7 @@ export function MatrixView({rank,onError,navigate,routeParams}){
         <FilterSelect label="Study destination" value={f.destination} onChange={(v,l)=>set('destination',v,l)} options={[...(o.destinations||[]),...targetCountries(lk).filter(t=>!(o.destinations||[]).some(d=>d.code===t.code))].map(c=>opt(c.code,c.name,c.code))}/>
         <FilterSelect label="Student's education country" value={f.country} onChange={(v,l)=>set('country',v,l)} options={orderAerCountries(o.countries).map(c=>opt(c.code,c.name,c.code))}/>
         <FilterSelect label="Applies to" value={f.scope} onChange={(v,l)=>set('scope',v,l)} options={[opt('university','University-wide (no course)'),opt('course','One course')]}/>
-        <FilterSelect label="Study level" value={f.level} onChange={(v,l)=>set('level',v,l)} pageSize={60} options={levelOptions(o)}/>
+        <FilterSelect label="Study level" value={f.level} onChange={(v,l)=>set('level',v,l)} pageSize={1000} options={levelOptions(o)}/>
         <FilterSelect label="Status" value={f.status} emptyLabel="Any status" onChange={(v,l)=>set('status',v,l)} options={(o.statuses||[]).map(s=>opt(s,ROW_PILL[s]?.[1]||s))}/>
         <FilterSelect label="Kind" value={f.matrix_kind} onChange={(v,l)=>set('matrix_kind',v,l)} options={(o.matrix_kinds||[]).map(k=>opt(k,KIND_LABEL[k]||k))}/>
         <FilterSelect label="Band" value={f.band} onChange={(v,l)=>set('band',v,l)} options={(o.bands||[]).map(b=>opt(b,b))}/>
