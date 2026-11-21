@@ -7,6 +7,7 @@ import { ArrowDown, ArrowUp, Columns3, RotateCcw, Search, Undo2, X } from 'lucid
 import { supabase } from './lib/supabase'
 import { StatusChip, fmtDate, fmtDateTime, fmtNumber, fmtTime } from './ui-kit'
 import { ADAPTER_STATES, EMPTY_REASON_LABELS, STUDY_LOAD_LABELS, COURSE_COLUMNS, COURSE_SCREEN, DEFAULT_LIMITS, FIELD_STATES, fieldWords, GROUPS, PROVIDER_SCREEN, citySummary, clampWidth, columnOf, defaultLayout, groupHeading, intakeName, intakeSummary, minWidthOf, monthName, moveColumn, normaliseLayout, qualityOf, registryOf, toggleColumn } from './catalogue-columns'
+import { fmtDuration } from './lib/format.js'
 import './catalogue-columns.css'
 import { CompletenessBar, courseCompleteness } from './CompletenessBar'
 
@@ -215,7 +216,7 @@ export function renderCourseCell(key, row, { navigate } = {}) {
     case 'country_name': return row.country_name || '—'
     case 'city_names': return <Cities row={row} />
     case 'campus_count': return <Campuses row={row} />
-    case 'duration': return row.duration_value != null ? `${Number(row.duration_value)} ${row.duration_unit || ''}`.trim() : <FieldState fs={fs.duration} />
+    case 'duration': return row.duration_value != null ? (fmtDuration(row.duration_value, row.duration_unit) || `${Number(row.duration_value)} ${row.duration_unit || ''}`.trim()) : <FieldState fs={fs.duration} /> // REQ-97
     case 'delivery_mode': return row.delivery_mode ? String(row.delivery_mode).replaceAll('_', ' ') : <FieldState fs={fs.delivery} />
     // 18 Nov 2026 (Platform Admin 07:03): the study load as the API v3 gives it; the empty reason as a badge, so a blank left on purpose reads differently from a gap
     case 'study_load': return row.study_load ? <span data-study-load={row.study_load}>{STUDY_LOAD_LABELS[row.study_load] || String(row.study_load).replaceAll('_', ' ')}</span> : <span className="ccol-unknown" data-study-load="">Not held</span>

@@ -2,7 +2,7 @@
 // One entry for every filter on the six screens (Layer 4 Review, Courses, Providers, Entry requirements, English, Scholarships) and one for every
 // badge or pill: the screen, its label, what it looks at in plain words, when to use it and who sees it. Reviewed every release with the guide
 // (FILTER_REFERENCE_REVIEWED_FOR must equal UI_VERSION); the contract test (spec s931) fails when a filter on a screen has no entry.
-export const FILTER_REFERENCE_REVIEWED_FOR = '2.16.78'
+export const FILTER_REFERENCE_REVIEWED_FOR = '2.16.79'
 
 const V = 'Viewer and above', C = 'Curator and above'
 const e = (screen, label, looks, when, roles = V, id = '') => ({ screen, label, looks, when, roles, id })
@@ -26,7 +26,7 @@ export const FILTER_REFERENCE = [
   e('Layer 4', 'Provider type', 'Grid: University, VET / College, School or HEI', 'You work one kind of provider', C, 'L4-F12'),
   e('Layer 4', 'Saved views', 'Grid: shared views (AER Audit Samples, Official URLs, Provider Blockers) and your own', 'You come back to the same set of rows', C, 'L4-F13'),
   // Courses
-  e('Courses', 'Country', 'Where the course\'s provider is', 'You look at one country\'s courses'),
+  e('Courses', 'Study destination', 'The country where the course\'s provider is (where the student would study)', 'You look at one country\'s courses'),
   e('Courses', 'State / Region', 'The state, province or region of the provider', 'You look at one state or region'),
   e('Courses', 'Provider', 'One provider\'s courses (every provider, searched)', 'You look at one university\'s courses'),
   e('Courses', 'University group', 'A group such as the Group of Eight', 'You compare a group of universities'),
@@ -38,7 +38,7 @@ export const FILTER_REFERENCE = [
   e('Courses', 'Has English', 'Whether the course has an English requirement', 'You look for courses with or without English requirements'),
   e('Courses', 'Course description', 'Whether the course has a description, and how it was admitted', 'You look for courses with no description'),
   e('Courses', 'Study load', 'Full-time or part-time load', 'A student needs full-time study'),
-  e('Courses', 'Empty reason', 'Why a value is empty (not published by the provider, not on the register, online only, waiting to be read, source unavailable)', 'You want to know why many courses miss a value'),
+  e('Courses', 'Empty reason', 'Why a course field is blank, so a blank is not read as "no requirement": not published by the provider, not on the register, online only, waiting to be read, source unavailable. The filter shows the same note when opened', 'You want to know why many courses miss a value'),
   e('Courses', 'International students', 'Whether international students may enrol', 'You look at courses open to international students'),
   e('Courses', 'Has scholarship', 'Whether a scholarship is linked to the course', 'A student asks about scholarships'),
   e('Courses', 'Minimum completeness', 'Courses at or above a completeness score', 'You want well-filled courses only'),
@@ -52,8 +52,8 @@ export const FILTER_REFERENCE = [
   e('Providers', 'Description admission', 'How the provider description was admitted (machine, person)', 'You audit how descriptions got in'),
   e('Providers', 'Description source', 'Where the provider description came from', 'You audit the source of descriptions'),
   e('Providers', 'Adapter', 'Whether the provider has an adapter (its reading rules)', 'You look for providers not onboarded'),
-  e('Providers', 'Website feed', 'Whether the provider is in the website feed', 'You check what the website lists'),
-  e('Providers', 'Zoho feed', 'Whether the provider is in the Zoho feed', 'You check what Zoho lists'),
+  e('Providers', 'On website', 'Whether the provider is in the feed the StudySearch website reads (was "Website feed")', 'You check what the website lists'),
+  e('Providers', 'In Zoho CRM', 'Whether the provider is in the Zoho CRM feed (was "Zoho feed")', 'You check what Zoho lists'),
   e('Providers', 'Main campus', 'The providers whose main campus is (or is not) set', 'You check main campuses'),
   e('Providers', 'Primary', 'Campuses: the main campus of each provider', 'You look at main campuses only'),
   // Entry requirements (AER)
@@ -61,8 +61,8 @@ export const FILTER_REFERENCE = [
   e('Entry requirements', 'Study level', 'The study level the row is for', 'A student applies at one level'),
   e('Entry requirements', 'Status', 'Live, waiting for your decision, replaced by a newer read, withdrawn or quarantined', 'You check what the website uses (Live)'),
   e('Entry requirements', 'Search', 'Words of the qualification, quote or course', 'You look for one qualification'),
-  e('Entry requirements', 'Destination country', 'Where the university is (AU, NZ, CA)', 'You want Australian universities only'),
-  e('Entry requirements', 'Source country', 'Where the student\'s prior qualification is from', 'A student from India asks'),
+  e('Entry requirements', 'Study destination', 'Where the university is (the countries the platform covers); was "Destination country"', 'You want Australian universities only'),
+  e('Entry requirements', 'Student\'s education country', 'Where the student\'s prior qualification is from; was "Source country"', 'A student from India asks'),
   e('Entry requirements', 'Applies to', 'A university-wide row or one course\'s row', 'A course shows no row of its own'),
   e('Entry requirements', 'Kind', 'The kind of requirement (provider minimum, band table, course minimum and so on)', 'You look at one kind of requirement'),
   e('Entry requirements', 'Band', 'The band of a band table', 'You check one band'),

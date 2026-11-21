@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.501 — 21 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.79** (S1-API-Frontend-Delivery s956, India team review of 20 Nov 2026: REQ-92, REQ-97, REQ-101, REQ-102, REQ-103, REQ-106, REQ-107). Migration `20261122040000` sets the full names of QILT and PRISMS in the dataset registry.
+
 ## 0.1.500 — 21 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.78** (S1-RM-Design s935): Settings › API usage reads every API version and key from the database (`pipeline.api_versions`, `security.api_usage_versions_v1`); Website API v3 and Zoho API v3 sign in and log with their own (consumer, version) keys (`pipeline.api_key_auth_v1`, `pipeline.api_request_log_v1`); standing rule Self-Sustaining API & Key Governance.

@@ -106,12 +106,12 @@ test('filters: five in the bar, nine in More filters with a count; a choice ther
   const { reads } = await mount(page)
   const bar = page.locator('[data-provider-filters]')
   const labels = () => bar.locator(':scope > .m-filter-select small').allTextContents()
-  expect((await labels()).map(x => x.trim())).toEqual(['Country', 'Type', 'Status', 'Description', 'University group'])
+  expect((await labels()).map(x => x.trim())).toEqual(['Study destination', 'Type', 'Status', 'Description', 'University group'])
   await expect(page.locator('[data-more-filters]')).toHaveCount(0)
   await page.locator('[data-more-filters-toggle]').click()
   const more = page.locator('[data-more-filters]')
-  expect((await more.locator('.m-filter-select small').allTextContents()).map(x => x.trim())).toEqual(['State / region', 'Publication', 'Adapter', 'Description quality', 'Description admission', 'Description source', 'Website feed', 'Zoho feed', 'Main campus'])  // s818 (20 Nov 2026): Main campus
-  const f = more.locator('.m-filter-select').filter({ has: page.locator('small', { hasText: /^Website feed$/ }) })
+  expect((await more.locator('.m-filter-select small').allTextContents()).map(x => x.trim())).toEqual(['State / region', 'Publication', 'Adapter', 'Description quality', 'Description admission', 'Description source', 'On website', 'In Zoho CRM', 'Main campus'])  // s818 (20 Nov 2026): Main campus
+  const f = more.locator('.m-filter-select').filter({ has: page.locator('small', { hasText: /^On website$/ }) })
   await f.locator('button.m-filter-button').click()
   await f.locator('.m-filter-popover button').nth(1).click()
   await expect(page.locator('[data-more-filters-count]')).toHaveText('1')

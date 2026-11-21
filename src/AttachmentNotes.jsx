@@ -19,7 +19,7 @@ const SCHOLARSHIPS = <section key="scholarships" data-notes-section="scholarship
 const AER = <section key="aer" data-notes-section="aer">
   <h4>Entry requirements (AER): how one reaches a course</h4>
   <ul>
-    <li><strong>Destination country</strong> is where the university is (Australia, New Zealand, Canada). <strong>Source country</strong> is where the student earned their prior qualification (for example India or Nepal). Entry tables are published for each source country.</li>
+    <li><strong>Study destination</strong> is where the university is (Australia, New Zealand, Canada). <strong>Student's education country</strong> (Layer 4: Source country) is where the student earned their prior qualification (for example India or Nepal). Entry tables are published for each source country.</li>
     <li><strong>University-wide entry table.</strong> A row with no course applies to every course at the university for that source country, unless the course has its own requirement.</li>
     <li><strong>Which rule wins</strong>, in order: 1 a course rule; 2 a course row for the source country; 3 the course's band in the university table; 4 the university minimum; 5 otherwise, contact the university.</li>
     <li>Only <strong>active</strong> rows reach the website. A proposed row is waiting in Layer 4 Review and is not shown to students.</li>

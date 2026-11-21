@@ -112,7 +112,7 @@ test.describe('mocked browser', () => {
       return route.fulfill({ json: {} })
     })
     await page.goto('/#entry-requirements')
-    await page.locator('.m-filter-select').getByRole('button', { name: /^Source country/ }).click() // s901: the Country filter is Source country
+    await page.locator('.m-filter-select').getByRole('button', { name: /^Student's education country/ }).click() // s901: the Country filter is Source country
     expect(await page.locator('.m-filter-popover > button span').allTextContents()).toEqual(['All', ...ORDER])
     await page.keyboard.press('Escape')
     await page.goto('/#entry-requirements?tab=resolve')

@@ -622,3 +622,7 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 [data-l1-sources] .xl-head{position:static}
 [data-l1-sources] .xl-row{position:relative;z-index:0}
 [data-l1-sources] .xl-row th{position:static}
+
+/* REQ-103, REQ-107: a filter's help line in its popover; REQ-106: who publishes a statistics card */
+.m-filter-help{margin:0 0 6px;padding:6px 8px;border-radius:var(--cf-radius-sm);background:var(--cf-slate-50);color:var(--cf-slate-600);font-size:var(--cf-fs-2xs);line-height:1.45;max-width:320px;white-space:normal}
+.cf-stat-source{display:block;color:var(--cf-slate-500);font-size:var(--cf-fs-3xs);margin-top:2px}
