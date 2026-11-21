@@ -110,7 +110,7 @@ test('D3 and fixes 1 and 3: md5-guarded, read only, admitted through the same ma
   expect(src('Layer4DecisionBar.jsx')).toContain("supabase.rpc('admin_layer4_cd_provider_verified_v1',{p_ref:ref})")
   expect(src('Layer4Inbox.jsx')).toContain('Approve all verified for provider (${fmtNumber(Number(verified.eligible)||0)})')
   expect(src('Layer4Focus.jsx')).toContain('const done=r=>{setGone(s=>new Set([...s,cur]));onDecided?.(r);load(true)}')
-  expect(src('Layer4Inbox.jsx')).toContain('countOf={k=>focus&&k===kind&&ftotal!=null&&!part?ftotal:Number(bk[k]?.n)||0}')
+  expect(src('Layer4Inbox.jsx')).toContain('countOf={k=>focus&&k===kind&&ftotal!=null&&!effPart?ftotal:Number(bk[k]?.n)||0}')
 })
 
 test.describe('mocked browser', () => {
