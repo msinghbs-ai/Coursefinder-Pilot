@@ -15,6 +15,8 @@ test('the snapshot builder uses the readiness rules of the daily export, verbati
   const rules = m.slice(m.indexOf('with c as (', a), b)
   const exp = exportSql.slice(exportSql.indexOf('with c as ('), exportSql.lastIndexOf('order by x.cc, x.provider_name, x.title;'))
     .replace('mod(abs(hashtext(co.id::text)), __PARTS__) = __PART__', 'mod(abs(hashtext(co.id::text)), v_parts) = v_part')
+    // s927: the export's extra read-only column raw (coverage states for the data gap register) is not a readiness rule
+    .replace(/\) cells,\s*-- s927[^\n]*\n[\s\S]*?\) raw[^\n]*\n/, ') cells\n')
   // the export's final select becomes CTE r in the builder; everything else is the same text
   const builderNoR = norm(rules).replace(/, r as \( (select x\.course_id, x\.cc country_code.*)\),$/, ' $1')
   expect(builderNoR).toBe(norm(exp))
