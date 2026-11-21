@@ -10,7 +10,7 @@ const loader = fs.readFileSync('supabase/functions/layer1-destination-geo-loader
 test('a page address that names a tab is read whole; every other page keeps main content', () => {
   expect(firecrawlScrapeBody('https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/student-500#HowTo').onlyMainContent).toBe(false)
   expect(firecrawlScrapeBody('https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/student-500').onlyMainContent).toBe(true)
-  expect(loader).toContain('const VERSION = "layer1-destination-geo-loader-v1.5.0";')
+  expect(loader).toMatch(/const VERSION = "layer1-destination-geo-loader-v1\.([5-9]|[1-9][0-9])\.[0-9]+";/)  // v1.5.0 or later (s960 brought v1.6.0, scope static)
 })
 
 test('the instrument pattern reads the primary-applicant amount, not the partner or child amounts', () => {

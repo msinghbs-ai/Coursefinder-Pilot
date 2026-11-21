@@ -31,7 +31,7 @@ import { anchorWindows, extractFact, firecrawlScrapeBody, headerSample, htmlToTe
 // loader with the internal service key, the source's mode and, for the page facts, its scope (pages or workbook); every artifact is stored in
 // Supabase Storage and recorded as evidence of that source (security.destination_source_evidence_v1); the response carries the Layer 1
 // count and content hash (candidateObservations, fileSha256).
-const VERSION = "layer1-destination-geo-loader-v1.5.0";
+const VERSION = "layer1-destination-geo-loader-v1.6.0";
 const FUNCTION_NAME = "layer1-destination-geo-loader";
 const EDITION = {
   source_url: "https://www.abs.gov.au/statistics/people/population/regional-population/2024-25/32180DS0004_2001-25.xlsx",
@@ -200,6 +200,8 @@ async function facts(service: any, runId: string | null, trigger: string, starte
     for (const f of specs) byPage.set(f.page_url, [...(byPage.get(f.page_url) || []), f]);
     const pages: any[] = [];
     for (const [pageUrl, list] of (scope === "workbook" ? new Map<string, any[]>() : byPage)) {
+      // v1.6.0 (s960, 21 Nov 2026): scope "static" reads only the pages read directly; a page any fact reads rendered (Firecrawl) is skipped, so a static read costs $0
+      if (scope === "static" && list.some((f) => f.read_mode === "rendered")) continue;
       try {
         const rendered = list.some((f) => f.read_mode === "rendered");
         const got = rendered ? await renderedRead(service, pageUrl, runId) : null;
@@ -220,7 +222,7 @@ async function facts(service: any, runId: string | null, trigger: string, starte
       }
     }
     let jsa: any = null;
-    if (cfg?.jsa?.page_url && scope !== "pages") {
+    if (cfg?.jsa?.page_url && scope !== "pages" && scope !== "static") {
       try {
         const html = new TextDecoder("utf-8").decode(await download(cfg.jsa.page_url));
         const re = new RegExp(cfg.jsa.link_pattern, "i");
