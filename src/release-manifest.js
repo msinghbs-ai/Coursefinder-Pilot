@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.82'
-export const PACKAGE_VERSION='0.1.504'
+export const UI_VERSION='2.16.83'
+export const PACKAGE_VERSION='0.1.505'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'22 Nov 2026',
-  title:'Scholarship values agree with their notes; Study level in one page',
+  title:'Entry requirements: every study level in one list',
   changes:[
-    'Scholarships: a value published as a range (for example 10% to 100% of tuition fees) is held as the upper figure, marked up to, so value and note agree; the last three text-only values are read from their notes.'
+
   ],
   bugFixes:[
-    'Courses › Study level still listed ten levels a page: the browser now asks for every level, so all groups show in one list.'
+    'Entry requirements › Study level still had a second page once the labels providers publish were added (62 options). The whole list now shows at once, under its groups.'
   ]
 }
 

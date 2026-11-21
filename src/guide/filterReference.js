@@ -2,7 +2,7 @@
 // One entry for every filter on the six screens (Layer 4 Review, Courses, Providers, Entry requirements, English, Scholarships) and one for every
 // badge or pill: the screen, its label, what it looks at in plain words, when to use it and who sees it. Reviewed every release with the guide
 // (FILTER_REFERENCE_REVIEWED_FOR must equal UI_VERSION); the contract test (spec s931) fails when a filter on a screen has no entry.
-export const FILTER_REFERENCE_REVIEWED_FOR = '2.16.82'
+export const FILTER_REFERENCE_REVIEWED_FOR = '2.16.83'
 
 const V = 'Viewer and above', C = 'Curator and above'
 const e = (screen, label, looks, when, roles = V, id = '') => ({ screen, label, looks, when, roles, id })

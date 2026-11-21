@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.505 — 22 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.83** (S1-API-Frontend-Delivery, REQ-100 follow-up found in the signed-in check of v2.16.82): Entry requirements › Study level shows every option in one list. No migration.
+
 ## 0.1.504 — 22 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.82** (S1-API-Frontend-Delivery s959: REQ-64, REQ-71, REQ-72 checked; REQ-100 follow-up). Migration `20261122080000`: 31 scholarship values corrected by the rule upper figure, marked up to (Platform Admin 22 Nov 01:20).
