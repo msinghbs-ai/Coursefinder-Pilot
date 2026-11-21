@@ -15,6 +15,7 @@ import{supabase,api}from'./lib/supabase'
 import{CLIMATE_ICONS}from'./lib/climate-icons.js'
 import{campusLocalities,cityProfile,careerOutlook,visaSnapshot,rankingSnapshot,EMPTY_CAREERS}from'./lib/correlation-adapters.js'
 import{PREVIEW_ROLES,audienceOf,studentHideCss,STUDENT_ONLY_EMPTY_ENTRY,STUDENT_FACING_ENTRY}from'./lib/field-visibility.js'
+import{orderAerCountries}from'./aer-countries.js'
 import'./correlated-blade.css'
 import'./field-visibility.css'
 
@@ -102,9 +103,26 @@ export function CourseCorrelated({data,rank=0}){
           :'No university-wide entry table is active for this university.'}
           {uwP.done&&!uwP.err&&Number(uwP.data?.total||0)>0&&<small className="cb-int" data-vis="layer4_queue_state" data-cb-entry-university-proposed={Number(uwP.data.total)}> {fmtNumber(Number(uwP.data.total))} waiting in Layer 4</small>}
           {' '}<a className="cf-link" href={`#entry-requirements?provider=${providerId}`}>Open the table</a></p>}
+        {uwA.done&&!uwA.err&&Number(uwA.data?.total||0)>0&&!entry.some(r=>STUDENT_FACING_ENTRY.has(String(r.status)))&&<UniversityEntryForCountry providerId={providerId}/>}
       </Card>
     </div>
   </section>}
+
+// REQ-93 (India team 20 Nov 2026): a course with no entry rule of its own reads the university's requirement for the student's country
+// of prior education. The countries are those the university's table holds (admin_aer options, in the shared order); the rows are its
+// active university-wide rows for that country (admin_aer matrix_list), the same rows the Provider entry matrix shows.
+function UniversityEntryForCountry({providerId}){
+  const[cc,setCc]=useState(''),opts=useRead(()=>rpc('admin_aer',{p_action:'options',p_args:{provider_id:providerId}}),[providerId],!!providerId)
+  const rows=useRead(()=>rpc('admin_aer',{p_action:'matrix_list',p_args:{provider_id:providerId,scope:'university',status:'active',country:cc,page_size:5}}),[providerId,cc],!!(providerId&&cc))
+  const countries=orderAerCountries(opts.data?.countries||[])
+  if(opts.done&&(opts.err||!countries.length))return null
+  const min=r=>r.min_grade||(r.min_value!=null?String(Number(r.min_value)):'')
+  return <div className="cb-entry-country" data-cb-entry-country>
+    <label><small className="cb-label">University requirement for a student from</small>
+      <select className="fv-input" value={cc} onChange={e=>setCc(e.target.value)} aria-label="Student's education country" data-cb-entry-country-pick><option value="">Choose a country…</option>{countries.map(c=><option key={c.code} value={c.code}>{c.name}</option>)}</select></label>
+    {cc&&(!rows.done?<small>Loading…</small>:rows.err?<small className="cb-empty">Could not read the table.</small>:!(rows.data?.rows||[]).length?<p className="cb-empty" data-cb-entry-country-none>The university's table has no active row for this country. Contact the university.</p>:
+      <ul className="cb-list" data-cb-entry-country-rows>{(rows.data.rows||[]).map(r=><li key={r.id}><span>{r.qualification||r.level_name||'Any qualification'}</span><b>{min(r)||'Case by case'}{r.scale?` (${String(r.scale).replace(/_/g,' ')})`:''}</b></li>)}</ul>)}
+  </div>}
 
 export function ProviderCorrelated({data,rank=0}){
   const reader=Number(rank)>=1,providerId=data?.id // v2.16.47: every StudySearch role reads (s712)

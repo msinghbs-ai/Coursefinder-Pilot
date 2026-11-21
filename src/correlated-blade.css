@@ -41,3 +41,7 @@
 .m-drawer-head .cb-preview .cb-preview-btn{width:auto;height:auto;min-height:24px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;overflow:visible;padding:3px 10px;color:var(--cf-slate-600)}
 .m-drawer-head .cb-preview .cb-preview-btn.is-on{color:var(--cf-white);background:var(--cf-slate-900);border-color:var(--cf-slate-900)}
 .show-all-toggle{justify-self:start;align-self:flex-start;margin-top:4px}
+
+/* REQ-93: the university requirement for one student country, in the course's Entry requirements card */
+.cb-entry-country{display:grid;gap:6px;margin-top:8px}
+.cb-entry-country label{display:grid;gap:4px;max-width:320px}

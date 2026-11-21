@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.502 — 21 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.80** (S1-API-Frontend-Delivery s957, India team review of 20 Nov 2026: REQ-93, REQ-96, REQ-98, REQ-104). Migration `20261122060000`: Has scholarship from the course search record in the three catalogue reads; course detail adds provider_website.
+
 ## 0.1.501 — 21 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.79** (S1-API-Frontend-Delivery s956, India team review of 20 Nov 2026: REQ-92, REQ-97, REQ-101, REQ-102, REQ-103, REQ-106, REQ-107). Migration `20261122050000` sets the full names of QILT and PRISMS in the dataset registry.

@@ -175,9 +175,11 @@ export function sortSentence(sort, direction, screen = COURSE_SCREEN) {
   if (sort === 'adapter') return `${w}, ${direction === 'desc' ? 'Not configured first' : 'Failed first'}`
   return `${w}, ${direction === 'desc' ? 'Z to A' : 'A to Z'}`
 }
-/** "Melbourne +2" with each city's state, so two cities of the same name stay apart. */
-export function citySummary(cities) {
-  const list = Array.isArray(cities) ? cities.filter(c => c && c.city) : []
+/** "Melbourne +2" with each city's state, so two cities of the same name stay apart; the chosen state's campuses first. */
+export function citySummary(cities, prefer = '') {
+  // REQ-104 (India team 20 Nov 2026): with a state chosen, the campuses in that state come first
+  const all = Array.isArray(cities) ? cities.filter(c => c && c.city) : [], p = String(prefer || '').toUpperCase()
+  const list = p ? [...all.filter(c => String(c.subdivision_code || '').toUpperCase() === p), ...all.filter(c => String(c.subdivision_code || '').toUpperCase() !== p)] : all
   const label = c => `${c.city}${c.subdivision_code ? ` (${String(c.subdivision_code).replace(/^[A-Z]{2}-/, '')})` : ''}`
   const names = [...new Set(list.map(label))]
   return { names, short: names.length ? (names.length > 1 ? `${names[0]} +${names.length - 1}` : names[0]) : '' }

@@ -49,3 +49,7 @@
 .m-drawer .rl-provider table{min-width:0;font-size:var(--cf-fs-xs)}.m-drawer .rl-provider th,.m-drawer .rl-provider td{padding:5px 6px}
 .m-drawer .rl-provider .m-link-button{font-size:var(--cf-fs-xs)}
 .m-drawer .rl-provider small{font-size:var(--cf-fs-xs);color:var(--cf-slate-500)}
+
+/* REQ-98: institution website and course page links at the top of the course detail */
+.ds-links{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0;font-size:var(--cf-fs-sm)}
+.ds-links a{display:inline-flex;align-items:center;gap:4px}

@@ -2,7 +2,7 @@
 // One entry for every filter on the six screens (Layer 4 Review, Courses, Providers, Entry requirements, English, Scholarships) and one for every
 // badge or pill: the screen, its label, what it looks at in plain words, when to use it and who sees it. Reviewed every release with the guide
 // (FILTER_REFERENCE_REVIEWED_FOR must equal UI_VERSION); the contract test (spec s931) fails when a filter on a screen has no entry.
-export const FILTER_REFERENCE_REVIEWED_FOR = '2.16.79'
+export const FILTER_REFERENCE_REVIEWED_FOR = '2.16.80'
 
 const V = 'Viewer and above', C = 'Curator and above'
 const e = (screen, label, looks, when, roles = V, id = '') => ({ screen, label, looks, when, roles, id })
@@ -40,7 +40,7 @@ export const FILTER_REFERENCE = [
   e('Courses', 'Study load', 'Full-time or part-time load', 'A student needs full-time study'),
   e('Courses', 'Empty reason', 'Why a course field is blank, so a blank is not read as "no requirement": not published by the provider, not on the register, online only, waiting to be read, source unavailable. The filter shows the same note when opened', 'You want to know why many courses miss a value'),
   e('Courses', 'International students', 'Whether international students may enrol', 'You look at courses open to international students'),
-  e('Courses', 'Has scholarship', 'Whether a scholarship is linked to the course', 'A student asks about scholarships'),
+  e('Courses', 'Has scholarship', 'Whether a published scholarship is linked to the course: the same answer as the course detail and the website', 'A student asks about scholarships'),
   e('Courses', 'Minimum completeness', 'Courses at or above a completeness score', 'You want well-filled courses only'),
   e('Courses', 'Freshness', 'How recently the course was checked', 'You look for courses not checked for a while'),
   e('Courses', 'Status', 'Active, or not active', 'You look for archived or withdrawn records'),
