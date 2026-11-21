@@ -35,15 +35,17 @@ test('search, course, courses and the scholarship actions carry the v3 additions
     'report(p_body)', 'report_status(p_flag_ids)', 'sync(p_cursor, p_full, p_entities, p_page_size)', 'export_page(p_entity, p_page)']) expect(M).toContain(`$$ select public.zoho_v2_${a} $$`)
 })
 
-test('zoho-api-v3 is zoho-api-v2 with the v3 function names: same keys, rate limit and log, every v2 action, no release refusal', () => {
+test('zoho-api-v3 is zoho-api-v2 with the v3 function names: its own keys and log (s935), the same rate limit, every v2 action, no release refusal', () => {
   const norm = (s) => s.slice(s.indexOf('import "jsr:')).split('\n')
   const a = norm(V2), b = norm(V3)
   const changed = b.filter((l) => !a.includes(l))
   // only the lines that name a v3 function, the version label, the log label, edu_country and the linked-course paging differ
-  expect(changed.length).toBeLessThanOrEqual(23)
-  for (const l of changed) expect(l).toMatch(/zoho_v3_|zoho-v3|v3:\$\{action\}|edu_country|zoho_api_v3_error|"destination"\]|ISM-1278/)
-  expect(V3).toContain('svc.rpc("zoho_v2_auth"'); expect(V3).toContain('svc.rpc("zoho_v2_rate"'); expect(V3).toContain('svc.rpc("zoho_v2_log"')
-  expect(V3).toContain('p_action: action ? `v3:${action}` : action')
+  expect(changed.length).toBeLessThanOrEqual(24)
+  // s935 (Platform Admin 21 Nov 2026 13:11): v3 signs in and logs with its own (consumer, version) key (api_key_auth_v1, api_request_log_v1)
+  for (const l of changed) expect(l).toMatch(/zoho_v3_|zoho-v3|api_key_auth_v1|api_request_log_v1|edu_country|zoho_api_v3_error|"destination"\]|ISM-1278/)
+  expect(V3).toContain('svc.schema("pipeline").rpc("api_key_auth_v1", { p_platform: "zoho", p_version: "v3",'); expect(V3).toContain('svc.rpc("zoho_v2_rate"')
+  expect(V3).toContain('svc.schema("pipeline").rpc("api_request_log_v1", { p_platform: "zoho", p_version: "v3", p_key_name: keyName, p_action: action,')
+  expect(V3).not.toMatch(/svc\.rpc\("zoho_v2_(auth|log)"/)
   // 17 Nov 2026 (roadmap schema pack, RM0E; Zoho v3 additive changes merge on green): v3 has the v2 actions plus destination
   expect(V3.match(/const ACTIONS = \[[^\]]+\]/)[0]).toBe(V2.match(/const ACTIONS = \[[^\]]+\]/)[0].replace('"report_status"]', '"report_status", "destination"]'))
   expect(V3).not.toMatch(/NOT_RELEASED|zoho_v3_call/)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.500 — 21 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.78** (S1-RM-Design s935): Settings › API usage reads every API version and key from the database (`pipeline.api_versions`, `security.api_usage_versions_v1`); Website API v3 and Zoho API v3 sign in and log with their own (consumer, version) keys (`pipeline.api_key_auth_v1`, `pipeline.api_request_log_v1`); standing rule Self-Sustaining API & Key Governance.
+
 ## 0.1.499 — 21 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.77** (S1-Impl-Layer4-Human-UI-Guide s932, found in the signed-in live check of v2.16.76): the description queue is named by its part when no part is chosen (Course description when only course descriptions wait). No migration.

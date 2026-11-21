@@ -1,4 +1,4 @@
-// CF-247 (16 Oct 2026): Operations › API usage — the console for the API version URLs (zoho-api-v2, website-api-v2). Platform Admin 14:31:
+// CF-247 (16 Oct 2026): Operations › API usage — the console for every consumer API version (s935, 21 Nov 2026: read from the database for v1, v2, v3 and later). Platform Admin 14:31:
 // "Create me a ui to check stats on Both APIs with relevant metrics/API calls or statistics, success & failure, last login, full sync, delta
 // sync, bandwidth, load size etc. be able to rotate their keys. and on Demand fresh statistics by pressing a button, otherwise get refresh
 // daily basis."
@@ -13,13 +13,28 @@ import{fmtNumber,fmtBytes,fmtPercent,fmtRelative}from'./lib/format.js'
 import{plainError}from'./lib/errors'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
-const PLATFORMS=[{key:'zoho',label:'Zoho API v2',url:'zoho-api-v2'},{key:'website',label:'Website API v2',url:'website-api-v2'}]
 const PERIODS=[{key:'24h',label:'24 hours'},{key:'7d',label:'7 days'},{key:'30d',label:'30 days'}]
 const ms=v=>v==null?'—':`${fmtNumber(v)} ms`
 const dur=s=>s==null?'—':s<120?`${fmtNumber(s)} s`:`${fmtNumber(Math.round(s/60))} min`
 const sum=(rows,k)=>rows.reduce((a,r)=>a+(Number(r?.[k])||0),0)
 const EVENT={rotated:'Rotated',switched_off:'Switched off',switched_on:'Switched on',previous_ended:'Old key ended'}
 
+// s935 (Platform Admin 21 Nov 2026 13:11): the versions and keys come from the database (admin_api_usage › versions, security.api_usage_versions_v1): every
+// registered consumer API version (v1, v2, v3 and any later one) and every key of its key store, with live usage. Nothing about a version is written here.
+export const KEY_STATUS={active:['success','Active'],rotating:['warning','Rotating / Grace'],not_issued:['neutral','Not issued'],revoked:['neutral','Revoked'],other_version:['warning','Earlier version\'s key used here']}
+/** The versions to show: the database's list, or (an older read without it) the versions the keys name. Never a list written in the code. */
+export function versionsOf(d){
+ if(Array.isArray(d?.versions))return d.versions
+ const m=new Map();for(const k of d?.keys||[]){const id=`${k.platform} ${k.api_version}`;if(!m.has(id))m.set(id,{platform:k.platform,api_version:k.api_version,label:`${k.platform==='zoho'?'Zoho':'Website'} API ${k.api_version}`,endpoints:[],status:'active',frozen:false,logged:true,keys:[]})
+  m.get(id).keys.push({key_name:k.key_name,consumer:k.consumer,status:k.enabled?(k.previous_valid_until?'rotating':'active'):'revoked',enabled:k.enabled,rotatable:true,masked:k.key_hint?`…${k.key_hint}`:null,created_at:k.created_at,rotated_at:k.rotated_at,previous_valid_until:k.previous_valid_until,last_used_at:k.last_used_at,stats:k.stats})}
+ return[...m.values()]
+}
+export function versionTotals(v,period){
+ const st=(v.keys||[]).map(k=>k.stats?.[period]).filter(Boolean)
+ const calls=sum(st,'calls'),ok=st.reduce((a,x)=>a+(Number(x.ok)||0),0),bad=st.reduce((a,x)=>a+(Number(x.client_errors)||0)+(Number(x.server_errors)||0),0)
+ const p95=st.map(x=>x.p95_ms).filter(x=>x!=null).map(Number),last=(v.keys||[]).map(k=>k.last_used_at||k.stats?.[period]?.last_call_at).filter(Boolean).sort().pop()||null
+ return{calls,ok,bad,errorRate:calls?Math.round(1000*bad/calls)/10:null,p95:p95.length?Math.max(...p95):null,last,on:(v.keys||[]).filter(k=>k.enabled&&k.status!=='other_version').length,total:(v.keys||[]).filter(k=>k.status!=='other_version').length}
+}
 export function platformTotals(keys,period){
  const st=keys.map(k=>k.stats?.[period]).filter(Boolean)
  const calls=sum(st,'calls'),ok=sum(st,'ok')
@@ -73,16 +88,26 @@ export default function ApiUsagePanel({onError}){
     </div>
    </header>
    <p className="l3v-note cf-api-asof"><Clock size={13}/> {ref?<>Statistics as of <strong>{fmtDateTime(ref.at)}</strong> ({ref.trigger==='on_demand'?`refreshed on demand${ref.by?` by ${ref.by}`:''}`:'daily refresh'}, {fmtRelative(ref.at)}). They refresh every day at about 00:20 Melbourne time, or now with the button.</>:'Statistics have not been built yet: press Refresh statistics now.'} Calls to the older URLs (Zoho v1, and the website through wix-course-api) are not logged here.</p>
-   <div className="cf-api-platforms">
-    {PLATFORMS.map(p=>{const ks=keys.filter(k=>k.platform===p.key),t=platformTotals(ks,period);return <div key={p.key} className="cf-api-platform" data-platform={p.key}>
-     <h4>{p.label} <small><code>{p.url}</code> · keys on: {t.on} of {t.total}</small></h4>
+   <div className="cf-api-platforms" data-api-versions>
+    {versionsOf(d).map(v=>{const t=versionTotals(v,period),pl=PERIODS.find(x=>x.key===period).label;return <div key={`${v.platform}-${v.api_version}`} className="cf-api-platform" data-platform={v.platform} data-version={v.api_version}>
+     <h4>{v.label} <small>{(v.endpoints||[]).map(e=><code key={e}>{e}</code>)} · keys on: {t.on} of {t.total}{v.frozen?' · frozen (G3)':''}{v.registered===false?' · not registered':''}{v.status==='retired'?' · retired':''}</small></h4>
      <div className="cf-metric-grid">
-      <Metric label={`Calls (${PERIODS.find(x=>x.key===period).label})`} value={fmtNumber(t.calls)}/>
-      <Metric label="Success rate" value={t.success==null?'—':fmtPercent(t.success)} tone={t.success!=null&&t.success<95?'warning':'neutral'}/>
-      <Metric label="Failures" value={fmtNumber(t.failures)} tone={t.failures?'warning':'neutral'}/>
-      <Metric label="Bandwidth sent" value={fmtBytes(t.bytes)}/>
-      <Metric label="Last call" value={t.last?fmtRelative(t.last):'Never'}/>
-     </div></div>})}
+      <Metric label={`Calls (${pl})`} value={v.logged===false?'Not logged':fmtNumber(t.calls)}/>
+      <Metric label="Error rate (4xx / 5xx)" value={t.errorRate==null?'—':fmtPercent(t.errorRate)} tone={t.errorRate!=null&&t.errorRate>5?'warning':'neutral'}/>
+      <Metric label="95% within" value={ms(t.p95)}/>
+      <Metric label="Last call" value={t.last?fmtRelative(t.last):v.logged===false?'Not logged':'Never'}/>
+     </div>
+     {(v.keys||[]).length===0?<EmptyInline text="No key for this version."/>:<div className="dense-table-wrap"><table className="dense-table cf-api-version-keys"><thead><tr><th>Key</th><th>Status</th><th>Created</th><th>Rotated</th><th>Last used</th><th>Calls 24 h / 7 d / 30 d</th><th>2xx / 4xx / 5xx ({pl})</th><th>Error rate</th><th>95% within</th>{manage&&<th></th>}</tr></thead>
+      <tbody>{v.keys.map(k=>{const st=k.stats||{},s=st[period]||{},[tone,label]=KEY_STATUS[k.status]||['neutral',k.status],full=keys.find(x=>x.key_name===k.key_name);return <tr key={k.key_name} data-version-key={k.key_name} data-key-status={k.status}>
+       <td><code>{k.key_name}</code><div className="cf-api-sub">{k.consumer}{k.masked?<> · <code>{k.masked}</code></>:''}</div></td>
+       <td><StatusChip tone={tone} label={label}/>{k.status==='rotating'&&k.previous_valid_until&&<div className="cf-api-sub">{k.shares_with?`${k.shares_with} also works here`:'Old key works'} until {fmtDateTime(k.previous_valid_until)}{k.issued===false?' · rotate to issue its own key':''}</div>}{k.status==='not_issued'&&<div className="cf-api-sub">Rotate to issue it (shown once)</div>}</td>
+       <td>{k.created_at?fmtDateTime(k.created_at):'—'}</td><td>{k.rotated_at?fmtDateTime(k.rotated_at):'Never'}</td><td>{k.last_used_at?fmtDateTime(k.last_used_at):v.logged===false?'Not logged':'Never'}</td>
+       <td>{v.logged===false?'Not logged':`${fmtNumber(st['24h']?.calls||0)} / ${fmtNumber(st['7d']?.calls||0)} / ${fmtNumber(st['30d']?.calls||0)}`}</td>
+       <td>{fmtNumber(s.ok||0)} / {fmtNumber(s.client_errors||0)} / {fmtNumber(s.server_errors||0)}</td>
+       <td>{s.error_rate==null?'—':fmtPercent(Math.round(1000*s.error_rate)/10)}</td><td>{ms(s.p95_ms)}</td>
+       {manage&&<td className="cf-api-key-actions">{k.rotatable&&full&&<><button className="m-secondary compact" onClick={()=>setDialog({mode:'rotate',k:full})}><KeyRound size={13}/> {k.issued===false?'Issue key':'Rotate'}</button><button className="m-secondary compact" onClick={()=>setDialog({mode:'switch',k:full})}><Power size={13}/> {full.enabled?'Switch off':'Switch on'}</button></>}</td>}
+      </tr>})}</tbody></table></div>}
+    </div>})}
    </div>
   </section>
 

@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.77'
-export const PACKAGE_VERSION='0.1.499'
+export const UI_VERSION='2.16.78'
+export const PACKAGE_VERSION='0.1.500'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'21 Nov 2026',
-  title:'Layer 4: the description queue named by what it holds',
+  title:'API usage for every version and key',
   changes:[
-
+    'Settings › API usage shows one card for every API version the database holds: Website and Zoho v1, v2 and v3, and any later version as soon as it is registered or used. Nothing about a version is written into the screen.',
+    'Each card lists its keys, one per consumer and version: status (Active, Rotating / Grace, Not issued, Revoked), the masked key, created, rotated and last used, calls in 24 hours, 7 days and 30 days, 2xx / 4xx / 5xx, error rate and the 95% time.',
+    'Website API v3 and Zoho API v3 have their own keys. Issue key shows a v3 key once; until it is issued the website v2 key keeps working on v3 for 14 days (setting api.new_key_bridge_days), so the website is not interrupted.'
   ],
-  bugFixes:[
-    'Layer 4: when only course descriptions wait, Module / Field and the rail said University description. The queue is now named by what it holds: Course description, University description, or Course and university descriptions.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

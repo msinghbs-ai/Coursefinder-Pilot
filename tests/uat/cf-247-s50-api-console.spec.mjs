@@ -62,7 +62,7 @@ test.describe('mocked browser', () => {
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_api_usage_refresh', r => { refreshed++; return r.fulfill({ json: { at: '2026-10-16T03:20:00Z', trigger: 'on_demand' } }) })
     await page.goto('/#api-usage')
     await expect(page.locator('.cf-api-asof')).toContainText('Statistics as of')
-    await expect(page.locator('.cf-api-platform[data-platform="zoho"]')).toContainText('96.0%')
+    await expect(page.locator('.cf-api-platform[data-platform="zoho"]')).toContainText('4.0%')  // s935 (Platform Admin 21 Nov 2026 13:11): each version card shows its error rate (4xx / 5xx), not the success rate
     await expect(page.locator('.cf-api-platform[data-platform="website"]')).toContainText('Never')
     const row = page.locator('.cf-api-keys tr[data-key="zoho_crm_sync_v2"]')
     await expect(row).toContainText('5 MB')
