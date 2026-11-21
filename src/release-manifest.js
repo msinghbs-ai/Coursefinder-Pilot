@@ -1,17 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.81'
-export const PACKAGE_VERSION='0.1.503'
+export const UI_VERSION='2.16.82'
+export const PACKAGE_VERSION='0.1.504'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'22 Nov 2026',
-  title:'Study level grouped: Pathway, Vocational, Undergraduate, Postgraduate',
+  title:'Scholarship values agree with their notes; Study level in one page',
   changes:[
-    'Courses and Entry requirements › Study level: every level in one list, under Pathway, Vocational, Undergraduate, Postgraduate and Other, with no codes and no second page. A label a provider publishes (for example Masters Degree (Coursework)) sits under the group of the level of the same name.'
+    'Scholarships: a value published as a range (for example 10% to 100% of tuition fees) is held as the upper figure, marked up to, so value and note agree; the last three text-only values are read from their notes.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Courses › Study level still listed ten levels a page: the browser now asks for every level, so all groups show in one list.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

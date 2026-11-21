@@ -204,7 +204,7 @@ export const api = {
     country_code: country || null,
     subdivision_code: subdivision || null,
     query: query || null,
-    limit: Math.min(Math.max(Number(limit)||10,1),10),
+    limit: Math.min(Math.max(Number(limit)||10,1),kind==='level'?100:10), // REQ-100 (s958): the study levels come in one page; the server caps the same way
     offset: Math.max(Number(offset)||0,0),
   }),
   courseDetail: courseId => adminRead('course_detail', { id: courseId }),
