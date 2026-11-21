@@ -83,7 +83,7 @@ Deno.serve(async (req: Request) => {
     const code = (o.error && typeof o.error === "object") ? String((o.error as Json).code || "") : null;
     if (svc) {
       try {
-        await svc.schema("pipeline").rpc("api_request_log_v1", { p_platform: "zoho", p_version: "v3", p_key_name: keyName, p_action: action, p_status: status, p_elapsed_ms: Math.round(performance.now() - started),
+        await svc.rpc("api_request_log_v1", { p_platform: "zoho", p_version: "v3", p_key_name: keyName, p_action: action, p_status: status, p_elapsed_ms: Math.round(performance.now() - started),
           p_items: items, p_bytes: text.length, p_error_code: code || null, p_request_id: requestId });
       } catch { /* logging never fails a request */ }
     }
@@ -100,7 +100,7 @@ Deno.serve(async (req: Request) => {
 
   const supplied = token(req, body);
   if (!supplied || supplied.length > 512) return fail(401, "AUTHENTICATION_REQUIRED");
-  const { data: who, error: authError } = await svc.schema("pipeline").rpc("api_key_auth_v1", { p_platform: "zoho", p_version: "v3", p_token_sha256: await sha256Hex(supplied) });  // s935: v3 signs in with its own (consumer, version) key
+  const { data: who, error: authError } = await svc.rpc("api_key_auth_v1", { p_platform: "zoho", p_version: "v3", p_token_sha256: await sha256Hex(supplied) });  // s935: v3 signs in with its own (consumer, version) key; s951: through the public entry point (the gateway serves only public)
   if (authError) return fail(503, "SERVICE_UNAVAILABLE");
   if (!who || typeof who !== "object") return fail(401, "AUTHENTICATION_REQUIRED");
   const id = who as Json;

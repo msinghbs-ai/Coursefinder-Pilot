@@ -37,8 +37,10 @@ test('s935 keys: one per (consumer, version); v3 keys start not issued, the webs
 
 test('s935 v3 endpoints sign in and log by (consumer, version); v1 and v2 keep their frozen sign-in', () => {
   for (const [src, p] of [[W3, 'website'], [Z3, 'zoho']]) {
-    expect(src).toContain(`svc.schema("pipeline").rpc("api_key_auth_v1", { p_platform: "${p}", p_version: "v3",`)
-    expect(src).toContain(`svc.schema("pipeline").rpc("api_request_log_v1", { p_platform: "${p}", p_version: "v3",`)
+    expect(src).toContain(`svc.rpc("api_key_auth_v1", { p_platform: "${p}", p_version: "v3",`)
+    expect(src).toContain(`svc.rpc("api_request_log_v1", { p_platform: "${p}", p_version: "v3",`)
+    // s951 (P0, 21 Nov 2026): the API gateway serves only the public schema; a call into pipeline answered 406 and every v3 call 503
+    expect(src).not.toMatch(/\.schema\("(pipeline|security|private)"\)\.rpc\(/)
   }
   expect(fs.readFileSync('supabase/functions/website-api-v2/index.ts', 'utf8')).toContain('svc.rpc("website_api_v2_auth"')
   expect(fs.readFileSync('supabase/functions/zoho-api-v2/index.ts', 'utf8')).toContain('svc.rpc("zoho_v2_auth"')
