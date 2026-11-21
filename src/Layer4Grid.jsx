@@ -16,6 +16,7 @@ import Layer4GroupDecide from'./Layer4GroupDecide'
 import Layer4Clusters from'./Layer4Clusters' // v2.16.43: clusters by kind, university, reason and quote
 import AerRuleChecks from'./AerRuleChecks' // S831: the rule checks of an AER course entry read
 import{CountryFlag}from'./ProviderListParts' // s767: the drawn flags of Catalogue › Providers
+import{countryPairs,useLookups}from'./lib/lookups.js' // s930: the country pills from the database
 
 const call=async(fn,args)=>{const{data,error}=await supabase.rpc(fn,args);if(error)throw new Error(error.message);return data}
 const QUOTE_CAP=4 // the review column shows the first quotes; the table below lists every row
@@ -72,13 +73,15 @@ export function Drawer({target,kinds,targetDays,renderItem,onClose,onDecided,nav
   </aside></>}
 
 // s767: the pills offered; the server checks the same values (public.admin_layer4_grid_read_v1). University covers university, university college and wānanga; VET / College covers TAFE / polytechnic and private VET.
-const COUNTRY_PILLS=[['','All'],['AU','Australia (AU)'],['NZ','New Zealand (NZ)'],['CA','Canada (CA)']]
+// s930 (S1-Dynamic-Lookups): the country pills are the live target countries, labelled name (code), with All first
+const countryPills=lk=>[['','All'],...countryPairs(lk,{label:c=>`${c.name} (${c.code})`})]
 const TYPE_PILLS=[['','All'],['university','University'],['vet_college','VET / College'],['school','School'],['hei','HEI']]
 export default function Layer4Grid({kinds={},targetDays=0,rank,renderItem,onDecided,onError}){
   const[vs,setVs]=useState(null),[viewId,setViewId]=useState(''),[kind,setKind]=useState(''),[why,setWhy]=useState(''),[q,setQ]=useState(''),[sort,setSort]=useState('oldest')
   const[cols,setCols]=useState(DEFAULT_COLS),[offset,setOffset]=useState(0),[data,setData]=useState(null),[loading,setLoading]=useState(false),[err,setErr]=useState('')
   const[picker,setPicker]=useState(false),[open,setOpen]=useState(null),[saving,setSaving]=useState(''),[name,setName]=useState(''),[note,setNote]=useState('')
   const[cty,setCty]=useState(''),[ptype,setPtype]=useState('') // v2.16.53 (s767, Platform Admin 19 Nov 2026 16:18): Country and Provider type pills beside the kind and reason filters
+  const lk=useLookups(),COUNTRY_PILLS=countryPills(lk) // s930: live target countries
   const[grouped,setGrouped]=useState(false) // v2.16.40: Grouped decisions (Platform Admin 18 Nov 2026 13:02)
   const[clustered,setClustered]=useState(false) // v2.16.43: Clusters (Platform Admin 18 Nov 2026 19:20)
   const[cohort,setCohort]=useState({}) // s767: waiting items for each pill with every other filter kept; read with an offset past the end so no rows travel
@@ -101,7 +104,7 @@ export default function Layer4Grid({kinds={},targetDays=0,rank,renderItem,onDeci
     const run=async()=>{while(live&&todo.length){const[c,t]=todo.shift();try{const d=await call('admin_layer4_grid_read_v1',{p_args:{kind,why_contains:why||undefined,q:q||undefined,country:c||undefined,provider_type:t||undefined,sort,offset:100000000}});if(live)setCohort(m=>({...m,[countKey(c,t)]:Number(d.total)}))}catch{/* a count that fails shows a dash */}}}
     run();run()
     return()=>{live=false}
-  },[data,kind,why,q,cty,ptype])
+  },[data,kind,why,q,cty,ptype,lk])
   const cohortRef=useRef({});cohortRef.current=cohort
   const countOf=(c,t)=>{const n=cohort[countKey(c,t)];return n===undefined?'…':fmtNumber(n)}
   // s768: J and K move to the next and previous waiting item of this page (the first of the next page past the end); they never decide anything

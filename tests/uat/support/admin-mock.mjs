@@ -2,6 +2,7 @@
 // Only for the local dev server (VITE_SUPABASE_URL=https://example.supabase.co); nothing reaches a real backend.
 import * as F from './admin-fixtures.mjs'
 import { aiState } from './ai-overview-fixture.mjs'
+import { LOOKUPS } from './lookups-mock.mjs' // s930: the live lookups every admin screen reads
 
 // CF-247 decision W33 (30 Oct 2026): public.admin_layer23('universities_page') as the server answers it: the filters, the name search and the
 // order (by name) applied to every row, one page answered with the counts and the country and state choices; mode 'ticks' answers every
@@ -57,6 +58,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
   const calls = []; page.l3calls = calls
   const ai = aiState({}, { rank })
   const rpc = {
+    admin_lookups_v1: LOOKUPS,
     // v2.15.319/320: Platform health › Work queues and its 15-minute stats
     admin_course_sources: { countries: [{ country_code: 'AU', enabled: true, reason: 'Platform finds course sources itself' }, { country_code: 'CA', enabled: true, reason: 'Platform finds course sources itself' }],
       paths: [{ id: 1, kind: 'list_path', value: '/courses', sort: 10, enabled: true }, { id: 12, kind: 'folder_word', value: 'programmes?', sort: 20, enabled: true }],

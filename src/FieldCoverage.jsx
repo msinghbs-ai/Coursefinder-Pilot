@@ -23,12 +23,12 @@ import{Button,Empty,Loading,StatusChip}from'./ui-kit'
 import{fmtNumber,fmtDateTime}from'./lib/format.js'
 import{plainError}from'./lib/errors'
 import{hrefFor}from'./nav-map'
+import{countryName,targetCountries,useLookups}from'./lib/lookups.js' // s930: the country order from the database
 import{ProviderDescriptionStatus,readPromptState}from'./ProviderDescriptionPrompt' // CF-247 F-PDESC (11 Nov 2026): Run & Validate retired; status, Fill description and the prompt
 import SnapshotStamp from'./SnapshotStamp' // CF-247 W35: every country's figures come from a cached snapshot; one university's are read live
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_field_coverage',{p_action:action,p_args:args||{}});if(error)throw error;return data}
-const COUNTRY={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 export const READER_LABEL={register:'Register',coverage:'Coverage pipeline',enrich:'Enrich fields (standing queue)',none:'No reader yet'}
 const STATE_LABEL={queued:'Waiting',waiting:'Waiting',ai:'With AI',leased:'With AI',filled:'Filled',review:'For review',skipped:'Not stated',failed:'Failed'}
 const pct=(n,t)=>t?Math.round(n/t*1000)/10:null
@@ -58,7 +58,8 @@ export default function FieldCoverage({rank=0,country='',provider=null,onError,p
 
 function FieldMatrix({data,rank,busy,onReload,onSaved,onError}){
   const reg=data.register||[]
-  const countries=useMemo(()=>{const s=new Set([...(data.courses_by_country||[]),...(data.providers_by_country||[])].map(r=>r.country));return['AU','NZ','CA'].filter(c=>s.has(c)).concat([...s].filter(c=>!['AU','NZ','CA'].includes(c)).sort())},[data])
+  const lk=useLookups(),target=targetCountries(lk).map(c=>c.code) // s930 (S1-Dynamic-Lookups): target countries first, in the database's order
+  const countries=useMemo(()=>{const s=new Set([...(data.courses_by_country||[]),...(data.providers_by_country||[])].map(r=>r.country));return target.filter(c=>s.has(c)).concat([...s].filter(c=>!target.includes(c)).sort())},[data,target.join()])
   const cell=useMemo(()=>{const m={};for(const r of[...(data.courses_by_country||[]),...(data.providers_by_country||[])]){m[`${r.field}|${r.country}`]=r}return m},[data])
   const all=f=>{const rows=countries.map(c=>cell[`${f}|${c}`]).filter(Boolean);const t=rows.reduce((a,r)=>a+Number(r.total||0),0),n=rows.reduce((a,r)=>a+Number(r.filled||0),0);return{t,n}}
   const[edit,setEdit]=useState(null),[reason,setReason]=useState(''),[saving,setSaving]=useState(false)
@@ -70,7 +71,7 @@ function FieldMatrix({data,rank,busy,onReload,onSaved,onError}){
     <p className="sd-desc">Course figures are recounted every hour{data.computed_at?` (last ${fmtDateTime(data.computed_at)})`:''}; provider figures are {data.snapshot?.source==='snapshot'?`counted every ${data.snapshot.refresh_every_minutes} minutes`:'counted when this opens'}. Below target is marked. Select a field in the attribute table further down to list its courses.</p>
     <SnapshotStamp meta={data.snapshot} label="Provider figures counted" what="field-coverage"/>
     {groups.map(([level,title])=><div className="dq-table-wrap" key={level}><table className="dq-table cc-table fc-matrix" data-field-matrix={level}>
-      <thead><tr><th>{title}</th><th>Filled by</th>{countries.map(c=><th key={c} className="num">{COUNTRY[c]||c}</th>)}<th className="num">All</th><th className="num">Target</th></tr></thead>
+      <thead><tr><th>{title}</th><th>Filled by</th>{countries.map(c=><th key={c} className="num">{countryName(lk,c)}</th>)}<th className="num">All</th><th className="num">Target</th></tr></thead>
       <tbody>{reg.filter(f=>f.level===level).map(f=>{const a=all(f.field),ap=pct(a.n,a.t);return <tr key={f.field} data-field={f.field}>
         <td><strong>{f.label}</strong><small>{f.group}</small></td>
         <td><small title={f.fills}>{READER_LABEL[f.reader]||f.reader}</small><small className="fc-fills">{f.fills}</small></td>
@@ -144,7 +145,7 @@ function StalledFields({scope,onChanged,onError,readOnly=false,focus=''}){
   useEffect(()=>{load()},[scope.country])
   const act=async(x,action)=>{const k=`${x.country}|${x.field}|${action}`;setBusy(k);setNote('')
     try{const r=await call(action,{country:x.country,field:x.field,reason:reason.trim()})
-      setNote(`${x.label} (${COUNTRY[x.country]||x.country}): ${action==='release_and_fill'?`${fmtNumber(r?.released||0)} hold(s) released; `:''}task started with ${fmtNumber(r?.items||0)} item(s). Progress is in Task manager and Layer 2 › Enrich fields.`);setReason('');load();onChanged?.()}
+      setNote(`${x.label} (${countryName(null,x.country)}): ${action==='release_and_fill'?`${fmtNumber(r?.released||0)} hold(s) released; `:''}task started with ${fmtNumber(r?.items||0)} item(s). Progress is in Task manager and Layer 2 › Enrich fields.`);setReason('');load();onChanged?.()}
     catch(e){onError?.(errText(e))}finally{setBusy('')}}
   const items=d?.items||[]
   const flat=items.filter(x=>x.reason==='flat').length
@@ -156,7 +157,7 @@ function StalledFields({scope,onChanged,onError,readOnly=false,focus=''}){
     {note&&<p className="sd-desc" role="status">{note}</p>}
     <div className="dq-table-wrap"><table className="dq-table"><thead><tr><th>Country</th><th>Field</th><th className="num">Now</th><th className="num">{fmtNumber(d.days)} days ago</th><th>Why</th><th>What resolves it</th><th/></tr></thead>
       <tbody>{items.map(x=>{const[rl,tone]=REASON[x.reason]||[x.reason,'neutral'];return <tr key={x.country+x.field} data-stalled={x.reason} className={focus&&focus===x.field?'fc-focus':undefined}>
-        <td>{COUNTRY[x.country]||x.country}</td>
+        <td>{countryName(null,x.country)}</td>
         <td><strong>{x.label}</strong><small><StatusChip value={x.reason} tone={tone} label={rl}/></small></td>
         <td className="num"><strong>{fmtPct(Number(x.pct))}</strong><small>target {fmtPct(Number(x.target))}{x.best_country&&x.best_country!==x.country?` · best ${x.best_country} ${fmtPct(Number(x.best_pct))}`:''}</small></td>
         <td className="num">{x.pct_ago==null?<small>no history yet</small>:<>{fmtPct(Number(x.pct_ago))}<small>{Number(x.moved)>=0?'+':''}{x.moved} points</small></>}</td>

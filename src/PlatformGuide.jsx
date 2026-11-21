@@ -6,6 +6,8 @@ import React,{useState}from'react'
 import{Archive,ArrowRight,BellRing,BookOpen,CalendarCheck,Compass,Gauge,ListChecks,ShieldCheck,Siren,Sparkles,Users,Workflow}from'lucide-react'
 import{PAGES,SECTIONS,canOpen,refusedTab,roleName}from'./nav-map'
 import{UI_VERSION,RELEASE}from'./release-manifest'
+import{useLookups}from'./lib/lookups.js' // s930: the coverage line reads the database, never written text
+import{fmtNumber}from'./lib/format.js'
 import{GUIDE_REVIEWED_FOR,ROLES,RULES,DAILY_ROUTINE,SCREENS,SIGNALS,ADMIN_DUTIES,ALERTS,SPECIALIST_TASKS,ADMISSION_PATHS,ADMISSION_WORDS,BUDGET_GATES,RETIREMENT_CRITERIA}from'./guide/platformGuide'
 
 const PARTS=[['flow','How it works',Compass],['roles','Who does what',Users],['daily','Daily routine',CalendarCheck],['screens','The screens',BookOpen],['signals','Signal → action',Siren],['tasks','Specialist tasks',ListChecks],['admission','Who admits',Workflow],['gates','Budget gates',Gauge],['retire','Retiring a component',Archive],['admin','Platform Admin duties',ShieldCheck],['alerts','Alerts',BellRing],['new','What changed',Sparkles]]
@@ -28,6 +30,13 @@ function Flow(){
   </svg>
 }
 
+// s930 (Platform Admin 21 Nov 2026, S1-Dynamic-Lookups): where the platform admits data now, read live from the database (public.admin_lookups_v1)
+export function CoverageNow(){
+  const lk=useLookups(),t=(lk.countries||[]).filter(c=>c.target)
+  if(!t.length)return null
+  return <p className="pg-meta" data-guide-coverage>Admitting data now in {t.map(c=>`${c.name} (${fmtNumber(c.providers)} providers, ${fmtNumber(c.courses)} courses)`).join(' · ')} · {fmtNumber(lk.providers?.active||0)} active providers in all. Read live from the database.</p>
+}
+
 export default function PlatformGuide({rank=1,navigate}){
   const[open,setOpen]=useState('')
   const go=(page,tab)=>navigate?.(page,tab?{tab}:{})
@@ -37,6 +46,7 @@ export default function PlatformGuide({rank=1,navigate}){
   return <div className="m-page-stack pg" data-platform-guide>
     <section className="m-panel">
       <p className="pg-lead">How operators and Platform Admins run StudySearch day to day: what each screen tells you, which numbers matter, and what to do when something turns amber or red. Step-by-step daily procedures are in the Platform Admin SOP and the Operator SOP (tabs above).</p>
+      <CoverageNow/>
       <p className="pg-meta" data-guide-version>Reviewed for v{GUIDE_REVIEWED_FOR}{GUIDE_REVIEWED_FOR!==UI_VERSION?` · this app is v${UI_VERSION}`:''}</p>
       <nav className="pg-toc" aria-label="Guide contents">{PARTS.map(([id,label,Icon])=><a key={id} href={`#platform-guide`} onClick={e=>{e.preventDefault();document.getElementById('pg-'+id)?.scrollIntoView({behavior:'smooth',block:'start'})}}><Icon size={14}/>{label}</a>)}</nav>
     </section>

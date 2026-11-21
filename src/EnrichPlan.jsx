@@ -15,10 +15,10 @@ import{Button,Empty,Loading,StatusChip,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
 import{hrefFor}from'./nav-map.js'
 import{plainError}from'./lib/errors'
+import{countryName,countryPairs,useLookups}from'./lib/lookups.js' // s930: countries from the database
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_enrich_plan',{p_action:action,p_args:args||{}});if(error)throw error;return data}
-const COUNTRY={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 const GROUP={course_search:'Finding course pages',reads:'Reading pages',central:'Central pages',scholarships:'Scholarships',other:'Other'}
 const STATUS={pending:['Waiting to start','neutral'],waiting:['Waiting for budget','warning'],running:['Running','info'],done:['Done','success'],person:['A person admits','warning'],
   skipped:['Skipped','neutral'],failed:['Failed','danger'],cancelled:['Cancelled','neutral'],stopped:['Stopped','danger'],timed_out:['Timed out','warning'],not_needed:['Not needed','neutral'],queued:['Queued','neutral'],handed_over:['Carried into Run now','info']}
@@ -80,14 +80,14 @@ function NeedsPerson({items,onOpen}){
 }
 
 function PlanList({onOpen,onError}){
-  const[country,setCountry]=useState(''),[q,setQ]=useState(''),[items,setItems]=useState(null),[offset,setOffset]=useState(0)
+  const[country,setCountry]=useState(''),[q,setQ]=useState(''),[items,setItems]=useState(null),[offset,setOffset]=useState(0),lk=useLookups()
   useEffect(()=>{setItems(null);const t=setTimeout(()=>call('list',{country,query:q.trim(),limit:50,offset}).then(r=>setItems(r?.items||[])).catch(e=>onError?.(errText(e))),q?250:0);return()=>clearTimeout(t)},[country,q,offset])
   return <Card id="layer2.plan.list" title="Universities by missing values" icon={ListChecks}
     subtitle="Every university with gaps, most missing values first (then world ranking): the order automatic plans follow. Open a plan to see its steps and estimate, and to run it now." data-plan-list>
-    <section className="cf-filterbar"><span>Country</span>{[['','All'],['AU','Australia'],['NZ','New Zealand'],['CA','Canada']].map(([k,l])=><button key={k||'all'} className={country===k?'active':''} onClick={()=>{setOffset(0);setCountry(k)}}>{l}</button>)}
+    <section className="cf-filterbar"><span>Country</span>{[['','All'],...countryPairs(lk)].map(([k,l])=><button key={k||'all'} className={country===k?'active':''} onClick={()=>{setOffset(0);setCountry(k)}}>{l}</button>)}
       <input className="au-search" type="search" value={q} onChange={e=>{setOffset(0);setQ(e.target.value)}} placeholder="Find a university" aria-label="Find a university"/></section>
     {items==null?<Loading compact/>:items.length===0?<Empty text="No university with gaps here."/>:<div className="dq-table-wrap"><table className="dq-table"><thead><tr><th>University</th><th>Country</th><th className="num">Courses</th><th className="num">Missing values</th><th className="num">Best world rank</th><th>Latest plan</th><th/></tr></thead>
-      <tbody>{items.map(x=>{const r=x.last_run,[l,t]=STATUS[r?.state]||['—','neutral'];return <tr key={x.provider_id}><td><strong>{x.name}</strong></td><td>{COUNTRY[x.country]||x.country}</td>
+      <tbody>{items.map(x=>{const r=x.last_run,[l,t]=STATUS[r?.state]||['—','neutral'];return <tr key={x.provider_id}><td><strong>{x.name}</strong></td><td>{countryName(lk,x.country)}</td>
         <td className="num">{fmtNumber(x.courses)}</td><td className="num">{fmtNumber(x.missing)}</td><td className="num">{x.best_rank?fmtNumber(x.best_rank):'—'}</td>
         <td>{r?<><StatusChip value={r.state} tone={t} label={`${r.mode==='auto'?'Automatic':'Manual'}: ${l}`}/><small>{r.step||fmtDateTime(r.finished_at||r.created_at)}</small>{r.needs_person&&<span data-plan-needs><StatusChip value="needs_person" tone="warning" label="Needs a person"/></span>}</>:<small>Not planned yet</small>}</td>
         <td><Button compact onClick={()=>onOpen(x.provider_id)}><Route size={14}/>Open plan</Button></td></tr>})}</tbody></table></div>}
@@ -115,7 +115,7 @@ function PlanPanel({pid,onClose,onRan,onError}){
   // an open Run now plan is never taken over
   const takeover=!!open&&open.mode==='auto'
   return <Card id="layer2.plan.university" title={`Plan: ${p.name}`} icon={Route} level={2}
-    subtitle={`${COUNTRY[p.country]||p.country} · ${fmtNumber(p.courses)} courses · ${fmtNumber(p.missing)} missing values. Fill missing fields starts straight away on its own track; the other steps run in order. Each says why it is needed and what it is expected to use.`}
+    subtitle={`${countryName(lk,p.country)} · ${fmtNumber(p.courses)} courses · ${fmtNumber(p.missing)} missing values. Fill missing fields starts straight away on its own track; the other steps run in order. Each says why it is needed and what it is expected to use.`}
     meta={<Button compact onClick={onClose}>Close</Button>} data-plan-panel>
     {steps.length===0?<Empty text="Nothing left that a step can fill; remaining gaps need a reader or a person."/>:<div className="dq-table-wrap"><table className="dq-table"><thead><tr><th/><th>Step</th><th>Why</th><th>Fills</th><th className="num">Firecrawl</th><th className="num">AI</th></tr></thead>
       <tbody>{steps.map((s,i)=><tr key={s.step} data-plan-step={s.step}>

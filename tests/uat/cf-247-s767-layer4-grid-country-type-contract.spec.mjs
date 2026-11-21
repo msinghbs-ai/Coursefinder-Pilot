@@ -23,7 +23,8 @@ test('the migration is md5-guarded, filters before the page is cut, and groups t
 
 test('the grid sends both filters and offers exactly the pills the Platform Admin named', () => {
   expect(G).toContain("country:cty||undefined,provider_type:ptype||undefined")
-  expect(G).toContain("[['','All'],['AU','Australia (AU)'],['NZ','New Zealand (NZ)'],['CA','Canada (CA)']]")
+  // s930 (S1-Dynamic-Lookups): the country pills are the live target countries, labelled name (code), with All first
+  expect(G).toContain("const countryPills=lk=>[['','All'],...countryPairs(lk,{label:c=>`${c.name} (${c.code})`})]")
   expect(G).toContain("[['','All'],['university','University'],['vet_college','VET / College'],['school','School'],['hei','HEI']]")
   expect(G).toContain('[kind,why,sort,cty,ptype]')
 })

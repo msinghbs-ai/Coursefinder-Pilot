@@ -16,6 +16,7 @@ import{Button,Empty,Loading,Metric,StatusChip,fmtDate,fmtNumber}from'./ui-kit'
 import{CheckLine,descriptionRules}from'./DescriptionEditAdmit'
 import{checkDescription,ruleCandidates}from'./lib/description-check.js'
 import'./human-edits.css'
+import{targetCountries,useLookups}from'./lib/lookups.js' // s930: countries from the database
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
 export const HE_FILTERS=[['open','Open'],['unacknowledged','Unacknowledged'],['due','Due for 6-month re-review'],['all','All, including released']]
@@ -25,6 +26,7 @@ const PAGE=50
 export default function HumanEditsAudit({tab,rank,onError}){
   const scope=tab==='all'?'all':'mine'
   const[filter,setFilter]=useState('open'),[entity,setEntity]=useState(''),[country,setCountry]=useState(''),[off,setOff]=useState(0)
+  const lk=useLookups() // s930: countries from the database
   const[data,setData]=useState(null),[sel,setSel]=useState([]),[busy,setBusy]=useState(''),[note,setNote]=useState(''),[err,setErr]=useState(''),[confirm,setConfirm]=useState(null),[openId,setOpenId]=useState('')
   const load=(o=off)=>{setData(null);setErr('');rpc('human_edits',{scope,filter,entity_type:entity,country,limit:PAGE,offset:o}).then(d=>{setData(d);setSel(s=>s.filter(id=>(d.items||[]).some(x=>x.id===id)))}).catch(e=>{setErr(e.message);onError?.(e.message)})}
   useEffect(()=>{setOff(0);setSel([]);load(0)},[scope,filter,entity,country])
@@ -46,7 +48,7 @@ export default function HumanEditsAudit({tab,rank,onError}){
     <div className="he-bar">
       <div className="he-pills" role="group" aria-label="Show">{HE_FILTERS.map(([k,l])=><button key={k} type="button" className={filter===k?'on':''} aria-pressed={filter===k} onClick={()=>setFilter(k)} data-he-filter={k}>{l}{k==='unacknowledged'&&Number(c.unacknowledged)?<span className="he-badge" data-he-badge="unacknowledged">{fmtNumber(c.unacknowledged)}</span>:null}{k==='due'&&Number(c.due)?<span className="he-badge" data-he-badge="due">{fmtNumber(c.due)}</span>:null}</button>)}</div>
       <select value={entity} onChange={e=>setEntity(e.target.value)} aria-label="Description" data-he-entity><option value="">University and course</option><option value="provider">University descriptions</option><option value="course">Course descriptions</option></select>
-      <select value={country} onChange={e=>setCountry(e.target.value)} aria-label="Country" data-he-country><option value="">Every country</option>{['AU','NZ','CA'].map(k=><option key={k} value={k}>{k}</option>)}</select>
+      <select value={country} onChange={e=>setCountry(e.target.value)} aria-label="Country" data-he-country><option value="">Every country</option>{targetCountries(lk).map(c=><option key={c.code} value={c.code}>{c.code}</option>)}</select>
       <Button compact onClick={()=>load(off)}>Refresh</Button>
     </div>
     <div className="he-actions" role="toolbar" aria-label="Actions on the ticked edits" data-he-actions>

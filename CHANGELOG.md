@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.497 — 21 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.75** (S1-Dynamic-Lookups s930): the Entry requirements Provider list is every active provider (was an arbitrary 300); `public.admin_lookups_v1` (countries, study levels, rolling intake years) read by Layer 4 Grid, Onboarding approvals, Enrichment plan, Description edits, Field coverage, Data quality and the Platform guide; setting `lookups.intake_years_ahead`; standing rule Dynamic Database-Driven Lookups in CLAUDE.md and AGENTS.md. Migration `20261121190000` (admin_aer md5-guarded).
+
 ## 0.1.496 — 21 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.74** (S1-Coverage-Unlock-UI-Notes s901 to s903): counsellor notes panel (closed by default) on Course detail, Entry requirements and Scholarships; Provider entry matrix filters Destination country, Source country (was Country) and Applies to; Course detail shows the university-wide entry table. Migrations `20261121100000` (admin_aer, md5-guarded), `20261121101000` (university-wide partial admission in shadow, rule aer-uniwide-partial-shadow) and `20261121102000` (on-demand cap and one coverage window, at most 20,000 Firecrawl credits).
