@@ -2,7 +2,7 @@
 // One entry for every filter on the six screens (Layer 4 Review, Courses, Providers, Entry requirements, English, Scholarships) and one for every
 // badge or pill: the screen, its label, what it looks at in plain words, when to use it and who sees it. Reviewed every release with the guide
 // (FILTER_REFERENCE_REVIEWED_FOR must equal UI_VERSION); the contract test (spec s931) fails when a filter on a screen has no entry.
-export const FILTER_REFERENCE_REVIEWED_FOR = '2.16.80'
+export const FILTER_REFERENCE_REVIEWED_FOR = '2.16.81'
 
 const V = 'Viewer and above', C = 'Curator and above'
 const e = (screen, label, looks, when, roles = V, id = '') => ({ screen, label, looks, when, roles, id })
@@ -30,7 +30,7 @@ export const FILTER_REFERENCE = [
   e('Courses', 'State / Region', 'The state, province or region of the provider', 'You look at one state or region'),
   e('Courses', 'Provider', 'One provider\'s courses (every provider, searched)', 'You look at one university\'s courses'),
   e('Courses', 'University group', 'A group such as the Group of Eight', 'You compare a group of universities'),
-  e('Courses', 'Study level', 'The level of study (Bachelor, Master, Diploma and so on)', 'A student asks for one level'),
+  e('Courses', 'Study level', 'The level of study, every level in one list under its group: Pathway, Vocational, Undergraduate, Postgraduate, Other', 'A student asks for one level'),
   e('Courses', 'Field', 'The field of study', 'A student asks for one field'),
   e('Courses', 'Delivery', 'How the course is taught (on campus, online, mixed)', 'A student needs on-campus study'),
   e('Courses', 'Has fee', 'Whether the course has a tuition fee', 'You look for courses with or without a fee'),
@@ -58,7 +58,7 @@ export const FILTER_REFERENCE = [
   e('Providers', 'Primary', 'Campuses: the main campus of each provider', 'You look at main campuses only'),
   // Entry requirements (AER)
   e('Entry requirements', 'Provider', 'One provider\'s entry rows (every active provider is listed, with its live and waiting rows)', 'A counsellor asks about one university'),
-  e('Entry requirements', 'Study level', 'The study level the row is for', 'A student applies at one level'),
+  e('Entry requirements', 'Study level', 'The study level the row is for, under the same groups as on Courses; a label the provider publishes sits under the group of the level of the same name (else As published)', 'A student applies at one level'),
   e('Entry requirements', 'Status', 'Live, waiting for your decision, replaced by a newer read, withdrawn or quarantined', 'You check what the website uses (Live)'),
   e('Entry requirements', 'Search', 'Words of the qualification, quote or course', 'You look for one qualification'),
   e('Entry requirements', 'Study destination', 'Where the university is (the countries the platform covers); was "Destination country"', 'You want Australian universities only'),

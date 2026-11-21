@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.503 — 22 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.81** (S1-API-Frontend-Delivery s958, India team review of 20 Nov 2026: REQ-100). Migration `20261122070000`: new table ref.study_level_groups; the level filter page and the entry options carry each level's group.
+
 ## 0.1.502 — 21 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.80** (S1-API-Frontend-Delivery s957, India team review of 20 Nov 2026: REQ-93, REQ-96, REQ-98, REQ-104). Migration `20261122060000`: Has scholarship from the course search record in the three catalogue reads; course detail adds provider_website.
