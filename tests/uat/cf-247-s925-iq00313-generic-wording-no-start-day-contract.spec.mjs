@@ -19,6 +19,7 @@ test('the general ECU sentence is not course-specific wording; course listings s
   const ecu = 'ithin the duration of the student visa. Semester 1 Most courses start in Semester 1 each year, usually in the last week of February | visa. Semester 1'
   expect(specific(ecu)).not.toMatch(/february/i)
   expect(specific(ecu)).not.toMatch(/semester 1 most/i)
+  expect(specific('There\'s a week of Orientation before each semester | Semester 2 A lot of our courses start in Semester 2 each year')).not.toMatch(/Semester 2/)
   expect(specific('noting that some programs are only available part time. Location Hobart Semester 1 Launceston Semester 1')).toBe('Location Hobart Semester 1 Launceston Semester 1')
   expect(specific('This course usually starts in Semester 1 (February)')).toMatch(/Semester 1/)
   expect(specific('Start date First Semester (February), Second Semester (July)')).toMatch(/July/)

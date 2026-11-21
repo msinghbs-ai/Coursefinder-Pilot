@@ -8,8 +8,8 @@
 -- backed only by general wording.
 --
 -- What changes:
---   (s925a) new security.intake_wording_specific_v1(text): the course wording without its general sentences (most / many / some / all / the majority of
---           courses, programs, degrees, units or students; usually / generally / typically / normally / in most cases / in general, unless the sentence says
+--   (s925a) new security.intake_wording_specific_v1(text): the course wording without its general sentences (most / many / some / all / several / a lot of /
+--           a number of / the majority of courses, programs, degrees, units or students; usually / generally / typically / normally / in most cases / in general, unless the sentence says
 --           "this course", "this program" and the like). Immutable, no setting (a reading rule, not an operational value).
 --   (s925b) security.intake_dates_plan_v3 (md5-guarded edit): the study periods are read from the course-specific wording only. When the period or the month is
 --           named only in general wording, no route (named period, unique month, Rule B nearest start) takes a start day: the intake takes the year of the
@@ -47,7 +47,7 @@ as $f$
   select coalesce(string_agg(t.x, ' | ' order by t.n), '')
     from regexp_split_to_table(coalesce(p_text, ''), '\s*\|\s*|[.!?;]\s+') with ordinality t(x, n)
    where btrim(t.x) <> ''
-     and not (t.x ~* '\m(most|many|some|all|the majority of|majority of)\s+(of\s+)?((our|the|its|these)\s+)?((undergraduate|postgraduate|graduate|international)\s+)?(courses|programs|programmes|degrees|units|students|study options)\M'
+     and not (t.x ~* '\m(most|many|some|all|several|a lot of|lots of|a number of|the majority of|majority of)\s+(of\s+)?((our|the|its|these)\s+)?((undergraduate|postgraduate|graduate|international)\s+)?(courses|programs|programmes|degrees|units|students|study options)\M'
               or (t.x ~* '\m(usually|generally|typically|normally|in most cases|in general)\M'
                   and t.x !~* '\mthis\s+(course|program|programme|degree|major|qualification)\M'))
 $f$;
