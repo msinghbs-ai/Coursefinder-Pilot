@@ -808,7 +808,7 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false,ra
   useEffect(()=>{if(!layoutOn||appliedServerSort.current||cl.source!=='server')return;appliedServerSort.current=true;if(cl.layout.sort&&cl.layout.sort!==sort&&(type!=='course'||cl.newSorts||!['admitted','adapter'].includes(cl.layout.sort)))setSort(cl.layout.sort);if(cl.layout.direction&&cl.layout.direction!==direction)setDirection(cl.layout.direction)},[layoutOn,cl.source,layoutScreen])
   function changeSort(k){if(!k)return;const next=sort===k?{sort:k,direction:direction==='asc'?'desc':'asc'}:{sort:k,direction:'asc'};if(sort===k)setDirection(next.direction);else{setSort(k);setDirection('asc')}if(layoutOn){appliedServerSort.current=true;cl.update(next)}}
   const hideCourseCol=k=>k==='fee_amount'&&filters.country&&String(filters.country).toUpperCase()!=='AU'
-  const courseCols=useCourseTableColumns(type==='course'?cl.layout:{columns:[]},cl.limits,{navigate,hide:hideCourseCol,newSorts:cl.newSorts})
+  const courseCols=useCourseTableColumns(type==='course'?cl.layout:{columns:[]},cl.limits,{navigate,hide:hideCourseCol,newSorts:cl.newSorts,prefer:filters.subdivision||''}) // REQ-104: the chosen state's campuses first
   // recovery switch: with the two new sorts off, a list sorted on either goes back to Course
   useEffect(()=>{if(layoutOn&&type==='course'&&!cl.newSorts&&['admitted','adapter'].includes(sort)){setSort('course');setDirection('asc')}},[layoutOn,cl.newSorts,sort])
   // v2.15.215 (Platform Admin, 7 Oct 2026 20:28): an Adapter column beside the provider name, Platform Admin only. Opens Layer 2 › Adapter builder

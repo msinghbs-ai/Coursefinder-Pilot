@@ -1,23 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.79'
-export const PACKAGE_VERSION='0.1.501'
+export const UI_VERSION='2.16.80'
+export const PACKAGE_VERSION='0.1.502'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'21 Nov 2026',
-  title:'India team feedback: clearer filters, durations in years, full statistics names',
+  title:'India team feedback: course detail links and entry, Has scholarship agrees with the detail',
   changes:[
-    'Courses, Providers, Scholarships and Entry requirements: the destination filter reads Study destination; on Entry requirements the source filter reads Student\'s education country.',
-    'Course detail and the Course catalogue: durations read in years, with the stored weeks or months in brackets (3 years (156 weeks)).',
-    'Provider contacts: a line says what the page is for, and an × clears the chosen provider.',
-    'Courses › Empty reason and Providers › On website and In Zoho CRM (were Website feed and Zoho feed): each filter shows a note on what it means.',
-    'Rankings & statistics: QILT and PRISMS cards carry their full names, and each card says who publishes it.'
+    'Course detail: links to the institution\'s website and the course page at the top.',
+    'Course detail › Entry requirements: when the course has no rule of its own, choose the student\'s education country to read the university\'s requirement for it.',
+    'Courses: with a state chosen, the City column lists that state\'s campus first.'
   ],
   bugFixes:[
-    'Entry requirements: a counsellor who chose a provider saw the data team\'s Read now panel. It now shows from Curator up only.',
-    'Provider contacts: once a provider was chosen it could not be cleared.'
+    'Courses › Has scholarship = Yes listed courses whose detail showed no scholarship (it counted unpublished and provider-wide scopes). It now reads the same answer as the course detail and the website.'
   ]
 }
 

@@ -134,9 +134,9 @@ export function FieldState({ fs }) {
 }
 const Unknown = ({ title }) => <span className="ccol-unknown" title={title || 'No trustworthy record of this'}>Unknown</span>
 
-function Cities({ row }) {
+function Cities({ row, prefer = '' }) {
   const [open, setOpen] = useState(false)
-  const s = citySummary(row.cities)
+  const s = citySummary(row.cities, prefer)
   if (!s.names.length) return row.city_names ? <span>{row.city_names}</span> : <span className="ccol-unknown" title="No campus city held for this course">No campus city</span>
   if (s.names.length === 1) return <span data-cities="1">{s.names[0]}</span>
   return <span className="ccol-cities" data-cities={s.names.length}><button type="button" className="ccol-link" aria-expanded={open} onClick={e => { e.stopPropagation(); setOpen(x => !x) }}>{s.short}</button>{open && <ul onClick={e => e.stopPropagation()}>{s.names.map(n => <li key={n}>{n}</li>)}</ul>}</span>
@@ -210,11 +210,11 @@ function DescriptionText({ row }) {
 const FS = { duration: 'duration', delivery_mode: 'delivery', english: 'english', academic_entry: 'academic_entry', description: 'description', official_url: 'official_url', intl_fee_year: 'provider_tuition' }
 
 /** Cells of the columns this change adds. Existing columns keep their own cells. */
-export function renderCourseCell(key, row, { navigate } = {}) {
+export function renderCourseCell(key, row, { navigate, prefer = '' } = {}) {
   const fs = row.field_states || {}
   switch (key) {
     case 'country_name': return row.country_name || '—'
-    case 'city_names': return <Cities row={row} />
+    case 'city_names': return <Cities row={row} prefer={prefer} />
     case 'campus_count': return <Campuses row={row} />
     case 'duration': return row.duration_value != null ? (fmtDuration(row.duration_value, row.duration_unit) || `${Number(row.duration_value)} ${row.duration_unit || ''}`.trim()) : <FieldState fs={fs.duration} /> // REQ-97
     case 'delivery_mode': return row.delivery_mode ? String(row.delivery_mode).replaceAll('_', ' ') : <FieldState fs={fs.delivery} />
@@ -250,8 +250,8 @@ export const NEW_CELL_KEYS = new Set(['completeness_score_v2', 'country_name', '
 
 /** The table columns for the person's layout, in their order, with their widths' limits. */
 export const NEW_SORTS = new Set(['admitted', 'adapter'])
-export function useCourseTableColumns(layout, limits, { navigate, hide = () => false, newSorts = true } = {}) {
-  return useMemo(() => layout.columns.filter(k => !hide(k)).map(k => { const c = columnOf(k); return { key: k, label: c.header, width: c.width, sortKey: (c.sortKey && (newSorts || !NEW_SORTS.has(c.sortKey)) ? c.sortKey : undefined), minWidth: minWidthOf(k, limits), ...(NEW_CELL_KEYS.has(k) ? { render: r => renderCourseCell(k, r, { navigate }) } : {}) } }), [layout.columns.join(','), limits, navigate, hide, newSorts])
+export function useCourseTableColumns(layout, limits, { navigate, hide = () => false, newSorts = true, prefer = '' } = {}) {
+  return useMemo(() => layout.columns.filter(k => !hide(k)).map(k => { const c = columnOf(k); return { key: k, label: c.header, width: c.width, sortKey: (c.sortKey && (newSorts || !NEW_SORTS.has(c.sortKey)) ? c.sortKey : undefined), minWidth: minWidthOf(k, limits), ...(NEW_CELL_KEYS.has(k) ? { render: r => renderCourseCell(k, r, { navigate, prefer }) } : {}) } }), [layout.columns.join(','), limits, navigate, hide, newSorts, prefer])
 }
 export { clampWidth }
 

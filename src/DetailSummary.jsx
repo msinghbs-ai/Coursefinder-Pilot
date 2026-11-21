@@ -47,6 +47,8 @@ export function CourseSummary({data,feeUsed}){
       {code&&<StatusChip tone={dc.kind==='studysearch'?'violet':'neutral'} label={`${codeLabel} ${code}`} title={dc.kind==='studysearch'?'Given by StudySearch: no code is printed by the university or regulator':undefined}/>}
       {onWebsite(data.provider_publication_status)}{lifecycle(data.lifecycle_status)}
     </PillRow>
+    {/* REQ-98 (India team 20 Nov 2026): the institution's website and the course page, at the top of the detail */}
+    {(data.provider_website||data.course_url)&&<p className="ds-links" data-course-links>{data.provider_website&&<a className="cf-link" href={data.provider_website} target="_blank" rel="noreferrer" data-course-link="institution">Institution website <ExternalLink size={11}/></a>}{data.course_url&&<a className="cf-link" href={data.course_url} target="_blank" rel="noreferrer" data-course-link="course">Course page <ExternalLink size={11}/></a>}</p>}
     <FactCards>
       <FactCard id="fee" label="Tuition used" value={used?.per_year!=null?`${fmtMoney(used.per_year,used.currency||'AUD')} a year`:'Not known yet'} tone={used?.per_year!=null?'':'warning'}>{feeUsed}{used?.per_year==null&&<CourseGap field="tuition"/>}</FactCard>
       <FactCard id="registered" label="Registered course cost (CRICOS)" value={tuition?fmtMoney(tuition.amount,tuition.currency||'AUD'):'—'} sub={[total&&`${fmtMoney(total.amount,total.currency||'AUD')} with non-tuition`,non&&`non-tuition ${fmtMoney(non.amount,non.currency||'AUD')}`].filter(Boolean).join(' · ')||'Whole course'}/>
