@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.504 — 22 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.82** (S1-API-Frontend-Delivery s959: REQ-64, REQ-71, REQ-72 checked; REQ-100 follow-up). Migration `20261122080000`: 31 scholarship values corrected by the rule upper figure, marked up to (Platform Admin 22 Nov 01:20).
+
 ## 0.1.503 — 22 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.81** (S1-API-Frontend-Delivery s958, India team review of 20 Nov 2026: REQ-100). Migration `20261122070000`: new table ref.study_level_groups; the level filter page and the entry options carry each level's group.
