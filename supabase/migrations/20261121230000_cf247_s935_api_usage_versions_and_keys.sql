@@ -24,7 +24,7 @@
 --   3 security.api_usage_coverage_v1 checks that every active registered version and every key is returned by the read path (post-check here; spec s935).
 -- Not changed: the frozen consumer API (G3: the v1 and v2 endpoints, public.website_api_v2_*, public.zoho_v2_* functions, the tables' shapes; 75 functions and 48
 -- relations read before and after), the v1 and v2 keys, the manual locks (7,585), the jobs (no new job). No AI, no Firecrawl. Nothing dropped or deleted.
--- Numbering: spec s935 and s936; migration 20261121210000, above the live head 20261121200000 (s931, #1457).
+-- Numbering: spec s935 and s936; migration 20261121230000, above the live head 20261121200000 (s931, #1457) and s940's 20261121220000 (#1459).
 -- Replaces: the fixed platform list of Settings > API usage (the screen now reads "versions"); v3's sign-in and log through the v2 functions.
 -- Retires: nothing.
 set local lock_timeout = '5s';
@@ -47,7 +47,7 @@ end $g$;
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, reason, section, used_by) values
  ('pipeline', 'api.new_key_bridge_days', 'New API version key: days the earlier version''s key still works',
   'When a new API version gets its own key, a consumer already calling it with the earlier version''s key keeps working this many days, until the new key is issued (rotated) and the rotation overlap ends.',
-  'number', '14'::jsonb, 1, 60, 'days', 531, 'CF-247 s935, Platform Admin 21 Nov 2026 13:11', 'Search and API', 'migration 20261121210000 (website_developer_v3), public.admin_api_key_rotate')
+  'number', '14'::jsonb, 1, 60, 'days', 531, 'CF-247 s935, Platform Admin 21 Nov 2026 13:11', 'Search and API', 'migration 20261121230000 (website_developer_v3), public.admin_api_key_rotate')
 on conflict (toolset_key, key) do nothing;
 
 -- 1 the register of consumer API versions ------------------------------------------------------------------------------------------------------------
@@ -255,11 +255,11 @@ begin
 end $r$;
 
 insert into pipeline.component_register (kind, name, layer, area, purpose, status, replaces, introduced_in) values
-  ('table', 'pipeline.api_versions', 'Service', 'Search and API', 'Register of consumer API versions read by Settings > API usage', 'active', '{}', '20261121210000'),
-  ('function', 'pipeline.api_key_auth_v1', 'Service', 'Search and API', 'Sign-in by (consumer, API version) for website-api-v3 and zoho-api-v3', 'active', '{}', '20261121210000'),
-  ('function', 'pipeline.api_request_log_v1', 'Service', 'Search and API', 'Log of a consumer API call with its own version and key', 'active', '{}', '20261121210000'),
-  ('function', 'security.api_usage_versions_v1', 'Service', 'Search and API', 'Settings > API usage read path: versions, keys and live usage', 'active', '{}', '20261121210000'),
-  ('function', 'security.api_usage_coverage_v1', 'Service', 'Search and API', 'What the API usage read path would miss', 'active', '{}', '20261121210000')
+  ('table', 'pipeline.api_versions', 'Service', 'Search and API', 'Register of consumer API versions read by Settings > API usage', 'active', '{}', '20261121230000'),
+  ('function', 'pipeline.api_key_auth_v1', 'Service', 'Search and API', 'Sign-in by (consumer, API version) for website-api-v3 and zoho-api-v3', 'active', '{}', '20261121230000'),
+  ('function', 'pipeline.api_request_log_v1', 'Service', 'Search and API', 'Log of a consumer API call with its own version and key', 'active', '{}', '20261121230000'),
+  ('function', 'security.api_usage_versions_v1', 'Service', 'Search and API', 'Settings > API usage read path: versions, keys and live usage', 'active', '{}', '20261121230000'),
+  ('function', 'security.api_usage_coverage_v1', 'Service', 'Search and API', 'What the API usage read path would miss', 'active', '{}', '20261121230000')
 on conflict do nothing;
 
 do $p$
