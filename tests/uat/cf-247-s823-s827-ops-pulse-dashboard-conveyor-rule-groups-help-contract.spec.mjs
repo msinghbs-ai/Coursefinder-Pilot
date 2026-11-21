@@ -74,7 +74,8 @@ test('s824/s825: cards, country bars, stage meters and the flow track come from 
   expect(cards[1].meterText).toBe('2 of 3 checks passing'); expect(cards[1].meterPct).toBe(67)
   expect(flowReach(cards)).toBe(2)
   expect(completenessBars(PULSE).map((b) => b.text)).toEqual(['71%', '58%', '44%'])
-  expect(completenessBars({}).map((b) => b.text)).toEqual(['—', '—', '—']) // unknown is never 0
+  expect(completenessBars({}, ['AU', 'NZ', 'CA']).map((b) => b.text)).toEqual(['—', '—', '—']) // unknown is never 0
+  expect(completenessBars({})).toEqual([]) // s930: no countries are written into the code
   expect(spendOf(PULSE)).toMatchObject({ text: 'US$3.20', capText: 'of the US$14.00 daily cap', pct: 23 })
   expect(kpiCards(PULSE).map((k) => k.label)).toEqual(['System status', 'Catalogue completeness', 'Decisions waiting on you', 'Active blockers', 'AI & crawl spend today'])
   expect(STAGES.map((s) => s.name)).toEqual(['Official Registers', 'Page Capture', 'AI Extraction & Auto-Clean', 'Live Catalogue'])

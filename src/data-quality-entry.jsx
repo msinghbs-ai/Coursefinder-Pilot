@@ -7,6 +7,7 @@ import{
 import{fmtNumber,fmtDate,fmtPercent}from'./lib/format.js'
 import{adminRead}from'./lib/supabase'
 import'./data-quality.css'
+import{countryName,useLookups}from'./lib/lookups.js' // s930: country names from the database
 
 // v2.15.107: this screen no longer mounts its own full-screen shell and side menu. It is the
 // 'Readiness by area' tab of Coverage & completeness, drawn inside the standard app shell.
@@ -19,11 +20,10 @@ const STATE_LABEL={
 const ENTITY_LABEL={course:'Course',provider:'Provider',campus:'Campus',scholarship:'Scholarship'}
 const ENTITY_ICON={course:GraduationCap,provider:UsersRound,campus:MapPin,scholarship:Sparkles}
 // Scope list comes from the server (countries with courses in the catalogue; v2.15.270 adds Canada)
-const DQ_COUNTRY={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 const ENTITY_ROUTE={course:'courses',provider:'providers',campus:'campuses',scholarship:'scholarships'}
 
 export function DomainReadiness({rank=0}){
-  const[country,setCountry]=useState(''),[overview,setOverview]=useState(null),[busy,setBusy]=useState(true),[error,setError]=useState(''),[scopes,setScopes]=useState(['AU','NZ'])
+  const[country,setCountry]=useState(''),[overview,setOverview]=useState(null),[busy,setBusy]=useState(true),[error,setError]=useState(''),[scopes,setScopes]=useState([]),lk=useLookups() /* s930: the scope countries come from the server, their names from the lookups */
   const[selected,setSelected]=useState(null),[exceptions,setExceptions]=useState(null),[exceptionBusy,setExceptionBusy]=useState(false)
   const[offset,setOffset]=useState(0),[query,setQuery]=useState(''),[submittedQuery,setSubmittedQuery]=useState('')
 
@@ -62,7 +62,7 @@ export function DomainReadiness({rank=0}){
 
   return <div className="dq-embedded">
     <div className="cf-page-toolbar"><p className="dq-embedded-intro">{selected?`${selected.label} · ${ENTITY_LABEL[selected.entity_type]} · ${STATE_LABEL[selected.state]}`:'Each area counted separately. Select a count to list those records.'}</p>
-      <div className="dq-actions"><label>Scope<select value={country} onChange={e=>setCountry(e.target.value)}><option value="">Australia and New Zealand</option>{scopes.map(c=><option key={c} value={c}>{DQ_COUNTRY[c]||c}</option>)}</select></label><button className="dq-icon" title="Refresh" aria-label="Refresh" onClick={loadOverview} disabled={busy}><RefreshCw size={17}/></button></div></div>
+      <div className="dq-actions"><label>Scope<select value={country} onChange={e=>setCountry(e.target.value)}><option value="">{scopes.length?scopes.map(c=>countryName(lk,c)).join(' and '):'Every scope country'}</option>{scopes.map(c=><option key={c} value={c}>{countryName(lk,c)}</option>)}</select></label><button className="dq-icon" title="Refresh" aria-label="Refresh" onClick={loadOverview} disabled={busy}><RefreshCw size={17}/></button></div></div>
     {error&&<div className="dq-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
     {!selected?<>
       <section className="dq-legend"><span>Metric state</span>{STATE_ORDER.map(s=><em key={s} className={`dq-state s-${s}`}>{STATE_LABEL[s]}</em>)}</section>

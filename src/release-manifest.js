@@ -1,19 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.74'
-export const PACKAGE_VERSION='0.1.496'
+export const UI_VERSION='2.16.75'
+export const PACKAGE_VERSION='0.1.497'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'21 Nov 2026',
-  title:'Counsellor notes and clearer entry requirement countries',
+  title:'Lists read live from the database',
   changes:[
-    'Course detail, Entry requirements and Scholarships have a closed Notes panel: how scholarships, entry requirements (AER) and English and register values attach to a course, and the exceptions. It opens in one click.',
-    'Entry requirements › Provider entry matrix: the Country filter is now Source country (where the student\'s prior qualification is from); a new Destination country filter (where the university is) and an Applies to filter (university-wide rows or one course\'s rows).',
-    'Course detail › Around this course › Entry requirements shows the university-wide entry table that applies to the course, and how many of its rows wait in Layer 4.'
+    'Entry requirements: the Provider list on Provider entry matrix, Course entry requirements, Sources and Add a requirement lists every active provider (3,090), with its active and waiting matrix rows beside it. Charles Sturt University and Charles Darwin University are found by typing their name.',
+    'Country lists and pills on Layer 4 Grid, Providers › Onboarding approvals, Enrichment plan, Description edits, Field coverage and Data quality come from the database (the countries where admission runs), not from a list in the screen.',
+    'Entry requirements › Provider entry matrix: Destination country also lists every country where admission runs, and Intake year offers this year and the next two beside the years the rows hold.',
+    'Help › Platform guide shows where data is admitted now, with live provider and course counts.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Entry requirements: typing a provider name in the Provider list found only some providers. The list held an arbitrary 300 of 843 providers; it now holds every active provider.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

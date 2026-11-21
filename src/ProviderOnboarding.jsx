@@ -23,6 +23,7 @@ import{hrefFor}from'./nav-map'
 import FeeSchedules from'./FeeSchedules'
 import ProviderPolicies from'./ProviderPolicies'
 import{plainError}from'./lib/errors'
+import{countryPairs,useLookups}from'./lib/lookups.js' // s930: countries from the database
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 export const IN_PROGRESS=['website','course_pages','capturing','proposing','applying','qualifying','scholarships']
@@ -95,9 +96,9 @@ export function Settings({s,actorId,act}){
 }
 
 // The country filter narrows both lists, as the retired Layer 4 › Attributes tab did.
-const COUNTRIES=[['','All countries'],['AU','Australia'],['NZ','New Zealand'],['CA','Canada']]
 export function Approvals({count}){
   const[open,setOpen]=useState(false),[country,setCountry]=useState('')
+  const COUNTRIES=[['','All countries'],...countryPairs(useLookups())] // s930 (S1-Dynamic-Lookups): the target countries, live
   return <details className="m-panel po-approvals" data-onboarding-approvals onToggle={e=>setOpen(e.currentTarget.open)}>
     <summary><ClipboardCheck size={15}/> Approvals waiting (all universities): {fmtNumber(count||0)}</summary>
     <div className="fs-bar"><p className="sd-desc">Fee schedules, English policies and academic calendars read from each university's central pages. For one university, approve them in the Adapter builder (1.3).</p>

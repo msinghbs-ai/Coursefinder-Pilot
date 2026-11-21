@@ -39,10 +39,11 @@ export function stageCards(pulse){
 /** The connected track between stages: how far data flows before the first stage that needs attention (1 to 4; 4 when all are healthy). */
 export function flowReach(cards){const i=cards.findIndex(c=>c.tone==='warn'||c.tone==='crit');return i===-1?cards.length:i+1}
 
-export const COUNTRIES=[['AU','Australia'],['NZ','New Zealand'],['CA','Canada']]
-/** Three country bars from the stored completeness scores; a country with no score is shown as not measured. */
-export function completenessBars(pulse){const c=pulse?.completeness||{}
-  return COUNTRIES.map(([cc,label])=>{const pct=num(c?.[cc]?.completeness);return{cc,label,pct,courses:num(c?.[cc]?.courses),text:pct==null?'—':`${Math.round(pct)}%`}})}
+// s930 (S1-Dynamic-Lookups): the countries come from the live lookups (target countries) or, without them, from the scores themselves
+const regionName=(()=>{try{const d=new Intl.DisplayNames(['en-AU'],{type:'region'});return cc=>{try{return d.of(cc)||cc}catch{return cc}}}catch{return cc=>cc}})()
+/** One bar a country from the stored completeness scores; a country with no score is shown as not measured. */
+export function completenessBars(pulse,codes){const c=pulse?.completeness||{},list=Array.isArray(codes)&&codes.length?codes:Object.keys(c)
+  return list.map(cc=>[cc,regionName(cc)]).map(([cc,label])=>{const pct=num(c?.[cc]?.completeness);return{cc,label,pct,courses:num(c?.[cc]?.courses),text:pct==null?'—':`${Math.round(pct)}%`}})}
 
 /** Today's AI spend against the daily cap (as the budgets check last measured it). */
 export function spendOf(pulse){const b=pulse?.budget||{},spend=num(b.spend_usd),cap=num(b.cap_usd)
@@ -69,8 +70,8 @@ export function stageRate(pulse,n){const r=pulse?.rates;if(!r||typeof r!=='objec
   return null}
 
 /** The five KPI cards (Dashboard and Platform Health). */
-export function kpiCards(pulse){
-  const st=pulse?.status||'unknown',bars=completenessBars(pulse),sp=spendOf(pulse),wait=num(pulse?.layer4_waiting),block=num(pulse?.blockers)
+export function kpiCards(pulse,codes){
+  const st=pulse?.status||'unknown',bars=completenessBars(pulse,codes),sp=spendOf(pulse),wait=num(pulse?.layer4_waiting),block=num(pulse?.blockers)
   const kinds=pulse?.layer4_by_kind&&typeof pulse.layer4_by_kind==='object'?Object.keys(pulse.layer4_by_kind).length:null
   return[
     {key:'status',icon:'Activity',label:'System status',tone:toneOf(st),value:st==='ok'?'Healthy':st==='warning'?'Needs attention':st==='critical'?'Something is broken':'Not measured yet',

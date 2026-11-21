@@ -12,6 +12,7 @@
 import React,{useEffect,useMemo,useRef,useState}from'react'
 import{Check,Columns3,ExternalLink,GraduationCap,Pencil,Plus,RefreshCw,Search,X}from'lucide-react'
 import{supabase}from'./lib/supabase'
+import{intakeYears,targetCountries,useLookups}from'./lib/lookups.js' // s930 (S1-Dynamic-Lookups): destinations and intake years from the database
 import{Button,StatusChip,FilterChip,Pager,Loading,EmptyInline,fmtDate,fmtDateTime,fmtNumber}from'./ui-kit'
 import{DataTable,FilterSelect}from'./DataTable'
 import{ReasonAction}from'./ProviderOnboarding'
@@ -42,6 +43,9 @@ const SCALE_LABEL={percentage:'Percentage',points:'Points',aggregate:'Aggregate'
 const KIND_LABEL={provider_minimum:'Provider minimum',band_ladder:'Band table',course_minimum:'Course minimum',rank_band:'Rank band',prior_qualification:'Prior qualification',minimum_grade:'Minimum grade',subject_prerequisite:'Subject prerequisite',portfolio_interview:'Portfolio or interview',work_experience:'Work experience',other:'Other',override:'Course rule (override)',general_note:'General note'}
 const READ_LABEL={done:'Read',failed:'Held or failed',queued:'Waiting to read',leased:'Reading',manual:'Added by hand'}
 const opt=(value,label,meta)=>({value,label,meta})
+// s930: every active provider is listed; its matrix rows show beside it (active · waiting in Layer 4), so a provider with none yet is still found
+const provMeta=p=>{const a=Number(p.active_rows||0),w=Number(p.waiting_rows||0);return a||w?[a&&`${a} active`,w&&`${w} waiting`].filter(Boolean).join(' · '):'no matrix rows yet'}
+const provOpts=o=>(o.providers||[]).map(p=>opt(p.id,p.name,provMeta(p)))
 const short=(s,n=80)=>{s=String(s||'');return s.length>n?s.slice(0,n-1)+'…':s}
 const minText=r=>r.min_grade||(r.min_value!=null?String(Number(r.min_value)):'')
 // CF-247 D5 (decision A4): a matrix row with a printed grade and no scale is "Not stated on the page" (the website shows scale_stated false)
@@ -136,6 +140,7 @@ const MATRIX_FIELDS=[
 ]
 export function MatrixView({rank,onError,navigate,routeParams}){
   const o=useOptions(onError)
+  const lk=useLookups() // s930: live destinations and intake years
   const{f,set,clear,labels,offset,setOffset,sortBy}=useFilters('matrix',{provider_id:'',destination:'',country:'',scope:'',level:'',status:'active',matrix_kind:'',band:'',q:'',edition:'',intake_year:'',read_state:'',sort:'provider',direction:'asc'},{provider_id:routeParams?.get?.('provider')||''})
   const[refresh,setRefresh]=useState(0),[open,setOpen]=useState(null),[edit,setEdit]=useState(false),[adding,setAdding]=useState(false)
   const args=useMemo(()=>({...f,offset,page_size:PAGE}),[JSON.stringify(f),offset])
@@ -173,9 +178,9 @@ export function MatrixView({rank,onError,navigate,routeParams}){
         {can&&<button type="button" className="m-secondary compact" onClick={()=>setAdding(true)} data-aer-add><Plus size={14}/>Add requirement</button>}
       </div>
       <div className="m-filter-bar" data-aer-filters="matrix">
-        <FilterSelect label="Provider" value={f.provider_id} onChange={(v,l)=>set('provider_id',v,l)} options={(o.providers||[]).map(p=>opt(p.id,p.name))}/>
+        <FilterSelect label="Provider" value={f.provider_id} onChange={(v,l)=>set('provider_id',v,l)} options={provOpts(o)}/>
         {/* CF-247 s901: Destination country is where the provider is; Source country (was "Country") is where the student's prior qualification is from */}
-        <FilterSelect label="Destination country" value={f.destination} onChange={(v,l)=>set('destination',v,l)} options={(o.destinations||[]).map(c=>opt(c.code,c.name,c.code))}/>
+        <FilterSelect label="Destination country" value={f.destination} onChange={(v,l)=>set('destination',v,l)} options={[...(o.destinations||[]),...targetCountries(lk).filter(t=>!(o.destinations||[]).some(d=>d.code===t.code))].map(c=>opt(c.code,c.name,c.code))}/>
         <FilterSelect label="Source country" value={f.country} onChange={(v,l)=>set('country',v,l)} options={orderAerCountries(o.countries).map(c=>opt(c.code,c.name,c.code))}/>
         <FilterSelect label="Applies to" value={f.scope} onChange={(v,l)=>set('scope',v,l)} options={[opt('university','University-wide (no course)'),opt('course','One course')]}/>
         <FilterSelect label="Study level" value={f.level} onChange={(v,l)=>set('level',v,l)} options={[...(o.levels||[]).map(l=>opt(l.code,l.name,l.code)),...(o.level_labels||[]).map(l=>opt(l,l,'as published'))]}/>
@@ -183,7 +188,7 @@ export function MatrixView({rank,onError,navigate,routeParams}){
         <FilterSelect label="Kind" value={f.matrix_kind} onChange={(v,l)=>set('matrix_kind',v,l)} options={(o.matrix_kinds||[]).map(k=>opt(k,KIND_LABEL[k]||k))}/>
         <FilterSelect label="Band" value={f.band} onChange={(v,l)=>set('band',v,l)} options={(o.bands||[]).map(b=>opt(b,b))}/>
         <FilterSelect label="Edition" value={f.edition} onChange={(v,l)=>set('edition',v,l)} options={(o.editions||[]).map(b=>opt(b,b))}/>
-        <FilterSelect label="Intake year" value={f.intake_year} onChange={(v,l)=>set('intake_year',v,l)} options={(o.intake_years||[]).map(y=>opt(String(y),String(y)))}/>
+        <FilterSelect label="Intake year" value={f.intake_year} onChange={(v,l)=>set('intake_year',v,l)} options={intakeYears(lk,o.intake_years||[]).map(y=>opt(String(y),String(y)))}/>
         <FilterSelect label="Read" value={f.read_state} onChange={(v,l)=>set('read_state',v,l)} options={Object.entries(READ_LABEL).map(([k,l])=>opt(k,l))}/>
       </div>
       <Chips filters={f} labels={{...labels,status:labels.status||ROW_PILL[f.status]?.[1]}} names={MATRIX_NAMES} set={set} clear={clear}/>
@@ -246,7 +251,7 @@ export function CourseView({rank,onError,routeParams}){
         {can&&<button type="button" className="m-secondary compact" onClick={()=>setAdding(true)} data-aer-add><Plus size={14}/>Add requirement</button>}
       </div>
       <div className="m-filter-bar" data-aer-filters="course">
-        <FilterSelect label="Provider" value={f.provider_id} onChange={(v,l)=>set('provider_id',v,l)} options={(o.providers||[]).map(p=>opt(p.id,p.name))}/>
+        <FilterSelect label="Provider" value={f.provider_id} onChange={(v,l)=>set('provider_id',v,l)} options={provOpts(o)}/>
         <FilterSelect label="Kind" value={f.requirement_kind} onChange={(v,l)=>set('requirement_kind',v,l)} options={(o.requirement_kinds||[]).map(k=>opt(k,KIND_LABEL[k]||k))}/>
         <FilterSelect label="For" value={f.audience} onChange={(v,l)=>set('audience',v,l)} options={(o.audiences||[]).map(k=>opt(k,k))}/>
         <FilterSelect label="Status" value={f.status} emptyLabel="Any status" onChange={(v,l)=>set('status',v,l)} options={(o.statuses||[]).map(s=>opt(s,ROW_PILL[s]?.[1]||s))}/>
@@ -486,7 +491,7 @@ export function SourcesView({rank,onError,routeParams}){
       <div className="m-search-row"><TextFilter label="Search address or error" value={f.q} onChange={v=>set('q',v,v)} placeholder="Search address or error"/><ColumnsMenu all={all} hidden={hidden} onChange={setHidden}/>
         <button type="button" className="m-secondary compact" onClick={()=>setRefresh(n=>n+1)}><RefreshCw size={14}/>Refresh</button></div>
       <div className="m-filter-bar" data-aer-filters="sources">
-        <FilterSelect label="Provider" value={f.provider_id} onChange={(v,l)=>set('provider_id',v,l)} options={(o.providers||[]).map(p=>opt(p.id,p.name))}/>
+        <FilterSelect label="Provider" value={f.provider_id} onChange={(v,l)=>set('provider_id',v,l)} options={provOpts(o)}/>
         <FilterSelect label="Fetch" value={f.status} onChange={(v,l)=>set('status',v,l)} options={['read','found','reading','failed','pdf_step_b','robots_disallowed'].map(s=>opt(s,s))}/>
         <FilterSelect label="Read state" value={f.hold_state} onChange={(v,l)=>set('hold_state',v,l)} options={Object.entries(HOLD_PILL).map(([k,[,l]])=>opt(k,l))}/>
       </div>
