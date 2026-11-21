@@ -87,6 +87,16 @@ Platform Admin, 21 Nov 2026 13:11 AEDT (S1-RM-Design, s935). It applies to every
 3. **Rotation without disruption.** Keys rotate with a dual-key overlap (`api.key_rotate_overlap_hours`): the new key is shown once; the old key keeps working as the previous key until the overlap ends. A new version's key starts "Not issued". Where a consumer already calls that version with an earlier version's key, that key works as its previous key for `api.new_key_bridge_days`, until the new key is issued.
 4. **Guard.** `security.api_usage_coverage_v1()` lists any active registered version or key the read path misses; each change that adds one checks that it is empty. `tests/uat/cf-247-s935-api-usage-versions-keys-contract.spec.mjs` fails the build otherwise. A frozen version (G3) keeps its own sign-in; it is registered and shown, never changed.
 
+### Standing Rule: Attributed Public Rankings (THE and QS)
+
+Platform Admin, 22 Nov 2026 09:22 AEDT (IR-005, RM1J): "We can attribute and use both Times Higher Education (THE) and QS World University Rankings directly. Do NOT gate them behind a manual publisher file upload or a terms = restricted hold."
+
+- THE and QS World University Rankings are read by the automated Layer 1 readers in `ranking-layer1-etl` (v1.8.0 and later). THE comes from its public ranking JSON and QS from its public results endpoint, each with a plain HTTP GET. robots.txt and its crawl-delay are honoured. No Firecrawl, browser automation or AI is used, so the spend is $0.
+- Each edition is published live as soon as it is read. Its access is `public`, its attribution is recorded (`ranking.editions.licensing_note`) and its source page is linked. No publisher file upload, `terms = restricted` hold or draft step is needed. Older revisions of the same edition are superseded.
+- Institutions are matched to providers deterministically: accepted mappings, then ranking aliases, then the normalised name with its country, then one part of the provider's register name. Rows that still match no provider are listed for review and never fail the run.
+- A challenge page (for example Cloudflare) is reported and never bypassed. The edition already held stays live, and the Layer 1 run retries later.
+- The upload route in Administration › Sources & Imports stays only for past editions.
+
 ### Standing Rule: Continuous Delivery Master Plan (Read at Start, Update Before Parking)
 
 Platform Admin, 21 Nov 2026 21:15 AEDT (S1-API-Frontend-Delivery). It applies to every session in both repositories.
