@@ -19,7 +19,9 @@ test('REQ-96: every Course catalogue read takes Has scholarship from the course 
 })
 
 test('REQ-98: the course detail carries provider_website and shows both links at the top', () => {
-  expect(MIG).toContain("jsonb_build_object('provider_website',(select p.website from catalogue.providers p where p.id=nullif(v_result->>'provider_id','')::uuid))")
+  expect(MIG).toContain("jsonb_build_object('provider_website',security.course_provider_website_v1(nullif(v_result->>'provider_id','')::uuid))")
+  expect(MIG).toContain('language sql stable security definer set search_path = \'\' as $f$')
+  expect(MIG).toContain('grant execute on function security.course_provider_website_v1(uuid) to authenticated, service_role;')
   const d = src('DetailSummary.jsx')
   expect(d).toContain('data-course-links')
   expect(d).toContain('data-course-link="institution">Institution website')

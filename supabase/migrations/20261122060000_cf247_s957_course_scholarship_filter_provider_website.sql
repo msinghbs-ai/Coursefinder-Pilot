@@ -7,8 +7,9 @@
 --   published scholarships linked to the course. 13,571 courses passed the filter; the website's search record says 12,759 have one.
 --   The filter and the Scholarships column now read the course's search record (search.course_documents.has_scholarship): the same
 --   answer the website gives, so the filter, the column and the detail agree.
--- REQ-98: the course detail (public.admin_read 'course_detail') adds provider_website, the provider's website, so the screen can link to the
---   institution and to the course page at the top of the detail.
+-- REQ-98: the course detail (public.admin_read 'course_detail') adds provider_website, the provider's website (read through the new
+--   security definer helper security.course_provider_website_v1, as admin_read never reads schema catalogue itself), so the screen can
+--   link to the institution and to the course page at the top of the detail.
 -- Admin reads only: neither function is part of the consumer API (G3, checked before and after). Live on deploy. $0. G1: no job. G2: no value.
 -- Parity: live head 20261122040000 read 21 Nov 2026 23:20 AEDT; this file is numbered strictly above it and above s956 (20261122050000).
 -- Replaces: the scope-based has_scholarship of the Course catalogue.
@@ -61,10 +62,18 @@ select pg_temp.edit_re('security.admin_course_page_unfiltered_fast(jsonb)', '5db
   array[$o$select exists\(\s*select 1 from scholarship\.scopes ss\s+where coalesce\(ss\.include_exclude,'include'\)='include'\s+and \(ss\.course_id=pg\.id or \(ss\.scope_type='provider' and ss\.provider_id=pg\.provider_id\)\)\s*\) has_scholarship$o$,
         $n$select coalesce((select sd.has_scholarship from search.course_documents sd where sd.course_id=pg.id), false) has_scholarship$n$]]);
 
--- REQ-98: the provider's website on the course detail
+-- REQ-98: the provider's website on the course detail. public.admin_read runs as the caller and never reads schema catalogue itself (s780),
+-- so the website comes through a security definer helper, readable by every StudySearch role (the course detail already shows the provider).
+create or replace function security.course_provider_website_v1(p_provider_id uuid) returns text
+language sql stable security definer set search_path = '' as $f$
+  select p.website from catalogue.providers p where p.id = p_provider_id and coalesce(security.current_role_rank(), 0) >= 1
+$f$;
+comment on function security.course_provider_website_v1(uuid) is 'CF-247 s957 (REQ-98): the website of a course''s provider for the course detail (public.admin_read course_detail); null for a caller with no StudySearch role.';
+revoke all on function security.course_provider_website_v1(uuid) from public, anon;
+grant execute on function security.course_provider_website_v1(uuid) to authenticated, service_role;
 select pg_temp.edit_re('public.admin_read(text,jsonb)', '82cff726382fa3c80e627ceebd3523f3', null, array[
   array[$o$return v_result\|\|jsonb_build_object\('fee_summary',security\.admin_course_fee_summary\(v_id\)\)$o$,
-        $n$return v_result||jsonb_build_object('provider_website',(select p.website from catalogue.providers p where p.id=nullif(v_result->>'provider_id','')::uuid))||jsonb_build_object('fee_summary',security.admin_course_fee_summary(v_id))$n$]]);
+        $n$return v_result||jsonb_build_object('provider_website',security.course_provider_website_v1(nullif(v_result->>'provider_id','')::uuid))||jsonb_build_object('fee_summary',security.admin_course_fee_summary(v_id))$n$]]);
 
 do $c$
 declare v_api jsonb := security.consumer_api_check_v1(); v_def text;
