@@ -44,7 +44,7 @@ test('REQ-102: Provider contacts can clear its provider, says what it is for, an
 
 test('REQ-103 and REQ-107: filters explain themselves; the feed filters read On website and In Zoho CRM', () => {
   const d = src('DataTable.jsx'), m = src('mature-main.jsx')
-  expect(d).toContain("emptyLabel='All',help=''}")
+  expect(d).toContain("emptyLabel='All',help=''")
   expect(d).toContain('{help&&<p className="m-filter-help" data-filter-help>{help}</p>}')
   expect(m).toContain('label="Empty reason" help={EMPTY_REASON_HELP}')
   expect(m).toContain('label="On website" help={FEED_HELP.website}')

@@ -1,21 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.80'
-export const PACKAGE_VERSION='0.1.502'
+export const UI_VERSION='2.16.81'
+export const PACKAGE_VERSION='0.1.503'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'21 Nov 2026',
-  title:'India team feedback: course detail links and entry, Has scholarship agrees with the detail',
+  date:'22 Nov 2026',
+  title:'Study level grouped: Pathway, Vocational, Undergraduate, Postgraduate',
   changes:[
-    'Course detail: links to the institution\'s website and the course page at the top.',
-    'Course detail › Entry requirements: when the course has no rule of its own, choose the student\'s education country to read the university\'s requirement for it.',
-    'Courses: with a state chosen, the City column lists that state\'s campus first.'
+    'Courses and Entry requirements › Study level: every level in one list, under Pathway, Vocational, Undergraduate, Postgraduate and Other, with no codes and no second page. A label a provider publishes (for example Masters Degree (Coursework)) sits under the group of the level of the same name.'
   ],
-  bugFixes:[
-    'Courses › Has scholarship = Yes listed courses whose detail showed no scholarship (it counted unpublished and provider-wide scopes). It now reads the same answer as the course detail and the website.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

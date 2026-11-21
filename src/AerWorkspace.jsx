@@ -125,6 +125,11 @@ function useFilters(view,defaults,overrides={}){
 }
 
 // ----------------------------------------------------------------------------------------------- Provider entry matrix
+// REQ-100 (India team 20 Nov 2026): the levels under their groups (from the server, ref.study_level_groups), then each label a provider
+// publishes under the group of the level of the same name (else As published); no codes shown
+function levelOptions(o){const lv=o.levels||[],byName=new Map(lv.map(l=>[String(l.name).toLowerCase(),l]))
+  const rows=[...lv.map(l=>({value:l.code,label:l.name,meta:l.group||'Other',order:Number(l.group_order??90)})),...(o.level_labels||[]).map(t=>{const m=byName.get(String(t).toLowerCase());return{value:t,label:t,meta:m?`${m.group||'Other'} · as published`:'As published',order:m?Number(m.group_order??90)+0.5:99}})]
+  return rows.sort((a,b)=>a.order-b.order||a.label.localeCompare(b.label)).map(r=>({value:r.value,label:r.label,meta:r.meta}))}
 const MATRIX_NAMES={provider_id:'Provider',destination:'Study destination',country:'Student\'s education country',scope:'Applies to',level:'Study level',status:'Status',matrix_kind:'Kind',band:'Band',q:'Search',edition:'Edition',intake_year:'Intake year',read_state:'Read'}
 const MATRIX_FIELDS=[
   {key:'qualification',label:'Qualification',width:260},
@@ -183,7 +188,7 @@ export function MatrixView({rank,onError,navigate,routeParams}){
         <FilterSelect label="Study destination" value={f.destination} onChange={(v,l)=>set('destination',v,l)} options={[...(o.destinations||[]),...targetCountries(lk).filter(t=>!(o.destinations||[]).some(d=>d.code===t.code))].map(c=>opt(c.code,c.name,c.code))}/>
         <FilterSelect label="Student's education country" value={f.country} onChange={(v,l)=>set('country',v,l)} options={orderAerCountries(o.countries).map(c=>opt(c.code,c.name,c.code))}/>
         <FilterSelect label="Applies to" value={f.scope} onChange={(v,l)=>set('scope',v,l)} options={[opt('university','University-wide (no course)'),opt('course','One course')]}/>
-        <FilterSelect label="Study level" value={f.level} onChange={(v,l)=>set('level',v,l)} options={[...(o.levels||[]).map(l=>opt(l.code,l.name,l.code)),...(o.level_labels||[]).map(l=>opt(l,l,'as published'))]}/>
+        <FilterSelect label="Study level" value={f.level} onChange={(v,l)=>set('level',v,l)} pageSize={60} options={levelOptions(o)}/>
         <FilterSelect label="Status" value={f.status} emptyLabel="Any status" onChange={(v,l)=>set('status',v,l)} options={(o.statuses||[]).map(s=>opt(s,ROW_PILL[s]?.[1]||s))}/>
         <FilterSelect label="Kind" value={f.matrix_kind} onChange={(v,l)=>set('matrix_kind',v,l)} options={(o.matrix_kinds||[]).map(k=>opt(k,KIND_LABEL[k]||k))}/>
         <FilterSelect label="Band" value={f.band} onChange={(v,l)=>set('band',v,l)} options={(o.bands||[]).map(b=>opt(b,b))}/>
