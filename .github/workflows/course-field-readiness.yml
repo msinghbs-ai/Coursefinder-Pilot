@@ -4,6 +4,9 @@
 # scripts/telemetry/course-field-readiness.mjs (with the per-country files Course_Field_Readiness_<CC>[_Part<n>]_<date>.csv, each under
 # 2.9 MB, s771), and commits them to the branch course-readiness-snapshot (never merged). The daily scheduled
 # task "Course field readiness to Drive (07:45)" copies them into the Google Drive folder Monitoring. Nothing is written to the database.
+# s927 (Platform Admin 21 Nov 2026 12:19): the same rows also make the daily data gap register (scripts/telemetry/data-gap-register.mjs):
+# Data_Gap_Register_<CC>[_Part<n>]_<date>.csv, Data_Gap_Closed_<date>.csv, Data_Gap_Register_Sheet.json and Data_Gap_State.json.gz, which the
+# scheduled task "Data gap register to Drive (08:07)" puts into Drive › Monitoring and the Google Sheet StudySearch_Data_Gap_Register.
 name: Course field readiness
 on:
   schedule:
@@ -50,6 +53,16 @@ jobs:
           DATE=$(TZ=Australia/Sydney date +%F)
           node scripts/telemetry/course-field-readiness.mjs "$RUNNER_TEMP/out" "$DATE" "$RUNNER_TEMP"/parts/*.json | tee -a "$GITHUB_STEP_SUMMARY"
           ls -la "$RUNNER_TEMP/out"
+      - name: Data gap register (s927)
+        run: |
+          # Yesterday's register state is on the snapshot branch; a first run (or a missing state) compares with nothing.
+          prev=-
+          if git fetch -q --depth 1 origin course-readiness-snapshot 2>/dev/null \
+             && git show FETCH_HEAD:monitoring/course-readiness/Data_Gap_State.json.gz > "$RUNNER_TEMP/prev-gap-state.json.gz" 2>/dev/null; then
+            prev="$RUNNER_TEMP/prev-gap-state.json.gz"
+          fi
+          DATE=$(TZ=Australia/Sydney date +%F)
+          node scripts/telemetry/data-gap-register.mjs "$RUNNER_TEMP/out" "$DATE" "$prev" "$RUNNER_TEMP"/parts/*.json | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Commit to the snapshot branch
         run: |
           git config user.name "course-field-readiness"; git config user.email "course-field-readiness@users.noreply.github.com"
