@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261121200000_cf247_s935_api_usage_versions_and_keys.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261121210000_cf247_s935_api_usage_versions_and_keys.sql', 'utf8')
 const code = MIG.split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
 const UI = fs.readFileSync('src/ApiUsagePanel.jsx', 'utf8')
 const W3 = fs.readFileSync('supabase/functions/website-api-v3/index.ts', 'utf8')
