@@ -2,7 +2,12 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import * as XLSX from "npm:xlsx@0.18.5";
 
-const VERSION="ranking-layer1-etl-v1.7.0";
+import { PUBLIC_SOURCES, USER_AGENT, attribution, isChallenge, qsRowsFromRestPages, robotsAllows, robotsRules, theRowsFromPublicJson } from "./public-readers.ts";
+
+// v1.8.0 (CF-247 s966, Platform Admin 22 Nov 2026 09:22 AEDT, IR-005 / RM1J): THE and QS are attributed public rankings. THE is read from its public
+// ranking JSON and QS from its public results endpoint with a plain GET (robots.txt and its crawl-delay honoured; no Firecrawl, no browser,
+// no AI), applied and published with source attribution. No publisher file upload or terms hold. A challenge page is reported, never bypassed.
+const VERSION="ranking-layer1-etl-v1.8.0";
 const QS_STATIC:Record<number,string>={2026:"4061771"};
 const QS_REST:Record<number,string>={2027:"4153156"};
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
@@ -134,13 +139,42 @@ async function fetchQsStatic(year:number){
  const text=await r.text(),bytes=new TextEncoder().encode(text);const payload=JSON.parse(text);if(!Array.isArray(payload?.data))throw new Error("QS static XHR payload missing data array");
  return{url,nid,bytes,text,payload,rows:qsRows(payload.data)};
 }
+const sleep=(ms:number)=>new Promise(r=>setTimeout(r,ms));
+async function getPublic(url:string,accept="application/json"){
+ const c=new AbortController(),t=setTimeout(()=>c.abort(),90000); // fixed: API time-out for one publisher request
+ try{const r=await fetch(url,{signal:c.signal,redirect:"follow",headers:{"User-Agent":USER_AGENT,"Accept":accept}});const text=await r.text();return{status:r.status,contentType:r.headers.get("content-type"),text};}
+ finally{clearTimeout(t)}
+}
+// robots.txt of the publisher: the path must be allowed for "User-agent: *"; its crawl-delay spaces the requests.
+async function robotsFor(origin:string,target:string){
+ const r=await getPublic(`${origin}/robots.txt`,"text/plain");
+ const text=r.status===200?r.text:"",rules=robotsRules(text);
+ if(!robotsAllows(text,target))throw new Error(`robots.txt of ${new URL(origin).hostname} does not allow ${new URL(target).pathname}`);
+ return{delayMs:Math.max(0,Number(rules.crawlDelaySeconds||0))*1000};
+}
+const challenged=(system:string,url:string,status:number)=>({blocked:true,status,url,error:`${system} publisher endpoint returned a challenge page (HTTP ${status}); no bypass attempted. The edition held stays as it is; the source is temporarily unavailable and the Layer 1 run retries later.`});
+async function fetchThePublic(year:number){
+ const src=PUBLIC_SOURCES.the_wur,url=src.jsonUrl(year),robots=await robotsFor(src.origin,url);
+ if(robots.delayMs)await sleep(robots.delayMs);
+ const r=await getPublic(url);
+ if(isChallenge(r.status,r.contentType,r.text))return challenged("THE",url,r.status);
+ if(r.status!==200)throw new Error(`THE ranking JSON HTTP ${r.status}`);
+ const payload=JSON.parse(r.text),parsed=theRowsFromPublicJson(payload,year),bytes=new TextEncoder().encode(r.text);
+ return{url,pageUrl:src.pageUrl(year),nid:`the_wur_${year}`,bytes,rows:parsed.rows,stats:parsed.stats};
+}
 async function fetchQsRest(year:number){
  const nid=QS_REST[year];if(!nid)return null;
- const all:any[]=[];let page=0;const raw:any[]=[];
- while(page<20){const url=`https://www.topuniversities.com/rankings/endpoint?nid=${nid}&page=${page}&items_per_page=500&tab=indicators`;const r=await fetch(url,{headers:{"User-Agent":"Mozilla/5.0","Accept":"application/json","X-Requested-With":"XMLHttpRequest","Referer":"https://www.topuniversities.com/world-university-rankings"}});if(r.status===403)return{blocked:true,status:403,url,nid};if(!r.ok)throw new Error(`QS REST HTTP ${r.status}`);const d=await r.json();const nodes=Array.isArray(d?.score_nodes)?d.score_nodes:[];raw.push(d);for(const n of nodes)all.push(n);if(nodes.length<500)break;page++}
- const text=JSON.stringify(raw),bytes=new TextEncoder().encode(text);
- const rows=all.map((n:any,i:number)=>{const parsed=parseRank(n.rank_display??n.rank??"");const indicators=Object.fromEntries(Object.entries(n).filter(([k,v])=>(/^ind_\d+$/.test(k)||/score/i.test(k))&&score(v)!==null).map(([k,v])=>[k,score(v)]));return{publisher_institution_id:clean(n.nid||n.id)||null,institution_name:clean(n.title),profile_url:clean(n.path)||null,country_text:clean(n.country)||null,location_text:[clean(n.city),clean(n.country)].filter(Boolean).join(", ")||null,rank_display:parsed.rank_display||null,rank_exact:parsed.rank_exact,rank_low:parsed.rank_low,rank_high:parsed.rank_high,is_tied:parsed.is_tied,rank_status:parsed.rank_status,overall_score:score(n.overall_score??n.score),source_row_ordinal:i+1,indicators,source_row_payload:n}}).filter((x:any)=>x.institution_name);
- return{url:`https://www.topuniversities.com/rankings/endpoint?nid=${nid}`,nid,bytes,text,payload:raw,rows};
+ const src=PUBLIC_SOURCES.qs_wur,base=`${src.origin}/rankings/endpoint?nid=${nid}&tab=indicators&items_per_page=500`,robots=await robotsFor(src.origin,base);
+ const pages:any[]=[];let page=0,totalPages=1;
+ while(page<totalPages){
+  if(robots.delayMs)await sleep(robots.delayMs);
+  const url=`${base}&page=${page}`,r=await getPublic(url);
+  if(isChallenge(r.status,r.contentType,r.text))return challenged("QS",url,r.status);
+  if(r.status!==200)throw new Error(`QS REST HTTP ${r.status}`);
+  const d=JSON.parse(r.text);pages.push(d);totalPages=Math.max(1,Number(d?.total_pages)||1);page++;
+ }
+ const parsed=qsRowsFromRestPages(pages,year),text=JSON.stringify(pages),bytes=new TextEncoder().encode(text);
+ return{url:`${src.origin}/rankings/endpoint?nid=${nid}`,pageUrl:src.pageUrl(year),nid,bytes,text,payload:pages,rows:parsed.rows,stats:parsed.stats};
 }
 async function retainJson(service:any,sourceId:string,systemCode:string,year:number,sourceUrl:string,nid:string,bytes:Uint8Array,rowCount:number,endpointKind:string){
  const hash=await sha(bytes),path=`ranking/${systemCode}/${year}/xhr-${hash}.json`;
@@ -164,13 +198,16 @@ Deno.serve(async(req:Request)=>{
    const {data:ctx,error:ctxErr}=await service.rpc("svc_ranking_import_control_context",{p_import_id:importId});if(ctxErr)throw ctxErr;imp=ctx;
    if(!imp?.id||clean(imp.system_code)!==systemCode||Number(imp.edition_year)!==editionYear)throw new Error("selected ranking import does not match system/year");
   }
-  if(!imp&&systemCode==="qs_wur"){
-   let fetched=await fetchQsStatic(editionYear);
-   if(!fetched)fetched=await fetchQsRest(editionYear);
-   if(fetched?.blocked)return json({ok:false,error:"QS publisher REST endpoint is Cloudflare-challenged from Pilot egress; no bypass attempted. Use authorised publisher file fallback or qualify an approved access route.",endpointAccessState:"cloudflare_challenge",status:fetched.status,systemCode,editionYear,nid:fetched.nid,workerVersion:VERSION},409);
+  let publicStats:any=null,jsonUrl="",publicSystem:""|"the_wur"|"qs_wur"="";
+  if(!imp&&(systemCode==="qs_wur"||systemCode==="the_wur")){
+   let fetched:any=systemCode==="qs_wur"?await fetchQsStatic(editionYear):null;
+   if(!fetched)fetched=systemCode==="qs_wur"?await fetchQsRest(editionYear):await fetchThePublic(editionYear);
+   if(fetched?.blocked)return json({ok:false,error:fetched.error,endpointAccessState:"challenge",status:fetched.status,url:fetched.url,systemCode,editionYear,workerVersion:VERSION},503);
    if(fetched&&fetched.rows?.length){
-    rows=fetched.rows;sourceUrl=fetched.url;acquisitionMode=QS_STATIC[editionYear]?"publisher_static_xhr_json":"publisher_rest_json";
-    const retained=sourceId?await retainJson(service,sourceId,systemCode,editionYear,sourceUrl,fetched.nid,fetched.bytes,rows.length,acquisitionMode):{hash:await sha(fetched.bytes),evidenceArtifactId:null,path:null};
+    rows=fetched.rows;jsonUrl=fetched.url;sourceUrl=fetched.pageUrl||fetched.url;publicStats=fetched.stats||null;
+    acquisitionMode=systemCode==="the_wur"?"publisher_public_json":QS_STATIC[editionYear]?"publisher_static_xhr_json":"publisher_public_json";
+    if(acquisitionMode==="publisher_public_json")publicSystem=systemCode;
+    const retained=sourceId?await retainJson(service,sourceId,systemCode,editionYear,jsonUrl,fetched.nid,fetched.bytes,rows.length,acquisitionMode):{hash:await sha(fetched.bytes),evidenceArtifactId:null,path:null};
     sourceHash=retained.hash;evidenceArtifactId=retained.evidenceArtifactId;filename=retained.path||"";
    }
   }
@@ -189,17 +226,24 @@ Deno.serve(async(req:Request)=>{
   const unknown=rows.filter(x=>x.rank_status==="unknown").length,indicatorCells=rows.reduce((n,r)=>n+Object.values(r.indicators||{}).filter(v=>v!==null).length,0);
   let reconciliationPreview=null;
   if(["qs_wur","the_wur","arwu"].includes(systemCode)){const {data:preview,error:previewErr}=await service.rpc("svc_ranking_reconciliation_preview_system",{p_rows:rows,p_country_code:"AU",p_system_code:systemCode});if(previewErr)throw previewErr;reconciliationPreview=preview;}
-  if(mode!=="apply")return json({ok:true,mode:"dry_run",systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,unknownRankSemantics:unknown,indicatorCells,sourceHash,evidenceArtifactId,filename,sourceUrl,reconciliationPreview,sample:rows.slice(0,5).map(({source_row_payload,...x})=>x),workerVersion:VERSION});
-  if(!["manual_file","manual_the_native_json"].includes(acquisitionMode))return json({ok:false,error:"Direct publisher JSON APPLY is intentionally disabled; use registered Evidence through the governed import workflow.",dryRunRequired:true,systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,sourceHash,evidenceArtifactId,workerVersion:VERSION},409);
+  if(mode!=="apply")return json({ok:true,mode:"dry_run",systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,unknownRankSemantics:unknown,indicatorCells,sourceHash,evidenceArtifactId,filename,sourceUrl,jsonUrl:jsonUrl||null,publicStats,attribution:publicSystem?attribution(publicSystem,editionYear):null,reconciliationPreview,sample:rows.slice(0,5).map(({source_row_payload,...x})=>x),workerVersion:VERSION});
+  // v1.8.0: public publisher JSON is applied like an uploaded file (Platform Admin 22 Nov 2026 09:22); its JSON is retained as evidence first.
+  if(!["manual_file","manual_the_native_json","publisher_public_json","publisher_static_xhr_json"].includes(acquisitionMode))return json({ok:false,error:`acquisition mode ${acquisitionMode} cannot be applied`,systemCode,editionYear,acquisitionMode,workerVersion:VERSION},409);
+  if(acquisitionMode!=="manual_file"&&!evidenceArtifactId)return json({ok:false,error:"apply of publisher JSON needs source_id so the JSON is retained as evidence first",systemCode,editionYear,acquisitionMode,workerVersion:VERSION},409);
+  const revision=publicSystem?PUBLIC_SOURCES[publicSystem].revision:acquisitionMode==="publisher_static_xhr_json"?"qs_static_xhr_json_v1":"initial";
   const batchSize=200;let appliedBatches=0,partialMapped=0,partialUnmapped=0;
   for(let offset=0;offset<rows.length;offset+=batchSize){
    const batch=rows.slice(offset,offset+batchSize);
-   const {data:part,error:applyErr}=await service.rpc("svc_ranking_ingest_apply",{p_system_code:systemCode,p_edition_year:editionYear,p_source_url:sourceUrl,p_methodology_url:null,p_source_artifact_id:evidenceArtifactId,p_source_fingerprint:sourceHash,p_source_revision:"initial",p_rows:batch});
+   const {data:part,error:applyErr}=await service.rpc("svc_ranking_ingest_apply",{p_system_code:systemCode,p_edition_year:editionYear,p_source_url:sourceUrl,p_methodology_url:null,p_source_artifact_id:evidenceArtifactId,p_source_fingerprint:sourceHash,p_source_revision:revision,p_rows:batch});
    if(applyErr)throw new Error(errText(applyErr));
    appliedBatches++;partialMapped+=Number(part?.mapped||0);partialUnmapped+=Number(part?.unmapped||0);
   }
   const {data:finalized,error:finalizeErr}=await service.rpc("svc_ranking_ingest_finalize",{p_system_code:systemCode,p_edition_year:editionYear,p_source_artifact_id:evidenceArtifactId});
   if(finalizeErr)throw new Error(errText(finalizeErr));
-  return json({ok:true,mode:"apply",systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,unknownRankSemantics:unknown,indicatorCells,sourceHash,evidenceArtifactId,filename,reconciliation:finalized,applyBatches:appliedBatches,batchSize,partialMapped,partialUnmapped,workerVersion:VERSION});
+  // v1.8.0: an attributed public edition is published live at once: access public, the attribution recorded, any other revision of the same
+  // edition superseded, and the rows of AU, NZ and CA institutions not yet linked to a provider listed for review (Rankings › links).
+  let published=null;
+  if(publicSystem||acquisitionMode==="publisher_static_xhr_json"){const sys=(publicSystem||systemCode) as "the_wur"|"qs_wur";const {data:pub,error:pubErr}=await service.rpc("svc_ranking_public_edition_publish_v1",{p_system_code:systemCode,p_edition_year:editionYear,p_source_artifact_id:evidenceArtifactId,p_attribution:attribution(sys,editionYear)});if(pubErr)throw new Error(errText(pubErr));published=pub;}
+  return json({ok:true,mode:"apply",systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,unknownRankSemantics:unknown,indicatorCells,sourceHash,evidenceArtifactId,filename,sourceUrl,jsonUrl:jsonUrl||null,publicStats,reconciliation:{...finalized,mapped:Number(finalized?.mapped||0),unmapped:Number(finalized?.global_unmapped||0)},published,applyBatches:appliedBatches,batchSize,partialMapped,partialUnmapped,workerVersion:VERSION});
  }catch(e){return json({ok:false,error:errText(e),workerVersion:VERSION},500)}
 });

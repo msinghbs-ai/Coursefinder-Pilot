@@ -39,11 +39,12 @@ test.describe('CF-068 QS direct XHR Layer 1 acquisition @deployed',()=>{
   await milestoneScreenshot(page,testInfo,'cf-068-qs-2026-xhr-validated')
  }finally{await finish(testInfo,runtime)}})
 
- test('QS 2027 reports publisher endpoint challenge without bypassing it @live-acting',async({page},testInfo)=>{test.setTimeout(120000);const runtime=observeRuntime(page);try{
+ // s966 (Platform Admin 22 Nov 2026 09:22, IR-005): QS 2027 is read from the public results endpoint; a challenge page is reported, never bypassed
+ test('QS 2027 reads the public endpoint or reports a challenge without bypassing it @live-acting',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);const dialog=await openLayer1(page);const read=await layer1Read(page,dialog),source=(read.data?.sources||[]).find(s=>s.source_system==='QS'&&Number(s.edition_year)===2027)
-  expect(source?.source_id).toBeTruthy();expect(source?.acquisition_mode).toBe('publisher_rest_json_qualification_with_manual_fallback')
+  expect(source?.source_id).toBeTruthy();expect(source?.acquisition_mode).toBe('publisher_public_json')
   const result=await validate(page,read,source)
-  expect(result.status).toBeGreaterThanOrEqual(400)
-  expect(String(result.body?.error||'')).toMatch(/Cloudflare|challenge/i)
+  if(result.status===200){expect(result.body?.ok).toBe(true);expect(Number(result.body?.validation?.discovered?.candidate_observations)).toBeGreaterThan(1000)}
+  else{expect(result.status).toBeGreaterThanOrEqual(400);expect(String(result.body?.error||'')).toMatch(/challenge/i);expect(String(result.body?.error||'')).toMatch(/no bypass attempted/i)}
  }finally{await finish(testInfo,runtime)}})
 })

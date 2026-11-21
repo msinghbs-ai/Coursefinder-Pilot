@@ -35,8 +35,10 @@ test.describe('CF-067 QS THE Layer 1 ranking ingestion contract',()=>{
   expect(etl).toContain('publisher_static_xhr_json')
   // 7 Oct 2026: rewritten to the current ETL (indicator file by node id; direct publisher JSON apply still refused; publisher file fallback)
   expect(etl).toContain('_indicators.txt`')
-  expect(etl).toContain('Direct publisher JSON APPLY is intentionally disabled')
-  expect(etl).toContain('Use authorised publisher file fallback')
+  // s966 (Platform Admin 22 Nov 2026 09:22, IR-005): THE and QS public JSON is applied and published with attribution; no upload or terms hold
+  expect(etl).toContain('publisher_public_json')
+  expect(etl).toContain('svc_ranking_public_edition_publish_v1')
+  expect(etl).not.toContain('Direct publisher JSON APPLY is intentionally disabled')
   expect(etl).toContain('ranked_band')
   expect(etl).toContain('reporter')
   expect(etl).toContain('svc_ranking_ingest_apply')
