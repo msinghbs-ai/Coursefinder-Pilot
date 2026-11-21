@@ -1,0 +1,41 @@
+# Guards: Lane 2 (S2-Data-Destination-Continuous), Platform Admin 21 Nov 2026 21:16 AEDT; s960 RM1C application routes; immediate live activation (21 Nov 2026 10:07)
+# CF-247 s960: read the destination page facts whose pages are read directly (scope "static"), once, now. Job destination-page-facts-load reads
+# every fact on the 3rd of the month (Home Affairs pages through Firecrawl); this run skips every page a fact reads rendered, so it costs $0.
+# It starts the same edge function the schedule calls (layer1-destination-geo-loader, mode facts) and reads the load back.
+# Safety: the typed project ref must equal the repository variable SUPABASE_PROJECT_REF (never the demo project); the load writes only drafts
+# (security.destination_page_facts_load_v1); approving rules and publishing an edition stay with the Platform Admin.
+name: Destination page facts (static read)
+on:
+  workflow_dispatch:
+    inputs:
+      project_ref:
+        description: "Type the target project ref to confirm"
+        required: true
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ inputs.project_ref }}
+    steps:
+      - name: Confirm target
+        run: |
+          if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ] || [ "$REF" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "::error::Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
+      - name: Read the static page facts and read the load back
+        run: |
+          q() { printf '%s' "$1" > s.sql; jq -n --rawfile q s.sql '{query:$q}' > q.json; code=$(curl -sS -o r.json -w '%{http_code}' -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @q.json "https://api.supabase.com/v1/projects/$REF/database/query"); if [ "$code" -ge 300 ]; then echo "::error::query failed ($code): $(head -c 400 r.json)"; exit 1; fi; }
+          q "select now() as t"; since=$(jq -r '.[0].t' r.json)
+          q "select pipeline.svc_pilot_submit_nonce('layer1-destination-geo-loader', jsonb_build_object('mode', 'facts', 'scope', 'static', 'trigger', 'static_read')) as id"
+          echo "edge request $(jq -r '.[0].id' r.json)"
+          for t in $(seq 1 24); do
+            sleep 10
+            q "select action, detail from pipeline.admin_control_events where area = 'destination' and action = 'page_facts_load' and detail->>'trigger' = 'static_read' and created_at >= '$since' order by created_at desc limit 1"
+            if [ "$(jq 'length' r.json)" != "0" ]; then jq '.[0].detail | del(.facts) + {facts: [.facts[] | {title, status, reason}]}' r.json; break; fi
+          done
+          if [ "$(jq 'length' r.json)" = "0" ]; then echo "::error::no load recorded within 4 minutes"; exit 1; fi
+          q "select r.title, r.approval_status, r.state_code, (select string_agg(a.entity_type || ':' || coalesce(a.entity_code, ''), ', ' order by a.entity_code) from destination.rule_applicability a where a.rule_id = r.id) as applies_to from destination.study_rules r join destination.editions e on e.id = r.edition_id where e.domain = 'study_rules' and e.status = 'draft' and r.rule_category = 'application_route' order by r.title"
+          jq '.' r.json
+          echo "## Static page-facts read" >> "$GITHUB_STEP_SUMMARY"; jq -r '.[] | "- \(.title): \(.approval_status), applies to \(.applies_to)"' r.json >> "$GITHUB_STEP_SUMMARY"
