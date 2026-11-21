@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.499 — 21 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.77** (S1-Impl-Layer4-Human-UI-Guide s932, found in the signed-in live check of v2.16.76): the description queue is named by its part when no part is chosen (Course description when only course descriptions wait). No migration.
+
 ## 0.1.498 — 21 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.76** (S1-Impl-Layer4-Human-UI-Guide s931, Decision 279): Layer 4 primary filter row and Advanced filters (N); review card zones Z1 to Z6 with Yes / No / Resubmit to Review with AI and More options; reject reason chips; AI budget line; Lock this value where decide accepts it; FieldGap pills and Add official URL on Course detail; CoverageNotice; Platform guide Filters & badges, Layer 4 guide and worked examples. Fixes: Approve all verified for provider count, Course / University description split, one read for every Layer 4 count, CRICOS/NZQA code proof of course descriptions. Migration `20261121200000` (D3 filter arguments; md5-guarded).

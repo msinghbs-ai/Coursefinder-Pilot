@@ -32,7 +32,7 @@ export function cleanedOf(it,rules){const d=it?.detail||{},original=String(d.pro
 export default function Layer4Focus({kinds,kind,part='',providerId='',country='',sourceCountry='',bucket='all',onTotal,rank,onError,onDecided,renderItem,onOtherView}){
   const[g,setG]=useState(null),[key,setKey]=useState(''),[idx,setIdx]=useState(0),[cards,setCards]=useState({}),[gone,setGone]=useState(()=>new Set())
   const[pv,setPv]=useState(null),[rules,setRules]=useState(null),[run,setRun]=useState(null)
-  const label=kinds?.[kind]?.label||kind
+  const label=kind==='provider_description'?(part==='course'?'Course description':part==='university'?'University description':'Description'):(kinds?.[kind]?.label||kind) // s932: the description queue by its part
   const args={kind,...(providerId?{provider_id:providerId}:{}),...(country?{country}:{}),...(sourceCountry?{source_country:sourceCountry}:{})}
   const load=(keep)=>{if(!keep)setG(null);rpc('rule_groups',args).then(d=>setG(d)).catch(e=>{setG({error:e.message});onError?.(e.message)})}
   useEffect(()=>{setKey('');setIdx(0);setCards({});setGone(new Set());setPv(null);setRun(null);if(kind)load()},[kind,providerId,country,sourceCountry])

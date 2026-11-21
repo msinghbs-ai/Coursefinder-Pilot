@@ -134,6 +134,8 @@ export default function Layer4Inbox({onError,routeParams}){
   const[part,setPart]=useState(''),[uni,setUni]=useState(null),[dest,setDest]=useState(''),[src,setSrc]=useState(''),[bucket,setBucket]=useState('all'),[ftotal,setFtotal]=useState(null),[split,setSplit]=useState(null)
   const loadSplit=()=>{if(!(Number(sum?.by_kind?.provider_description?.n)>0)){setSplit(null);return}rpc('rule_groups',{kind:'provider_description'}).then(d=>{let c=0,u=0;for(const g of d.groups||[]){if(descPartOf(g)==='course')c+=Number(g.n)||0;else u+=Number(g.n)||0}setSplit({course:c,university:u})}).catch(()=>setSplit(null))}
   useEffect(()=>{loadSplit()},[sum])
+  // s932 (live check 21 Nov 2026 14:10): with no part chosen, the description queue is named by what it holds (only course descriptions: Course description)
+  const effPart=kind==='provider_description'&&!part&&split?(Number(split.course)>0&&!Number(split.university)?'course':Number(split.university)>0&&!Number(split.course)?'university':''):part
   if(!sum)return <Loading label="Reading what needs a person…"/>
   const bk=sum.by_kind||{},focus=view==='focus',showOthers=others||!focus
   return <div className="l4i" data-l4-inbox>
@@ -145,8 +147,8 @@ export default function Layer4Inbox({onError,routeParams}){
     <ReviewReadinessLine/>
     {!focus&&<GroupBar active={view==='group'?grp:''} onPick={g=>{setGrp(g);setView('group');setNote('')}} refresh={gtick} total={sum.total}/>}
     {/* s931 (Decision 279, §4.1 and §5.1): the primary row and Advanced filters (N) replace the kind toolbar and the view row, in place */}
-    <Layer4PrimaryFilters kinds={kinds} order={order} kind={kind} part={part} split={split} total={sum.total} showAll={!focus}
-      countOf={k=>focus&&k===kind&&ftotal!=null&&!part?ftotal:Number(bk[k]?.n)||0}
+    <Layer4PrimaryFilters kinds={kinds} order={order} kind={kind} part={effPart} split={split} total={sum.total} showAll={!focus}
+      countOf={k=>focus&&k===kind&&ftotal!=null&&!effPart?ftotal:Number(bk[k]?.n)||0}
       onKind={(k,pt)=>{setKind(k);setPart(pt||'');if(k!=='aer_review')setSrc('');setNote('')}}
       provider={view==='university'?(pick?{provider_id:pick.provider_id,name:pick.name}:null):uni} onProvider={u=>{if(view==='university'){if(u)choose({provider_id:u.provider_id,name:u.name},'');else setPick(null)}else setUni(u)}}
       country={dest} onCountry={setDest} source={src} onSource={setSrc}
@@ -159,7 +161,7 @@ export default function Layer4Inbox({onError,routeParams}){
     </div>
     {note&&<p className="l4i-note" role="status">{note}</p>}
     {kind==='aer_review'&&(view==='university'||view==='kind')&&<Layer4HoldReasons kinds={kinds} targetDays={sum.target_days} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>}
-    {focus?<Layer4Focus kinds={kinds} kind={kind} part={part} providerId={uni?.provider_id||''} country={dest} sourceCountry={kind==='aer_review'?src:''} bucket={bucket} onTotal={setFtotal} rank={sum.rank} onError={onError} onOtherView={v=>{setView(v);setNote('')}} onDecided={r=>{if(!r?.batch)setNote(outcomeText(r));else setNote(`Batch: ${r.admitted} admitted${r.failed?`, ${r.failed} not admitted`:''}.`);loadSum();loadSplit()}}
+    {focus?<Layer4Focus kinds={kinds} kind={kind} part={effPart} providerId={uni?.provider_id||''} country={dest} sourceCountry={kind==='aer_review'?src:''} bucket={bucket} onTotal={setFtotal} rank={sum.rank} onError={onError} onOtherView={v=>{setView(v);setNote('')}} onDecided={r=>{if(!r?.batch)setNote(outcomeText(r));else setNote(`Batch: ${r.admitted} admitted${r.failed?`, ${r.failed} not admitted`:''}.`);loadSum();loadSplit()}}
       renderItem={(it,done,hold,hkey)=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} holdLabel={hold} holdKey={hkey} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
     view==='grid'?<Layer4Grid kinds={kinds} targetDays={sum.target_days} providerId={uni?.provider_id||''} sourceCountry={src} rank={sum.rank} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
     view==='group'?<GroupList group={grp} refresh={gtick} renderItem={it=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={r=>{decided(r);setGtick(x=>x+1)}} onError={onError} onRefresh={()=>{loadSum();setGtick(x=>x+1)}}/>}/>:
