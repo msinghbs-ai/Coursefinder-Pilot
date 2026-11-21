@@ -42,7 +42,7 @@ test.describe('mocked browser', () => {
     await page.locator('[data-l4-focus-group="cd:identity_margin_thin"]').click()
     await page.waitForTimeout(1200)                                                   // the rule's records are read while the reviewer reads
     await page.locator('[data-l4-batch-open]').click()
-    const ms = Number((await page.locator('[data-l4-batch-ms]').innerText()).match(/shown in (\d+) ms/)[1])
+    const ms = Number((await page.locator('[data-l4-batch-timing]').textContent()).match(/shown in (\d+) ms/i)[1]) // s931: timings under Technical detail
     expect(ms).toBeLessThan(300)
   })
 })

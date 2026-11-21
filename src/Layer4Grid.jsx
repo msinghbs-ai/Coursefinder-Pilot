@@ -76,7 +76,7 @@ export function Drawer({target,kinds,targetDays,renderItem,onClose,onDecided,nav
 // s930 (S1-Dynamic-Lookups): the country pills are the live target countries, labelled name (code), with All first
 const countryPills=lk=>[['','All'],...countryPairs(lk,{label:c=>`${c.name} (${c.code})`})]
 const TYPE_PILLS=[['','All'],['university','University'],['vet_college','VET / College'],['school','School'],['hei','HEI']]
-export default function Layer4Grid({kinds={},targetDays=0,rank,renderItem,onDecided,onError}){
+export default function Layer4Grid({kinds={},targetDays=0,providerId='',sourceCountry='',rank,renderItem,onDecided,onError}){ // s931 (D3): University and Source country from the primary row
   const[vs,setVs]=useState(null),[viewId,setViewId]=useState(''),[kind,setKind]=useState(''),[why,setWhy]=useState(''),[q,setQ]=useState(''),[sort,setSort]=useState('oldest')
   const[cols,setCols]=useState(DEFAULT_COLS),[offset,setOffset]=useState(0),[data,setData]=useState(null),[loading,setLoading]=useState(false),[err,setErr]=useState('')
   const[picker,setPicker]=useState(false),[open,setOpen]=useState(null),[saving,setSaving]=useState(''),[name,setName]=useState(''),[note,setNote]=useState('')
@@ -89,9 +89,9 @@ export default function Layer4Grid({kinds={},targetDays=0,rank,renderItem,onDeci
   const loadViews=pick=>call('admin_saved_views_read_v1',{p_screen:'layer4_inbox'}).then(d=>{setVs(d);const v=(pick&&d.views.find(x=>x.id===pick))||d.views[0];if(v)apply(v)}).catch(e=>setErr(e.message))
   const apply=v=>{const d=v.definition||{};setViewId(v.id);setKind((d.kinds||[])[0]||'');setWhy(d.why_contains||'');setQ(d.q||'');setSort(d.sort||'oldest');setCols(Array.isArray(d.columns)&&d.columns.length?d.columns:DEFAULT_COLS);setOffset(0);setNote('')}
   useEffect(()=>{loadViews()},[])
-  const args=o=>({kind,why_contains:why||undefined,q:q||undefined,country:cty||undefined,provider_type:ptype||undefined,sort,offset:o})
+  const args=o=>({kind,why_contains:why||undefined,q:q||undefined,country:cty||undefined,provider_type:ptype||undefined,provider_id:providerId||undefined,source_country:(kind==='aer_review'&&sourceCountry)||undefined,sort,offset:o})
   const load=(o=offset)=>{if(!kind)return;setLoading(true);setErr('');call('admin_layer4_grid_read_v1',{p_args:args(o)}).then(d=>{setData(d);setLoading(false)}).catch(e=>{setErr(e.message);setData(null);setLoading(false)})}
-  useEffect(()=>{setOffset(0);load(0)},[kind,why,sort,cty,ptype])
+  useEffect(()=>{setOffset(0);load(0)},[kind,why,sort,cty,ptype,providerId,sourceCountry])
   useEffect(()=>{const h=setTimeout(()=>{setOffset(0);load(0)},350);return()=>clearTimeout(h)},[q])
   // s767 (Platform Admin 19 Nov 2026 19:26): live cohort counts on the pills. Each count is the same read with that pill chosen and the other filters kept
   // (offset past the end: only the total comes back). Two at a time, once the page has loaded, and kept by filter so going back costs nothing.

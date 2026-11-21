@@ -41,7 +41,7 @@ test('the drawer reads the item, its evidence and its decision history without d
 })
 
 test('the Inbox has a Grid view and decisions in the drawer use the Inbox card', () => {
-  expect(I).toContain("[['university','By university'],['kind','By kind'],['grid','Grid'],['decided','Decided']]")
+  expect(fs.readFileSync('src/Layer4AdvancedFilters.jsx', 'utf8')).toContain("['university','By university'],['kind','By kind'],['grid','Grid'],['decided','Decided']") // s931: the views are under Advanced filters
   expect(I).toContain("view==='grid'?<Layer4Grid kinds={kinds}")
   expect(I).toContain('renderItem={(it,done)=><Item it={it}')
   expect(G).toContain("call('admin_layer4_grid_read_v1'")

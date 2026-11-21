@@ -38,7 +38,7 @@ export function universitiesPage(all, a = {}, { rank = 6, pageSize = 100, tickMa
     ticks: ticks ? { capped: f.length > tickMax, rows: f.slice(0, tickMax).map(r => ({ provider_id: r.provider_id, name: r.name, adapter: r.adapter ? { state: r.adapter.state, fields: r.adapter.fields || [] } : null, qualify: r.qualify ? { passing: r.qualify.passing || [] } : null, onboarding: r.onboarding ? { id: r.onboarding.id, status: r.onboarding.status } : null })) } : null }
 }
 
-export async function mockAdmin(page, { rank = 6, healthMissing = false, courseDiffers = false, creditNotices = [], onboardingAuto = false, universities = null, universitiesPageSize = 100, universitiesTickMax = 2000, coverageStale = false, role = null } = {}) {
+export async function mockAdmin(page, { rank = 6, healthMissing = false, courseDiffers = false, creditNotices = [], onboardingAuto = false, universities = null, universitiesPageSize = 100, universitiesTickMax = 2000, coverageStale = false, role = null, moreOpen = true } = {}) {
   // SS-016 role simulation: `role` names the signed-in role (role-fixtures.mjs); without it the earlier default stays
   const context = { ...F.context, role_rank: rank, role: role || (rank >= 6 ? 'platform_admin' : 'viewer') }
   const session = { access_token: 'mock-token', refresh_token: 'mock-refresh', token_type: 'bearer', expires_in: 360000, expires_at: Math.floor(Date.now() / 1000) + 360000, user: { id: context.user_id, email: 'admin@example.test', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {} } }
@@ -296,6 +296,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_source_comparison: b => b.p_entity_type === 'course' ? (courseDiffers ? F.courseComparisonDiffers : F.courseComparison) : F.scholarshipComparison,
   }
   await page.addInitScript(s => { try { localStorage.setItem('sb-example-auth-token', JSON.stringify(s)) } catch {} }, session)
+  // s931: Layer 4 cards open with More options shown, as a reviewer who opened it once (a spec of the closed bar passes moreOpen: false)
+  if (moreOpen) await page.addInitScript(() => { try { if (!sessionStorage.getItem('l4-more-open')) sessionStorage.setItem('l4-more-open', JSON.stringify({ '*': true })) } catch {} })
   await page.route('https://example.supabase.co/**', async route => {
     const u = new URL(route.request().url())
     let body = {}

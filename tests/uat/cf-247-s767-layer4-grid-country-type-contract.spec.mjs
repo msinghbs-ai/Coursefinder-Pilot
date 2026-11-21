@@ -26,7 +26,7 @@ test('the grid sends both filters and offers exactly the pills the Platform Admi
   // s930 (S1-Dynamic-Lookups): the country pills are the live target countries, labelled name (code), with All first
   expect(G).toContain("const countryPills=lk=>[['','All'],...countryPairs(lk,{label:c=>`${c.name} (${c.code})`})]")
   expect(G).toContain("[['','All'],['university','University'],['vet_college','VET / College'],['school','School'],['hei','HEI']]")
-  expect(G).toContain('[kind,why,sort,cty,ptype]')
+  expect(G).toContain('[kind,why,sort,cty,ptype,providerId,sourceCountry]') // s931 D3
 })
 
 const kinds = { provider_description: { label: 'Provider description', order: 1, choices: [] } }

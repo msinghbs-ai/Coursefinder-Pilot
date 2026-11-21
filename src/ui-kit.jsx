@@ -135,3 +135,20 @@ export function shareableParams(state,defaults){
   for(const k of Object.keys(defaults)){const v=state[k],d=defaults[k];if(JSON.stringify(v)===JSON.stringify(d)||v===''||v==null)continue;out[k]=typeof v==='object'?JSON.stringify(v):String(v)}
   return out
 }
+
+// CF-247 s931 (Decision 279, §6): the source-limitation pill an empty field shows. state comes from gapStateOf (src/lib/field-gap.js); href opens the
+// Layer 4 item or the university-wide row (Curator+); canAct with onAddUrl shows Add official URL on the no-address pill (D5, Curator rank 3+).
+export function FieldGap({gap,href,canAct=false,onAddUrl}){
+  const[open,setOpen]=useState(false),[url,setUrl]=useState(''),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false)
+  const st=gap?.state||'none'
+  const words={in_review:`In Layer 4 review (${Number(gap?.count)||0} waiting)`,university_wide:'University-wide rule applies',no_url:'No official website / course URL on file',not_stated:'Not stated on institution page'}[st]
+  const tip={in_review:'A reviewer is checking this value.',university_wide:'The course has no value of its own; the university-wide value covers it.',no_url:'Nothing can be read because no official address is held.',not_stated:'The page was read and does not state it.'}[st]
+  if(st==='none')return <span className="cf-empty" data-field-gap="none" title={gap?.reason||undefined}>—{gap?.reason?<small> {gap.reason}</small>:null}</span>
+  const tone={in_review:'info',university_wide:'violet',no_url:'warning',not_stated:'neutral'}[st]
+  const pill=<span className={`cf-chip tone-${tone} cf-gap`} title={tip} data-field-gap={st}>{words}</span>
+  return <span className="cf-gap-wrap">{href?<a href={href} className="cf-gap-link">{pill}</a>:pill}
+    {st==='no_url'&&canAct&&onAddUrl&&(!open?<button type="button" className="m-secondary compact" onClick={()=>setOpen(true)} data-field-gap-add>Add official URL</button>:
+      <span className="cf-gap-add" data-field-gap-form><input value={url} onChange={e=>{setUrl(e.target.value);setMsg('')}} placeholder="https://" aria-label="Official address" type="url"/>
+        <button type="button" className="m-primary compact" disabled={busy||!url.trim()} onClick={async()=>{setBusy(true);setMsg('');try{const m=await onAddUrl(url.trim());if(m)setMsg(m);else{setOpen(false);setUrl('')}}catch(e){setMsg(e?.message||String(e))}finally{setBusy(false)}}} data-field-gap-save>{busy?'Saving…':'Save'}</button>
+        <button type="button" className="m-secondary compact" onClick={()=>{setOpen(false);setMsg('')}}>Cancel</button>{msg&&<small role="alert" className="cf-gap-msg">{msg}</small>}</span>)}</span>
+}

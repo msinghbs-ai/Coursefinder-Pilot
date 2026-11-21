@@ -13,7 +13,7 @@ import{roleName}from'./nav-map'
 import{descriptionRules}from'./DescriptionEditAdmit'
 import{isCourseDescription}from'./CourseDescriptionPanel'
 import{checkDescription,markBanned,stripBanned}from'./lib/description-check.js'
-import{REREAD_SKIP,batchAdmits,batchRereads,firstSentence,groupLabel,isRecoveryGroup,plainHold,refsOf,rereadAction,settleChoices}from'./lib/l4-rules.js'
+import{REREAD_SKIP,batchAdmits,batchRereads,descPartOf,firstSentence,groupLabel,inBucket,isRecoveryGroup,plainHold,refsOf,rereadAction,settleChoices}from'./lib/l4-rules.js'
 import'./ops-pulse.css'
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
@@ -26,13 +26,18 @@ export function cleanedOf(it,rules){const d=it?.detail||{},original=String(d.pro
   const s=stripBanned(original,r.words),c=s.changed?checkDescription(s.text,r):null
   return{ok:!!(s.changed&&c?.ok),original,text:s.text,removed:s.removed,words:r.words,why:!s.changed?'No word from the lists was found':c?.ok?'':`The cleaned text fails a check: ${c.problems.join('; ')||'a word from the lists remains'}`}}
 
-export default function Layer4Focus({kinds,kind,rank,onError,onDecided,renderItem,onOtherView}){
+// s931 (Decision 279): the primary row narrows the rail on the server (provider_id, country, source_country: D3) and on the page (description part,
+// Decision bucket). Fix 5 (Platform Admin 21 Nov 2026 12:28): after every decision the groups are read again, so the queue count, "All in this queue" and
+// "Card X of Y" come from the same read (onTotal hands the count to the queue's Module / Field entry).
+export default function Layer4Focus({kinds,kind,part='',providerId='',country='',sourceCountry='',bucket='all',onTotal,rank,onError,onDecided,renderItem,onOtherView}){
   const[g,setG]=useState(null),[key,setKey]=useState(''),[idx,setIdx]=useState(0),[cards,setCards]=useState({}),[gone,setGone]=useState(()=>new Set())
   const[pv,setPv]=useState(null),[rules,setRules]=useState(null),[run,setRun]=useState(null)
   const label=kinds?.[kind]?.label||kind
-  const load=(keep)=>{if(!keep)setG(null);rpc('rule_groups',{kind}).then(setG).catch(e=>{setG({error:e.message});onError?.(e.message)})}
-  useEffect(()=>{setKey('');setIdx(0);setCards({});setGone(new Set());setPv(null);setRun(null);if(kind)load()},[kind])
-  const groups=g?.groups||[]
+  const args={kind,...(providerId?{provider_id:providerId}:{}),...(country?{country}:{}),...(sourceCountry?{source_country:sourceCountry}:{})}
+  const load=(keep)=>{if(!keep)setG(null);rpc('rule_groups',args).then(d=>setG(d)).catch(e=>{setG({error:e.message});onError?.(e.message)})}
+  useEffect(()=>{setKey('');setIdx(0);setCards({});setGone(new Set());setPv(null);setRun(null);if(kind)load()},[kind,providerId,country,sourceCountry])
+  useEffect(()=>{setKey('');setIdx(0);setPv(null)},[part,bucket])
+  const groups=(g?.groups||[]).filter(x=>(!part||kind!=='provider_description'||descPartOf(x)===part)&&inBucket(x,bucket))
   const left=x=>(x.refs||[]).filter(r=>gone.has(r)).length
   const refs=useMemo(()=>refsOf(groups,key).filter(r=>!gone.has(r)),[g,key,gone])
   const groupOf=useMemo(()=>{const m={};for(const x of groups)for(const r of x.refs||[])m[r]=x;return m},[g])
@@ -40,8 +45,11 @@ export default function Layer4Focus({kinds,kind,rank,onError,onDecided,renderIte
   useEffect(()=>{if(!cur||cards[cur]!==undefined)return;const want=refs.slice(at,at+FOCUS_WINDOW).filter(r=>cards[r]===undefined);if(!want.length)return
     rpc('rule_group_items',{kind,refs:want}).then(d=>{const m={};for(const it of d.items||[])m[it.ref]=it;for(const r of want)if(!m[r])m[r]=false;setCards(c=>({...c,...m}))}).catch(e=>onError?.(e.message))},[cur,kind])
   useEffect(()=>{if(cur&&cards[cur]===false)setGone(s=>new Set([...s,cur]))},[cur,cards]) // decided elsewhere since the groups were read
-  const done=r=>{setGone(s=>new Set([...s,cur]));onDecided?.(r)}
-  const total=Math.max(0,(Number(g?.total)||0)-gone.size),sel=groups.find(x=>x.key===key)
+  const done=r=>{setGone(s=>new Set([...s,cur]));onDecided?.(r);load(true)}  // s931 fix 5: one fresh read for every count
+  const filtered=!!part||bucket!=='all'
+  // a card decided here and still listed by the fresh read (its change is not visible yet) is counted out once, the same way in all three counts
+  const total=Math.max(0,(filtered?groups.reduce((a,x)=>a+Number(x.n||0),0):(Number(g?.total)||0))-groups.reduce((a,x)=>a+left(x),0)),sel=groups.find(x=>x.key===key)
+  useEffect(()=>{if(g&&!g.error)onTotal?.(total)},[total,!!g])
   // s839 (20 Nov 2026): the batch is read as soon as a rule is chosen, so Preview the batch opens at once from what is already read
   const pre=useRef(null)
   const batchRead=x=>{const want=(x.refs||[]).filter(r=>!gone.has(r)).slice(0,Number(g?.batch_max)||50),sig=`${x.key}|${want.join(',')}`
@@ -92,7 +100,7 @@ export default function Layer4Focus({kinds,kind,rank,onError,onDecided,renderIte
         return <div key={sec} className={`l4f-sec l4f-sec-${sec}`} data-l4-focus-section={sec}><p className="l4f-sec-head">{title} <span className="l4r-n">{fmtNumber(shown.reduce((a,x)=>a+Number(x.n)-left(x),0))}</span></p>{shown.map(x=>Grp(x))}</div>})}
       <div className="l4r-actions l4f-batch">
         <Button compact disabled={!sel} onClick={()=>openPreview()} title={sel?'':'Choose a rule first'} data-l4-batch-open><Eye size={13}/>Preview &amp; Settle Batch</Button>
-        {Number(g.ms)>=0&&<small className="l4r-sub" data-l4-focus-ms>Grouped {fmtNumber(Number(g.total)||0)} items in {fmtNumber(g.ms)} ms</small>}
+        {Number(g.ms)>=0&&<details className="l4z-fold l4z-tech"><summary>Technical detail</summary><small className="l4r-sub" data-l4-focus-ms>Grouped {fmtNumber(Number(g.total)||0)} items in {fmtNumber(g.ms)} ms</small></details>}
       </div>
     </aside>
     <section className="l4f-main" aria-label="Focused review card">
@@ -100,11 +108,11 @@ export default function Layer4Focus({kinds,kind,rank,onError,onDecided,renderIte
         onWork={()=>{setKey(pv.key);setIdx(0);setPv(null)}} onClose={()=>{setPv(null);setRun(null)}}/>}
       {!refs.length?<Empty text={key?'Nothing left in this rule group.':'Nothing left in this queue.'}/>:<>
         <header className="l4f-head" data-l4-focus-head>
-          <span><strong>{groupLabel(curGroup||sel||{})}</strong> <small data-l4-focus-pos>Card {fmtNumber(at+1)} of {fmtNumber(refs.length)}{key?'':' in this queue'}{Number(curGroup?.n)>(curGroup?.refs||[]).length?` (oldest ${fmtNumber((curGroup.refs||[]).length)} of ${fmtNumber(curGroup.n)} listed)`:''}</small></span>
+          <span><strong>{groupLabel(curGroup||sel||{})}</strong> <small data-l4-focus-pos>Card {fmtNumber(at+1)} of {fmtNumber(key?Math.max(0,Number(sel?.n||0)-left(sel||{})):total)}{key?'':' in this queue'}{refs.length<(key?Math.max(0,Number(sel?.n||0)-left(sel||{})):total)?` (the oldest ${fmtNumber(refs.length)} are listed)`:''}</small></span>
           <span className="l4f-nav"><Button compact disabled={at===0} onClick={()=>setIdx(at-1)} aria-label="Previous card" data-l4-focus-prev><ChevronLeft size={14}/>Previous</Button>
             <Button compact disabled={at>=refs.length-1} onClick={()=>setIdx(at+1)} aria-label="Next card" data-l4-focus-next>Next<ChevronRight size={14}/></Button></span>
         </header>
-        {curItem?<div key={cur} data-l4-focus-card={cur}>{renderItem(curItem,done,groupLabel(curGroup||{}))}</div>:<Loading compact label="Reading the card…"/>}
+        {curItem?<div key={cur} data-l4-focus-card={cur}>{renderItem(curItem,done,groupLabel(curGroup||{}),curGroup?.key||'')}</div>:<Loading compact label="Reading the card…"/>}
       </>}
     </section>
   </div>
@@ -121,10 +129,11 @@ function BatchPreview({pv,group,rules,rank,run,onAdmit,onRerun,onSettle,choices=
   return <div className="l4f-preview" role="dialog" aria-label={`Preview & Settle Batch: ${name}`} data-l4-batch-preview={pv.key}>
     <header><strong>Preview &amp; Settle Batch: {name}</strong><button type="button" className="hd-x" onClick={onClose} aria-label="Close the preview" data-l4-batch-close><X size={15}/></button></header>
     {!pv.items?<Loading compact label="Reading the records…"/>:<>
-      <p className="l4r-sub" data-l4-batch-ms>{fmtNumber(list.length)} record{list.length===1?'':'s'}{Number(group?.n)>list.length?` (the oldest ${fmtNumber(list.length)} of ${fmtNumber(group.n)})`:''}, shown in {fmtNumber(pv.ms)} ms{pv.server_ms!=null?` (database ${fmtNumber(pv.server_ms)} ms)`:''}.
+      <div className="l4r-sub" data-l4-batch-ms>{fmtNumber(list.length)} record{list.length===1?'':'s'}{Number(group?.n)>list.length?` (the oldest ${fmtNumber(list.length)} of ${fmtNumber(group.n)})`:''}, shown.
+        <details className="l4z-fold l4z-tech"><summary>Technical detail</summary><small data-l4-batch-timing>Shown in {fmtNumber(pv.ms)} ms{pv.server_ms!=null?` (database ${fmtNumber(pv.server_ms)} ms)`:''}.</small></details>
         {admits?' Each is admitted with the marked words removed, one decision each with its reason, and locked by hand. A record whose cleaned text fails a check is left for a person.':
           reruns?` System recovery: ${fmtNumber(rr.length)} can be re-read from their stored copy by the deterministic reader ($0: no AI, no Firecrawl)${ff.length?`, and ${fmtNumber(ff.length)} have no stored page and can be queued for a stored-page fetch`:''}. Nothing is approved here: each new read goes through the same machine rule and Layer 4.`:
-          pv.key.startsWith('aer:')?' Entry requirement items are decided one card at a time: there is no batch approval.':settle.length?' Settle them with one decision and one reason: each record is decided on its own, at its own rank, and kept with your reason.':' These are decided one card at a time.'}</p>
+          pv.key.startsWith('aer:')?' Entry requirement items are decided one card at a time: there is no batch approval.':settle.length?' Settle them with one decision and one reason: each record is decided on its own, at its own rank, and kept with your reason.':' These are decided one card at a time.'}</div>
       <ol className="l4f-recs">{list.map(({it,c})=><li key={it.ref} data-l4-batch-rec={it.ref} data-l4-batch-ok={c?String(c.ok):undefined}>
         <span className="l4f-rec-name"><strong>{it.subject||String(it.ref).slice(0,8)}</strong>{it.provider&&<small> · {it.provider}</small>}</span>
         {c?<>{c.original&&<p className="l4f-rec-text">{markBanned(c.original,c.words).map((x,i)=>x.word?<mark key={i} className="dea-ban">{x.text}</mark>:<React.Fragment key={i}>{x.text}</React.Fragment>)}</p>}

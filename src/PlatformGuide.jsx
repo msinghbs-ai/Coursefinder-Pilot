@@ -3,14 +3,18 @@
 // has an entry). Each screen links straight to itself, so the guide never relies on screenshots that go stale.
 import{ENTITY_LINKS,ENTITY_RULES}from'./guide/entityModel.js'
 import React,{useState}from'react'
-import{Archive,ArrowRight,BellRing,BookOpen,CalendarCheck,Compass,Gauge,ListChecks,ShieldCheck,Siren,Sparkles,Users,Workflow}from'lucide-react'
+import{Archive,ArrowRight,BellRing,BookOpen,CalendarCheck,Compass,Filter,Gauge,Inbox,Lightbulb,ListChecks,ShieldCheck,Siren,Sparkles,Users,Workflow}from'lucide-react'
+import{FILTER_REFERENCE_REVIEWED_FOR,FILTER_SCREENS,filterEntries}from'./guide/filterReference.js' // s931 (Decision 279 §7)
+import{LAYER4_GUIDE}from'./guide/layer4Guide.js'
+import{WORKED_EXAMPLES}from'./guide/workedExamples.js'
+import CoverageNotice from'./CoverageNotice'
 import{PAGES,SECTIONS,canOpen,refusedTab,roleName}from'./nav-map'
 import{UI_VERSION,RELEASE}from'./release-manifest'
 import{useLookups}from'./lib/lookups.js' // s930: the coverage line reads the database, never written text
 import{fmtNumber}from'./lib/format.js'
 import{GUIDE_REVIEWED_FOR,ROLES,RULES,DAILY_ROUTINE,SCREENS,SIGNALS,ADMIN_DUTIES,ALERTS,SPECIALIST_TASKS,ADMISSION_PATHS,ADMISSION_WORDS,BUDGET_GATES,RETIREMENT_CRITERIA}from'./guide/platformGuide'
 
-const PARTS=[['flow','How it works',Compass],['roles','Who does what',Users],['daily','Daily routine',CalendarCheck],['screens','The screens',BookOpen],['signals','Signal → action',Siren],['tasks','Specialist tasks',ListChecks],['admission','Who admits',Workflow],['gates','Budget gates',Gauge],['retire','Retiring a component',Archive],['admin','Platform Admin duties',ShieldCheck],['alerts','Alerts',BellRing],['new','What changed',Sparkles]]
+const PARTS=[['flow','How it works',Compass],['roles','Who does what',Users],['daily','Daily routine',CalendarCheck],['screens','The screens',BookOpen],['signals','Signal → action',Siren],['tasks','Specialist tasks',ListChecks],['admission','Who admits',Workflow],['gates','Budget gates',Gauge],['retire','Retiring a component',Archive],['admin','Platform Admin duties',ShieldCheck],['alerts','Alerts',BellRing],['filters','Filters & badges',Filter],['layer4','Layer 4 guide',Inbox],['examples','Worked examples',Lightbulb],['new','What changed',Sparkles]]
 
 function Flow(){
   const box=(x,y,w,name,l1,l2,main)=><g><rect x={x} y={y} width={w} height="72" rx="8" className={main?'pg-box main':'pg-box'}/><text x={x+14} y={y+24} className="pg-name">{name}</text><text x={x+14} y={y+44} className="pg-line">{l1}</text><text x={x+14} y={y+60} className="pg-line">{l2}</text></g>
@@ -37,6 +41,17 @@ export function CoverageNow(){
   return <p className="pg-meta" data-guide-coverage>Admitting data now in {t.map(c=>`${c.name} (${fmtNumber(c.providers)} providers, ${fmtNumber(c.courses)} courses)`).join(' · ')} · {fmtNumber(lk.providers?.active||0)} active providers in all. Read live from the database.</p>
 }
 
+// s931 (Decision 279 §7.1): Filters & badges, searchable by words and by screen
+function FilterReference(){
+  const[q,setQ]=useState(''),[scr,setScr]=useState(''),rows=filterEntries(scr,q)
+  return <section className="m-panel" id="pg-filters" data-guide-filters><h2>Filters & badges</h2><p>Every filter on Layer 4 Review, Courses, Providers, Entry requirements, English and Scholarships, and every badge: what it looks at and when to use it.</p>
+    <div className="pg-filter-bar"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search filters and badges…" aria-label="Search filters and badges" data-guide-filter-search/>
+      <select value={scr} onChange={e=>setScr(e.target.value)} aria-label="Screen" data-guide-filter-screen><option value="">All screens</option>{FILTER_SCREENS.map(x=><option key={x} value={x}>{x}</option>)}</select></div>
+    <div className="cf-table-wrap"><table className="cf-table" data-guide-filter-table><thead><tr><th>Screen</th><th>Filter / badge</th><th>What it looks at</th><th>Use it when…</th><th>Who sees it</th></tr></thead>
+      <tbody>{rows.map(x=><tr key={`${x.screen}|${x.label}`} data-guide-filter={x.label}><td>{x.screen}</td><td><strong>{x.label}</strong></td><td>{x.looks}</td><td>{x.when}</td><td>{x.roles}</td></tr>)}</tbody></table></div>
+    <p className="pg-meta" data-guide-filters-version>Reviewed for v{FILTER_REFERENCE_REVIEWED_FOR}</p></section>
+}
+
 export default function PlatformGuide({rank=1,navigate}){
   const[open,setOpen]=useState('')
   const go=(page,tab)=>navigate?.(page,tab?{tab}:{})
@@ -47,6 +62,7 @@ export default function PlatformGuide({rank=1,navigate}){
     <section className="m-panel">
       <p className="pg-lead">How operators and Platform Admins run StudySearch day to day: what each screen tells you, which numbers matter, and what to do when something turns amber or red. Step-by-step daily procedures are in the Platform Admin SOP and the Operator SOP (tabs above).</p>
       <CoverageNow/>
+      <CoverageNotice rank={rank} onPills={()=>document.getElementById('pg-filters')?.scrollIntoView({behavior:'smooth',block:'start'})}/>
       <p className="pg-meta" data-guide-version>Reviewed for v{GUIDE_REVIEWED_FOR}{GUIDE_REVIEWED_FOR!==UI_VERSION?` · this app is v${UI_VERSION}`:''}</p>
       <nav className="pg-toc" aria-label="Guide contents">{PARTS.map(([id,label,Icon])=><a key={id} href={`#platform-guide`} onClick={e=>{e.preventDefault();document.getElementById('pg-'+id)?.scrollIntoView({behavior:'smooth',block:'start'})}}><Icon size={14}/>{label}</a>)}</nav>
     </section>
@@ -107,6 +123,11 @@ export default function PlatformGuide({rank=1,navigate}){
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Rule</th><th>What happens</th><th>Setting (Pipeline settings › Alerts)</th></tr></thead>
         <tbody>{ALERTS.rows.map(a=><tr key={a.alert}><td>{a.alert}</td><td>{a.when}</td><td className="pg-meta">{a.setting}</td></tr>)}</tbody></table></div></section>
 
+    <FilterReference/>
+    <section className="m-panel" id="pg-layer4" data-guide-layer4><h2>Layer 4 guide</h2><p>For counsellors and reviewers: how to tell a record is under review, how to read a card and what each decision does next.</p>
+      {LAYER4_GUIDE.map(x=><div key={x.key} className="pg-group" data-guide-layer4-part={x.key}><h3>{x.title}</h3><ul>{x.body.map(b=><li key={b}>{b}</li>)}</ul></div>)}</section>
+    <section className="m-panel" id="pg-examples" data-guide-examples><h2>Worked examples</h2><p>Four walkthroughs with the screens and what you see. Figures are as read at release.</p>
+      {WORKED_EXAMPLES.map(x=><div key={x.key} className="pg-group" data-guide-example={x.key}><h3>{x.key}. {x.title}</h3><ol>{x.steps.map(b=><li key={b}>{b}</li>)}</ol></div>)}</section>
     <section className="m-panel" id="pg-new"><h2>What changed in v{RELEASE.version}</h2><p><b>{RELEASE.title}</b> · {RELEASE.date}</p>
       <ul>{RELEASE.changes.map(c=><li key={c}>{c}</li>)}{(RELEASE.bugFixes||[]).map(c=><li key={c}>Fixed: {c}</li>)}</ul>
       <p className="pg-meta">Earlier releases: the version button at the top right.</p></section>

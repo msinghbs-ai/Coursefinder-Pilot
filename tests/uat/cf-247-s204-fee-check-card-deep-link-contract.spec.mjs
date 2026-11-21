@@ -46,7 +46,7 @@ test.describe('mocked browser', () => {
     await page.goto('/#layer-4-review?view=kind&kind=course_link')
     const card = page.locator(`[data-l4-ref="${feeItem.ref}"]`)
     await expect(card.locator('[data-l4-fee-proposed]')).toHaveText('CAD 9,370 · a year (indicative) · fee year 2026 · international')
-    await expect(card.locator('[data-l4-choice="use"]')).toHaveText('Admit this fee')
+    await expect(card.locator('[data-l4-choice="use"]')).toContainText('Admit this fee') // s931: under Yes (Approve)
     await expect(card.locator('[data-l4-choice="keep"]')).toHaveText('Do not admit this fee')
     await expect(card.locator('[data-l4-choice="enter"]')).toHaveCount(0)
     await expect(card.locator('[data-l4-held]')).toHaveCount(0)
