@@ -83,7 +83,7 @@ test('RMIT settlement (12:16): four classes from stored records; a row-limit rep
 test('the Inbox: ready first, a university summary, a readable recovery case; counts for the execution register', () => {
   const ui = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8')
   expect(ui).toContain("supabase.rpc('admin_layer4_aer_queue'")
-  for (const a of ['data-l4-aer-summary', 'data-l4-aer-ready-first', 'data-l4-aer-ready', 'data-l4-case', 'data-l4-related']) expect(ui).toContain(a)
+  for (const a of ['data-l4-aer-summary', 'data-l4-aer-ready-first', 'data-l4-aer-ready', 'data-l4-case', 'data-l4-related']) expect(ui + fs.readFileSync('src/Layer4AdvancedFilters.jsx', 'utf8')).toContain(a) // s931: the AER order is under Advanced filters
   expect(ui).not.toMatch(/<dd>\{b!==null&&typeof b==='object'\?JSON\.stringify\(b\)/)
   expect(ui).toContain('<HookValue v={b} label={a}/>')
   expect(m).toContain("if coalesce(p_args, '{}'::jsonb) ? 'summary_provider_id' then return security.layer4_aer_university_summary_v1(")
@@ -130,11 +130,13 @@ test.describe('settlement on a phone @responsive', () => {
     await page.goto('/#layer-4-review?view=university')
     await page.locator('[data-l4-uni="RMIT University (RMIT)"] [data-l4-pill="aer_review"]').click()
     await expect(page.locator('[data-l4-aer-summary]')).toContainText('303 pending · 91 ready to decide · 27 technically held · 184 need evidence or input')
+    await page.locator('[data-l4-advanced-toggle]').click()                               // s931: the AER order is under Advanced filters (N)
     await expect(page.locator('[data-l4-aer-ready-first]')).toHaveAttribute('aria-pressed', 'true')
     await expect(page.locator('[data-l4-aer-ready] [data-l4-item]')).toHaveCount(2)
     await expect(page.locator('[data-l4-aer-ready] [data-l4-item]').first()).toContainText('Ready course 0')
     await page.locator('[data-l4-aer-all]').click()
     const card = page.locator('[data-l4-ref="h1"]')
+    await card.scrollIntoViewIfNeeded()                                                      // s931: its detail is read when the card is on screen
     await expect(card.locator('[data-l4-section="summary"]')).toContainText('over the row limit')
     await card.locator('[data-l4-section="case"] summary').first().click()
     const caseBox = card.locator('[data-l4-case]')

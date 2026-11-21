@@ -38,7 +38,7 @@ test('s837: the rail names, the default queue and the batch rule', () => {
   expect(batchAdmits({ key: 'cd:banned_word' })).toBe(true)
   for (const k of ['aer:audit_sample', 'cd:identity_margin_thin', 'course_link:x']) expect(batchAdmits({ key: k })).toBe(false)
   expect(refsOf([{ key: 'a', refs: ['1', '2'] }, { key: 'b', refs: ['3'] }], '')).toEqual(['1', '2', '3'])
-  expect(INBOX).toContain("wantView)?wantView:'focus')"); expect(INBOX).toContain('data-l4-other-views')
+  expect(INBOX).toContain("wantView)?wantView:'focus')"); expect(fs.readFileSync('src/Layer4AdvancedFilters.jsx', 'utf8')).toContain('data-l4-other-views') // s931: Advanced filters (N)
   expect(FOCUS).toContain("choice:'edit_approve',value:x.c.text,set_manual_lock:true")
 })
 
@@ -94,7 +94,7 @@ test.describe('mocked browser', () => {
     await expect(pv.locator('[data-l4-batch-rec]')).toHaveCount(2)
     await expect(pv.locator('mark.dea-ban')).toHaveCount(2)
     await expect(pv.locator('[data-l4-batch-clean]').first()).toContainText('Technology University Sydney is a university of technology in Sydney.')
-    await expect(pv.locator('[data-l4-batch-ms]')).toContainText(/shown in \d+ ms/)
+    await expect(pv.locator('[data-l4-batch-timing]')).toHaveText(/shown in \d+ ms/i) // s931: timings under Technical detail
     expect(calls.filter((c) => c.p_action === 'decide')).toHaveLength(0)
     await pv.locator('[data-l4-batch-admit]').click()                         // the first click only asks for confirmation
     expect(calls.filter((c) => c.p_action === 'decide')).toHaveLength(0)

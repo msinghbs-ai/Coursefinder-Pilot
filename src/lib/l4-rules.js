@@ -104,3 +104,83 @@ const SETTLE_NEVER=new Set(['aer_review','provider_departure','provider_descript
 /** The decisions one batch may settle in a queue: no per-record value, no link away, not an approval of entry requirements or descriptions. */
 export function settleChoices(kind,choices){if(SETTLE_NEVER.has(kind))return[]
   return (choices||[]).filter(c=>!c.link&&!c.input&&!c.editor)}
+
+// ---------- CF-247 s931 (Decision 279, Platform Admin 21 Nov 2026 10:53; spec admin docs/design/2026-11-21-layer4-human-ui-and-guide-spec.md §4.2, §5) ----------
+/** §4.2: each queue's server choices as the three decisions. yes / no / resubmit name the server choice key (null: that button is not drawn);
+ * every other choice of the queue stays under More options. Rank gates, inputs and confirm panels stay the server choice's own. */
+export const THREE_DECISIONS={
+  course_link:{yes:'use',no:'refuse',resubmit:null},
+  held_scholarship:{yes:'publish',no:'not_scholarship',resubmit:null},
+  website_needed:{yes:'website',no:null,resubmit:null},
+  pages_not_found:{yes:'pages',no:null,resubmit:'release'},
+  too_few_pages:{yes:'pages',no:null,resubmit:null},
+  nothing_ready:{yes:null,no:null,resubmit:'rebuild'},
+  central_to_approve:{yes:'open',no:null,resubmit:null},
+  onboarding_failed:{yes:null,no:null,resubmit:'retry'},
+  site_down:{yes:'website',no:'archive',resubmit:null},
+  not_offered:{yes:'keep',no:'archive_course',resubmit:null},
+  fee_check:{yes:'keep',no:null,resubmit:null},
+  counsellor_report:{yes:'report_fixed',no:'report_not_changed',resubmit:null},
+  not_on_site:{yes:'keep',no:'archive_course',resubmit:null},
+  no_page_first_run:{yes:'approve',no:'reject',resubmit:null},
+  conjoint_first_run:{yes:'approve',no:'reject',resubmit:null},
+  aer_review:{yes:'approve',no:'reject',resubmit:'aer_det_reread'},
+  provider_description:{yes:'approve',no:'reject',resubmit:'reread'},
+  course_page_needed:{yes:'add_page',no:'no_page',resubmit:'search_again'},
+  provider_departure:{yes:'reviewed',no:'closed',resubmit:null}
+}
+// registered hook kinds (for example course_english): the first allowed of these is Yes, reject_evidence is No, search_again is Resubmit
+const HOOK_YES=['correct_value','enter_value','confirm_identity','confirm_scope','confirm_not_published','provide_url','select_source','attach_document']
+export const DECISION_LABEL={yes:'Yes (Approve)',no:'No (Reject)',resubmit:'Resubmit to Review with AI'}
+/** The three decisions of one card from its queue and the choices the server offers it: {yes, no, resubmit, more}. A decision whose choice the
+ * server does not offer is null (its button is not drawn); `more` keeps every other choice, in the server's order. */
+export function decisionsFor(kind,choices){const list=Array.isArray(choices)?choices:[],by=k=>k?list.find(c=>c.key===k)||null:null
+  const m=THREE_DECISIONS[kind]
+  const pick=m?{yes:by(m.yes),no:by(m.no),resubmit:by(m.resubmit)}:{yes:HOOK_YES.map(by).find(Boolean)||null,no:by('reject_evidence'),resubmit:by('search_again')}
+  const used=new Set([pick.yes,pick.no,pick.resubmit].filter(Boolean).map(c=>c.key))
+  return{...pick,more:list.filter(c=>!used.has(c.key))}}
+/** D4: "Lock this value" is offered on Yes only where the server's decide already accepts set_manual_lock for that choice. */
+export const LOCKABLE={provider_description:['edit_approve']}
+export const lockable=(kind,key)=>(LOCKABLE[kind]||[]).includes(key)
+/** §4.2: the four one-click reasons of No (Reject); a chip fills the reason field (its minimum length is unchanged). */
+export const REJECT_REASONS=['Wrong course','Outdated year','Bad parse','Not offered']
+
+/** §5.2: one hint a hold reason, keyed by the rule-group key (or its code); text in plain words: what it means, an example, when Yes and when No. */
+export const HOLD_HINTS={
+  'aer:gate_incomplete':{title:'Completeness gate',means:'The page lists a row the machine did not read.',example:'The page lists 8 countries, the read has 7.',yes:'Choose Yes if every row shown matches the page.',no:'Choose No if a row is wrong. The missing row stays waiting.'},
+  'aer:audit_sample':{title:'Audit sample',means:'The machine would admit this read; a person checks a sample of them.',example:'One read in twenty is kept for a person.',yes:'Choose Yes if the rows match the page.',no:'Choose No if any row is wrong.'},
+  'aer:all_rows_held':{title:'All rows held',means:'Every row fails a row rule, so nothing could be admitted on its own.',example:'Every row names a score the page does not print.',yes:'Choose Yes only if the rows match the page despite the rule.',no:'Choose No if the rows are wrong.'},
+  'aer:matrix_first_run':{title:'First run of a provider matrix',means:'The first entry table read for this university waits for a person.',example:'A new university-wide table of 12 countries.',yes:'Choose Yes if the table matches the page.',no:'Choose No if it does not.'},
+  'aer:matrix_change':{title:'Change of an admitted table',means:'A new read would change a table that is already live.',example:'India moves from 65% to 70%.',yes:'Choose Yes if the page now says the new values.',no:'Choose No to keep the live table.'},
+  'cd:identity_margin_thin':{title:'Page match not clear enough',means:'The page does not prove the course by its own CRICOS or NZQA code or exact title.',example:'An AI match found the page and its title differs slightly.',yes:'Choose Yes if the page is this course\'s own.',no:'Choose No if it is another course or a general page.'},
+  'cd:banned_word':{title:'Contains a banned word',means:'A word the admission policy does not admit is in the text.',example:'"world-class" or "leading".',yes:'Edit the word out and approve, or settle the group as a batch.',no:'Choose No if the text is not about this course.'},
+  'cd:sentence_count_over_2':{title:'Longer than 1 to 2 sentences',means:'The text has more sentences than the limit.',example:'Three sentences from an older reader.',yes:'Resubmit for a 1 to 2 sentence read, or edit and approve.',no:'Choose No if the page is wrong.'},
+  'cd:quote_mismatch':{title:'A sentence is not on its page',means:'A sentence does not match the words it quotes from the stored page.',example:'The quote reads "full-time" and the page says "part-time".',yes:'Resubmit for another read.',no:'Choose No if the page is not about this course.'},
+  'cd:duplicate':{title:'Same wording as another course',means:'Another course holds almost the same words.',example:'Shared wording of a qualification family.',yes:'Choose Yes only if the words truly belong to this course.',no:'Choose No otherwise.'},
+  'cd:wrong_page_kind':{title:'Not a course overview page',means:'The page is an entry, fees or how-to-apply page.',example:'The address ends in /entry-requirements.',yes:'Not a Yes: set the right page on the course.',no:'Choose No (bad page).'}
+}
+const HINT_FALLBACK={title:'Held by a check',means:'A check did not admit this on its own.',example:'',yes:'Choose Yes if the value matches its official source.',no:'Choose No if it does not.'}
+/** The hint of one hold: by its rule-group key, else by the code after the prefix, else the fallback. */
+export function holdHintOf(key){const k=String(key||'').replace(/^sys~/,'').replace(/^aerb:/,'aer:');return HOLD_HINTS[k]||HINT_FALLBACK}
+
+/** §4.1 Module / Field: the queues grouped by module, in this order; a queue no module names goes under Other. Descriptions are two entries of one
+ * queue (provider_description): Course description (rule groups cd:*) and University description (the rest). */
+export const MODULES=[
+  ['Course data',['course_link','course_page_needed','not_offered','not_on_site','no_page_first_run','conjoint_first_run','counsellor_report']],
+  ['Entry requirements',['aer_review']],
+  ['English',['course_english']],
+  ['Fees',['fee_check']],
+  ['Scholarships',['held_scholarship']],
+  ['Providers',['website_needed','pages_not_found','too_few_pages','nothing_ready','central_to_approve','onboarding_failed','site_down','provider_departure']],
+  ['Descriptions',['provider_description']]
+]
+export const DESC_PART={course:'Course description',university:'University description'}
+/** Whether one rule group of the description queue belongs to the chosen part (course: cd:* groups; university: every other group). */
+export const descPartOf=g=>String(g?.key||'').replace(/^sys~/,'').startsWith('cd:')?'course':'university'
+/** §5.1 Decision bucket: which rule groups the rail shows. */
+export const BUCKETS=[['ready','Ready to decide'],['info','Needs information'],['recovery','System recovery'],['all','All']]
+export const inBucket=(g,b)=>b==='recovery'?isRecoveryGroup(g):b==='ready'?!isRecoveryGroup(g):true
+
+/** §5.6 wording: engineering status words as a person reads them. */
+export const STATUS_WORDS={proposed:'Waiting for your decision',pending:'Waiting for your decision',unverified:'Waiting for your decision',active:'Live',superseded:'Replaced by a newer read'}
+export const statusWord=s=>STATUS_WORDS[s]||String(s||'').replace(/_/g,' ')

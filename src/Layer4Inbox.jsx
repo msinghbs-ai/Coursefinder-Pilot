@@ -33,7 +33,10 @@ import Layer4RuleGroups from'./Layer4RuleGroups'
 import{settleFor}from'./Layer4SettleBox' // s892: Preview & Settle Batch on a By university rule group // CF-247 S1-UX s826: Waiting, grouped by rule (left panel; the cards and their action bars are unchanged)
 import DescriptionEditAdmit,{CardHold,HeldUniversities}from'./DescriptionEditAdmit' // CF-247 s802/s803: Edit & Approve, held universities; s838: CardHold
 import Layer4Focus,{AerRecoveryAction}from'./Layer4Focus' // CF-247 s837: the default view, Waiting grouped by rule (whole queue) and one focused card
-import{defaultKind,holdLabelOf,orderChoices,plainHold}from'./lib/l4-rules.js'
+import{defaultKind,holdLabelOf,orderChoices,plainHold,holdHintOf,lockable,rereadAction,statusWord,descPartOf,DESC_PART}from'./lib/l4-rules.js'
+import Layer4DecisionBar,{AiBudgetLine,RejectReasonChips,useVerifiedCount}from'./Layer4DecisionBar' // s931 (Decision 279): Yes / No / Resubmit to Review with AI
+import Layer4PrimaryFilters from'./Layer4PrimaryFilters' // s931: the primary filter row
+import Layer4AdvancedFilters from'./Layer4AdvancedFilters' // s931: Advanced filters (N)
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
 // SS-016 role simulation (1 Nov 2026): the rank a choice needs, as public.admin_layer4_inbox decides it: its own rank, else rank 4
@@ -127,6 +130,10 @@ export default function Layer4Inbox({onError,routeParams}){
   // s837: the focused view opens on a queue (descriptions first when any wait)
   useEffect(()=>{if(view==='focus'&&sum&&!kind){const k=defaultKind(sum.by_kind,sum.kinds);if(k)setKind(k)}},[view,!sum])
   const[others,setOthers]=useState(false)
+  // s931 (Decision 279): the primary row's state (Module / Field part, University, Destination and Source country, Decision bucket) and the focus view's live total
+  const[part,setPart]=useState(''),[uni,setUni]=useState(null),[dest,setDest]=useState(''),[src,setSrc]=useState(''),[bucket,setBucket]=useState('all'),[ftotal,setFtotal]=useState(null),[split,setSplit]=useState(null)
+  const loadSplit=()=>{if(!(Number(sum?.by_kind?.provider_description?.n)>0)){setSplit(null);return}rpc('rule_groups',{kind:'provider_description'}).then(d=>{let c=0,u=0;for(const g of d.groups||[]){if(descPartOf(g)==='course')c+=Number(g.n)||0;else u+=Number(g.n)||0}setSplit({course:c,university:u})}).catch(()=>setSplit(null))}
+  useEffect(()=>{loadSplit()},[sum])
   if(!sum)return <Loading label="Reading what needs a person…"/>
   const bk=sum.by_kind||{},focus=view==='focus',showOthers=others||!focus
   return <div className="l4i" data-l4-inbox>
@@ -137,23 +144,24 @@ export default function Layer4Inbox({onError,routeParams}){
     {/* SS-020 step 4 (Decision 269, 3 Nov 2026): review readiness header line, moved from Coverage › Attributes */}
     <ReviewReadinessLine/>
     {!focus&&<GroupBar active={view==='group'?grp:''} onPick={g=>{setGrp(g);setView('group');setNote('')}} refresh={gtick} total={sum.total}/>}
-    <div className="l4i-kinds" role="toolbar" aria-label="Kinds of decision">
-      {!focus&&<button type="button" className={!kind?'on':''} onClick={()=>setKind('')}>All ({fmtNumber(sum.total)})</button>}
-      {order.filter(k=>bk[k]?.n).map(k=><button key={k} type="button" className={kind===k?'on':''} data-l4-kind={k} onClick={()=>setKind(k)}>{kinds[k].label} ({fmtNumber(bk[k].n)})</button>)}
-    </div>
+    {/* s931 (Decision 279, §4.1 and §5.1): the primary row and Advanced filters (N) replace the kind toolbar and the view row, in place */}
+    <Layer4PrimaryFilters kinds={kinds} order={order} kind={kind} part={part} split={split} total={sum.total} showAll={!focus}
+      countOf={k=>focus&&k===kind&&ftotal!=null&&!part?ftotal:Number(bk[k]?.n)||0}
+      onKind={(k,pt)=>{setKind(k);setPart(pt||'');if(k!=='aer_review')setSrc('');setNote('')}}
+      provider={view==='university'?(pick?{provider_id:pick.provider_id,name:pick.name}:null):uni} onProvider={u=>{if(view==='university'){if(u)choose({provider_id:u.provider_id,name:u.name},'');else setPick(null)}else setUni(u)}}
+      country={dest} onCountry={setDest} source={src} onSource={setSrc}
+      bucket={bucket} onBucket={b=>{setBucket(b);if(b==='info'){setGrp('D');setView('group')}else if(view==='group'){setView('focus')}setNote('')}}/>
     <div className="l4i-bar">
-      {/* s837: Review by rule is the default; the older views are behind Other views (shown while one of them is open) */}
-      <div className="l4i-view" role="group" aria-label="View"><button type="button" className={focus?'on':''} aria-pressed={focus} onClick={()=>{setView('focus');setOthers(false);setNote('')}} data-l4-view="focus">Review by rule</button>
-        <button type="button" className={`l4i-other-toggle${showOthers?' open':''}`} aria-expanded={showOthers} onClick={()=>setOthers(v=>!v)} data-l4-other-views>Other views</button>
-        {showOthers&&[['university','By university'],['kind','By kind'],['grid','Grid'],['decided','Decided']].map(([v,l])=><button key={v} type="button" className={`l4i-other${view===v?' on':''}`} aria-pressed={view===v} onClick={()=>{setView(v);setNote('')}} data-l4-view={v}>{l}</button>)}</div>
-      {view==='university'&&<label className="l4i-search"><Search size={14}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Find a university…" aria-label="Find a university"/></label>}
+      <Layer4AdvancedFilters open={others} onToggle={()=>setOthers(v=>!v)} view={view} onView={v=>{setView(v);if(v==='group'&&!grp)setGrp('C');setNote('')}} q={q} onQ={setQ}
+        aerOrder={view==='university'&&uk==='aer_review'&&Number(aerSum?.review_ready)>0} readyFirst={readyFirst} onReadyFirst={setReadyFirst} readyCount={fmtNumber(Number(aerSum?.review_ready)||0)}
+        onClear={k=>{if(k==='view'||k==='all'){setView('focus');setBucket(b=>b==='info'?'all':b)}if(k==='q'||k==='all')setQ('');if(k==='aer'||k==='all')setReadyFirst(true)}}/>
       <Button compact onClick={()=>{loadSum();loadUnis(offset);loadItems(cur)}}><RefreshCw size={14}/>Refresh</Button>
     </div>
     {note&&<p className="l4i-note" role="status">{note}</p>}
     {kind==='aer_review'&&(view==='university'||view==='kind')&&<Layer4HoldReasons kinds={kinds} targetDays={sum.target_days} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>}
-    {focus?<Layer4Focus kinds={kinds} kind={kind} rank={sum.rank} onError={onError} onOtherView={v=>{setView(v);setNote('')}} onDecided={r=>{if(!r?.batch)setNote(outcomeText(r));else setNote(`Batch: ${r.admitted} admitted${r.failed?`, ${r.failed} not admitted`:''}.`);loadSum()}}
-      renderItem={(it,done,hold)=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} holdLabel={hold} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
-    view==='grid'?<Layer4Grid kinds={kinds} targetDays={sum.target_days} rank={sum.rank} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
+    {focus?<Layer4Focus kinds={kinds} kind={kind} part={part} providerId={uni?.provider_id||''} country={dest} sourceCountry={kind==='aer_review'?src:''} bucket={bucket} onTotal={setFtotal} rank={sum.rank} onError={onError} onOtherView={v=>{setView(v);setNote('')}} onDecided={r=>{if(!r?.batch)setNote(outcomeText(r));else setNote(`Batch: ${r.admitted} admitted${r.failed?`, ${r.failed} not admitted`:''}.`);loadSum();loadSplit()}}
+      renderItem={(it,done,hold,hkey)=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} holdLabel={hold} holdKey={hkey} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
+    view==='grid'?<Layer4Grid kinds={kinds} targetDays={sum.target_days} providerId={uni?.provider_id||''} sourceCountry={src} rank={sum.rank} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
     view==='group'?<GroupList group={grp} refresh={gtick} renderItem={it=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={r=>{decided(r);setGtick(x=>x+1)}} onError={onError} onRefresh={()=>{loadSum();setGtick(x=>x+1)}}/>}/>:
     view==='decided'?<Decided items={items} kinds={kinds}/>:view==='kind'&&!kind?<Empty text="Choose a kind above to see its items across every university."/>:
     <div className={view==='university'?'l4i-split':''}>
@@ -175,9 +183,6 @@ export default function Layer4Inbox({onError,routeParams}){
           {uk&&<Button compact onClick={()=>choose(pick,'')} data-l4-all-kinds>All kinds</Button>}
           {aerSum&&<p className="l4i-aer-sum" data-l4-aer-summary><small>Entry requirements (AER): {fmtNumber(aerSum.pending)} pending · <strong>{fmtNumber(aerSum.review_ready)} ready to decide</strong> · {fmtNumber(aerSum.technically_held)} technically held · {fmtNumber(aerSum.human_input_required)} need evidence or input{Number(aerSum.stale)?` · ${fmtNumber(aerSum.stale)} stale`:''} · {fmtNumber(aerSum.human_input_open)} human input open · admitted: {fmtNumber(aerSum.admitted_courses)} course{Number(aerSum.admitted_courses)===1?'':'s'}{Number(aerSum.admitted_matrix_rows)?`, ${fmtNumber(aerSum.admitted_matrix_rows)} matrix rows`:''} · {fmtNumber(aerSum.unresolved)} unresolved</small>
             {uk!=='aer_review'&&Number(pick.by_kind?.aer_review)>0&&<> <button type="button" className="l4i-linkish" onClick={()=>choose(pick,'aer_review')} data-l4-aer-summary-open>Show the AER items</button></>}</p>}
-          {uk==='aer_review'&&Number(aerSum?.review_ready)>0&&<div className="l4i-view" role="group" aria-label="Order" data-l4-aer-order>
-            <button type="button" className={readyFirst?'on':''} aria-pressed={readyFirst} onClick={()=>setReadyFirst(true)} data-l4-aer-ready-first>Ready to decide ({fmtNumber(aerSum.review_ready)})</button>
-            <button type="button" className={!readyFirst?'on':''} aria-pressed={!readyFirst} onClick={()=>setReadyFirst(false)} data-l4-aer-all>All waiting</button></div>}
           {cdOn&&<CdPanel q={cdq}/>}</header>}
         {view==='kind'&&cdOn&&<CdPanel q={cdq}/>}
         {view==='kind'&&kind==='provider_description'&&<HeldUniversities rank={sum.rank} onOpened={()=>{setNote('Opened for writing: the university waits in this list as a University description card with no machine text; write it in Edit & Approve.');loadSum();loadItems(cur)}}/>}
@@ -198,8 +203,8 @@ export default function Layer4Inbox({onError,routeParams}){
   </div>
 }
 
-function Item({it,k,showProvider,rank,onDone,onError,onRefresh,holdLabel=''}){
-  const[open,setOpen]=useState(null),[reason,setReason]=useState(''),[value,setValue]=useState(''),[busy,setBusy]=useState(false),[err,setErr]=useState('')
+function Item({it,k,showProvider,rank,onDone,onError,onRefresh,holdLabel='',holdKey=''}){
+  const[open,setOpen]=useState(null),[reason,setReason]=useState(''),[value,setValue]=useState(''),[busy,setBusy]=useState(false),[err,setErr]=useState(''),[lock,setLock]=useState(false),[aiUsed,setAiUsed]=useState(false)
   const d=it.detail||{}
   const[ack,setAck]=useState(null),[rev,setRev]=useState(0) // CF-247 decision 12:24 §4: the server's acknowledgement of the last decision here
   // hotfix D1 (24 Oct 2026): a course-link row that holds a fee (identity re-verification quarantine, fee floor) has no new page to use;
@@ -233,22 +238,36 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh,holdLabel=''}){
   // s802/s803: Edit & Approve opens the editor (its two buttons decide); a held university opened for writing has no machine text, so it opens there
   const editKind=it.kind==='provider_description'&&choices.some(c=>c.key==='edit_approve'),noText=it.kind==='provider_description'&&!String(d.proposed?.description||'').trim()
   const[editing,setEditing]=useState(noText||editKind) // s821: a description card opens with its one action bar
-  const choose=c=>{setErr('');if(c.link){recordNavigation(it.kind,it.ref,c.key);window.location.hash=linkFor(c.link,it).replace(/^#/,'');return}setOpen(c);setReason(c.reason||'');setValue(c.input==='url'&&it.kind==='course_link'&&!fee?urlOf(d.proposed):c.input==='url'&&it.kind==='conjoint_first_run'?(d.proposed?.parent_url||''):(c.input==='courses'||c.input==='rows')?'[]':'')}
+  const choose=c=>{setErr('');if(c.link){recordNavigation(it.kind,it.ref,c.key);window.location.hash=linkFor(c.link,it).replace(/^#/,'');return}setOpen(c);setLock(false);setReason(c.reason||'');setValue(c.input==='url'&&it.kind==='course_link'&&!fee?urlOf(d.proposed):c.input==='url'&&it.kind==='conjoint_first_run'?(d.proposed?.parent_url||''):(c.input==='courses'||c.input==='rows')?'[]':'')}
   // hotfix 26 Oct 2026: a university's first run (no page published / conjoint rule) shows its sample; "has a page" ticks courses from it
   const firstRun=it.kind==='no_page_first_run'||it.kind==='conjoint_first_run'
   const sample=Array.isArray(d.proposed?.sample)?d.proposed.sample:[]
   const ticked=(()=>{try{return JSON.parse(value||'[]')}catch{return[]}})()
   const tick=id=>setValue(JSON.stringify(ticked.includes(id)?ticked.filter(x=>x!==id):[...ticked,id]))
   // a kind hook may answer ok false with what it still needs: shown as the next step, the choice stays open
-  const go=async()=>{setBusy(true);setErr('');try{const r=await rpc('decide',{kind:it.kind,ref:it.ref,choice:open.key,reason,value});setAck(r?.ack||null);setRev(v=>v+1);if(r&&r.ok===false){setFollow(r.request||'More is needed before this can go ahead.');return}setFollow('');setOpen(null);onDone?.(r)}catch(e){setErr(e.message)}finally{setBusy(false)}}
+  // s931: Resubmit of an AER card calls its existing re-read from the stored copy ($0); a lockable Yes sends the person's lock choice (D4)
+  const go=async()=>{setBusy(true);setErr('');try{if(open.aerReread){const r=await rpc('aer_det_reread',{refs:[it.ref],reason});if(!(Number(r?.superseded)>0))throw new Error('Not done: the item changed since it was read');setOpen(null);onDone?.({kind:it.kind,ref:it.ref,outcome:'queued',headline:'Resubmitted: the deterministic reader reads the stored copy again ($0); it comes back here for Yes or No'});return}
+    const r=await rpc('decide',{kind:it.kind,ref:it.ref,choice:open.key,reason,value,...(lockable(it.kind,open.key)?{set_manual_lock:lock}:{})});setAck(r?.ack||null);setRev(v=>v+1);if(r&&r.ok===false){setFollow(r.request||'More is needed before this can go ahead.');return}setFollow('');setOpen(null);onDone?.(r)}catch(e){setErr(e.message)}finally{setBusy(false)}}
+  // s931 fix 1 (Platform Admin 21 Nov 2026 12:28): Approve all verified for provider shows and fills the provider's own verified count (the count decide checks)
+  const cdCourse=it.kind==='provider_description'&&isCourseDescription(d),verified=useVerifiedCount(it.ref,cdCourse&&seen)
+  useEffect(()=>{if(open?.key==='approve_provider'&&verified&&!verified.error){setValue(String(Number(verified.eligible)||0));if(!reason)setReason(`All verified for provider (${Number(verified.eligible)||0})`)}},[open?.key,verified])
+  const cdChoiceShown=cdChoiceList.map(c=>c.key==='approve_provider'&&verified&&!verified.error?{...c,label:`Approve all verified for provider (${fmtNumber(Number(verified.eligible)||0)})`,disabledWhy:Number(verified.eligible)?'':'No waiting description of this provider passes the quote check yet'}:c)
+  const ra=aerItem?rereadAction(it):null,aerResubmit=ra&&ra.key==='aer_det_reread'?{key:'aer_det_reread',label:ra.label,returns:ra.why,rank:6,aerReread:true}:null
+  const hint=holdHintOf(holdKey||(cdCourse&&d?.machine?.reason_code?`cd:${d.machine.reason_code}`:''))
+  const fieldLine=cdCourse?'Course description':it.kind==='provider_description'?'University description':aerItem?(aer?.kind==='course_entry_first_read'?'Course entry requirements':'University-wide entry table'):d.field_code?String(d.field_code).replace(/_/g,' '):k.label
+  const hide=c=>noText||(editKind&&editing&&(c.key==='approve'||c.key==='reject'))
+  const editBtn=editKind&&!editing?<button type="button" disabled={rank<4} title={rank<4?`Needs ${roleName(4)} (rank 4) or above`:'Edit the text before admitting it, or approve it as read'} onClick={()=>{setOpen(null);setEditing(true)}} data-l4-choice="edit_approve">Edit &amp; Approve</button>:null
+  const which=open?(open.aerReread?'resubmit':['reject','refuse','no_page','closed','not_scholarship','report_not_changed','archive','archive_course','reject_evidence'].includes(open.key)?'no':['reread','release','rebuild','retry','search_again'].includes(open.key)?'resubmit':'other'):''
   return <article ref={box} className={`l4i-item${it.late?' late':''}`} data-l4-item={it.kind} data-l4-ref={it.ref}>
-    <header><StatusChip value={it.kind} tone={it.late?'warning':'info'} label={d.field_code==='course_description_first_read'?'Course description':k.label}/>{showProvider&&it.provider&&<strong className="l4i-prov">{it.provider}</strong>}{it.subject&&<span className="l4i-subj">{it.subject}</span>}{d.course_code&&<span className="l4i-code" title={d.code_label==="Course code"?"Course code":"CRICOS code"} data-l4-code>{d.code_label||"CRICOS"} {d.course_code}</span>}<small>{fmtDate(it.created_at)} · {days(it.created_at)} d · <span data-l4-refshow title={it.ref}>Ref {String(it.ref).slice(0,8)}</span></small></header>
+    {/* Z1 entity (§5.2): module, provider, subject, code, created date and age; the field in plain words. The reference is under Technical detail. */}
+    <header data-l4-zone="entity"><StatusChip value={it.kind} tone={it.late?'warning':'info'} label={cdCourse?DESC_PART.course:it.kind==='provider_description'?DESC_PART.university:k.label}/>{showProvider&&it.provider&&<strong className="l4i-prov">{it.provider}</strong>}{it.subject&&<span className="l4i-subj">{it.subject}</span>}{d.course_code&&<span className="l4i-code" title={d.code_label==="Course code"?"Course code":"CRICOS code"} data-l4-code>{d.code_label||"CRICOS"} {d.course_code}</span>}<small>{fmtDate(it.created_at)} · {days(it.created_at)} days</small></header>
+    <p className="l4z-field" data-l4-field><small>Field: {fieldLine}</small></p>
+    {/* Z4 why (§5.2): the plain hold reason and its hint */}
     {!(editKind&&editing)&&<CardHold it={it} label={holdLabelOf(it,holdLabel)}/>}
-    {it.reread&&<AerRecoveryAction it={it} rank={rank} onDone={r=>onDone?.(r)} onError={onError}/>}{/* s870: never a dead-end card */}{/* s820: an open description card shows the plain hold reason (DescriptionEditAdmit HoldBanner) instead */}
-    <ItemLifecycle kind={it.kind} refId={it.ref} ack={ack} seen={seen} onSettled={()=>{setRev(v=>v+1);onRefresh?.()}}/>
-    {(d.evidence_id||d.course_id)&&!aerItem&&<p className="l4i-evid" data-l4-evidence><small>
-      {d.evidence_id?<><a href={hrefFor('evidence','',{evidence_id:d.evidence_id})} data-l4-evidence-link>Stored copy</a>{d.captured_at?` captured ${fmtDate(d.captured_at)}`:''}{d.newer_copy?<em className="l4i-match warn" data-l4-newer> a newer copy of this page exists</em>:''}{d.source_url?<> · <a href={d.source_url} target="_blank" rel="noreferrer">source <ExternalLink size={11}/></a></>:null}</>:'No stored copy is linked to this item'}
-      {d.course_id&&<> · <a href={hrefFor('courses','',{id:d.course_id})} data-l4-open-record>Open the course record</a></>}</small></p>}
+    <details className="l4z-hint" data-l4-hint><summary aria-label={`Hint: ${hint.title}`}>(i) Hint</summary><p><strong>{hint.title}.</strong> What it means: {hint.means}{hint.example?` Example: ${hint.example}`:''} {hint.yes} {hint.no}</p></details>
+    {it.reread&&!aerResubmit&&<AerRecoveryAction it={it} rank={rank} onDone={r=>onDone?.(r)} onError={onError}/>}{/* s870: never a dead-end card; s931: a rereadable card's re-read is its Resubmit */}
+    {/* Z2 values (§5.2): the proposed value beside what is live, or the kind's own rows */}
+    <div className="l4z-values" data-l4-zone="values">
     {(fee||feeCheck)&&<dl className="l4i-dl" data-l4-fee><dt>{fee?'Fee held back':'Proposed fee'}</dt><dd data-l4-fee-proposed>{feeText(d.proposed)}</dd>{feeText(d.before)!=='—'&&<><dt>Fee we hold</dt><dd data-l4-fee-held>{feeText(d.before)}</dd></>}</dl>}
     {it.kind==='course_link'&&!fee&&!feeCheck&&(urlOf(d.before)||urlOf(d.proposed))&&<dl className="l4i-dl"><dt>Page we hold</dt><dd data-l4-held><PageLink u={urlOf(d.before)} title={it.subject}/></dd><dt>New page</dt><dd data-l4-new><PageLink u={urlOf(d.proposed)} title={it.subject}/></dd></dl>}
     {fee&&<p className="l4i-why" data-l4-fee-item><small>A held fee: enter the course's own page (https://, on the university's website) and it is read again, or keep the page we hold.</small></p>}
@@ -259,41 +278,55 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh,holdLabel=''}){
       {sample.length>0&&<ul className="l4i-sample" data-l4-sample>{sample.map(x=><li key={x.course_id}>{open?.input==='courses'?<label><input type="checkbox" checked={ticked.includes(x.course_id)} onChange={()=>tick(x.course_id)} data-l4-sample-tick={x.course_code||x.code||x.course_id}/> {x.title}{x.code?` (${x.code})`:''} has its own page</label>:<>{x.title}{x.code?` (${x.code})`:''}</>}</li>)}</ul>}
     </div>}
     {aerItem&&<AerRows aer={aer} rank={rank} ticking={open?.input==='rows'} ticked={ticked} tick={tick}/>}
-    {aerItem&&aer&&!aer.error&&aer.provider_id&&(aer.rows||[]).some(r=>r.course)&&<AerCourseLinks providerId={aer.provider_id} rank={rank} onDecided={()=>lazy(()=>aerRead(it.ref)).then(setAer).catch(()=>{})}/>}
     {hooked&&(!hd?<Loading compact/>:hd.error?<p className="l4i-err" role="alert">{hd.error}</p>:Array.isArray(hd.sections)&&hd.sections.length>0&&<div className="l4i-hook" data-l4-hook-detail>
       {hd.sections.map((x,n)=><details key={x.key||n} data-l4-section={x.key} open={x.key==='summary'||undefined}><summary>{x.title||String(x.key||'').replace(/_/g,' ')}</summary>
         {x.body&&typeof x.body==='object'?(Array.isArray(x.body)?<HookValue v={x.body}/>:<dl className="l4i-dl">{Object.entries(x.body).map(([a,b])=><React.Fragment key={a}><dt>{a.replace(/_/g,' ')}</dt><dd><HookValue v={b} label={a}/></dd></React.Fragment>)}</dl>):<p className="l4i-why"><small>{String(x.body??'')}</small></p>}</details>)}</div>)}
-    {it.kind==='provider_description'&&<div className="l4i-dl" data-l4-description>{/* CF-247 P1 (Platform Admin 2 Nov 2026 10:28): the proposed description, each sentence with the page's own words; approved as read or rejected */}
-      {d.before?.description&&<p><small>Description held: {d.before.description}</small></p>}
-      <p data-l4-description-text><strong>{d.proposed?.description}</strong></p>
+    {it.kind==='provider_description'&&<div className="l4i-dl" data-l4-description>{/* CF-247 P1 (Platform Admin 2 Nov 2026 10:28): the proposed description, each sentence with the page's own words */}
+      <dl className="l4i-dl l4z-pair"><dt>Proposed value</dt><dd data-l4-description-text><strong>{d.proposed?.description}</strong></dd><dt>Live value now</dt><dd data-l4-live>{d.before?.description||'— none held'}</dd></dl>
       <ol className="l4i-sample">{(Array.isArray(d.proposed?.sentences)?d.proposed.sentences:[]).map((x,i)=><li key={i}>{x.text}<br/><small>Page: <q>{x.quote}</q></small></li>)}</ol>
-      {d.proposed?.source_url&&<p><small>Official page: <a href={d.proposed.source_url} target="_blank" rel="noreferrer">{d.proposed.source_url} <ExternalLink size={11}/></a></small></p>}
     </div>}
     {it.kind==='provider_description'&&isCourseDescription(d)&&<CdWhy d={d}/>}
     {it.kind==='provider_description'&&isCourseDescription(d)&&<ChecksLine d={d}/>}
     {it.kind==='provider_departure'&&d.note&&<p className="l4i-why" data-l4-departure><small>{d.note}</small></p>}
     {it.kind==='held_scholarship'&&<dl className="l4i-dl">{d.url&&<><dt>Page</dt><dd><a href={d.url} target="_blank" rel="noreferrer">{d.url} <ExternalLink size={11}/></a></dd></>}{it.suggestion&&<><dt>AI re-check</dt><dd>{it.suggestion}</dd></>}{d.audience_quote&&<><dt>Who</dt><dd><q>{d.audience_quote}</q></dd></>}{d.value_quote&&<><dt>Value</dt><dd><q>{d.value_quote}</q></dd></>}</dl>}
+    </div>
+    {/* Z3 source (§5.2): the official address, the stored copy and its date */}
+    {(d.evidence_id||d.course_id||d.proposed?.source_url)&&!aerItem&&<p className="l4i-evid" data-l4-zone="source" data-l4-evidence><small>
+      {d.proposed?.source_url&&it.kind==='provider_description'?<>Official source <a href={d.proposed.source_url} target="_blank" rel="noreferrer">{d.proposed.source_url} <ExternalLink size={11}/></a> · </>:null}
+      {d.evidence_id?<><a href={hrefFor('evidence','',{evidence_id:d.evidence_id})} data-l4-evidence-link>Stored copy</a>{d.captured_at?` saved ${fmtDate(d.captured_at)}`:''}{d.newer_copy?<em className="l4i-match warn" data-l4-newer> a newer copy of this page exists</em>:''}{d.source_url?<> · <a href={d.source_url} target="_blank" rel="noreferrer">source <ExternalLink size={11}/></a></>:null}</>:'No stored copy is linked to this item'}
+      {d.course_id&&<> · <a href={hrefFor('courses','',{id:d.course_id})} data-l4-open-record>Open the course record</a></>}</small></p>}
     {editKind&&editing&&<DescriptionEditAdmit it={it} d={d} isCourse={isCourseDescription(d)} rank={rank} holdLabel={holdLabel} onDone={r=>{setEditing(false);setRev(v=>v+1);onDone?.(r)}} onCancel={()=>setEditing(false)} reject={(()=>{const c=cdChoiceList.find(x=>x.key==='reject');if(!c||noText)return null;const low=rank<needs(c);return <button type="button" className={`l4i-reject${open?.key===c.key?' on':''}`} disabled={low} title={low?`Needs ${roleName(needs(c))} (rank ${needs(c)}) or above`:c.returns} onClick={()=>choose(c)} data-l4-choice="reject">{c.label}</button>})()}/>}
-    <div className="l4i-choices l4i-bar" data-l4-bar>{editKind&&!editing&&<button type="button" disabled={rank<4} title={rank<4?`Needs ${roleName(4)} (rank 4) or above`:'Edit the text before admitting it, or approve it as read'} onClick={()=>{setOpen(null);setEditing(true)}} data-l4-choice="edit_approve">Edit &amp; Approve</button>}{orderChoices(cdChoiceList).map((c,i,all)=>{if(noText)return null;if(editKind&&editing&&(c.key==='approve'||c.key==='reject'))return null;const low=rank<needs(c),stop=gated(c);return <React.Fragment key={c.key}>{c.role==='aside'&&all.findIndex(x=>x.role==='aside')===i&&<span className="l4i-bar-gap" aria-hidden="true"/>}<button type="button" className={`${open?.key===c.key?'on':''}${c.link?' link':''} role-${c.role}`} data-l4-role={c.role} disabled={low||stop} title={low?`Needs ${roleName(needs(c))} (rank ${needs(c)}) or above`:stop?'Held: this read is incomplete (see above)':c.returns} onClick={()=>choose(c)} data-l4-choice={c.key}>{c.label}{c.link&&<ArrowRight size={12}/>}</button></React.Fragment>})}</div>
-    {(()=>{const by={};for(const c of choices)if(rank<needs(c))(by[needs(c)]||=[]).push(c.label)
+    {/* Z5 decide (§4.2, §5.3): Yes (Approve), No (Reject), Resubmit to Review with AI and More options; each the queue's own server choice */}
+    <Layer4DecisionBar kind={it.kind} choices={orderChoices(cdChoiceShown)} rank={rank} open={open} needs={needs} gated={c=>gated(c)||(c.key==='approve_provider'&&!!c.disabledWhy)} onChoose={choose} extraResubmit={aerResubmit} before={editBtn} hidden={hide}/>
+    {(()=>{const by={};for(const c of [...choices,...(aerResubmit?[aerResubmit]:[])])if(rank<needs(c))(by[needs(c)]||=[]).push(c.label)
       return Object.keys(by).length?<p className="l4i-why" data-l4-handoff><small>{Object.entries(by).map(([n,l])=>`${l.join(', ')}: ${roleName(n)} (rank ${n}) or above decides; ask a ${roleName(n)}.`).join(' ')}</small></p>:null})()}
-    {open&&<div className="l4i-confirm">
+    {open&&<div className="l4i-confirm" data-l4-confirm-for={which}>
       <p className="l4i-next"><strong>What happens next:</strong> {open.returns}</p>
+      {which==='resubmit'&&<p className="l4i-next" data-l4-resubmit-note><small>Queued for another read. It comes back here for Yes or No; nothing it returns is admitted on its own.</small></p>}
+      {which==='resubmit'&&!open.aerReread&&<AiBudgetLine onState={s=>setAiUsed(!!s?.used)}/>}
+      {which==='resubmit'&&open.aerReread&&<p className="l4i-next" data-l4-ai-budget="none"><small>No AI and no Firecrawl: the deterministic reader reads the stored copy ($0).</small></p>}
       {open.input==='url'&&<input value={value} onChange={e=>setValue(e.target.value)} placeholder="https://…" aria-label="Web address"/>}
       {open.input==='provider'&&<input value={value} onChange={e=>setValue(e.target.value)} placeholder="Successor: its exact name, or its CRICOS or NZQA code" aria-label="Successor provider"/>}
-      {open.input==='count'&&<input value={value} onChange={e=>setValue(e.target.value.replace(/[^0-9]/g,''))} inputMode="numeric" placeholder="Type the count shown to confirm" aria-label="Confirm the count" data-l4-cd-count/>}
+      {open.input==='count'&&<input value={value} onChange={e=>setValue(e.target.value.replace(/[^0-9]/g,''))} inputMode="numeric" placeholder="The provider's verified count" aria-label="Confirm the count" data-l4-cd-count/>}
+      {open.key==='approve_provider'&&verified&&!verified.error&&<p className="l4i-next" data-l4-verified><small>{fmtNumber(Number(verified.eligible)||0)} waiting course description{Number(verified.eligible)===1?'':'s'} of {verified.provider||'this provider'} pass the quote check on the course's own page; all of them are admitted as read.</small></p>}
       {open.input==='text'&&<textarea value={value} onChange={e=>setValue(e.target.value)} rows={3} placeholder="What is missing or correct" aria-label="Details" data-l4-text/>}
       {open.input==='scholarship'&&<input value={value} onChange={e=>setValue(e.target.value)} placeholder="The published scholarship's id (same university)" aria-label="Published scholarship" data-l4-duplicate-of/>}
       {open.input==='rows'&&exceptOpen&&flagIds.length>0&&<p className="l4i-next" data-l4-aer-flag-needed>{flagIds.every(id=>ticked.includes(id))?'Every row that cannot be admitted as read is ticked.':`Tick the ${flagIds.length===1?'row':`${flagIds.length} rows`} marked "cannot be admitted as read" to leave ${flagIds.length===1?'it':'them'} out.`}</p>}
       {open.input==='rows'&&exceptOnly&&otherIds.length>0&&<p className="l4i-next" data-l4-aer-other-needed>{otherIds.every(id=>ticked.includes(id))?'Every row about another programme is ticked.':`Tick the ${otherIds.length===1?'row':`${otherIds.length} rows`} about another programme to leave ${otherIds.length===1?'it':'them'} out.`}</p>}
       {open.input==='rows'&&<p className="l4i-next" data-l4-aer-except-count>{ticked.length===0?'Tick the rows to leave out.':ticked.length>=aerWaiting.length?'Every row is ticked: use Reject the read instead.':`Leaving out ${ticked.length} of ${aerWaiting.length} rows; the other ${aerWaiting.length-ticked.length} become active once the checks pass.`}</p>}
+      {which==='no'&&<RejectReasonChips onPick={setReason}/>}
       {isCourseDescription(d)&&<ReasonChips choice={open.key} onPick={setReason}/>}
+      {lockable(it.kind,open.key)&&<label className="l4d-lock" data-l4-lock><input type="checkbox" checked={lock} onChange={e=>setLock(e.target.checked)}/> Lock this value (no automation overwrites it)</label>}
       <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Why (kept with the decision)" aria-label="Reason"/>
-      <Button compact variant="primary" disabled={busy||reason.trim().length<(aerItem?5:4)||(open.input==='rows'&&(ticked.length===0||ticked.length>=aerWaiting.length||(exceptOnly&&!otherIds.every(id=>ticked.includes(id)))||(exceptOpen&&!flagIds.every(id=>ticked.includes(id)))))||(open.input==='url'&&!urlOk(value,fee))||(open.input==='provider'&&value.trim().length<3)||(open.input==='courses'&&ticked.length===0)} onClick={go} data-l4-confirm>{busy?'Saving…':['url','text','provider','scholarship'].includes(open.input)?'Save Edit & Admit':open.label}</Button>{/* s873: an entered value is saved and admitted through the same decision */}
+      <Button compact variant="primary" disabled={busy||reason.trim().length<(aerItem?5:4)||(which==='resubmit'&&aiUsed&&!open.aerReread)||(open.input==='rows'&&(ticked.length===0||ticked.length>=aerWaiting.length||(exceptOnly&&!otherIds.every(id=>ticked.includes(id)))||(exceptOpen&&!flagIds.every(id=>ticked.includes(id)))))||(open.input==='url'&&!urlOk(value,fee))||(open.input==='provider'&&value.trim().length<3)||(open.input==='courses'&&ticked.length===0)} onClick={go} data-l4-confirm>{busy?'Saving…':['url','text','provider','scholarship'].includes(open.input)?'Save Edit & Admit':open.label}</Button>{/* s873: an entered value is saved and admitted through the same decision */}
       <Button compact onClick={()=>{setOpen(null);setFollow('')}}>Cancel</Button>
       {follow&&<p className="l4i-next" role="status" data-l4-request>{follow}</p>}
       {err&&<p className="l4i-err" role="alert">{err}</p>}
     </div>}
+    {/* Z6 folds (§5.2), closed: progress and history, evidence and course links, technical detail */}
+    <ItemLifecycle kind={it.kind} refId={it.ref} ack={ack} seen={seen} onSettled={()=>{setRev(v=>v+1);onRefresh?.()}}/>
+    {aerItem&&aer&&!aer.error&&aer.provider_id&&(aer.rows||[]).some(r=>r.course)&&<details className="l4z-fold" data-l4-fold="evidence"><summary>Evidence and course links</summary><AerCourseLinks providerId={aer.provider_id} rank={rank} onDecided={()=>lazy(()=>aerRead(it.ref)).then(setAer).catch(()=>{})}/></details>}
+    <details className="l4z-fold l4z-tech" data-l4-fold="technical"><summary>Technical detail</summary><p className="l4i-why"><small><span data-l4-refshow title={it.ref}>Ref {String(it.ref).slice(0,8)}</span>{holdKey?<> · rule <code data-l4-rule-key>{holdKey}</code></>:null}{it.why?<> · {it.why}</>:null}</small></p></details>
   </article>
 }
 
@@ -318,7 +351,7 @@ export function HookValue({v,label}){
   return <dl className="l4i-dl l4i-dl-nested">{Object.entries(v).map(([a,b])=><React.Fragment key={a}><dt>{a.replace(/_/g,' ')}</dt><dd><HookValue v={b} label={a}/></dd></React.Fragment>)}</dl>}
 
 // CF-247 A1: the rows of an AER item, each with its quote; ticked rows are left out by "Approve except…" (Platform Admin, A3)
-const ROW_STATUS={proposed:'Waiting',active:'Active',inactive:'Withdrawn',superseded:'Superseded',unverified:'Quarantined'}
+const ROW_STATUS={proposed:statusWord('proposed'),active:statusWord('active'),inactive:'Withdrawn',superseded:statusWord('superseded'),unverified:'Quarantined'} // s931 §5.6: Waiting for your decision · Live · Replaced by a newer read
 export const isExcluded=r=>r?.status==='inactive'&&/^excluded by /.test(r?.status_reason||'')
 function AerRows({aer,rank,ticking,ticked,tick}){
   if(!aer)return <Loading compact/>

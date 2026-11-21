@@ -79,6 +79,7 @@ test.describe('mocked browser', () => {
     await page.route('https://example.supabase.co/rest/v1/rpc/layer4_aer_review_read', (route) => route.fulfill({ json: { rows: [] } }))
     await page.goto('/#layer-4-review')
     for (const k of L4_QUEUES) {
+      await page.locator('[data-l4-module-toggle]').click()                                  // s931: Module / Field lists the queues
       await page.locator(`[data-l4-kind="${k}"]`).click()
       await expect(page.locator(`[data-l4-focus="${k}"]`), k).toBeVisible()
       await expect(page.locator('[data-l4-focus-section="reviewer"]'), k).toContainText('Human Action Required')
@@ -92,7 +93,11 @@ test.describe('mocked browser', () => {
       if (k === 'provider_description') await expect(card.locator('[data-dea-bar]'), k).toBeVisible()
       else {
         const bar = card.locator('[data-l4-bar]'); await expect(bar, k).toBeVisible()
-        const roles = await bar.locator('button[data-l4-role]').evaluateAll((bs) => bs.map((b) => b.getAttribute('data-l4-role')))
+        // s931 (Decision 279 §4.2): the three decisions in their order, then More options with the queue's other choices in role order
+        const dec = await bar.locator('button[data-l4-decision]').evaluateAll((bs) => bs.map((b) => b.getAttribute('data-l4-decision')))
+        const want = ['yes', 'no', 'resubmit']
+        expect(dec.map((r) => want.indexOf(r)), k).toEqual([...dec.map((r) => want.indexOf(r))].sort((a, b) => a - b))
+        const roles = await card.locator('[data-l4-more] button[data-l4-role]').evaluateAll((bs) => bs.map((b) => b.getAttribute('data-l4-role')))
         const order = ['primary', 'edit', 'recategorise', 'aside']
         expect(roles.map((r) => order.indexOf(r)), k).toEqual([...roles.map((r) => order.indexOf(r))].sort((a, b) => a - b))
       }

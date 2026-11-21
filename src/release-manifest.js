@@ -1,21 +1,26 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.75'
-export const PACKAGE_VERSION='0.1.497'
+export const UI_VERSION='2.16.76'
+export const PACKAGE_VERSION='0.1.498'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'21 Nov 2026',
-  title:'Lists read live from the database',
+  title:'Layer 4 Review: three decisions, clear filters and a fuller guide',
   changes:[
-    'Entry requirements: the Provider list on Provider entry matrix, Course entry requirements, Sources and Add a requirement lists every active provider (3,090), with its active and waiting matrix rows beside it. Charles Sturt University and Charles Darwin University are found by typing their name.',
-    'Country lists and pills on Layer 4 Grid, Providers › Onboarding approvals, Enrichment plan, Description edits, Field coverage and Data quality come from the database (the countries where admission runs), not from a list in the screen.',
-    'Entry requirements › Provider entry matrix: Destination country also lists every country where admission runs, and Intake year offers this year and the next two beside the years the rows hold.',
-    'Help › Platform guide shows where data is admitted now, with live provider and course counts.'
+    'Layer 4 Review: one filter row (Module / Field, University, Destination country, Source country, Decision bucket) replaces the row of queue buttons and the view row; the other views and the AER order are under Advanced filters (N).',
+    'Each Layer 4 card shows the entity, the proposed value beside the live one, the official source, why it is held with a hint, and three decisions: Yes (Approve), No (Reject) and Resubmit to Review with AI. The queue\'s other choices are under More options; the reference and timings are under Technical detail.',
+    'No (Reject) offers one-click reasons: Wrong course, Outdated year, Bad parse, Not offered. Resubmit shows today\'s AI budget before you confirm (entry requirements are re-read from the stored copy at no cost).',
+    'Descriptions are two entries of Module / Field: Course description and University description, each with its own count.',
+    'Course detail: an empty Tuition, Intakes, English or course page shows why: In Layer 4 review, University-wide rule applies, No official website / course URL on file (Curators add the official address there), or Not stated on institution page.',
+    'Help › Platform guide: Filters & badges (every filter on Layer 4, Courses, Providers, Entry requirements, English and Scholarships), a Layer 4 guide, four worked examples and What StudySearch covers.'
   ],
   bugFixes:[
-    'Entry requirements: typing a provider name in the Provider list found only some providers. The list held an arbitrary 300 of 843 providers; it now holds every active provider.'
+    'Layer 4: Approve all verified for provider showed the queue\'s count while the check counts the provider\'s own verified descriptions, so it was refused. It now shows and fills the provider\'s count.',
+    'Layer 4: the queue labelled University description also held course descriptions; Course description and University description are now separate.',
+    'Layer 4: after a decision the queue count, All in this queue and Card X of Y could differ by one or two; all three now come from one fresh read.',
+    'Course descriptions read from a page that the course\'s own CRICOS or NZQA code proves are no longer held as Page match not clear enough.'
   ]
 }
 

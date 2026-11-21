@@ -8,6 +8,7 @@ import{StatusChip}from'./ui-kit'
 import{fmtNumber,fmtDate,fmtMoney}from'./lib/format.js'
 import'./detail-summary.css'
 import CourseRecognition from'./CourseRecognition' // CF-247 RM1A-1 (O29): Recognition card
+import{CourseGap}from'./FieldGapContext' // s931 (Decision 279 §6): why an empty value is empty
 import ProviderDestination from'./ProviderDestination' // v2.16.19 RM0F: primary campus, mapped locality, registrations by scheme
 
 const human=v=>String(v??'').replaceAll('_',' ').replace(/^./,c=>c.toUpperCase())
@@ -47,13 +48,13 @@ export function CourseSummary({data,feeUsed}){
       {onWebsite(data.provider_publication_status)}{lifecycle(data.lifecycle_status)}
     </PillRow>
     <FactCards>
-      <FactCard id="fee" label="Tuition used" value={used?.per_year!=null?`${fmtMoney(used.per_year,used.currency||'AUD')} a year`:'Not known yet'} tone={used?.per_year!=null?'':'warning'}>{feeUsed}</FactCard>
+      <FactCard id="fee" label="Tuition used" value={used?.per_year!=null?`${fmtMoney(used.per_year,used.currency||'AUD')} a year`:'Not known yet'} tone={used?.per_year!=null?'':'warning'}>{feeUsed}{used?.per_year==null&&<CourseGap field="tuition"/>}</FactCard>
       <FactCard id="registered" label="Registered course cost (CRICOS)" value={tuition?fmtMoney(tuition.amount,tuition.currency||'AUD'):'—'} sub={[total&&`${fmtMoney(total.amount,total.currency||'AUD')} with non-tuition`,non&&`non-tuition ${fmtMoney(non.amount,non.currency||'AUD')}`].filter(Boolean).join(' · ')||'Whole course'}/>
-      <FactCard id="intakes" label="Intakes"><Pills items={intakes} empty="No intake found yet"/></FactCard>
-      <FactCard id="english" label="English"><Pills items={english} empty="No requirement found yet"/></FactCard>
+      <FactCard id="intakes" label="Intakes">{intakes.length?<Pills items={intakes}/>:<CourseGap field="intakes"/>}</FactCard>
+      <FactCard id="english" label="English">{english.length?<Pills items={english}/>:<CourseGap field="english_requirement"/>}</FactCard>
       <FactCard id="campuses" label={`Campus${campuses.length===1?'':'es'}`}><Pills items={campuses} empty="—"/></FactCard>
       <CourseRecognition courseId={data.id}/>
-      <FactCard id="checked" label="Last checked" value={data.last_verified_at?fmtDate(data.last_verified_at):'—'} sub={data.course_url?<a className="cf-link" href={data.course_url} target="_blank" rel="noreferrer">Course page <ExternalLink size={11}/></a>:'No course page yet'}/>
+      <FactCard id="checked" label="Last checked" value={data.last_verified_at?fmtDate(data.last_verified_at):'—'} sub={data.course_url?<a className="cf-link" href={data.course_url} target="_blank" rel="noreferrer">Course page <ExternalLink size={11}/></a>:<CourseGap field="course_url"/>}/>
     </FactCards>
   </section>}
 

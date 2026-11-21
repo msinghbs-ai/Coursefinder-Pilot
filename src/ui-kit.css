@@ -108,3 +108,16 @@ td.cf-empty-cell{padding:22px;text-align:center;color:var(--cf-muted);font-size:
 .cf-kv-table tbody th{width:22%;color:var(--cf-text);font-weight:750}
 .cf-kv-table td small{display:block;margin-top:2px;color:var(--cf-muted);font-size:var(--cf-fs-2xs)}
 @media(max-width:680px){.cf-page-tabs{margin-top:0}.cf-page-tabs button{padding:8px 10px;font-size:var(--cf-fs-md)}.cf-health-link span.cf-health-text{display:none}}
+
+/* CF-247 s931 (Decision 279 §6): source-limitation pills and the coverage notice */
+.cf-gap-wrap{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
+.cf-gap{white-space:normal}
+.cf-gap-link{text-decoration:none}
+.cf-gap-add{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
+.cf-gap-add input{font:inherit;font-size:var(--cf-fs-sm);border:1px solid var(--cf-slate-300);border-radius:var(--cf-radius-md);padding:4px 8px;min-width:0;width:min(320px,100%)}
+.cf-gap-msg{color:var(--cf-red-700)}
+.cf-coverage-notice{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 12px;border:1px solid var(--cf-indigo-200);background:var(--cf-indigo-50);border-radius:var(--cf-radius-lg)}
+.cf-coverage-notice p{margin:4px 0 0;font-size:var(--cf-fs-sm)}
+.cf-link-button{border:0;background:none;padding:0;margin-top:4px;color:var(--cf-indigo-700);cursor:pointer;font:inherit;font-size:var(--cf-fs-sm)}
+.pg-filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px}
+.pg-filter-bar input,.pg-filter-bar select{font:inherit;font-size:var(--cf-fs-sm);border:1px solid var(--cf-slate-300);border-radius:var(--cf-radius-md);padding:5px 8px;min-width:0;flex:1 1 220px;max-width:420px}

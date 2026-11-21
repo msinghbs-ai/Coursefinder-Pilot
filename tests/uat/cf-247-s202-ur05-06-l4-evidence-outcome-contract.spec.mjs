@@ -41,7 +41,7 @@ test.describe('mocked browser', () => {
     const card = page.locator('[data-l4-ref="841f56b5-5278-4467-8539-50e6e4152a9e"]')
     await expect(card.locator('[data-l4-refshow]')).toHaveText('Ref 841f56b5')
     await expect(card.locator('[data-l4-evidence-link]')).toHaveAttribute('href', /evidence/)
-    await expect(card.locator('[data-l4-evidence]')).toContainText('captured')
+    await expect(card.locator('[data-l4-evidence]')).toContainText('saved') // s931 §5.2 Z3: saved <date>
     await expect(card.locator('[data-l4-newer]')).toContainText('a newer copy of this page exists')
     await expect(card.locator('[data-l4-open-record]')).toHaveAttribute('href', /c-1/)
     await card.locator('[data-l4-choice="use"]').click()
