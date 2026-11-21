@@ -175,3 +175,19 @@ export function fmtBytes(bytes, fallback = EMPTY) {
   while (Math.abs(v) >= 1024 && i < units.length - 1) { v /= 1024; i++ }
   return `${fmtNumber(v, { maxDecimals: i === 0 ? 0 : 1 })} ${units[i]}`
 }
+
+/**
+ * REQ-97 (India team 20 Nov 2026): a course duration in years, with the stored value in brackets, for example "3 years (156 weeks)".
+ * Durations under a year (52 weeks, 12 months) stay as stored. Half years read as 1.5; other fractions to one decimal place.
+ */
+export function fmtDuration(value, unit) {
+  const n = Number(value)
+  if (value == null || value === '' || !Number.isFinite(n) || n <= 0) return null
+  const u = String(unit || '').trim(), lower = u.toLowerCase()
+  const per = lower.startsWith('week') ? 52 : lower.startsWith('month') ? 12 : lower.startsWith('year') ? 1 : 0
+  const stored = `${fmtNumber(n)} ${u}`.trim()
+  if (!per || per === 1 || n < per) return per === 1 ? `${fmtNumber(n)} year${n === 1 ? '' : 's'}` : stored
+  const y = n / per, half = Math.round(y * 2) / 2
+  const years = Math.abs(y - half) < 0.01 ? half : Math.round(y * 10) / 10
+  return `${fmtNumber(years)} year${years === 1 ? '' : 's'} (${stored})`
+}

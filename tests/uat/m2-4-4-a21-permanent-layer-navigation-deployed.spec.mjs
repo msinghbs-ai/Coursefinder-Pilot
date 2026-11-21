@@ -75,7 +75,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
     await page.waitForTimeout(900)
     await expect(page.locator('.m-filter-popover')).toHaveCount(0)
     await expect(page.getByLabel('Search country…')).toHaveCount(0)
-    const country=page.locator('.m-filter-button').filter({hasText:'Country'}).first()
+    const country=page.locator('.m-filter-button').filter({hasText:'Study destination'}).first()
     await expect(country).toContainText(/Australia|All/)
     await milestoneScreenshot(page,testInfo,'a21-filter-restore-no-popover')
   }finally{await finish(testInfo,runtime)}})

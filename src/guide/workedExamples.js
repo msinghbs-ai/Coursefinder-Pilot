@@ -4,7 +4,7 @@ export const WORKED_EXAMPLES = [
   { key: 'W1', title: 'University-wide entry requirements: Charles Sturt University (CRICOS 00005F)', steps: [
     'Course detail › Entry requirements shows University-wide rule applies for India: the course has no row of its own and the university-wide table covers it.',
     'The Hong Kong row shows In Layer 4 review (1 waiting): the read dropped that row, so it waits for a person while the other seven rows are live (partial admission, 21 Nov 2026).',
-    'Entry requirements › Provider entry matrix with Provider = Charles Sturt University, Destination country = AU, Source country = Hong Kong and Applies to = University-wide shows the row and its quote.',
+    'Entry requirements › Provider entry matrix with Provider = Charles Sturt University, Study destination = AU, Student\'s education country = Hong Kong and Applies to = University-wide shows the row and its quote.',
     'Layer 4 Review › Module / Field = Entry requirements, Source country = Hong Kong: the card shows the dropped row; after Yes the row is Live and the pill becomes the value.'] },
   { key: 'W2', title: 'How scholarships attach to a course', steps: [
     'A scholarship names a course, a study level or faculty, or applies to the whole university (the Notes panel on Scholarships explains each).',

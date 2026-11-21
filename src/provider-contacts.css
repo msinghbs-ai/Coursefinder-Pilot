@@ -3,3 +3,8 @@
 .pc-layer4-callout{margin:0 18px 12px;border:1px solid var(--cf-indigo-200);border-radius:var(--cf-radius-lg);background:var(--cf-indigo-25);padding:9px 10px;display:flex;align-items:center;gap:8px;color:var(--cf-indigo-800)}.pc-layer4-callout>div{display:grid;gap:2px;flex:1}.pc-layer4-callout strong{font-size:var(--cf-fs-2xs)}.pc-layer4-callout small{font-size:var(--cf-fs-3xs);color:var(--cf-indigo-500);line-height:1.4}.pc-layer4-callout button{border:1px solid var(--cf-indigo-300);background:var(--cf-white);color:var(--cf-indigo-700);border-radius:var(--cf-radius-sm);padding:6px 9px;font-size:var(--cf-fs-3xs);font-weight:800;cursor:pointer}@media(max-width:600px){.pc-layer4-callout{align-items:flex-start;flex-wrap:wrap}.pc-layer4-callout button{width:100%}}
 /* UI audit Phase 1: the hero band is gone (the shell header names the screen); the actions sit in a plain toolbar */
 .pc-toolbar{display:flex;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+
+/* REQ-102 (India team 20 Nov 2026): the page's purpose, and a clear button beside the chosen provider */
+.pc-purpose{margin:0;color:var(--m-muted);font-size:var(--cf-fs-sm);line-height:1.5;max-width:72ch}
+.pc-provider-picker{display:flex;align-items:center;gap:4px}
+.pc-picker-clear{flex:none;display:grid;place-items:center;width:30px;height:34px;border:1px solid var(--cf-slate-250);border-radius:var(--cf-radius-md);background:var(--cf-white);color:var(--cf-slate-500);cursor:pointer}

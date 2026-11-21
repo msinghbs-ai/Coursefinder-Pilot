@@ -88,10 +88,10 @@ test.describe('mocked browser', () => {
     // combined filters: provider + source country + band, sent together and shown as chips; clear resets (s901: "Country" is "Source country")
     const bar = page.locator('[data-aer-filters="matrix"]')
     await bar.getByRole('button', { name: /Provider/ }).click(); await page.getByRole('button', { name: 'RMIT University (RMIT)' }).click()
-    await bar.getByRole('button', { name: /Source country/ }).click(); await page.locator('.m-filter-popover').getByRole('button', { name: /India/ }).click()
+    await bar.getByRole('button', { name: /Student's education country/ }).click(); await page.locator('.m-filter-popover').getByRole('button', { name: /India/ }).click()
     await bar.getByRole('button', { name: /Band/ }).click(); await page.locator('.m-filter-popover').getByRole('button', { name: '65%' }).click()
     await expect.poll(() => calls.filter(c => c.action === 'matrix_list').at(-1)?.args).toMatchObject({ provider_id: 'p-rmit', country: 'IN', band: '65%', status: 'active', page_size: 50 })
-    await expect(page.locator('[data-aer-chips]')).toContainText('Source country: India')
+    await expect(page.locator('[data-aer-chips]')).toContainText('Student\'s education country: India')
     // sorting goes to the server
     await page.locator('table[data-table="aer-matrix"] th button', { hasText: 'Qualification' }).click()
     await expect.poll(() => calls.filter(c => c.action === 'matrix_list').at(-1)?.args?.sort).toBe('qualification')

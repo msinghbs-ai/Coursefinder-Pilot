@@ -25,7 +25,7 @@ test.describe('CF-247 AER operations workspace @deployed', () => {
       for (const k of ['proposed', 'quarantined', 'withdrawn', 'held', 'courses']) await expect(page.locator(`[data-aer-tile="${k}"]`)).toBeVisible()
       // combined filters on live data: India, active (the default), RMIT
       const bar = page.locator('[data-aer-filters="matrix"]')
-      await bar.getByRole('button', { name: /Source country/ }).click(); await page.locator('.m-filter-popover input').fill('India'); await page.locator('.m-filter-popover').getByRole('button', { name: /^India/ }).first().click()
+      await bar.getByRole('button', { name: /Student's education country/ }).click(); await page.locator('.m-filter-popover input').fill('India'); await page.locator('.m-filter-popover').getByRole('button', { name: /^India/ }).first().click()
       await bar.getByRole('button', { name: /Provider/ }).click(); await page.locator('.m-filter-popover input').fill('RMIT'); await page.locator('.m-filter-popover').getByRole('button', { name: /RMIT/ }).first().click()
       await expect.poll(() => calls.filter((c) => c.action === 'matrix_list').at(-1)?.args).toMatchObject({ country: 'IN' })
       await expect(page.locator('table[data-table="aer-matrix"] tbody tr').first()).toContainText('India', { timeout: DETERMINISTIC_UI_TIMEOUT })
@@ -67,7 +67,7 @@ test.describe('CF-247 AER operations workspace @deployed', () => {
       await page.goto(at('entry-requirements'))
       await expect(page.locator('[data-aer-edit-toggle]')).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })  // the UAT user is Curator or above
       const bar = page.locator('[data-aer-filters="matrix"]')
-      await bar.getByRole('button', { name: /Source country/ }).click(); await page.locator('.m-filter-popover input').fill('India'); await page.locator('.m-filter-popover').getByRole('button', { name: /^India/ }).first().click()
+      await bar.getByRole('button', { name: /Student's education country/ }).click(); await page.locator('.m-filter-popover input').fill('India'); await page.locator('.m-filter-popover').getByRole('button', { name: /^India/ }).first().click()
       await page.locator('[data-aer-edit-toggle]').click()
       const edit = page.locator('[data-aer-edit="matrix"]')
       await edit.locator('[data-aer-reason]').fill('UAT governed edit: as-at put back in the same test')

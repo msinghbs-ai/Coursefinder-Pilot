@@ -19,7 +19,7 @@ test('the notes are one <details>, never opened by the page, on the three pages'
   for (const s of ['data-notes-section="scholarships"', 'data-notes-section="aer"', 'data-notes-section="elr"']) expect(notes).toContain(s)
   // the four scholarship rules, the AER order and both countries, the English and register exceptions
   for (const s of ['Named course.', 'Study level or faculty rule.', 'University-wide.', 'Why a course can show no scholarship.',
-                   'Destination country</strong> is where the university is', 'Source country</strong> is where the student earned their prior qualification',
+                   'Study destination</strong> is where the university is', 'Student\'s education country</strong> (Layer 4: Source country) is where the student earned their prior qualification',
                    'University-wide entry table.', 'Which rule wins', 'Regulated disciplines', 'Register values', 'A value a person has locked is never replaced'])
     expect(notes).toContain(s)
   expect(main).toContain('<AttachmentNotes focus="course"/>')
@@ -28,11 +28,11 @@ test('the notes are one <details>, never opened by the page, on the three pages'
 })
 
 test('Provider entry matrix: Destination country, Source country (was Country) and Applies to; one server edit, md5-guarded', () => {
-  expect(aer).toContain('<FilterSelect label="Destination country" value={f.destination}')
-  expect(aer).toContain('<FilterSelect label="Source country" value={f.country}')
+  expect(aer).toContain('<FilterSelect label="Study destination" value={f.destination}') // REQ-92 (s956): was Destination country
+  expect(aer).toContain('<FilterSelect label="Student\'s education country" value={f.country}') // REQ-92 (s956): was Source country
   expect(aer).toContain('<FilterSelect label="Applies to" value={f.scope}')
   expect(aer).not.toContain('<FilterSelect label="Country" value={f.country}')
-  expect(aer).toContain("destination:'Destination country',country:'Source country',scope:'Applies to'")
+  expect(aer).toContain("destination:'Study destination',country:'Student\\'s education country',scope:'Applies to'")
   expect(MIG).toContain("select pg_temp.edit_once('public.admin_aer(text,jsonb)', '0593747bb6ddd55c785fc445a06eb242', '0f4af8394ea36e6ef96df2e9130e0cc9', array[")
   expect(MIG).toContain("and ($1->>'destination' is null or p.country_id = (select k9.id from ref.countries k9 where k9.iso_alpha2 = upper($1->>'destination')))")
   expect(MIG).toContain("and ($1->>'scope' is null or ($1->>'scope' = 'university' and m.course_id is null) or ($1->>'scope' = 'course' and m.course_id is not null))")
@@ -81,14 +81,14 @@ test.describe('mocked browser', () => {
     await expect(panel.locator('[data-notes-section="aer"]')).toBeHidden()
     await panel.locator('summary').click()
     await expect(panel.locator('[data-notes-section="aer"]')).toBeVisible()
-    await expect(panel).toContainText('Destination country is where the university is')
+    await expect(panel).toContainText('Study destination is where the university is')
     const bar = page.locator('[data-aer-filters="matrix"]')
-    await bar.getByRole('button', { name: /Destination country/ }).click(); await page.locator('.m-filter-popover').getByRole('button', { name: /Australia/ }).click()
-    await bar.getByRole('button', { name: /Source country/ }).click(); await page.locator('.m-filter-popover').getByRole('button', { name: /India/ }).click()
+    await bar.getByRole('button', { name: /Study destination/ }).click(); await page.locator('.m-filter-popover').getByRole('button', { name: /Australia/ }).click()
+    await bar.getByRole('button', { name: /Student's education country/ }).click(); await page.locator('.m-filter-popover').getByRole('button', { name: /India/ }).click()
     await bar.getByRole('button', { name: /Applies to/ }).click(); await page.locator('.m-filter-popover').getByRole('button', { name: /University-wide/ }).click()
     await expect.poll(() => calls.filter(c => c.action === 'matrix_list').at(-1)?.args).toMatchObject({ destination: 'AU', country: 'IN', scope: 'university' })
-    await expect(page.locator('[data-aer-chips]')).toContainText('Destination country: Australia')
-    await expect(page.locator('[data-aer-chips]')).toContainText('Source country: India')
-    await expect(page.locator('table[data-table="aer-matrix"] thead')).toContainText('Source country')
+    await expect(page.locator('[data-aer-chips]')).toContainText('Study destination: Australia')
+    await expect(page.locator('[data-aer-chips]')).toContainText('Student\'s education country: India')
+    await expect(page.locator('table[data-table="aer-matrix"] thead')).toContainText('Education country')
   })
 })

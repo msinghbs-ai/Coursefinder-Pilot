@@ -125,7 +125,7 @@ function useFilters(view,defaults,overrides={}){
 }
 
 // ----------------------------------------------------------------------------------------------- Provider entry matrix
-const MATRIX_NAMES={provider_id:'Provider',destination:'Destination country',country:'Source country',scope:'Applies to',level:'Study level',status:'Status',matrix_kind:'Kind',band:'Band',q:'Search',edition:'Edition',intake_year:'Intake year',read_state:'Read'}
+const MATRIX_NAMES={provider_id:'Provider',destination:'Study destination',country:'Student\'s education country',scope:'Applies to',level:'Study level',status:'Status',matrix_kind:'Kind',band:'Band',q:'Search',edition:'Edition',intake_year:'Intake year',read_state:'Read'}
 const MATRIX_FIELDS=[
   {key:'qualification',label:'Qualification',width:260},
   {key:'level_label',label:'Level (as published)',width:160},
@@ -148,7 +148,7 @@ export function MatrixView({rank,onError,navigate,routeParams}){
   const rows=d?.rows||[]
   const all=[
     {key:'provider_name',label:'Provider',width:220,sortKey:'provider',render:r=><span className="m-cell-title"><strong>{r.provider_name}</strong>{r.course_code&&<small>{r.course_code}</small>}</span>},
-    {key:'country',label:'Source country',width:120,sortKey:'country',render:r=><span title={r.country_name}>{r.country} <small>{short(r.country_name,18)}</small></span>},
+    {key:'country',label:'Education country',width:120,sortKey:'country',render:r=><span title={r.country_name}>{r.country} <small>{short(r.country_name,18)}</small></span>},
     {key:'level_label',label:'Level',width:160,sortKey:'level',render:r=><span>{r.level_label||'—'}{r.level_code&&<small> · {r.level_code}</small>}</span>},
     {key:'qualification',label:'Qualification',width:280,sortKey:'qualification',render:r=><span className="aer-wrap">{r.qualification}</span>},
     {key:'band',label:'Band',width:100,sortKey:'band',render:r=>r.band||'—'},
@@ -167,7 +167,7 @@ export function MatrixView({rank,onError,navigate,routeParams}){
   const onSaved=row=>setD(x=>x?{...x,rows:x.rows.map(r=>r.id===row.id?row:r)}:x)
   return <div className="m-page-stack aer-page" data-aer-view="matrix">
     <AerSummary providerId={f.provider_id} onError={onError} refreshKey={refresh}/>
-    {f.provider_id&&<AerReadNow providerId={f.provider_id} onChanged={()=>setRefresh(r=>r+1)} onError={onError}/>}
+    {f.provider_id&&can&&<AerReadNow providerId={f.provider_id} onChanged={()=>setRefresh(r=>r+1)} onError={onError}/>}
     <section className="m-panel m-catalogue-panel">
       <div className="m-workspace-head"><div><h2>Provider entry matrix</h2><p>The requirement each provider publishes for a student's country of prior education (the source country). A row with no course applies university-wide. Only active rows reach the website.</p></div>
         <div className="m-result-count">{busy?<><span className="m-spinner"/>Loading…</>:<><strong>{fmtNumber(Number(d?.total||0))}</strong><span>matching</span></>}</div></div>
@@ -179,9 +179,9 @@ export function MatrixView({rank,onError,navigate,routeParams}){
       </div>
       <div className="m-filter-bar" data-aer-filters="matrix">
         <FilterSelect label="Provider" value={f.provider_id} onChange={(v,l)=>set('provider_id',v,l)} options={provOpts(o)}/>
-        {/* CF-247 s901: Destination country is where the provider is; Source country (was "Country") is where the student's prior qualification is from */}
-        <FilterSelect label="Destination country" value={f.destination} onChange={(v,l)=>set('destination',v,l)} options={[...(o.destinations||[]),...targetCountries(lk).filter(t=>!(o.destinations||[]).some(d=>d.code===t.code))].map(c=>opt(c.code,c.name,c.code))}/>
-        <FilterSelect label="Source country" value={f.country} onChange={(v,l)=>set('country',v,l)} options={orderAerCountries(o.countries).map(c=>opt(c.code,c.name,c.code))}/>
+        {/* CF-247 s901, REQ-92 (India team 20 Nov 2026): Study destination is where the provider is; Student's education country (was "Source country", before that "Country") is where the student's prior qualification is from */}
+        <FilterSelect label="Study destination" value={f.destination} onChange={(v,l)=>set('destination',v,l)} options={[...(o.destinations||[]),...targetCountries(lk).filter(t=>!(o.destinations||[]).some(d=>d.code===t.code))].map(c=>opt(c.code,c.name,c.code))}/>
+        <FilterSelect label="Student's education country" value={f.country} onChange={(v,l)=>set('country',v,l)} options={orderAerCountries(o.countries).map(c=>opt(c.code,c.name,c.code))}/>
         <FilterSelect label="Applies to" value={f.scope} onChange={(v,l)=>set('scope',v,l)} options={[opt('university','University-wide (no course)'),opt('course','One course')]}/>
         <FilterSelect label="Study level" value={f.level} onChange={(v,l)=>set('level',v,l)} options={[...(o.levels||[]).map(l=>opt(l.code,l.name,l.code)),...(o.level_labels||[]).map(l=>opt(l,l,'as published'))]}/>
         <FilterSelect label="Status" value={f.status} emptyLabel="Any status" onChange={(v,l)=>set('status',v,l)} options={(o.statuses||[]).map(s=>opt(s,ROW_PILL[s]?.[1]||s))}/>
@@ -228,7 +228,7 @@ export function CourseView({rank,onError,routeParams}){
     {key:'score',label:'Score and basis',width:170,sortKey:'score',render:r=>r.min_entry_score!=null?<span>{Number(r.min_entry_score)} <small>({r.min_entry_score_basis})</small></span>:(minText(r)||'—')},
     {key:'band',label:'Band',width:100,render:r=>r.band||'—'},
     {key:'audience',label:'For',width:120,render:r=>r.audience},
-    {key:'country',label:'Source country',width:100,render:r=>r.country||'Any'},
+    {key:'country',label:'Education country',width:100,render:r=>r.country||'Any'},
     {key:'as_at',label:'As at',width:110,sortKey:'as_at',render:r=>fmtDate(r.as_at)},
     {key:'status',label:'Status',width:170,sortKey:'status',render:r=><span className="aer-status"><RowPill status={r.status} title={r.status_reason||undefined}/>{r.manual&&<small>by hand</small>}{r.status==='proposed'&&<a className="cf-link" href={l4Href(r)} onClick={e=>e.stopPropagation()}>Layer 4</a>}</span>},
     {key:'quote',label:'Quote',width:260,render:r=><small className="aer-wrap">“{short(r.quote,120)}”</small>},
@@ -239,7 +239,7 @@ export function CourseView({rank,onError,routeParams}){
   const onSaved=row=>setD(x=>x?{...x,rows:x.rows.map(r=>r.id===row.id?row:r)}:x)
   return <div className="m-page-stack aer-page" data-aer-view="course">
     <AerSummary providerId={f.provider_id} onError={onError} refreshKey={refresh}/>
-    {(f.provider_id||isId(f.course))&&<AerReadNow providerId={f.provider_id} courseId={isId(f.course)?f.course:undefined} onChanged={()=>setRefresh(r=>r+1)} onError={onError}/>}
+    {(f.provider_id||isId(f.course))&&can&&<AerReadNow providerId={f.provider_id} courseId={isId(f.course)?f.course:undefined} onChanged={()=>setRefresh(r=>r+1)} onError={onError}/>}
     <section className="m-panel m-catalogue-panel">
       <div className="m-workspace-head"><div><h2>Course entry requirements</h2><p>What each course's own page asks for: a course rule, a minimum, a score with its printed basis, a band, prerequisites.</p></div>
         <div className="m-result-count">{busy?<><span className="m-spinner"/>Loading…</>:<><strong>{fmtNumber(Number(d?.total||0))}</strong><span>matching</span></>}</div></div>
@@ -483,7 +483,7 @@ export function SourcesView({rank,onError,routeParams}){
   const[cols,hidden,setHidden]=useColumns('sources',all)
   return <div className="m-page-stack aer-page" data-aer-view="sources">
     <AerSummary providerId={f.provider_id} onError={onError} refreshKey={refresh}/>
-    {f.provider_id&&<AerReadNow providerId={f.provider_id} onChanged={()=>setRefresh(r=>r+1)} onError={onError}/>}
+    {f.provider_id&&Number(rank)>=3&&<AerReadNow providerId={f.provider_id} onChanged={()=>setRefresh(r=>r+1)} onError={onError}/>}
     {rank>=4&&<SourceAttach providers={o.providers||[]} providerId={f.provider_id} onAttached={()=>setRefresh(r=>r+1)}/>}
     <section className="m-panel m-catalogue-panel">
       <div className="m-workspace-head"><div><h2>Sources, reads and holds</h2><p>Every official page or PDF the entry reader uses, its stored copy, its latest read and why rows were held or not kept.{d&&!d.ai_allowed?' AI reading is stopped (AI limits).':''}</p></div>

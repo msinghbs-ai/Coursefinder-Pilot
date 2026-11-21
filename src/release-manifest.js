@@ -1,19 +1,24 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.78'
-export const PACKAGE_VERSION='0.1.500'
+export const UI_VERSION='2.16.79'
+export const PACKAGE_VERSION='0.1.501'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'21 Nov 2026',
-  title:'API usage for every version and key',
+  title:'India team feedback: clearer filters, durations in years, full statistics names',
   changes:[
-    'Settings › API usage shows one card for every API version the database holds: Website and Zoho v1, v2 and v3, and any later version as soon as it is registered or used. Nothing about a version is written into the screen.',
-    'Each card lists its keys, one per consumer and version: status (Active, Rotating / Grace, Not issued, Revoked), the masked key, created, rotated and last used, calls in 24 hours, 7 days and 30 days, 2xx / 4xx / 5xx, error rate and the 95% time.',
-    'Website API v3 and Zoho API v3 have their own keys. Issue key shows a v3 key once; until it is issued the website v2 key keeps working on v3 for 14 days (setting api.new_key_bridge_days), so the website is not interrupted.'
+    'Courses, Providers, Scholarships and Entry requirements: the destination filter reads Study destination; on Entry requirements the source filter reads Student\'s education country.',
+    'Course detail and the Course catalogue: durations read in years, with the stored weeks or months in brackets (3 years (156 weeks)).',
+    'Provider contacts: a line says what the page is for, and an × clears the chosen provider.',
+    'Courses › Empty reason and Providers › On website and In Zoho CRM (were Website feed and Zoho feed): each filter shows a note on what it means.',
+    'Rankings & statistics: QILT and PRISMS cards carry their full names, and each card says who publishes it.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Entry requirements: a counsellor who chose a provider saw the data team\'s Read now panel. It now shows from Curator up only.',
+    'Provider contacts: once a provider was chosen it could not be cleared.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

@@ -5,7 +5,7 @@
 import React from'react'
 import{ExternalLink,UsersRound}from'lucide-react'
 import{StatusChip}from'./ui-kit'
-import{fmtNumber,fmtDate,fmtMoney}from'./lib/format.js'
+import{fmtNumber,fmtDate,fmtMoney,fmtDuration}from'./lib/format.js'
 import'./detail-summary.css'
 import CourseRecognition from'./CourseRecognition' // CF-247 RM1A-1 (O29): Recognition card
 import{CourseGap}from'./FieldGapContext' // s931 (Decision 279 §6): why an empty value is empty
@@ -31,7 +31,7 @@ export function CourseSummary({data,feeUsed}){
   const f=data.fee_summary||{},reg=f.cricos_registered||[],used=f.fee_used
   const regBy=t=>reg.find(x=>String(x.fee_type||x.type)===t)
   const tuition=regBy('tuition'),total=regBy('estimated_total_course_cost'),non=regBy('non_tuition')
-  const duration=data.duration_value?`${fmtNumber(Number(data.duration_value))} ${data.duration_unit||''}`.trim():null
+  const duration=fmtDuration(data.duration_value,data.duration_unit) // REQ-97: years, with the stored weeks or months in brackets
   const english=(data.english||[]).map(x=>({label:`${x.test_name||x.test_code} ${x.overall_score!=null?Number(x.overall_score):''}`.trim(),tone:'info'}))
   const intakes=(data.intakes||[]).filter(x=>(x.status||'active')==='active').map(x=>({label:[x.label,x.year].filter(Boolean).join(' '),tone:'violet'}))
   const campuses=(data.campuses||[]).map(x=>({label:x.city||x.name,title:x.name,tone:'neutral'}))
