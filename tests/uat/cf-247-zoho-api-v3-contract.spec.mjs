@@ -43,8 +43,8 @@ test('zoho-api-v3 is zoho-api-v2 with the v3 function names: its own keys and lo
   expect(changed.length).toBeLessThanOrEqual(24)
   // s935 (Platform Admin 21 Nov 2026 13:11): v3 signs in and logs with its own (consumer, version) key (api_key_auth_v1, api_request_log_v1)
   for (const l of changed) expect(l).toMatch(/zoho_v3_|zoho-v3|api_key_auth_v1|api_request_log_v1|edu_country|zoho_api_v3_error|"destination"\]|ISM-1278/)
-  expect(V3).toContain('svc.schema("pipeline").rpc("api_key_auth_v1", { p_platform: "zoho", p_version: "v3",'); expect(V3).toContain('svc.rpc("zoho_v2_rate"')
-  expect(V3).toContain('svc.schema("pipeline").rpc("api_request_log_v1", { p_platform: "zoho", p_version: "v3", p_key_name: keyName, p_action: action,')
+  expect(V3).toContain('svc.rpc("api_key_auth_v1", { p_platform: "zoho", p_version: "v3",'); expect(V3).toContain('svc.rpc("zoho_v2_rate"')
+  expect(V3).toContain('svc.rpc("api_request_log_v1", { p_platform: "zoho", p_version: "v3", p_key_name: keyName, p_action: action,')
   expect(V3).not.toMatch(/svc\.rpc\("zoho_v2_(auth|log)"/)
   // 17 Nov 2026 (roadmap schema pack, RM0E; Zoho v3 additive changes merge on green): v3 has the v2 actions plus destination
   expect(V3.match(/const ACTIONS = \[[^\]]+\]/)[0]).toBe(V2.match(/const ACTIONS = \[[^\]]+\]/)[0].replace('"report_status"]', '"report_status", "destination"]'))

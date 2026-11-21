@@ -20,8 +20,8 @@ test('v3 is v2 with every action routed to website_v3_*; its own key and log (s9
   }
   expect(v3).not.toMatch(/fn = "website_v2_/)
   // s935 (Platform Admin 21 Nov 2026 13:11): v3 signs in and logs with its own (consumer, version) key; the rate limit is still the v2 counter, by key name
-  expect(v3).toContain('svc.schema("pipeline").rpc("api_key_auth_v1", { p_platform: "website", p_version: "v3",')
-  expect(v3).toContain('svc.schema("pipeline").rpc("api_request_log_v1", { p_platform: "website", p_version: "v3", p_key_name: keyName, p_action: action,')
+  expect(v3).toContain('svc.rpc("api_key_auth_v1", { p_platform: "website", p_version: "v3",')
+  expect(v3).toContain('svc.rpc("api_request_log_v1", { p_platform: "website", p_version: "v3", p_key_name: keyName, p_action: action,')
   expect(v3).toContain('svc.rpc("website_api_v2_rate"')
   expect(v3).not.toMatch(/svc\.rpc\("website_api_v2_(auth|log)"/)
   // the body below the header differs from v2 only in the routed lines
