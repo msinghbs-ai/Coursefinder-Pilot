@@ -17,6 +17,7 @@ const aer=async(action,args={})=>{const{data,error}=await supabase.rpc('admin_ae
 export function moduleLabel(kind,part,kinds,countOf,split){
   if(!kind)return 'Choose a queue'
   if(kind==='provider_description'&&part)return `${DESC_PART[part]} (${fmtNumber(Number(split?.[part])||0)})`
+  if(kind==='provider_description')return `Course and university descriptions (${fmtNumber(countOf(kind))})` // s932: never one part's name for both
   return `${kinds?.[kind]?.label||kind} (${fmtNumber(countOf(kind))})`}
 
 export default function Layer4PrimaryFilters({kinds,order,kind,part,split,countOf,onKind,provider,onProvider,country,onCountry,source,onSource,bucket,onBucket,showAll=false,total=0}){

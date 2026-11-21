@@ -50,6 +50,10 @@ test('(b) the three decisions of every queue are its own server choices; the res
   expect(holdHintOf('aer:gate_incomplete').example).toContain('8 countries'); expect(holdHintOf('nothing:known').title).toBe('Held by a check')
   expect(DESC_PART).toEqual({ course: 'Course description', university: 'University description' })       // fix 2
   expect(descPartOf({ key: 'cd:identity_margin_thin' })).toBe('course'); expect(descPartOf({ key: 'provider_description:held' })).toBe('university')
+  // s932 (live check 21 Nov 2026): with no part chosen the queue is named by what it holds, never "University description" for course descriptions
+  expect(src('Layer4Inbox.jsx')).toContain("const effPart=kind==='provider_description'&&!part&&split?")
+  expect(src('Layer4PrimaryFilters.jsx')).toContain('Course and university descriptions (')
+  expect(src('Layer4Focus.jsx')).toContain("const label=kind==='provider_description'?(part==='course'?'Course description'")
 })
 
 test('(c) gapStateOf: In review > University-wide > No URL > Not stated; otherwise "—" with the empty reason label', () => {
@@ -106,7 +110,7 @@ test('D3 and fixes 1 and 3: md5-guarded, read only, admitted through the same ma
   expect(src('Layer4DecisionBar.jsx')).toContain("supabase.rpc('admin_layer4_cd_provider_verified_v1',{p_ref:ref})")
   expect(src('Layer4Inbox.jsx')).toContain('Approve all verified for provider (${fmtNumber(Number(verified.eligible)||0)})')
   expect(src('Layer4Focus.jsx')).toContain('const done=r=>{setGone(s=>new Set([...s,cur]));onDecided?.(r);load(true)}')
-  expect(src('Layer4Inbox.jsx')).toContain('countOf={k=>focus&&k===kind&&ftotal!=null&&!part?ftotal:Number(bk[k]?.n)||0}')
+  expect(src('Layer4Inbox.jsx')).toContain('countOf={k=>focus&&k===kind&&ftotal!=null&&!effPart?ftotal:Number(bk[k]?.n)||0}')
 })
 
 test.describe('mocked browser', () => {
