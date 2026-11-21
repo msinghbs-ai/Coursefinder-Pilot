@@ -3,7 +3,7 @@
 -- registry (pipeline.statistics_dataset_registry, Rankings & statistics › Datasets); this sets the full forms there. QS and THE already carry
 -- their full names (QS World University Rankings; Times Higher Education World University Rankings). Values only: no table, column or function changes.
 -- Live on deploy. $0. G1: no job. G2: no operational value. G3: the registry is not part of the consumer API; checked before and after.
--- Parity: live head 20261122030000 read 21 Nov 2026 22:40 AEDT; this file is numbered strictly above it.
+-- Parity: live head 20261122040000 (Lane 2, s960) read 21 Nov 2026 23:00 AEDT; this file is numbered strictly above it (renumbered from 20261122040000).
 -- Replaces: the short names QILT and PRISMS on the cards.
 -- Retires: nothing. Nothing dropped, deleted or renamed.
 set local lock_timeout = '5s';

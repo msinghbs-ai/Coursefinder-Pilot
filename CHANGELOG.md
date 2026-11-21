@@ -2,7 +2,7 @@
 
 ## 0.1.501 — 21 Nov 2026
 
-- Prepared visible PIM Admin release candidate **v2.16.79** (S1-API-Frontend-Delivery s956, India team review of 20 Nov 2026: REQ-92, REQ-97, REQ-101, REQ-102, REQ-103, REQ-106, REQ-107). Migration `20261122040000` sets the full names of QILT and PRISMS in the dataset registry.
+- Prepared visible PIM Admin release candidate **v2.16.79** (S1-API-Frontend-Delivery s956, India team review of 20 Nov 2026: REQ-92, REQ-97, REQ-101, REQ-102, REQ-103, REQ-106, REQ-107). Migration `20261122050000` sets the full names of QILT and PRISMS in the dataset registry.
 
 ## 0.1.500 — 21 Nov 2026
 

@@ -56,7 +56,7 @@ test('REQ-106: statistics cards take their names and publisher from the dataset 
   const m = src('mature-main.jsx')
   for (const k of ['qilt', 'prisms', 'qs_wur', 'the_wur']) expect(m).toContain(`{statLabel('${k}',`)
   expect(m).toContain('Published by {a}')
-  const mig = fs.readFileSync('supabase/migrations/20261122040000_cf247_s956_statistics_registry_full_names.sql', 'utf8')
+  const mig = fs.readFileSync('supabase/migrations/20261122050000_cf247_s956_statistics_registry_full_names.sql', 'utf8')
   expect(mig).toContain("set label = 'QILT (Quality Indicators for Learning and Teaching)'")
   expect(mig).toContain("set label = 'PRISMS (Provider Registration and International Student Management System)'")
   expect(mig).toMatch(/^-- Retires: nothing\./m)
