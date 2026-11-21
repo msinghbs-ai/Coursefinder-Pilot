@@ -2,7 +2,8 @@
 -- (__PART__ of __PARTS__, by a hash of the course id, so each Management API answer stays small). Each of the 14 canonical API v3 fields is one
 -- cell: the admitted value (at most 80 characters), or one of TRYING, POSSIBLE_NEEDS_SOURCE, NOT_POSSIBLE, EMPTY_NOT_STARTED.
 -- scripts/telemetry/course-field-readiness.mjs turns the rows into Course_Field_Readiness_Matrix_YYYY-MM-DD.csv and the summary tabs;
--- workflow course-field-readiness.yml runs it daily at 07:30 AEDT. Nothing here writes.
+-- workflow course-field-readiness.yml runs it daily at 07:30 AEDT. Nothing here writes. The column raw (s927) feeds
+-- scripts/telemetry/data-gap-register.mjs (the daily data gap register).
 --
 -- States (docs: Dev_Display_Rules tab):
 --   TRYING                 a page is found and a read, re-read, Layer 3 or Layer 4 step is queued or running
@@ -109,6 +110,11 @@ select x.course_id, x.cc country_code, x.provider_id, left(x.provider_name, 120)
                                    when not x.has_campus and x.empty_reason_code = 'online_only_no_campus' then 'NOT_POSSIBLE'
                                    when x.loc_pending then 'TRYING' else 'POSSIBLE_NEEDS_SOURCE' end,
     'career_outcomes', case when x.car_n > 0 then x.car_n || ' occupations (national)' else 'EMPTY_NOT_STARTED' end
-  ) cells
+  ) cells,
+  -- s927: the coverage state behind each gap, so the data gap register can say "waiting for a person", "no website on record" and so on
+  (select coalesce(jsonb_object_agg(r.key, r.value), '{}'::jsonb) from jsonb_each_text(jsonb_strip_nulls(jsonb_build_object(
+    'official_url', x.m->'official_url'->>'s', 'description', x.m->'description'->>'s', 'provider_tuition', x.m->'provider_tuition'->>'s',
+    'intakes', x.m->'intakes'->>'s', 'deadline', x.m->'deadline'->>'s', 'duration', x.m->'duration'->>'s', 'campus', x.m->'campus'->>'s',
+    'academic_entry', x.m->'academic_entry'->>'s', 'english', x.m->'english'->>'s'))) r where r.value <> 'admitted') raw  -- admitted states left out (smaller answers)
 from cell x left join sx using (course_id)
 order by x.cc, x.provider_name, x.title;
