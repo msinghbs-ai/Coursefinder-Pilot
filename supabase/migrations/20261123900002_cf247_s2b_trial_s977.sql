@@ -8,7 +8,6 @@ create or replace function pg_temp.t(q text, n int default 3) returns text langu
 declare t0 timestamptz; r text := ''; i int; d text; begin
   for i in 1..n loop t0 := clock_timestamp(); execute 'select length(coalesce((' || q || ')::text, ''''))' into d;
     r := r || round(extract(epoch from clock_timestamp() - t0) * 1000) || 'ms/' || d || 'c '; end loop; return r; end $f$;
-do $a$ declare v uuid; begin
 -- CF-247 s977 (session S2-Build, Platform Admin batch of 22 Nov 2026 22:01 AEDT, Part 1 and Part 2): REQ-105 closed for filtered and sorted
 -- Courses lists, and the counselling filters behind the Counsellor and Viewer filter bar.
 -- Measured live 23 Nov 2026 (rolled-back dry runs, signed in as a Platform Admin): Australia + New South Wales sorted by International fee took
