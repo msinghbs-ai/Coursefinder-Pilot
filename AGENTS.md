@@ -55,6 +55,14 @@ Platform Admin, 22 Nov 2026 09:22 AEDT (IR-005, RM1J): "We can attribute and use
   Rows that still match no provider are listed for review and never fail the run.
 - A challenge page is reported and never bypassed. The edition already held stays live.
 
+### Standing Rule: Migration Pre-flight Before Any Push (s980)
+
+Platform Admin, 23 Nov 2026 08:47 AEDT (S2-Build). It applies to every session in both repositories.
+
+1. **Pre-flight before pushing.** Never push a branch that adds or changes a migration until `node scripts/ci/migration-preflight.mjs --base origin/main` passes locally (the hook `.githooks/pre-push` runs it; turn it on once per clone with `git config core.hooksPath .githooks`). It checks the name, a version strictly above every migration on main, the `Replaces:` and `Retires:` lines, and that the file can run inside one transaction.
+2. **Rehearse, then open the pull request.** Read the live head, and rehearse a new migration with the hand-started rolled-back run (`workflow_dispatch`, job `rehearsal`) before labelling its pull request `live-dry-run`. The rehearsal runs the same pre-flight against the live migration head. It reports a failure as a warning and in its summary, and never fails the run, so a rehearsal or read-back typo sends no failed-run notice. A read-back probe that errors prints `PROBE-ERROR` and does not fail a migration that passed.
+3. **The gate stays strict and scoped.** The `dry-run` job runs only for pull requests to `main` that add `supabase/migrations/*.sql` and carry the `live-dry-run` label (there is no push trigger). It fails on any pre-flight or dry-run failure, and auto-merge counts only this check. Guard: `tests/uat/cf-247-s980-migration-preflight-contract.spec.mjs`.
+
 ### Standing Rule: Continuous Delivery Master Plan (Read at Start, Update Before Parking)
 
 Platform Admin, 21 Nov 2026 21:15 AEDT (S1-API-Frontend-Delivery). It applies to every session in both repositories.

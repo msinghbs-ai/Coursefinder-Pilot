@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# CF-247 s980: local pre-flight before a push (enable once per clone: git config core.hooksPath .githooks).
+# Checks every migration this branch adds against origin/main: name, order above main, Replaces/Retires lines, transaction safety.
+# The live head is checked again by the rolled-back rehearsal and by the pull request gate (they can read the live database; this hook cannot).
+set -euo pipefail
+git fetch -q origin main || true
+if git diff --name-only --diff-filter=A origin/main...HEAD -- 'supabase/migrations/*.sql' | grep -q .; then
+  node scripts/ci/migration-preflight.mjs --base origin/main
+fi
