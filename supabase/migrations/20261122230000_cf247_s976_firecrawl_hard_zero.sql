@@ -2,6 +2,8 @@
 -- Migration head before this change: 20261122180000.
 -- Replaces the existing svc_fc_spend function body in place (one anchored branch only).
 -- No new schema objects, cron jobs, edge handlers, reader or consumer API changes.
+-- Replaces: public.svc_fc_spend(numeric,text,uuid,text) in place (md5-guarded)
+-- Retires: nothing
 -- Immediate on deploy: firecrawl.daily_budget_total=0 (already set in production at 23:07 AEDT)
 -- refuses scheduled, on-demand and provider Fill requests, without changing historical spend.
 -- G3 frozen (75 functions / 48 relations / 592 columns): none touched.
