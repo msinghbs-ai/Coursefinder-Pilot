@@ -79,57 +79,53 @@ export default function ApiUsagePanel({onError}){
  const daily=useMemo(()=>(d?.daily||[]).filter(r=>!key||r.key_name===key||r.key_name===`${key}#previous`),[d,key])
  const byDay=useMemo(()=>{const m=new Map();for(const r of daily){const x=m.get(r.day)||{day:r.day,calls:0,ok:0,client_errors:0,rate_limited:0,server_errors:0,items:0,bytes:0,ms:0};x.calls+=r.calls;x.ok+=r.ok;x.client_errors+=r.client_errors;x.rate_limited+=r.rate_limited;x.server_errors+=r.server_errors;x.items+=Number(r.items)||0;x.bytes+=Number(r.bytes)||0;x.ms+=(r.avg_ms||0)*r.calls;m.set(r.day,x)}return[...m.values()].sort((a,b)=>a.day<b.day?1:-1)},[daily])
  const ref=d?.refreshed
+ // S2-Build s977 (Platform Admin addendum 22 Nov 2026 22:57): one compact table for the versions that sign in with their own keys (each key once:
+ // consumer and version, key and status, calls 7 d / 30 d, error %, 95th percentile, last used, Issue or Rotate); versions on the older credential
+ // stores (not logged here) fold under "Legacy … keys"; traffic detail and the switch controls fold below. No metric is shown twice on the view.
+ const vers=versionsOf(d),current=vers.filter(v=>v.logged!==false),legacy=vers.filter(v=>v.logged===false)
+ const legacyKeys=legacy.reduce((a,v)=>a+(v.keys||[]).length,0),legacyNames=[...new Set(legacy.map(v=>v.api_version))].join(' / ')
+ const rows=list=>list.flatMap(v=>(v.keys||[]).length?(v.keys||[]).map(k=>({v,k})):[{v,k:null}])
+ const errPct=s=>{if(!s||!Number(s.calls))return null;if(s.error_rate!=null)return Math.round(1000*Number(s.error_rate))/10;return Math.round(1000*((Number(s.client_errors)||0)+(Number(s.server_errors)||0))/Number(s.calls))/10}
+ const summary=list=><table className="cf-api-summary"><thead><tr><th>Consumer &amp; version</th><th>Key &amp; status</th><th>Calls (7 d / 30 d)</th><th>Error %</th><th>p95</th><th>Last used</th><th>Action</th></tr></thead>
+  <tbody>{rows(list).map(({v,k})=>{const vid=`${v.platform}-${v.api_version}`;if(!k)return <tr key={vid} className="cf-api-row" data-platform={v.platform} data-version={v.api_version}><td data-label="Consumer & version"><strong>{v.label}</strong></td><td data-label="Key & status" colSpan={6}>No key for this version.</td></tr>
+   const st=k.stats||{},s7=st['7d']||{},s30=st['30d']||{},[tone,label]=KEY_STATUS[k.status]||['neutral',k.status],full=keys.find(x=>x.key_name===k.key_name),e=errPct(s7),off=v.logged===false
+   return <tr key={`${vid}-${k.key_name}`} className="cf-api-row" data-platform={v.platform} data-version={v.api_version} data-version-key={k.key_name} data-key-status={k.status}>
+    <td data-label="Consumer & version"><strong>{k.consumer||v.label}</strong><div className="cf-api-sub">{v.label}{v.frozen?' · frozen (G3)':''}{v.registered===false?' · not registered':''}{v.status==='retired'?' · retired':''}</div></td>
+    <td data-label="Key & status"><code>{k.key_name}</code>{k.masked&&<div className="cf-api-sub"><code>{k.masked}</code></div>}<StatusChip tone={tone} label={label}/>{k.status==='rotating'&&k.previous_valid_until&&<div className="cf-api-sub">{k.shares_with?`${k.shares_with} also works here`:'Old key works'} until {fmtDateTime(k.previous_valid_until)}</div>}</td>
+    <td data-label="Calls (7 d / 30 d)">{off?'Not logged':`${fmtNumber(s7.calls||0)} / ${fmtNumber(s30.calls||0)}`}</td>
+    <td data-label="Error %">{off||e==null?'—':fmtPercent(e)}</td>
+    <td data-label="p95">{off?'—':ms(s7.p95_ms)}</td>
+    <td data-label="Last used">{k.last_used_at?fmtRelative(k.last_used_at):off?'Not logged':'Never'}</td>
+    <td data-label="Action" className="cf-api-key-actions">{manage&&k.rotatable&&full?<button className="m-secondary compact" onClick={()=>setDialog({mode:'rotate',k:full})}><KeyRound size={13}/> {k.issued===false?'Issue key':'Rotate'}</button>:'—'}</td>
+   </tr>})}</tbody></table>
  return <div className="m-page-stack">
   <section className="m-panel">
    <header className="m-workspace-head"><h3>API usage</h3>
     <div className="m-search-row">
-     <label>Period <select value={period} onChange={e=>setPeriod(e.target.value)} aria-label="Period">{PERIODS.map(p=><option key={p.key} value={p.key}>{p.label}</option>)}</select></label>
      <button className="m-primary compact cf-api-refresh" onClick={refresh} disabled={refreshing||busy}><RefreshCw size={14}/> {refreshing?'Refreshing…':'Refresh statistics now'}</button>
     </div>
    </header>
-   <p className="l3v-note cf-api-asof"><Clock size={13}/> {ref?<>Statistics as of <strong>{fmtDateTime(ref.at)}</strong> ({ref.trigger==='on_demand'?`refreshed on demand${ref.by?` by ${ref.by}`:''}`:'daily refresh'}, {fmtRelative(ref.at)}). They refresh every day at about 00:20 Melbourne time, or now with the button.</>:'Statistics have not been built yet: press Refresh statistics now.'} Calls to the older URLs (Zoho v1, and the website through wix-course-api) are not logged here.</p>
-   <div className="cf-api-platforms" data-api-versions>
-    {versionsOf(d).map(v=>{const t=versionTotals(v,period),pl=PERIODS.find(x=>x.key===period).label;return <div key={`${v.platform}-${v.api_version}`} className="cf-api-platform" data-platform={v.platform} data-version={v.api_version}>
-     <h4>{v.label} <small>{(v.endpoints||[]).map(e=><code key={e}>{e}</code>)} · keys on: {t.on} of {t.total}{v.frozen?' · frozen (G3)':''}{v.registered===false?' · not registered':''}{v.status==='retired'?' · retired':''}</small></h4>
-     <div className="cf-metric-grid">
-      <Metric label={`Calls (${pl})`} value={v.logged===false?'Not logged':fmtNumber(t.calls)}/>
-      <Metric label="Error rate (4xx / 5xx)" value={t.errorRate==null?'—':fmtPercent(t.errorRate)} tone={t.errorRate!=null&&t.errorRate>5?'warning':'neutral'}/>
-      <Metric label="95% within" value={ms(t.p95)}/>
-      <Metric label="Last call" value={t.last?fmtRelative(t.last):v.logged===false?'Not logged':'Never'}/>
-     </div>
-     {(v.keys||[]).length===0?<EmptyInline text="No key for this version."/>:<div className="dense-table-wrap"><table className="dense-table cf-api-version-keys"><thead><tr><th>Key</th><th>Status</th><th>Created</th><th>Rotated</th><th>Last used</th><th>Calls 24 h / 7 d / 30 d</th><th>2xx / 4xx / 5xx ({pl})</th><th>Error rate</th><th>95% within</th>{manage&&<th></th>}</tr></thead>
-      <tbody>{v.keys.map(k=>{const st=k.stats||{},s=st[period]||{},[tone,label]=KEY_STATUS[k.status]||['neutral',k.status],full=keys.find(x=>x.key_name===k.key_name);return <tr key={k.key_name} data-version-key={k.key_name} data-key-status={k.status}>
-       <td><code>{k.key_name}</code><div className="cf-api-sub">{k.consumer}{k.masked?<> · <code>{k.masked}</code></>:''}</div></td>
-       <td><StatusChip tone={tone} label={label}/>{k.status==='rotating'&&k.previous_valid_until&&<div className="cf-api-sub">{k.shares_with?`${k.shares_with} also works here`:'Old key works'} until {fmtDateTime(k.previous_valid_until)}{k.issued===false?' · rotate to issue its own key':''}</div>}{k.status==='not_issued'&&<div className="cf-api-sub">Rotate to issue it (shown once)</div>}</td>
-       <td>{k.created_at?fmtDateTime(k.created_at):'—'}</td><td>{k.rotated_at?fmtDateTime(k.rotated_at):'Never'}</td><td>{k.last_used_at?fmtDateTime(k.last_used_at):v.logged===false?'Not logged':'Never'}</td>
-       <td>{v.logged===false?'Not logged':`${fmtNumber(st['24h']?.calls||0)} / ${fmtNumber(st['7d']?.calls||0)} / ${fmtNumber(st['30d']?.calls||0)}`}</td>
-       <td>{fmtNumber(s.ok||0)} / {fmtNumber(s.client_errors||0)} / {fmtNumber(s.server_errors||0)}</td>
-       <td>{s.error_rate==null?'—':fmtPercent(Math.round(1000*s.error_rate)/10)}</td><td>{ms(s.p95_ms)}</td>
-       {manage&&<td className="cf-api-key-actions">{k.rotatable&&full&&<><button className="m-secondary compact" onClick={()=>setDialog({mode:'rotate',k:full})}><KeyRound size={13}/> {k.issued===false?'Issue key':'Rotate'}</button><button className="m-secondary compact" onClick={()=>setDialog({mode:'switch',k:full})}><Power size={13}/> {full.enabled?'Switch off':'Switch on'}</button></>}</td>}
-      </tr>})}</tbody></table></div>}
-    </div>})}
-   </div>
+   <p className="l3v-note cf-api-asof"><Clock size={13}/> {ref?<>Statistics as of <strong>{fmtDateTime(ref.at)}</strong> ({ref.trigger==='on_demand'?`refreshed on demand${ref.by?` by ${ref.by}`:''}`:'daily refresh'}, {fmtRelative(ref.at)}). Daily at about 00:20 Melbourne time, or now with the button. Error % and p95 are for the last 7 days.</>:'Statistics have not been built yet: press Refresh statistics now.'}</p>
+   <div className="cf-api-summary-wrap" data-api-versions>{current.length===0&&legacy.length===0?<EmptyInline text="No API version is registered yet."/>:summary(current)}</div>
+   {legacy.length>0&&<details className="cf-api-legacy" data-api-legacy><summary>Legacy {legacyNames} keys ({fmtNumber(legacyKeys)})</summary><p className="l3v-note">These versions sign in with their older credential stores, so their calls are not logged here.</p>{summary(legacy)}</details>}
+   {!manage&&<p className="l3v-note">Rotating and switching keys is for the Platform Admin.</p>}
   </section>
 
+  <details className="m-panel cf-api-detail" data-api-detail><summary><strong>Traffic detail and key controls</strong></summary>
+  <div className="m-search-row"><label>Period <select value={period} onChange={e=>setPeriod(e.target.value)} aria-label="Period">{PERIODS.map(p=><option key={p.key} value={p.key}>{p.label}</option>)}</select></label></div>
   <section className="m-panel"><header className="m-workspace-head"><h3>Keys</h3></header>
-   {keys.length===0?<EmptyInline text="No keys."/>:<div className="dense-table-wrap"><table className="dense-table cf-api-keys"><thead><tr><th>Key</th><th>Used by</th><th>Status</th><th>Last call</th><th>Last success</th><th>Calls</th><th>Success</th><th>Failures (client / limited / server)</th><th>Bandwidth</th><th>Average reply</th><th>Largest reply</th><th>Time (average / 95%)</th><th>Rotated</th>{manage&&<th>Actions</th>}</tr></thead>
+   {keys.length===0?<EmptyInline text="No keys."/>:<div className="dense-table-wrap"><table className="dense-table cf-api-keys"><thead><tr><th>Key</th><th>Last success</th><th>Failures (client / limited / server)</th><th>Bandwidth</th><th>Average reply</th><th>Largest reply</th><th>Average time</th><th>Rotated</th>{manage&&<th>Controls</th>}</tr></thead>
     <tbody>{keys.map(k=>{const s=k.stats?.[period]||{};return <tr key={k.key_name} data-key={k.key_name}>
-     <td><code>{k.key_name}</code><div className="cf-api-sub">{k.platform} {k.api_version} · {fmtNumber(k.rate_per_minute)}/min · hash {k.key_hint}…</div></td>
-     <td>{k.consumer}</td>
-     <td><StatusChip tone={k.enabled?'success':'neutral'} label={k.enabled?'On':'Off'}/>{k.previous_valid_until&&<div className="cf-api-sub cf-api-overlap">Old key works until {fmtDateTime(k.previous_valid_until)}{s.previous_key_last_at?` · last used ${fmtRelative(s.previous_key_last_at)}`:' · not used'}</div>}</td>
-     <td>{s.last_call_at?fmtDateTime(s.last_call_at):k.last_used_at?fmtDateTime(k.last_used_at):'Never'}</td>
+     <td><code>{k.key_name}</code><div className="cf-api-sub">{k.platform} {k.api_version} · {fmtNumber(k.rate_per_minute)}/min · {k.enabled?'on':'off'}</div>{k.previous_valid_until&&<div className="cf-api-sub cf-api-overlap">Old key works until {fmtDateTime(k.previous_valid_until)}{s.previous_key_last_at?` · last used ${fmtRelative(s.previous_key_last_at)}`:' · not used'}</div>}</td>
      <td>{s.last_ok_at?fmtDateTime(s.last_ok_at):'—'}</td>
-     <td>{fmtNumber(s.calls||0)}</td>
-     <td>{s.success_rate==null?'—':fmtPercent(s.success_rate)}</td>
      <td>{fmtNumber(s.client_errors||0)} / {fmtNumber(s.rate_limited||0)} / {fmtNumber(s.server_errors||0)}{s.last_error_code&&<div className="cf-api-sub">last {s.last_error_code}, {fmtRelative(s.last_error_at)}</div>}</td>
      <td>{fmtBytes(s.bytes||0)}</td>
      <td>{s.avg_bytes==null?'—':fmtBytes(s.avg_bytes)}</td>
      <td>{s.max_bytes==null?'—':fmtBytes(s.max_bytes)}</td>
-     <td>{ms(s.avg_ms)} / {ms(s.p95_ms)}</td>
+     <td>{ms(s.avg_ms)}</td>
      <td>{k.rotated_at?fmtDateTime(k.rotated_at):'Never'}</td>
-     {manage&&<td className="cf-api-key-actions"><button className="m-secondary compact" onClick={()=>setDialog({mode:'rotate',k})}><KeyRound size={13}/> Rotate</button><button className="m-secondary compact" onClick={()=>setDialog({mode:'switch',k})}><Power size={13}/> {k.enabled?'Switch off':'Switch on'}</button>{k.previous_valid_until&&<button className="m-secondary compact" onClick={()=>setDialog({mode:'end',k})}>End old key</button>}</td>}
+     {manage&&<td className="cf-api-key-actions"><button className="m-secondary compact" onClick={()=>setDialog({mode:'switch',k})}><Power size={13}/> {k.enabled?'Switch off':'Switch on'}</button>{k.previous_valid_until&&<button className="m-secondary compact" onClick={()=>setDialog({mode:'end',k})}>End old key</button>}</td>}
     </tr>})}</tbody></table></div>}
-   {!manage&&<p className="l3v-note">Rotating and switching keys is for the Platform Admin.</p>}
   </section>
 
   <section className="m-panel"><header className="m-workspace-head"><h3>Full loads and deltas</h3></header>
@@ -168,6 +164,7 @@ export default function ApiUsagePanel({onError}){
    {(d?.events||[]).length===0?<EmptyInline text="No key has been rotated or switched yet."/>:<div className="dense-table-wrap"><table className="dense-table cf-api-events"><thead><tr><th>When</th><th>Key</th><th>Change</th><th>By</th><th>Old key worked until</th><th>Note</th></tr></thead>
     <tbody>{d.events.map((e,i)=><tr key={`${e.at}-${i}`}><td>{fmtDateTime(e.at)}</td><td><code>{e.key_name}</code></td><td>{EVENT[e.event]||e.event}</td><td>{e.by||'—'}</td><td>{e.previous_valid_until?fmtDateTime(e.previous_valid_until):'—'}</td><td>{e.note||'—'}</td></tr>)}</tbody></table></div>}
   </section>
+  </details>
   {dialog&&<KeyDialog mode={dialog.mode} k={dialog.k} overlap={d?.overlap_hours} onClose={()=>setDialog(null)} onDone={load} onError={onError}/>}
  </div>
 }

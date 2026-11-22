@@ -2,7 +2,7 @@
 // One entry for every filter on the six screens (Layer 4 Review, Courses, Providers, Entry requirements, English, Scholarships) and one for every
 // badge or pill: the screen, its label, what it looks at in plain words, when to use it and who sees it. Reviewed every release with the guide
 // (FILTER_REFERENCE_REVIEWED_FOR must equal UI_VERSION); the contract test (spec s931) fails when a filter on a screen has no entry.
-export const FILTER_REFERENCE_REVIEWED_FOR = '2.16.85'
+export const FILTER_REFERENCE_REVIEWED_FOR = '2.16.86'
 
 const V = 'Viewer and above', C = 'Curator and above'
 const e = (screen, label, looks, when, roles = V, id = '') => ({ screen, label, looks, when, roles, id })
@@ -45,6 +45,27 @@ export const FILTER_REFERENCE = [
   e('Courses', 'Freshness', 'How recently the course was checked', 'You look for courses not checked for a while'),
   e('Courses', 'Status', 'Active, or not active', 'You look for archived or withdrawn records'),
   e('Courses', 'Publication', 'Whether the course reaches the website (its provider\'s Published switch decides)', 'You check what the website shows'),
+  // S2-Build s977 (Platform Admin 22 Nov 2026 22:01; Feedback-1 and Feedback-2): the counselling bar Counsellors and Viewers see (Operators and Platform Admins keep every filter above)
+  e('Courses', 'Destination country', 'Counselling bar: the country the student would study in; the state, university, level and field lists below it narrow to that country', 'You start a search for a student', 'Counsellor and Viewer'),
+  e('Courses', 'University / provider', 'Counselling bar: one university\'s active courses, listed only from the country (and state) chosen; Clear / Reset empties every filter at once', 'A student asks about one university', 'Counsellor and Viewer'),
+  e('Courses', 'Field of study', 'Counselling bar: the course\'s field of study, from the fields held for the country and state chosen', 'A student asks for one field', 'Counsellor and Viewer'),
+  e('Courses', 'Intake month', 'Counselling bar: courses with an active intake starting in that month (from the start date, or the month the provider names)', 'A student can start only in one month', 'Counsellor and Viewer'),
+  e('Courses', 'Intake year', 'Counselling bar: courses with an active intake in that year (the rolling years and the years held)', 'A student plans a start year', 'Counsellor and Viewer'),
+  e('Courses', 'Fee from', 'Counselling bar: courses whose international fee (the International fee column) is at least this amount, in the course\'s own currency', 'A student has a budget range', 'Counsellor and Viewer'),
+  e('Courses', 'Fee up to', 'Counselling bar: courses whose international fee is at most this amount, in the course\'s own currency', 'A student has a budget limit', 'Counsellor and Viewer'),
+  e('Courses', 'Fee order', 'Counselling bar: International fee Lowest to highest or Highest to lowest (courses with no fee last); empty orders by course name', 'A student wants the cheapest or the most expensive first', 'Counsellor and Viewer'),
+  e('Courses', 'English test', 'Counselling bar: courses that name this English test (IELTS, PTE, TOEFL and the others held); with the Student score, those asking that score or less', 'A student has a test result', 'Counsellor and Viewer'),
+  e('Courses', 'Student score', 'Counselling bar, with an English test: the student\'s overall score; courses asking that score or less are kept', 'You check which courses a student\'s score meets', 'Counsellor and Viewer'),
+  // S2-Build s977 (Feedback-1 and Feedback-2): words a counsellor meets on the screens
+  e('Glossary', 'PRISMS', 'The Australian Government system that holds every CRICOS provider\'s registered courses for overseas students; StudySearch reads the course list and registered course cost from the CRICOS register it publishes', 'You explain where a CRICOS code or registered cost comes from'),
+  e('Glossary', 'QILT', 'Quality Indicators for Learning and Teaching: the Australian Government student and graduate surveys (satisfaction, employment); shown only where the permission to use them is in place', 'A student asks about graduate outcomes'),
+  e('Glossary', 'THE', 'Times Higher Education World University Rankings, read from its public ranking table and published with its attribution', 'A student compares universities by ranking'),
+  e('Glossary', 'QS', 'QS World University Rankings, applied once a year from the publisher\'s file and published with its attribution', 'A student compares universities by ranking'),
+  e('Glossary', 'ARWU', 'Academic Ranking of World Universities (ShanghaiRanking), read from its public ranking table and published with its attribution', 'A student compares research rankings'),
+  e('Glossary', 'Publication', 'Whether a record reaches the website: a course follows its provider\'s Published switch', 'You check why a course is not on the website'),
+  e('Glossary', 'Empty reason', 'Why a field is blank (not published by the provider, not on the register, online only, waiting to be read, source unavailable), so a blank is never read as "no requirement"', 'You explain a missing value to a student'),
+  e('Glossary', 'Zoho / Website feed matched', 'Whether the record\'s latest change reached the Zoho CRM feed or the website feed: the same values both consumers read', 'You check that Zoho or the website shows the latest value'),
+  e('Glossary', 'Contacts', 'Provider Contacts: the people and teams at a university for international students, from the university\'s own pages first', 'You need the right person at a university'),
   // Providers (and Campuses)
   e('Providers', 'Type', 'University, VET / College, School, HEI, or Needs type', 'You look at one kind of provider'),
   e('Providers', 'Description', 'Whether the provider has a description', 'You look for providers with no description'),

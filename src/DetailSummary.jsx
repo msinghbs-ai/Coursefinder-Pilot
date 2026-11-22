@@ -77,7 +77,8 @@ export function ProviderSummary({data,navigate}){
       {publication(data.publication_status)}{lifecycle(data.lifecycle_status)}
     </PillRow>
     <FactCards>
-      <FactCard id="courses" label="Courses" value={fmtNumber(Number(data.course_count||0))} sub={data.projected_course_count!=null?`${fmtNumber(Number(data.projected_course_count))} in search`:null}/>
+      {/* S2-Build s977 (Feedback-1): a university's active courses, one click away (Courses filtered to this provider) */}
+      <FactCard id="courses" label="Courses" value={fmtNumber(Number(data.course_count||0))} sub={<>{data.projected_course_count!=null?`${fmtNumber(Number(data.projected_course_count))} in search · `:''}{data.id&&<a className="cf-link" data-provider-courses-link href={`#courses?f_provider=${encodeURIComponent(data.id)}&f_providerName=${encodeURIComponent(data.display_name||data.canonical_name||'')}`}>View active courses</a>}</>}/>
       <FactCard id="scholarships" label="Scholarships" value={fmtNumber(Number(data.scholarship_count||0))}/>
       {data.id&&<ProviderDestination providerId={data.id}/>}
       <FactCard id="contacts" label="International contacts" value={fmtNumber(nContacts)}>{data.id&&<button type="button" className="m-secondary compact" onClick={()=>navigate?.('Provider Contacts',{provider_id:data.id})}><UsersRound size={12}/>View contacts</button>}</FactCard>

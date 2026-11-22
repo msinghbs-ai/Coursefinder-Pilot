@@ -53,7 +53,8 @@ test('s935 v3 endpoints sign in and log by (consumer, version); v1 and v2 keep t
 test('s935 screen: no version written in the code; versions and keys render from the read', () => {
   expect(UI).not.toMatch(/const PLATFORMS\s*=/)
   expect(UI).not.toMatch(/'(Website|Zoho) API v[0-9]'/)
-  expect(UI).toContain('versionsOf(d).map(v=>')
+  expect(UI).toContain('const vers=versionsOf(d)')  // s977 (addendum 22 Nov 2026 22:57): one compact table, versions from the read
+  expect(UI).toContain('className="cf-api-summary"'); expect(UI).not.toContain('cf-metric-grid')
   for (const p of ['../../CLAUDE.md', '../../AGENTS.md']) expect(fs.readFileSync(new URL(p, import.meta.url), 'utf8')).toContain('### Standing Rule: Self-Sustaining API & Key Governance')
 })
 
@@ -83,17 +84,21 @@ test.describe('mocked browser', () => {
     let rotated = null
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_api_key_rotate', r => { rotated = r.request().postDataJSON(); return r.fulfill({ json: { key_name: rotated.p_key_name, key: 'cfz3_TESTKEY', key_hint: 'ffff0000', previous_valid_until: null, platform: 'zoho' } }) })
     await page.goto('/#api-usage')
-    for (const v of versions) await expect(page.locator(`.cf-api-platform[data-platform="${v.platform}"][data-version="${v.api_version}"]`)).toContainText(v.label)
-    await expect(page.locator('.cf-api-platform[data-version="v4"]')).toContainText('not registered')
-    await expect(page.locator('.cf-api-platform[data-version="v1"]')).toContainText('Not logged')
-    const w2 = page.locator('.cf-api-platform[data-platform="website"][data-version="v2"] tr[data-version-key="website_developer_v2"]')
-    await expect(w2).toContainText('400 / 4,000 / 16,087'); await expect(w2).toContainText('3,980 / 18 / 2'); await expect(w2).toContainText('cfw2_…4dc4acd4')
-    const w3 = page.locator('.cf-api-platform[data-version="v3"][data-platform="website"]')
-    await expect(w3.locator('tr[data-version-key="website_developer_v3"]')).toContainText('Rotating / Grace')
-    await expect(w3.locator('tr[data-version-key="website_developer_v3"]')).toContainText('website_developer_v2 also works here until')
-    await expect(w3.locator('tr[data-version-key="website_developer_v2"]')).toContainText("Earlier version's key used here")
-    const z3 = page.locator('.cf-api-platform[data-platform="zoho"][data-version="v3"] tr[data-version-key="zoho_creator_v3"]')
+    // s977 (Platform Admin addendum 22 Nov 2026 22:57): one compact table; the versions on the older credential stores fold under "Legacy … keys"
+    await page.locator('.cf-api-legacy > summary').click()
+    await expect(page.locator('.cf-api-legacy > summary')).toContainText('Legacy v1 keys (1)')
+    for (const v of versions) await expect(page.locator(`tr.cf-api-row[data-platform="${v.platform}"][data-version="${v.api_version}"]`).first()).toContainText(v.label)
+    await expect(page.locator('tr.cf-api-row[data-version="v4"]')).toContainText('not registered')
+    await expect(page.locator('.cf-api-legacy tr.cf-api-row[data-version="v1"]')).toContainText('Not logged')
+    const w2 = page.locator('tr.cf-api-row[data-platform="website"][data-version="v2"][data-version-key="website_developer_v2"]')
+    await expect(w2).toContainText('4,000 / 16,087'); await expect(w2).toContainText('0.5%'); await expect(w2).toContainText('1,200 ms'); await expect(w2).toContainText('cfw2_…4dc4acd4')
+    const w3 = page.locator('tr.cf-api-row[data-platform="website"][data-version="v3"]')
+    await expect(w3.and(page.locator('[data-version-key="website_developer_v3"]'))).toContainText('Rotating / Grace')
+    await expect(w3.and(page.locator('[data-version-key="website_developer_v3"]'))).toContainText('website_developer_v2 also works here until')
+    await expect(w3.and(page.locator('[data-version-key="website_developer_v2"]'))).toContainText("Earlier version's key used here")
+    const z3 = page.locator('tr.cf-api-row[data-platform="zoho"][data-version="v3"][data-version-key="zoho_creator_v3"]')
     await expect(z3).toContainText('Not issued')
+    expect(await page.locator('.cf-metric-grid').count()).toBe(0)  // no summary cards repeating the table's figures
     await z3.getByRole('button', { name: /Issue key/ }).click()
     await page.getByRole('dialog').getByRole('button', { name: /Rotate|Make/ }).last().click()
     await expect(page.getByTestId('new-key')).toHaveText('cfz3_TESTKEY')
