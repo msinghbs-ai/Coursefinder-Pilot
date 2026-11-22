@@ -9,7 +9,8 @@ import { PUBLIC_SOURCES, USER_AGENT, attribution, isChallenge, qsRowsFromRestPag
 // no AI), applied and published with source attribution. No publisher file upload or terms hold. A challenge page is reported, never bypassed.
 // v1.8.1 (CF-247 s968, 22 Nov 2026): the Australian reconciliation preview gets the Australian rows only. With every THE row (3,146) it passed the
 // service role's 8 s statement limit; its answer covers Australia only, so it is unchanged.
-const VERSION="ranking-layer1-etl-v1.8.1";
+// v1.8.2 (CF-247 s969): the apply batch size is the pipeline setting reading.ranking_apply_batch_rows (svc_worker_settings_v1), not a fixed 200.
+const VERSION="ranking-layer1-etl-v1.8.2";
 const QS_STATIC:Record<number,string>={2026:"4061771"};
 const QS_REST:Record<number,string>={2027:"4153156"};
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
@@ -233,7 +234,8 @@ Deno.serve(async(req:Request)=>{
   if(!["manual_file","manual_the_native_json","publisher_public_json","publisher_static_xhr_json"].includes(acquisitionMode))return json({ok:false,error:`acquisition mode ${acquisitionMode} cannot be applied`,systemCode,editionYear,acquisitionMode,workerVersion:VERSION},409);
   if(acquisitionMode!=="manual_file"&&!evidenceArtifactId)return json({ok:false,error:"apply of publisher JSON needs source_id so the JSON is retained as evidence first",systemCode,editionYear,acquisitionMode,workerVersion:VERSION},409);
   const revision=publicSystem?PUBLIC_SOURCES[publicSystem].revision:acquisitionMode==="publisher_static_xhr_json"?"qs_static_xhr_json_v1":"initial";
-  const batchSize=200;let appliedBatches=0,partialMapped=0,partialUnmapped=0;
+  const {data:ws,error:wsErr}=await service.rpc("svc_worker_settings_v1",{});if(wsErr)throw new Error(errText(wsErr));
+  const batchSize=Math.floor(Number((ws||{})["reading.ranking_apply_batch_rows"]));if(!Number.isFinite(batchSize)||batchSize<1)throw new Error("pipeline setting reading.ranking_apply_batch_rows is missing");let appliedBatches=0,partialMapped=0,partialUnmapped=0;
   for(let offset=0;offset<rows.length;offset+=batchSize){
    const batch=rows.slice(offset,offset+batchSize);
    const {data:part,error:applyErr}=await service.rpc("svc_ranking_ingest_apply",{p_system_code:systemCode,p_edition_year:editionYear,p_source_url:sourceUrl,p_methodology_url:null,p_source_artifact_id:evidenceArtifactId,p_source_fingerprint:sourceHash,p_source_revision:revision,p_rows:batch});

@@ -8,7 +8,7 @@ const ETL = fs.readFileSync('supabase/functions/ranking-layer1-etl/index.ts', 'u
 const MIG = fs.readFileSync('supabase/migrations/20261122130000_cf247_s968_ranking_runs_after_preview_fix.sql', 'utf8')
 
 test('s968: the Australian preview gets Australian rows only; the runs are queued again after the deploy', () => {
-  expect(ETL).toContain('const VERSION="ranking-layer1-etl-v1.8.1"')
+  expect(ETL).toMatch(/const VERSION="ranking-layer1-etl-v1\.8\.[1-9]\d*"/)
   expect(ETL).toContain('const previewRows=rows.filter((r:any)=>/^(australia|au|aus)$/i.test(clean(r.country_text)));')
   expect(ETL).toContain('{p_rows:previewRows,p_country_code:"AU",p_system_code:systemCode}')
   expect(ETL).not.toContain('{p_rows:rows,p_country_code:"AU"')
