@@ -8,7 +8,7 @@ const ETL = fs.readFileSync('supabase/functions/ranking-layer1-etl/index.ts', 'u
 const MIG = fs.readFileSync('supabase/migrations/20261122140000_cf247_s969_ranking_apply_batch_setting.sql', 'utf8')
 
 test('s969: batch size from the setting; public access kept on a re-read; THE re-read queued after deploy', () => {
-  expect(ETL).toContain('const VERSION="ranking-layer1-etl-v1.8.2"')
+  expect(ETL).toMatch(/const VERSION="ranking-layer1-etl-v1\.8\.([2-9]|[1-9]\d+)"/)
   expect(ETL).toContain('service.rpc("svc_worker_settings_v1",{})')
   expect(ETL).toContain('(ws||{})["reading.ranking_apply_batch_rows"]')
   expect(ETL).not.toMatch(/const batchSize=\d+/)

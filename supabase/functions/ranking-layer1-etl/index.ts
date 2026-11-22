@@ -10,7 +10,9 @@ import { PUBLIC_SOURCES, USER_AGENT, attribution, isChallenge, qsRowsFromRestPag
 // v1.8.1 (CF-247 s968, 22 Nov 2026): the Australian reconciliation preview gets the Australian rows only. With every THE row (3,146) it passed the
 // service role's 8 s statement limit; its answer covers Australia only, so it is unchanged.
 // v1.8.2 (CF-247 s969): the apply batch size is the pipeline setting reading.ranking_apply_batch_rows (svc_worker_settings_v1), not a fixed 200.
-const VERSION="ranking-layer1-etl-v1.8.2";
+// v1.8.3 (CF-247 s970): the reconciliation preview (a report) is not run for an apply, which matches rows itself; in a dry run a preview that
+// passes the statement limit (its first call on a cold database can) is reported in the answer instead of failing the validation.
+const VERSION="ranking-layer1-etl-v1.8.3";
 const QS_STATIC:Record<number,string>={2026:"4061771"};
 const QS_REST:Record<number,string>={2027:"4153156"};
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
@@ -228,7 +230,7 @@ Deno.serve(async(req:Request)=>{
   if(!rows.length)throw new Error("publisher source parsed zero ranking observations");
   const unknown=rows.filter(x=>x.rank_status==="unknown").length,indicatorCells=rows.reduce((n,r)=>n+Object.values(r.indicators||{}).filter(v=>v!==null).length,0);
   let reconciliationPreview=null;
-  if(["qs_wur","the_wur","arwu"].includes(systemCode)){const previewRows=rows.filter((r:any)=>/^(australia|au|aus)$/i.test(clean(r.country_text)));const {data:preview,error:previewErr}=await service.rpc("svc_ranking_reconciliation_preview_system",{p_rows:previewRows,p_country_code:"AU",p_system_code:systemCode});if(previewErr)throw previewErr;reconciliationPreview=preview;}
+  if(["qs_wur","the_wur","arwu"].includes(systemCode)){if(mode!=="apply"){const previewRows=rows.filter((r:any)=>/^(australia|au|aus)$/i.test(clean(r.country_text)));const {data:preview,error:previewErr}=await service.rpc("svc_ranking_reconciliation_preview_system",{p_rows:previewRows,p_country_code:"AU",p_system_code:systemCode});reconciliationPreview=previewErr?{error:errText(previewErr),country_code:"AU",system_code:systemCode}:preview;}}
   if(mode!=="apply")return json({ok:true,mode:"dry_run",systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,unknownRankSemantics:unknown,indicatorCells,sourceHash,evidenceArtifactId,filename,sourceUrl,jsonUrl:jsonUrl||null,publicStats,attribution:publicSystem?attribution(publicSystem,editionYear):null,reconciliationPreview,sample:rows.slice(0,5).map(({source_row_payload,...x})=>x),workerVersion:VERSION});
   // v1.8.0: public publisher JSON is applied like an uploaded file (Platform Admin 22 Nov 2026 09:22); its JSON is retained as evidence first.
   if(!["manual_file","manual_the_native_json","publisher_public_json","publisher_static_xhr_json"].includes(acquisitionMode))return json({ok:false,error:`acquisition mode ${acquisitionMode} cannot be applied`,systemCode,editionYear,acquisitionMode,workerVersion:VERSION},409);
