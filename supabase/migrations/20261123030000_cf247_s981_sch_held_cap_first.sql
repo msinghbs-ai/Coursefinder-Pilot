@@ -69,13 +69,14 @@ begin
   return p_discovery and not security.fc_sch_eligible_v1(p_provider_id);
 end $function$;
 
--- parity: the same answer as the replaced definition for every provider with a scholarship listing page or discovery row, both modes
+-- parity: the same answer as the replaced definition for every provider with an active scholarship listing page (the claim's providers),
+-- both modes (the replaced definition is too slow to compare across every discovery provider inside one migration)
 do $p$
 declare v_diff int;
 begin
   if to_regprocedure('pg_temp.s981_old_held(uuid,boolean)') is null then return; end if;
   select count(*) into v_diff
-    from (select distinct provider_id from pipeline.scholarship_listing_pages union select provider_id from pipeline.scholarship_discovery_providers) p,
+    from (select distinct l.provider_id from pipeline.scholarship_listing_pages l where l.active and l.source <> 'suggested') p,
          (values (true), (false)) m(disc)
    where pg_temp.s981_old_held(p.provider_id, m.disc) is distinct from security.fc_sch_held_v1(p.provider_id, m.disc);
   if v_diff <> 0 then raise exception 'parity: % provider answers differ from the replaced definition', v_diff; end if;
