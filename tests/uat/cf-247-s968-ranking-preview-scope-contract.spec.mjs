@@ -7,11 +7,14 @@ import fs from 'node:fs'
 const ETL = fs.readFileSync('supabase/functions/ranking-layer1-etl/index.ts', 'utf8')
 const MIG = fs.readFileSync('supabase/migrations/20261122130000_cf247_s968_ranking_runs_after_preview_fix.sql', 'utf8')
 
-test('s968: the Australian preview gets Australian rows only; the runs are queued again after the deploy', () => {
+test('s968 and s970: the Australian preview gets Australian rows only, is skipped on an apply and never fails a dry run; the runs are queued again after the deploy', () => {
   expect(ETL).toMatch(/const VERSION="ranking-layer1-etl-v1\.8\.[1-9]\d*"/)
   expect(ETL).toContain('const previewRows=rows.filter((r:any)=>/^(australia|au|aus)$/i.test(clean(r.country_text)));')
   expect(ETL).toContain('{p_rows:previewRows,p_country_code:"AU",p_system_code:systemCode}')
   expect(ETL).not.toContain('{p_rows:rows,p_country_code:"AU"')
+  // s970 (v1.8.3): no preview on an apply (apply matches rows itself); in a dry run a preview time-out is reported, not fatal
+  expect(ETL).toContain('{if(mode!=="apply"){const previewRows=')
+  expect(ETL).toContain('reconciliationPreview=previewErr?{error:errText(previewErr),country_code:"AU",system_code:systemCode}:preview;')
   expect(MIG).toMatch(/^-- Replaces: /m)
   expect(MIG).toContain("'s968-rerun:' || s.id::text")
   expect(MIG).toContain("now() + interval '7 minutes',  -- fixed: fire guard")
