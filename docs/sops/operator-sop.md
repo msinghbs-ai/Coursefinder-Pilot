@@ -1,7 +1,7 @@
-<!-- sop-export: id=operator-sop; version=2.37; reviewed-release=2.16.83; source-commit=cb4b33a4e86b+local; content-sha256=dd9832822b053b9d062f2dd8d5c2d392f72eb9b93e67626e2cef4031c1d4c2a8 -->
+<!-- sop-export: id=operator-sop; version=2.38; reviewed-release=2.16.84; source-commit=2d0499b717f5+local; content-sha256=8fbbb2060fa5783a93d1c11f3b39b1e18a482c6cfa2ae736bf8555f67187e7c2 -->
 # StudySearch – Operator SOP
 
-**Version:** 2.37 (reviewed for platform release v2.16.83)  
+**Version:** 2.38 (reviewed for platform release v2.16.84)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -69,6 +69,15 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 3 | PIM Admin | Layer 2/3 › Operations and Scheduled jobs › Automations: move stuck work; pace or pause what is behind or failing, with a reason, including what the Pipeline Operator handed on. An automation marked Platform Admin goes to the Platform Admin. _(Layer 2/3 Build & enrich › Operations)_ | Pacing keeps work inside credits and time limits. | Nothing waits for hours without a reason. |
 | 4 | Curator | Reference data (one list; type filter All): dates coming up and sites not reachable. _(Reference data)_ | Key dates and sources feed the website. | Current. |
 
+### When a ranking edition is due (THE and ARWU read automatically; QS once a year by file)
+
+| # | Who | Do | Why | Done when |
+|---|---|---|---|---|
+| 1 | Pipeline Operator | Rankings & statistics › Datasets › Ranking editions: confirm how each ranking arrives. THE and ARWU: the Layer 1 readers read the publisher's public table (Layer 1 › Sources: Times Higher Education and Academic Ranking of World Universities rows; Validate, then Run to read again on demand). QS: the annual spreadsheet uploaded below. _(Rankings & statistics › Datasets)_ | A ranking body has one way in; a QS public read is refused by the publisher, so QS is never read automatically. | You know which rankings wait for a file. |
+| 2 | Pipeline Operator | QS (and any ranking that arrives as a file): download the official .xlsx or .csv from the publisher, check the edition year (for example 2027), keep tied ranks (=12) and bands (501-510) exactly as printed, and check each row has the institution name, country or territory and overall score. _(Rankings & statistics › Datasets)_ | The reader keeps ranks as printed; an averaged band or a missing country stops a row from matching. | The file is the publisher's, for the right year, unedited. |
+| 3 | Pipeline Operator | Ranking imports (same page): choose the ranking body, edition year and source page, upload the file, then read the result: total rows, rows matched to providers by country, and rows not matched. _(Rankings & statistics › Datasets)_ | Every file is checked and applied; the edition list shows it with its rows and links. | Rows and matches look like the previous edition. |
+| 4 | Curator | Rankings & statistics › Overview (Link: Not linked) for a country we hold (Australia, New Zealand, Canada): link each unmatched university to its provider, or add the publisher's name as the provider's ranking alias, so the next edition matches by itself. _(Rankings & statistics › Overview)_ | Matching never guesses; a name it cannot place stays unlinked until a person links it. | No ranked university in a held country is left unlinked without a reason. |
+
 ## 6. Weekly
 
 - **Pipeline Operator:** 10-minute field check. Layer 2/3 › Enrich fields › Stalled fields: Fill now on each Not moving row whose cause is "Pages not read for it yet"; note the universities listed for "Pages read do not state it" for the PIM Admin (Builder) and the Platform Admin (Release holds and fill). _(Layer 2/3 Build & enrich › Enrich fields)_
@@ -118,6 +127,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.38 | 22 Nov 2026 | v2.16.84 | Rankings: how each ranking arrives (THE and ARWU read by Layer 1 readers; QS by annual file upload), how to prepare and upload a file, and linking universities that did not match, so the next edition matches by itself. |
 | 2.37 | 20 Nov 2026 | v2.16.71 | Layer 4 Review: work Human Action Required; leave System Queues (Auto-Recovering) to the platform unless a card offers Re-read from stored copy ($0). Every card: the Main hold reason in plain English and one action bar. Preview & Settle Batch on a rule group settles it with one decision, one reason and the typed confirmation. |
 | 2.36 | 20 Nov 2026 | v2.16.68 | Layer 4 Review opens on Review by rule: the rule groups cover the whole queue, one card at a time with Previous and Next, Preview the batch lists the exact records; By university, By kind, Grid and Decided are under Other views. Cards: amber Main hold reason, banned words marked in yellow, the cleaned text above Remove "word" & Admit, and one bar (Save Edit & Admit, Approve As-Is, Reject on the right). The Dashboard no longer lists Waiting for you. |
 | 2.35 | 20 Nov 2026 | v2.16.67 | Layer 4 › Inbox: Waiting, grouped by rule, on the left groups the cards on the page by the check that holds them; Preview the batch, Show only these, then decide each card on its own bar (or use Grid › Grouped decisions for a server-checked group). A ? on the main screens opens three steps. |

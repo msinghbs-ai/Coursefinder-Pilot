@@ -37,7 +37,7 @@ test('Scheduled verification covers every Layer 1 source kind',async()=>{
   const w=read('supabase/functions/layer1-operations-scheduled/index.ts')
   expect(w).toContain('async function invokeStatWorker(')
   expect(w).toContain('function qiltSurvey(')
-  expect(w).toContain('if(system==="QS"||system==="THE")')
+  expect(w).toContain('if(system==="QS"||system==="THE"||system==="ARWU")')
   expect(w).toContain('svc_ranking_applied_import_for_source')
   const q=read('supabase/migrations-archive/20260928050000_layer1_run_queue_global_country.sql')
   expect(q).toContain("v_country:=coalesce(v_country,''GLOBAL'');")

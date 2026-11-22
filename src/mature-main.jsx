@@ -33,6 +33,7 @@ import ProviderLogo,{ProviderBrand,logoCapability}from'./ProviderLogo'
 import{ProviderListLogo,CountryTag,providerMeta}from'./ProviderListParts' // s781: Providers list logo, flags
 import FlagsPanel from'./FlagsPanel'
 import ApiUsagePanel from'./ApiUsagePanel'
+import RankingEditions from'./RankingEditions' // s971: ranking editions, publish and roll back
 import{SectionTitle,fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRememberedState,StatusChip,FilterChip,PageHeader,PageLayout,StatusDot,Metric}from'./ui-kit'
 import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,shownTabs,effectiveTab,refusedTab,roleName}from'./nav-map'
 import{ViewerContext}from'./lib/viewer'
@@ -434,7 +435,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
         if(tab==='datasets'){const data=['qilt','prisms'].includes(routeParams?.get?.('data'))?routeParams.get('data'):'',view=k=>navigate('rankings',k?{tab:'datasets',data:k}:{tab:'datasets'})
           return <div className="m-page-stack"><div className="pg-views" role="toolbar" aria-label="View data" data-view-data-bar>{[['qilt','QILT outcomes'],['prisms','PRISMS student flow']].map(([k,l])=><button key={k} type="button" className={`pg-view${data===k?' is-on':''}`} aria-pressed={data===k} onClick={()=>view(data===k?'':k)}>View data: {l}</button>)}</div>
             {data==='qilt'&&<section data-dataset-view="qilt"><Qilt onError={onError}/></section>}{data==='prisms'&&<section data-dataset-view="prisms"><Prisms onError={onError}/></section>}
-            {rank>=4&&<StatisticsDatasets rank={rank} onView={view}/>}{rank>=4&&<section data-ranking-imports><RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/></section>}</div>}
+            {rank>=4&&<StatisticsDatasets rank={rank} onView={view}/>}{rank>=4&&<section data-ranking-imports><RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/></section>}{rank>=4&&<RankingEditions/>}</div>}
         return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
       // v2.15.301: Flags moved to Layer 2/3 › Flags
       case'coverage':return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack">{/* v2.16.42 (Platform Admin 18 Nov 2026 12:19): Coverage now (registry-driven fields, 0 of N to N of N, readiness grid) leads */}<CoverageTelemetry onError={err}/>{/* v2.16.54 (s777, Platform Admin 19 Nov 2026 15:36): Pipeline & field ETA, consolidated, by country or by university */}<PipelineEta onError={err}/><CoverageView view="courses"/><LinkRefresh/></div>

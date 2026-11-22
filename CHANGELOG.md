@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.506 — 22 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.84** (S1-API-Frontend-Delivery, s971, Platform Admin 22 Nov 2026 14:22). Rankings: ARWU 2026 from the ShanghaiRanking public table (Layer 1 reader); Ranking editions list with publish and roll back for the Platform Admin; ranking SOP steps (s971).
+
 ## 0.1.505 — 22 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.83** (S1-API-Frontend-Delivery, REQ-100 follow-up found in the signed-in check of v2.16.82): Entry requirements › Study level shows every option in one list. No migration.

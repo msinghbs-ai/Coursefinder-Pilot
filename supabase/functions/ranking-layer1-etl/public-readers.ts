@@ -5,7 +5,8 @@
 // turn it into ranking observations (exact ranks, ties, bands, reporters, overall and pillar scores, edition year, attribution).
 // Guarded by tests/uat/cf-247-s966-public-ranking-readers-contract.spec.mjs.
 
-export const PUBLIC_READER_VERSION = "public-ranking-readers-v1.0.0"
+export const PUBLIC_READER_VERSION = "public-ranking-readers-v1.1.0"
+// v1.1.0 (CF-247 s971, Platform Admin 22 Nov 2026 14:22): ARWU (ShanghaiRanking) from its public ranking API, the third institutional ranking.
 export const USER_AGENT = "StudySearch-Layer1-ranking-reader/1.0 (Supabase Edge Function; plain GET, robots.txt honoured)"
 
 export const PUBLIC_SOURCES = {
@@ -24,6 +25,14 @@ export const PUBLIC_SOURCES = {
     pageUrl: (year: number) => `https://www.topuniversities.com/world-university-rankings/${year}`,
     revision: "qs_public_json_v1",
   },
+  arwu: {
+    publisher: "ShanghaiRanking",
+    rankingName: "Academic Ranking of World Universities (ARWU)",
+    origin: "https://www.shanghairanking.com",
+    jsonUrl: (year: number) => `https://www.shanghairanking.com/api/pub/v1/arwu/rank?version=${year}`,
+    pageUrl: (year: number) => `https://www.shanghairanking.com/rankings/arwu/${year}`,
+    revision: "arwu_public_json_v1",
+  },
 } as const
 
 export type PublicSystem = keyof typeof PUBLIC_SOURCES
@@ -31,6 +40,7 @@ export type PublicSystem = keyof typeof PUBLIC_SOURCES
 export function attribution(system: PublicSystem, year: number): string {
   const s = PUBLIC_SOURCES[system]
   const site = new URL(s.origin).hostname.replace(/^www\./, "")
+  if (system === "arwu") return `${s.rankingName} ${year}, ShanghaiRanking. Source: ShanghaiRanking (${site}, ${s.pageUrl(year)}). Attributed public ranking, read by the StudySearch Layer 1 reader and published with this attribution (Platform Admin decision 22 Nov 2026).`
   return `${s.rankingName} ${year}. Source: ${s.publisher} (${site}). Attributed public ranking, read by the StudySearch Layer 1 reader and published with this attribution (Platform Admin decision 22 Nov 2026).`
 }
 
@@ -186,6 +196,43 @@ export function qsRowsFromRestPages(pages: any[], year: number) {
   for (const r of rows) if (r.rank_exact != null) counts.set(r.rank_exact, (counts.get(r.rank_exact) || 0) + 1)
   for (const r of rows) if (r.rank_exact != null && (counts.get(r.rank_exact) || 0) > 1 && !r.is_tied) { r.is_tied = true; r.rank_display = `=${r.rank_exact}` }
   return finish("QS", rows)
+}
+
+// ARWU indicator codes by the publisher's indicator name (its numeric codes change every edition).
+const ARWU_CODES: Record<string, string> = { "alumni": "alumni", "award": "award", "hici": "hici", "n s": "ns", "pub": "pub", "pcp": "pcp" }
+
+export function arwuRowsFromPublicJson(payload: any, year: number) {
+  if (Number(payload?.code) !== 200) throw new Error(`ARWU ranking API answered code ${payload?.code ?? "none"}`)
+  const data = payload?.data?.rankings
+  if (!Array.isArray(data) || data.length === 0) throw new Error("ARWU ranking JSON has no rankings")
+  const names = new Map<string, string>()
+  for (const ind of Array.isArray(payload?.data?.indicators) ? payload.data.indicators : []) {
+    if (ind?.yr !== undefined && Number(ind.yr) !== year) throw new Error(`ARWU indicators are for ${ind.yr}, not ${year}`)
+    if (clean(ind?.code) && clean(ind?.nameEn)) names.set(clean(ind.code), clean(ind.nameEn))
+  }
+  const rows: any[] = []
+  for (const r of data) {
+    const name = clean(r?.univNameEn)
+    if (!name) continue
+    const rank = parsePublicRank(r.ranking), overall = scoreParts(r.score)
+    const indicators: Record<string, unknown> = {}
+    for (const [code, value] of Object.entries(r.indData && typeof r.indData === "object" ? r.indData : {})) {
+      const label = names.get(clean(code)) || clean(code)
+      indicators[ARWU_CODES[key(label)] || key(label).replace(/ /g, "_") || `indicator_${code}`] = indicator(label, value, undefined, year, "ARWU indicators")
+    }
+    if (clean(r.regionRanking)) indicators.national_rank = { label: "National rank", value_display: clean(r.regionRanking), value_numeric: null, unit: "rank", methodology_version: String(year), group: "National", ...parsePublicRank(r.regionRanking) }
+    rows.push({
+      publisher_institution_id: clean(r.univUp) || null, institution_name: name, profile_url: clean(r.univUp) ? `/institution/${clean(r.univUp)}` : null,
+      country_text: clean(r.region) || null, location_text: clean(r.region) || null,
+      ...rank, overall_score: overall.numeric, overall_score_display: overall.display, overall_score_low: overall.low, overall_score_high: overall.high,
+      source_row_ordinal: rows.length + 1, indicators, source_row_payload: { ranking: r.ranking, univNameEn: r.univNameEn, univUp: r.univUp, region: r.region, regionRanking: r.regionRanking, score: r.score, indData: r.indData, edition_year: year, reader: PUBLIC_READER_VERSION },
+    })
+  }
+  // ARWU prints a shared rank as the same number for each institution, without "=".
+  const counts = new Map<number, number>()
+  for (const r of rows) if (r.rank_exact != null) counts.set(r.rank_exact, (counts.get(r.rank_exact) || 0) + 1)
+  for (const r of rows) if (r.rank_exact != null && (counts.get(r.rank_exact) || 0) > 1 && !r.is_tied) { r.is_tied = true; r.rank_display = `=${r.rank_exact}` }
+  return finish("ARWU", rows)
 }
 
 function finish(label: string, rows: any[]) {

@@ -28,15 +28,32 @@ Platform Admin, 21 Nov 2026 13:11 AEDT (S1-RM-Design, s935). It applies to every
 3. **Rotation without disruption.** Keys rotate with a dual-key overlap (`api.key_rotate_overlap_hours`): the new key is shown once; the old key keeps working as the previous key until the overlap ends. A new version's key starts "Not issued". Where a consumer already calls that version with an earlier version's key, that key works as its previous key for `api.new_key_bridge_days`, until the new key is issued.
 4. **Guard.** `security.api_usage_coverage_v1()` lists any active registered version or key the read path misses; each change that adds one checks that it is empty. `tests/uat/cf-247-s935-api-usage-versions-keys-contract.spec.mjs` fails the build otherwise. A frozen version (G3) keeps its own sign-in; it is registered and shown, never changed.
 
-### Standing Rule: Attributed Public Rankings (THE and QS)
+### Standing Rule: Attributed Public Rankings (THE, ARWU and QS)
 
-Platform Admin, 22 Nov 2026 09:22 AEDT (IR-005, RM1J): "We can attribute and use both Times Higher Education (THE) and QS World University Rankings directly. Do NOT gate them behind a manual publisher file upload or a terms = restricted hold."
+Platform Admin, 22 Nov 2026 09:22 AEDT (IR-005, RM1J): "We can attribute and use both Times Higher Education (THE) and QS World University Rankings directly. Do NOT gate them behind a manual publisher file upload or a terms = restricted hold." Amended 22 Nov 2026 14:22 (IR-011): QS stays on the annual file upload, and ARWU is the third ranking.
 
-- THE and QS World University Rankings are read by the automated Layer 1 readers in `ranking-layer1-etl` (v1.8.0 and later). THE comes from its public ranking JSON and QS from its public results endpoint, each with a plain HTTP GET. robots.txt and its crawl-delay are honoured. No Firecrawl, browser automation or AI is used, so the spend is $0.
-- Each edition is published live as soon as it is read. Its access is `public`, its attribution is recorded (`ranking.editions.licensing_note`) and its source page is linked. No publisher file upload, `terms = restricted` hold or draft step is needed. Older revisions of the same edition are superseded.
-- Institutions are matched to providers deterministically: accepted mappings, then ranking aliases, then the normalised name with its country, then one part of the provider's register name. Rows that still match no provider are listed for review and never fail the run.
-- A challenge page (for example Cloudflare) is reported and never bypassed. The edition already held stays live, and the Layer 1 run retries later.
-- The upload route in Administration › Sources & Imports stays only for past editions.
+- **How each ranking arrives:**
+
+  | Ranking | How it arrives |
+  |---|---|
+  | THE World University Rankings | Automated Layer 1 reader of the public ranking JSON (`ranking-layer1-etl`) |
+  | ARWU (Academic Ranking of World Universities, ShanghaiRanking) | Automated Layer 1 reader of the public ShanghaiRanking ranking API |
+  | QS World University Rankings | Annual file upload in Administration › Sources & Imports (Rankings & statistics › Datasets › Ranking imports) |
+
+- The automated readers use a plain HTTP GET. robots.txt and its crawl-delay are honoured. No Firecrawl, browser automation or AI is used, so the spend is $0.
+- QS's public endpoint answers the platform with a bot challenge. It is never read automatically. No proxy, alternative route or challenge bypass is ever used for it, or for any other site.
+- **Publishing:**
+  - Each edition is published with its attribution (`ranking.editions.licensing_note`) and its source page. No `terms = restricted` hold or draft step is needed.
+  - An edition read by a reader is held while it loads and published live as soon as it is complete. An uploaded file is applied when it is checked.
+  - The Platform Admin publishes an edition, or unpublishes it to roll back, with a reason, on Rankings & statistics › Datasets › Ranking editions (`public.admin_ranking_editions_v1`, logged in `ranking.edition_status_changes`).
+- **Matching:** institutions are matched to providers deterministically:
+  1. accepted mappings;
+  2. ranking aliases;
+  3. the normalised name with its country;
+  4. one part of the provider's register name ("A/B", "X, including Y"; a leading "The" and a trailing country are ignored), with exactly one provider matching.
+
+  Rows that still match no provider are listed for review and never fail the run.
+- A challenge page is reported and never bypassed. The edition already held stays live.
 
 ### Standing Rule: Continuous Delivery Master Plan (Read at Start, Update Before Parking)
 

@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import * as XLSX from "npm:xlsx@0.18.5";
 
-import { PUBLIC_SOURCES, USER_AGENT, attribution, isChallenge, qsRowsFromRestPages, robotsAllows, robotsRules, theRowsFromPublicJson } from "./public-readers.ts";
+import { PUBLIC_SOURCES, USER_AGENT, arwuRowsFromPublicJson, attribution, isChallenge, qsRowsFromRestPages, robotsAllows, robotsRules, theRowsFromPublicJson } from "./public-readers.ts";
 
 // v1.8.0 (CF-247 s966, Platform Admin 22 Nov 2026 09:22 AEDT, IR-005 / RM1J): THE and QS are attributed public rankings. THE is read from its public
 // ranking JSON and QS from its public results endpoint with a plain GET (robots.txt and its crawl-delay honoured; no Firecrawl, no browser,
@@ -12,7 +12,8 @@ import { PUBLIC_SOURCES, USER_AGENT, attribution, isChallenge, qsRowsFromRestPag
 // v1.8.2 (CF-247 s969): the apply batch size is the pipeline setting reading.ranking_apply_batch_rows (svc_worker_settings_v1), not a fixed 200.
 // v1.8.3 (CF-247 s970): the reconciliation preview (a report) is not run for an apply, which matches rows itself; in a dry run a preview that
 // passes the statement limit (its first call on a cold database can) is reported in the answer instead of failing the validation.
-const VERSION="ranking-layer1-etl-v1.8.3";
+// v1.9.0 (CF-247 s971, Platform Admin 22 Nov 2026 14:22): ARWU (ShanghaiRanking) read from its public ranking API and published like THE.
+const VERSION="ranking-layer1-etl-v1.9.0";
 const QS_STATIC:Record<number,string>={2026:"4061771"};
 const QS_REST:Record<number,string>={2027:"4153156"};
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
@@ -167,6 +168,15 @@ async function fetchThePublic(year:number){
  const payload=JSON.parse(r.text),parsed=theRowsFromPublicJson(payload,year),bytes=new TextEncoder().encode(r.text);
  return{url,pageUrl:src.pageUrl(year),nid:`the_wur_${year}`,bytes,rows:parsed.rows,stats:parsed.stats};
 }
+async function fetchArwuPublic(year:number){
+ const src=PUBLIC_SOURCES.arwu,url=src.jsonUrl(year),robots=await robotsFor(src.origin,url);
+ if(robots.delayMs)await sleep(robots.delayMs);
+ const r=await getPublic(url);
+ if(isChallenge(r.status,r.contentType,r.text))return challenged("ARWU",url,r.status);
+ if(r.status!==200)throw new Error(`ARWU ranking JSON HTTP ${r.status}`);
+ const payload=JSON.parse(r.text),parsed=arwuRowsFromPublicJson(payload,year),bytes=new TextEncoder().encode(r.text);
+ return{url,pageUrl:src.pageUrl(year),nid:`arwu_${year}`,bytes,rows:parsed.rows,stats:parsed.stats};
+}
 async function fetchQsRest(year:number){
  const nid=QS_REST[year];if(!nid)return null;
  const src=PUBLIC_SOURCES.qs_wur,base=`${src.origin}/rankings/endpoint?nid=${nid}&tab=indicators&items_per_page=500`,robots=await robotsFor(src.origin,base);
@@ -203,14 +213,14 @@ Deno.serve(async(req:Request)=>{
    const {data:ctx,error:ctxErr}=await service.rpc("svc_ranking_import_control_context",{p_import_id:importId});if(ctxErr)throw ctxErr;imp=ctx;
    if(!imp?.id||clean(imp.system_code)!==systemCode||Number(imp.edition_year)!==editionYear)throw new Error("selected ranking import does not match system/year");
   }
-  let publicStats:any=null,jsonUrl="",publicSystem:""|"the_wur"|"qs_wur"="";
-  if(!imp&&(systemCode==="qs_wur"||systemCode==="the_wur")){
+  let publicStats:any=null,jsonUrl="",publicSystem:""|"the_wur"|"qs_wur"|"arwu"="";
+  if(!imp&&(systemCode==="qs_wur"||systemCode==="the_wur"||systemCode==="arwu")){
    let fetched:any=systemCode==="qs_wur"?await fetchQsStatic(editionYear):null;
-   if(!fetched)fetched=systemCode==="qs_wur"?await fetchQsRest(editionYear):await fetchThePublic(editionYear);
+   if(!fetched)fetched=systemCode==="qs_wur"?await fetchQsRest(editionYear):systemCode==="arwu"?await fetchArwuPublic(editionYear):await fetchThePublic(editionYear);
    if(fetched?.blocked)return json({ok:false,error:fetched.error,endpointAccessState:"challenge",status:fetched.status,url:fetched.url,systemCode,editionYear,workerVersion:VERSION},503);
    if(fetched&&fetched.rows?.length){
     rows=fetched.rows;jsonUrl=fetched.url;sourceUrl=fetched.pageUrl||fetched.url;publicStats=fetched.stats||null;
-    acquisitionMode=systemCode==="the_wur"?"publisher_public_json":QS_STATIC[editionYear]?"publisher_static_xhr_json":"publisher_public_json";
+    acquisitionMode=systemCode==="the_wur"||systemCode==="arwu"?"publisher_public_json":QS_STATIC[editionYear]?"publisher_static_xhr_json":"publisher_public_json";
     if(acquisitionMode==="publisher_public_json")publicSystem=systemCode;
     const retained=sourceId?await retainJson(service,sourceId,systemCode,editionYear,jsonUrl,fetched.nid,fetched.bytes,rows.length,acquisitionMode):{hash:await sha(fetched.bytes),evidenceArtifactId:null,path:null};
     sourceHash=retained.hash;evidenceArtifactId=retained.evidenceArtifactId;filename=retained.path||"";
@@ -249,7 +259,7 @@ Deno.serve(async(req:Request)=>{
   // v1.8.0: an attributed public edition is published live at once: access public, the attribution recorded, any other revision of the same
   // edition superseded, and the rows of AU, NZ and CA institutions not yet linked to a provider listed for review (Rankings › links).
   let published=null;
-  if(publicSystem||acquisitionMode==="publisher_static_xhr_json"){const sys=(publicSystem||systemCode) as "the_wur"|"qs_wur";const {data:pub,error:pubErr}=await service.rpc("svc_ranking_public_edition_publish_v1",{p_system_code:systemCode,p_edition_year:editionYear,p_source_artifact_id:evidenceArtifactId,p_attribution:attribution(sys,editionYear)});if(pubErr)throw new Error(errText(pubErr));published=pub;}
+  if(publicSystem||acquisitionMode==="publisher_static_xhr_json"){const sys=(publicSystem||systemCode) as "the_wur"|"qs_wur"|"arwu";const {data:pub,error:pubErr}=await service.rpc("svc_ranking_public_edition_publish_v1",{p_system_code:systemCode,p_edition_year:editionYear,p_source_artifact_id:evidenceArtifactId,p_attribution:attribution(sys,editionYear)});if(pubErr)throw new Error(errText(pubErr));published=pub;}
   return json({ok:true,mode:"apply",systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,unknownRankSemantics:unknown,indicatorCells,sourceHash,evidenceArtifactId,filename,sourceUrl,jsonUrl:jsonUrl||null,publicStats,reconciliation:{...finalized,mapped:Number(finalized?.mapped||0),unmapped:Number(finalized?.global_unmapped||0)},published,applyBatches:appliedBatches,batchSize,partialMapped,partialUnmapped,workerVersion:VERSION});
  }catch(e){return json({ok:false,error:errText(e),workerVersion:VERSION},500)}
 });
