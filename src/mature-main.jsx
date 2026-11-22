@@ -778,7 +778,7 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false,ra
   // UI-2: search, filters, sort and layout are remembered per user and screen via the shared kit.
   // Same storage key as before, so existing saved choices carry over.
   const[catalogueUser,setCatalogueUser]=useState(null)
-  const[remembered,remember]=useRememberedState(type,{query:'',filters:{},filterLabels:{},advanced:type==='course',sort:completenessMode?'completeness':cfg.sort,direction:'asc'},{userId:catalogueUser})
+  const[remembered,remember,,rememberedReady]=useRememberedState(type,{query:'',filters:{},filterLabels:{},advanced:type==='course',sort:completenessMode?'completeness':cfg.sort,direction:'asc'},{userId:catalogueUser})
   const{query,filters,filterLabels,advanced,sort,direction}=remembered
   const presetKey=JSON.stringify(preset||{})
   useEffect(()=>{if(presetKey==='{}'||catalogueUser===null)return;remember({filters:JSON.parse(presetKey),filterLabels:{},query:''});setOffset(0)},[presetKey,catalogueUser])
@@ -794,7 +794,9 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false,ra
   // the Website and Zoho states are worked out for the page only when a column that shows them is in the person's layout
   const feedsShown=type==='provider'&&!completenessMode&&cl.layout.columns.some(k=>['website_state','zoho_state','mismatch','description_quality'].includes(k))
   const args=useMemo(()=>buildCatalogueArgs(type,{query:debounced,filters,offset,sort,direction,feeds:feedsShown}),[type,debounced,filters,offset,sort,direction,feedsShown])
-  useEffect(()=>{let live=true;setBusy(true);adminRead(cfg.operation,args).then(x=>live&&setData(x)).catch(e=>onError(e.message)).finally(()=>live&&setBusy(false));return()=>{live=false}},[cfg.operation,JSON.stringify(args)])
+  // REQ-105 (22 Nov 2026): the list is read once, with the person's remembered search, filters and sort (never first with the defaults, nor
+  // with a search still being typed)
+  useEffect(()=>{if(!rememberedReady){setBusy(true);return}if(debounced!==query)return;let live=true;setBusy(true);adminRead(cfg.operation,args).then(x=>live&&setData(x)).catch(e=>onError(e.message)).finally(()=>live&&setBusy(false));return()=>{live=false}},[cfg.operation,JSON.stringify(args),rememberedReady])
   useEffect(()=>{if(!['provider','course','campus','scholarship'].includes(type))return;if(type==='course'){setFilterData({});setFilterBusy(false);return}let live=true;setFilterBusy(true);api.providerFilterOptions(filters.country||'').then(x=>live&&setFilterData(x||{})).catch(e=>onError(e.message)).finally(()=>live&&setFilterBusy(false));return()=>{live=false}},[type,filters.country,filters.subdivision])
   useEffect(()=>setOffset(0),[debounced,JSON.stringify(filters),sort,direction])
   useEffect(()=>{if(initialId&&String(initialId)!==String(selected))open({id:initialId,course_id:initialId})},[initialId,type])

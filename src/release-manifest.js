@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.84'
-export const PACKAGE_VERSION='0.1.506'
+export const UI_VERSION='2.16.85'
+export const PACKAGE_VERSION='0.1.507'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'22 Nov 2026',
-  title:'Rankings: ARWU added; publish and roll back ranking editions',
+  title:'Courses opens faster',
   changes:[
-    'Rankings & statistics › Datasets › Ranking editions: every edition of THE, QS and ARWU with its status, source, rows, providers linked and attribution. A Platform Admin publishes an edition or unpublishes it to roll back to the previous one, with a reason; every change is logged.',
-    'ARWU (Academic Ranking of World Universities, ShanghaiRanking) is the third institutional ranking. It is read from ShanghaiRanking\'s public ranking table by the Layer 1 reader, like THE, and published with its attribution. QS stays on the annual file upload.',
-    'Ranking matching also links a university when its name differs only by a leading "The" or a trailing country, or matches one part of the provider\'s register name.'
+
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Courses: the list opens in about a second. The default Active list reads only the page it shows, the filter lists open quickly, and the page sends one list read with your remembered search, filters and sort instead of two.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

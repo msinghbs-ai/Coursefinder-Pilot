@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.507 — 22 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.85** (S1-API-Frontend-Delivery, s974, Platform Admin 22 Nov 2026 14:22). Courses opens faster: the default Active list reads only its page, the filter lists read their reference tables directly, and the page sends one list read with the remembered state (REQ-105; s972, s974).
+
 ## 0.1.506 — 22 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.84** (S1-API-Frontend-Delivery, s971, Platform Admin 22 Nov 2026 14:22). Rankings: ARWU 2026 from the ShanghaiRanking public table (Layer 1 reader); Ranking editions list with publish and roll back for the Platform Admin; ranking SOP steps (s971).
