@@ -1,7 +1,7 @@
-<!-- sop-export: id=admin-sop; version=2.81; reviewed-release=2.16.83; source-commit=cb4b33a4e86b+local; content-sha256=46f590077f17cce643607eba11a81f8ac0c0a832c2944d32e9a2278625497c07 -->
+<!-- sop-export: id=admin-sop; version=2.82; reviewed-release=2.16.84; source-commit=2d0499b717f5+local; content-sha256=d28b99c8e9621d927dd9641bc0956c5291ca4e3b1e7816b6254928503a87fe45 -->
 # StudySearch – Platform Admin SOP
 
-**Version:** 2.81 (reviewed for platform release v2.16.83)  
+**Version:** 2.82 (reviewed for platform release v2.16.84)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -73,6 +73,14 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1 | Platform Admin | Layer 4 › Inbox (Held scholarship): if the waiting count is large after a rule or model change, use Read the waiting pages again (with a reason) before people work through it. _(Layer 4 Review › Inbox)_ | Pages are re-read on their stored copy without scraper credit. | Only pages no model can settle wait for Curators. |
 | 2 | Platform Admin | Scheduled jobs › Task manager: anything you started is finished or still moving. _(Scheduled jobs › Task manager)_ | Every background task shows here with its controls. | No task stuck for hours. |
 
+### When a ranking edition is published (and if it must be rolled back)
+
+| # | Who | Do | Why | Done when |
+|---|---|---|---|---|
+| 1 | Platform Admin | Rankings & statistics › Datasets › Ranking editions: for the new edition, check the attribution (for example "Times Higher Education World University Rankings 2027. Source: Times Higher Education (timeshighereducation.com)") and the source page link. _(Rankings & statistics › Datasets)_ | Rankings are shown with their publisher's attribution; only the Platform Admin vouches for it. | Attribution and source are right. |
+| 2 | Platform Admin | Same list: an edition read by a Layer 1 reader is published when it is complete. For any other edition that is not yet published, press Publish, give a reason, and Publish edition: it goes live on Website API v3 at once, the earlier years stay as history, and any other copy of the same year is set to Not published. _(Rankings & statistics › Datasets)_ | One published edition per ranking body and year. | The edition shows Published. |
+| 3 | Platform Admin | Spot-check one ranked university we hold (its provider page or a Website API v3 provider answer): THE, QS and ARWU each show their own latest rank side by side. If an edition is wrong, press Unpublish, give a reason and Unpublish edition: the website shows the previous published edition immediately. Publish it again once it is fixed. _(Rankings & statistics › Datasets)_ | A defect in a publisher's file is rolled back in one step, with a logged reason. | The website shows the right edition. |
+
 ## 6. Weekly
 
 - Models & services › AI: read the limits banner at the top (Limits enforced, or Limits not enforced: the ceiling and the caps are then only reported), then the state line (Running, Low credit, No credit, Held), the credit and today's spend against the daily ceiling; in Services, any row that is Held, Off or shows No model, with the reasons listed under its state; in Recent usage, which service and model spent the most and the failed calls (a count on the card, the rate and the kinds above the per-call table). Models & services › Services & limits: Firecrawl balance against the month and the spend by day; the adapter AI allowance (proposals and US$ a day). Top up, or change a cap or cascade, before the balance reaches the credit floor. _(Models & services › AI)_
@@ -140,6 +148,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 | Version | Date | Release | Change |
 |---|---|---|---|
+| 2.82 | 22 Nov 2026 | v2.16.84 | Rankings: check the attribution of a new edition, publish an edition that is not yet published, and unpublish (roll back) a wrong one with a reason, on Rankings & statistics › Datasets › Ranking editions. THE and ARWU are read automatically; QS is uploaded once a year. |
 | 2.81 | 20 Nov 2026 | v2.16.70 | Layer 4 Review › Entry requirements: read System recovery / Re-read available apart from Waiting for a reviewer. On a completeness-gate card with a stored copy, Re-read from stored copy ($0) replaces the stale partial read with a deterministic re-read; with no stored page, Queue stored-page fetch. Audit samples stay with Waiting for a reviewer. |
 | 2.80 | 20 Nov 2026 | v2.16.68 | Dashboard: start from the five cards and Active failures (genuine failures and warnings only); Waiting for your approval, Waiting for you and Also are gone. Layer 4 Review opens on Review by rule: every waiting item of a queue grouped by its rule, one card at a time, Preview the batch, and one confirmed batch for Contains a banned word only. Platform health: Page Capture and AI Extraction & Auto-Clean show their rate against normal. |
 | 2.79 | 20 Nov 2026 | v2.16.67 | Platform health › Health checks: the 4-stage pipeline (Official Registers, Page Capture, AI Extraction & Auto-Clean, Live Catalogue) under the summary; start with an amber or red stage and open the screen it names. The Dashboard shows five cards with a bar per country. A ? on the main screens opens three steps for that screen. |

@@ -1,0 +1,9 @@
+{"code":200,"msg":"success","data":{"regions":["United States","Australia","Canada","New Zealand"],
+"indicators":[{"yr":2026,"code":"171","nameEn":"Alumni"},{"yr":2026,"code":"172","nameEn":"Award"},{"yr":2026,"code":"173","nameEn":"HiCi"},{"yr":2026,"code":"174","nameEn":"N&S"},{"yr":2026,"code":"175","nameEn":"PUB"},{"yr":2026,"code":"176","nameEn":"PCP"}],
+"rankings":[
+{"ranking":"1","univNameEn":"Harvard University","univUp":"harvard-university","region":"United States","regionRanking":"1","score":"100.0","indData":{"171":100,"172":96.2,"173":100,"174":100,"175":91.8,"176":83.2}},
+{"ranking":"37","univNameEn":"The University of Melbourne","univUp":"the-university-of-melbourne","region":"Australia","regionRanking":"1","score":"34.1","indData":{"171":12.0,"172":10.1,"173":30.2,"174":28.3,"175":70.4,"176":30.5}},
+{"ranking":"73","univNameEn":"McGill University","univUp":"mcgill-university","region":"Canada","regionRanking":"4","score":"27.0","indData":{"171":20,"172":10,"173":20,"174":20,"175":60,"176":25}},
+{"ranking":"73","univNameEn":"The University of Queensland","univUp":"the-university-of-queensland","region":"Australia","regionRanking":"2","score":"27.0","indData":{"171":5,"172":5,"173":30,"174":20,"175":70,"176":25}},
+{"ranking":"101-150","univNameEn":"Adelaide University","univUp":"the-university-of-adelaide","region":"Australia","regionRanking":"6-8","score":null,"indData":{"171":12.4,"172":0,"173":36.8,"174":14.9,"175":46.6,"176":26.1}},
+{"ranking":"201-300","univNameEn":"The University of Auckland","univUp":"the-university-of-auckland","region":"New Zealand","regionRanking":"1","score":null,"indData":{"171":0,"172":0,"173":10,"174":10,"175":40,"176":20}}]}}
