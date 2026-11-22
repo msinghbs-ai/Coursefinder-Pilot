@@ -29,17 +29,33 @@ end $g$;
 create temp table s972_locks on commit drop as select count(*) n from pipeline.manual_locks;
 create temp table s972_cron on commit drop as select count(*) n from cron.job where active;
 
--- Indexes (reads only; no column changes)
-create index if not exists courses_active_title_idx on catalogue.courses (lower(canonical_title), id) where lifecycle_status = 'active';
-create index if not exists courses_delivery_mode_norm_idx on catalogue.courses ((nullif(btrim(delivery_mode), '')), provider_id);
-create index if not exists course_campuses_delivery_mode_idx on catalogue.course_campuses (delivery_mode);
--- the list's "published" column reads each course's last website and Zoho feed change by course id
-create index if not exists website_sync_items_course_ref_idx on pipeline.website_sync_items (ref_id) where entity = 'course';
-create index if not exists zoho_sync_items_course_ref_idx on pipeline.zoho_sync_items (ref_id) where entity = 'course';
-analyze catalogue.courses;
-analyze catalogue.course_campuses;
-analyze pipeline.website_sync_items;
-analyze pipeline.zoho_sync_items;
+-- Indexes (reads only; no column changes). Each is built inside a short lock retry: a busy writer can hold a table for a few
+-- seconds, and the pipeline is never queued behind this change for long.
+do $i$
+declare v_sql text; v_try int;
+begin
+  foreach v_sql in array array[
+    'create index if not exists courses_active_title_idx on catalogue.courses (lower(canonical_title), id) where lifecycle_status = ''active''',
+    'create index if not exists courses_delivery_mode_norm_idx on catalogue.courses ((nullif(btrim(delivery_mode), '''')), provider_id)',
+    'create index if not exists course_campuses_delivery_mode_idx on catalogue.course_campuses (delivery_mode)',
+    -- the list's Published column reads each course's last website and Zoho feed change by course id
+    'create index if not exists website_sync_items_course_ref_idx on pipeline.website_sync_items (ref_id) where entity = ''course''',
+    'create index if not exists zoho_sync_items_course_ref_idx on pipeline.zoho_sync_items (ref_id) where entity = ''course''',
+    'analyze catalogue.courses', 'analyze catalogue.course_campuses', 'analyze pipeline.website_sync_items', 'analyze pipeline.zoho_sync_items']
+  loop
+    for v_try in 1 .. 10 loop  -- fixed: lock retry count for a busy table
+      begin
+        perform set_config('lock_timeout', '3s', true);  -- fixed: lock wait per try
+        execute v_sql;
+        exit;
+      exception when lock_not_available then
+        if v_try = 10 then raise; end if;
+        perform pg_sleep(2);  -- fixed: pause between lock tries
+      end;
+    end loop;
+  end loop;
+  perform set_config('lock_timeout', '5s', true);  -- fixed: back to this change's lock wait
+end $i$;
 
 -- regex edits of the live definition, guarded by its md5 before; each edit must apply exactly once
 create or replace function pg_temp.edit_re(p_sig text, p_before text, p_after text, p_edits text[][]) returns text language plpgsql as $f$

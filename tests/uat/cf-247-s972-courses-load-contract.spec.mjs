@@ -13,7 +13,10 @@ const MIG = fs.existsSync(MIG_PATH) ? fs.readFileSync(MIG_PATH, 'utf8') : ''
 test('migration: the default Active list takes the page-first path, from the guarded definitions only', () => {
   expect(MIG).toMatch(/^-- Replaces: /m)
   expect(MIG).toMatch(/^-- Retires: /m)
-  expect(MIG).toContain("create index if not exists courses_active_title_idx on catalogue.courses (lower(canonical_title), id) where lifecycle_status = 'active';")
+  expect(MIG).toContain("'create index if not exists courses_active_title_idx on catalogue.courses (lower(canonical_title), id) where lifecycle_status = ''active'''")
+  // indexes are built inside a short lock retry, so a busy writer never queues behind this change for long
+  expect(MIG).toContain('exception when lock_not_available then')
+  expect(MIG).toContain("perform set_config('lock_timeout', '3s', true);  -- fixed: lock wait per try")
   // md5 before and after for both list functions
   expect(MIG).toContain("pg_temp.edit_re('security.admin_course_page_unfiltered_fast(jsonb)', '93350f637166fa616b3f4ad7187205e9', '74a49322d1c91ac35bf0e3f0db5581ac'")
   expect(MIG).toContain("pg_temp.edit_re('security.admin_course_page_fast(jsonb)', '0018ad72937c324750888ad37385a42a', '0df468929bc1f30b769496a0d7be109c'")
@@ -37,8 +40,8 @@ test('migration: the filter lists are replaced only from the definition they wer
   // delivery modes by index probe: one probe per mode
   expect(fn).toContain('with recursive t(m) as (')
   expect(fn).toContain("select (select nullif(btrim(c.delivery_mode),'') from catalogue.courses c where nullif(btrim(c.delivery_mode),'')>t.m order by 1 limit 1) from t where t.m is not null")
-  expect(MIG).toContain("create index if not exists courses_delivery_mode_norm_idx on catalogue.courses ((nullif(btrim(delivery_mode), '')), provider_id);")
-  expect(MIG).toContain('create index if not exists course_campuses_delivery_mode_idx on catalogue.course_campuses (delivery_mode);')
+  expect(MIG).toContain("'create index if not exists courses_delivery_mode_norm_idx on catalogue.courses ((nullif(btrim(delivery_mode), '''')), provider_id)'")
+  expect(MIG).toContain("'create index if not exists course_campuses_delivery_mode_idx on catalogue.course_campuses (delivery_mode)'")
   // the answer: same keys, same order, same limits and empty-list notes
   expect(fn).toContain("case when lower(nullif(trim(coalesce(p_args->>'filter_kind','')),''))='level' then 100 else 10 end")
   expect(fn).toContain("'has_more',(v_offset+jsonb_array_length(v_items))<v_total")
