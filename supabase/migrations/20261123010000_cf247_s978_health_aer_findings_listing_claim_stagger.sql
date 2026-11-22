@@ -14,8 +14,10 @@
 --    Decision 276 (AER v1 frozen): an essential correctness fix of an assurance check; no reader, word list, threshold or recovery path changes.
 -- 2. IQ-00555: coverage-sweep answered HTTP 500 59 times in 24 hours (last 20:22 UTC), each "svc_scholarship_listing_next: canceling statement
 --    due to statement timeout" (8 s API role). The claim ran security.fc_sch_held_v1 once per due listing page (339 pages of 29 providers):
---    2.1 s and 320,000 buffers on a quiet database, past 8 s under load. public.svc_scholarship_listing_next (md5-guarded, replaced in place)
---    now runs the provider checks once per provider of the due pages, then the same host check, order, limit and lease. Same rule, same rows.
+--    and security.third_party_host_v1 once per due page (about 7 ms a call): 2.1 s on a quiet database, 10.4 s at :52 (measured).
+--    public.svc_scholarship_listing_next (md5-guarded, replaced in place) now runs the provider checks once per provider of the due pages
+--    (24 of 29 are held), and the host check only on the pages of the providers that passed; then the same order, limit and lease. Same rule,
+--    same rows.
 -- 3. IR-013 (Platform Admin decision in this batch, Part 3.1: "throttle :20-:22 / :50-:53 background query bursts"): four jobs leave the
 --    :19-:23 and :49-:53 windows for the quietest minutes of the hour (24-hour run log, background seconds per minute):
 --      aer-source-discover        19          -> 40           (52 s a run)
@@ -86,7 +88,8 @@ declare v jsonb;
 begin
   if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
   -- s978 (23 Nov 2026, IQ-00555): the provider checks (hidden, Firecrawl scholarship hold) run once per provider of the due pages, not once per
-  -- due page (339 pages of 29 providers took 2.1 s quiet and timed out at 8 s under load); then the same host check, order, limit and lease
+  -- due page, and the host check only on the pages of providers that passed (339 due pages of 29 providers took 2.1 s quiet and 10 s under
+  -- load, past the 8 s limit); then the same order, limit and lease
   with due as materialized (
     select l.id, l.provider_id from pipeline.scholarship_listing_pages l
      where l.active and l.source <> 'suggested' and coalesce(l.next_read_at, now()) <= now()),
@@ -94,11 +97,13 @@ begin
     select d.provider_id from (select distinct due.provider_id from due) d
      where not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = d.provider_id)
        and not security.fc_sch_held_v1(d.provider_id, true)),
+  ok as materialized (
+    select l.id from due join prov on prov.provider_id is not distinct from due.provider_id join pipeline.scholarship_listing_pages l on l.id = due.id
+     where not security.third_party_host_v1(l.url)),  -- v2.15.265; only the pages of providers that passed (about 7 ms a call)
   pick as (
     select l.id from pipeline.scholarship_listing_pages l
-     where l.id in (select due.id from due join prov on prov.provider_id is not distinct from due.provider_id)
+     where l.id in (select ok.id from ok)
        and l.active and l.source <> 'suggested' and coalesce(l.next_read_at, now()) <= now()
-       and not security.third_party_host_v1(l.url)  -- v2.15.265
      order by l.next_read_at nulls first, l.id limit greatest(1, least(coalesce(p_limit, 6), security.pipeline_num_v1('scholarship.listing_max', 20)::int)) for update skip locked),
   upd as (update pipeline.scholarship_listing_pages l set next_read_at = now() + interval '15 minutes' from pick where l.id = pick.id returning l.id, l.provider_id, l.url, l.next_url, l.page_state)  -- fixed: claim lease
   -- CF-247 scholarship recovery F6: a partly read catalogue continues from the address it stopped at
