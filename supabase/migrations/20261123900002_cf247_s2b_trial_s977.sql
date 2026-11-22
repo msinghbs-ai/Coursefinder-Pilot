@@ -92,7 +92,7 @@ CREATE OR REPLACE FUNCTION security.admin_course_page_fast_base(p_args jsonb DEF
  STABLE SECURITY DEFINER
  SET search_path TO 'pg_catalog', 'security', 'catalogue', 'ref', 'scholarship', 'search', 'public', 'auth'
  SET plan_cache_mode TO 'force_custom_plan'
-AS $function$;
+AS $function$
 declare
   v_rank integer:=0;
   v_limit integer:=least(greatest(coalesce(nullif(p_args->>'limit','')::integer,50),1),200);
@@ -383,7 +383,7 @@ CREATE OR REPLACE FUNCTION security.admin_course_page_fast(p_args jsonb DEFAULT 
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
  SET search_path TO 'pg_catalog', 'security', 'catalogue', 'public', 'auth'
-AS $function$;
+AS $function$
 declare
   v_q text:=nullif(trim(coalesce(p_args->>'query','')),'');
   v_provider_id uuid;
@@ -450,7 +450,7 @@ CREATE OR REPLACE FUNCTION security.admin_catalogue_filter_page(p_args jsonb DEF
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
  SET search_path TO 'pg_catalog', 'security', 'catalogue', 'ref', 'auth'
-AS $function$;
+AS $function$
 declare
   v_rank integer:=0;
   v_kind text:=lower(nullif(trim(coalesce(p_args->>'filter_kind','')),''));
