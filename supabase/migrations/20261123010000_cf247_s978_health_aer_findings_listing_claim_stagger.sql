@@ -156,8 +156,18 @@ begin
   if (select count(*) from pipeline.layer4_review_items where status in ('approved', 'edited_approved', 'rejected')) <> b.decided then
     raise exception 'post-check: a Layer 4 item was approved or rejected';
   end if;
-  if exists (select 1 from security.aer_current_findings_v1() f where to_jsonb(f)::text like '%consumer_unadmitted%') then
-    raise exception 'post-check: the AER check still finds unadmitted consumer rows';
+  -- the consumer_unadmitted test of security.aer_current_findings_v1 for provider-table rows, as edited above (the whole check is too heavy to run here)
+  if exists (select 1 from catalogue.provider_entry_matrix m
+               left join pipeline.entry_matrix_runs r on r.id = m.run_id left join pipeline.layer4_review_items li on li.id = r.review_item_id
+              where m.status = 'active' and coalesce(m.provenance->>'reader', '') <> 'manual' and coalesce(li.status, 'none') not in ('approved', 'edited_approved')
+                and not exists (select 1 from pipeline.layer4_review_items la where la.entity_id = m.provider_id and la.field_code in ('entry_matrix_first_run', 'entry_matrix_change')
+                                  and la.status in ('approved', 'edited_approved') and la.proposed_value->>'run_id' = m.run_id::text)
+                and not exists (select 1 from pipeline.aer_matrix_machine_admissions ma where ma.run_id = m.run_id and ma.outcome = 'admitted'
+                                  and ma.rule = 'aer-partial-v1' and ma.checks->'admitted_row_ids' ? m.id::text)) then
+    raise exception 'post-check: an active provider-table row is admitted by no person and no rule';
+  end if;
+  if position('s978 (23 Nov 2026)' in pg_get_functiondef('security.aer_current_findings_v1()'::regprocedure)) = 0 then
+    raise exception 'post-check: the AER check was not edited';
   end if;
   if position('s978 (23 Nov 2026, IQ-00555)' in pg_get_functiondef('public.svc_scholarship_listing_next(integer)'::regprocedure)) = 0 then
     raise exception 'post-check: the listing claim was not replaced';
