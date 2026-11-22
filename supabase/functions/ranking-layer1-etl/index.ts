@@ -7,7 +7,9 @@ import { PUBLIC_SOURCES, USER_AGENT, attribution, isChallenge, qsRowsFromRestPag
 // v1.8.0 (CF-247 s966, Platform Admin 22 Nov 2026 09:22 AEDT, IR-005 / RM1J): THE and QS are attributed public rankings. THE is read from its public
 // ranking JSON and QS from its public results endpoint with a plain GET (robots.txt and its crawl-delay honoured; no Firecrawl, no browser,
 // no AI), applied and published with source attribution. No publisher file upload or terms hold. A challenge page is reported, never bypassed.
-const VERSION="ranking-layer1-etl-v1.8.0";
+// v1.8.1 (CF-247 s968, 22 Nov 2026): the Australian reconciliation preview gets the Australian rows only. With every THE row (3,146) it passed the
+// service role's 8 s statement limit; its answer covers Australia only, so it is unchanged.
+const VERSION="ranking-layer1-etl-v1.8.1";
 const QS_STATIC:Record<number,string>={2026:"4061771"};
 const QS_REST:Record<number,string>={2027:"4153156"};
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
@@ -225,7 +227,7 @@ Deno.serve(async(req:Request)=>{
   if(!rows.length)throw new Error("publisher source parsed zero ranking observations");
   const unknown=rows.filter(x=>x.rank_status==="unknown").length,indicatorCells=rows.reduce((n,r)=>n+Object.values(r.indicators||{}).filter(v=>v!==null).length,0);
   let reconciliationPreview=null;
-  if(["qs_wur","the_wur","arwu"].includes(systemCode)){const {data:preview,error:previewErr}=await service.rpc("svc_ranking_reconciliation_preview_system",{p_rows:rows,p_country_code:"AU",p_system_code:systemCode});if(previewErr)throw previewErr;reconciliationPreview=preview;}
+  if(["qs_wur","the_wur","arwu"].includes(systemCode)){const previewRows=rows.filter((r:any)=>/^(australia|au|aus)$/i.test(clean(r.country_text)));const {data:preview,error:previewErr}=await service.rpc("svc_ranking_reconciliation_preview_system",{p_rows:previewRows,p_country_code:"AU",p_system_code:systemCode});if(previewErr)throw previewErr;reconciliationPreview=preview;}
   if(mode!=="apply")return json({ok:true,mode:"dry_run",systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,unknownRankSemantics:unknown,indicatorCells,sourceHash,evidenceArtifactId,filename,sourceUrl,jsonUrl:jsonUrl||null,publicStats,attribution:publicSystem?attribution(publicSystem,editionYear):null,reconciliationPreview,sample:rows.slice(0,5).map(({source_row_payload,...x})=>x),workerVersion:VERSION});
   // v1.8.0: public publisher JSON is applied like an uploaded file (Platform Admin 22 Nov 2026 09:22); its JSON is retained as evidence first.
   if(!["manual_file","manual_the_native_json","publisher_public_json","publisher_static_xhr_json"].includes(acquisitionMode))return json({ok:false,error:`acquisition mode ${acquisitionMode} cannot be applied`,systemCode,editionYear,acquisitionMode,workerVersion:VERSION},409);
