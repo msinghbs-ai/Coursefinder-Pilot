@@ -284,7 +284,7 @@ Tab key `compare` · Viewer and above
 
 Tab key `datasets` · Viewer and above
 
-- **Screen:** `Qilt` (mature-main.jsx), `Prisms` (mature-main.jsx), `StatisticsDatasets` (StatisticsDatasets.jsx), `RankingEditions` (RankingEditions.jsx), `RankingImportPanel` (mature-main.jsx)
+- **Screen:** `Qilt` (mature-main.jsx), `Prisms` (mature-main.jsx), `StatisticsDatasets` (StatisticsDatasets.jsx), `RankingImportPanel` (mature-main.jsx), `RankingEditions` (RankingEditions.jsx)
 - **Sub-tabs and view bars:**
   - View data: QILT outcomes · PRISMS student flow — mature-main.jsx
 
