@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION public.website_v2_course_search(p_filters jsonb DEFAULT '{}'::jsonb, p_page integer DEFAULT 1, p_page_size integer DEFAULT 20, p_sort text DEFAULT NULL::text)
+CREATE OR REPLACE FUNCTION public.website_v3_course_search_core(p_filters jsonb DEFAULT '{}'::jsonb, p_page integer DEFAULT 1, p_page_size integer DEFAULT 20, p_sort text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
@@ -29,12 +29,19 @@ declare
   v_sort text := coalesce(nullif(p_sort,''), case when nullif(btrim(coalesce(f->>'keyword','')),'') is not null then 'relevance' else 'title_asc' end);
   v_known text[] := array['keyword','country_codes','country_code','study_area_codes','study_level_codes','subdivision_codes','cities','city','postcodes','regional_categories',
                           'provider_ids','university_groups','university_group','delivery_modes','intake_months','english_test_codes','english_score_max',
-                          'tuition_annual_min','tuition_annual_max','has_intake','has_english','has_official_url','has_scholarship','has_tuition','changed_since'];
+                          'tuition_annual_min','tuition_annual_max','has_intake','has_english','has_official_url','has_scholarship','has_tuition','changed_since','institution_types','has_academic_entry']
+                          || case when nullif(f->>'has_academic_entry','') is not null then array['edu_country'] else array[]::text[] end;
   v_not_applied jsonb;
   v_total bigint; v_ids uuid[];
   v_need_fee boolean;
 begin
   if v_page < 1 then raise exception 'INVALID_INPUT: page must be >= 1' using errcode='22023'; end if;
+  -- 20261113230000 (Website API v3 O22): has_academic_entry and edu_country
+  if nullif(f->>'has_academic_entry','') is not null and lower(f->>'has_academic_entry') not in ('true','false') then raise exception 'INVALID_INPUT: has_academic_entry must be true or false' using errcode='22023'; end if;
+  if nullif(f->>'has_academic_entry','') is not null and nullif(f->>'edu_country','') is not null
+     and not exists (select 1 from ref.countries k where k.iso_alpha2 = upper(btrim(f->>'edu_country'))) then
+    raise exception 'INVALID_INPUT: edu_country must be a known ISO 3166 alpha-2 country code' using errcode='22023';
+  end if;
   if v_size < 1 or v_size > 50 then raise exception 'INVALID_INPUT: page_size must be 1-50' using errcode='22023'; end if;
   if v_sort not in ('relevance','title_asc','tuition_annual_asc','tuition_annual_desc','duration_asc','updated_asc') then raise exception 'INVALID_INPUT: unknown sort' using errcode='22023'; end if;
   if v_score_max is not null and coalesce(cardinality(v_tests),0) <> 1 then raise exception 'INVALID_INPUT: english_score_max needs exactly one english_test_codes value' using errcode='22023'; end if;
@@ -62,7 +69,7 @@ begin
                        from jsonb_array_elements(coalesce(d.provider_tuition_options,'[]'::jsonb)) o
                        where (o->>'amount') ~ '^[0-9]+(\.[0-9]+)?$' and (o->>'amount')::numeric >= 1000
                        order by nullif(o->>'fee_year','')::int desc nulls last limit 1) pt on v_need_fee
-    where not exists (select 1 from security.layer4_search_blocked_courses b where b.course_id = d.course_id)
+    where (d.course_id is null or d.course_id not in (select b.course_id from security.layer4_search_blocked_courses b where b.course_id is not null))
       and (v_kw is null or d.search_tsv @@ v_q or d.course_title ilike '%'||v_kw||'%' or d.provider_name ilike '%'||v_kw||'%'
            or lower(d.course_code) = lower(v_kw) or lower(d.course_stable_key) = lower(v_kw))
       and (v_countries is null or d.country_code = any(v_countries))
@@ -70,6 +77,13 @@ begin
       and (v_levels is null or d.study_level_code = any(v_levels))
       and (v_subdivs is null or d.subdivision_codes && v_subdivs)
       and (v_providers is null or d.provider_stable_key = any(v_providers))
+      and (nullif(f->>'has_academic_entry','') is null
+           or (exists (select 1 from catalogue.provider_entry_matrix em where em.provider_id = d.provider_id and em.status = 'active'
+                        and (nullif(f->>'edu_country','') is null or em.country_code = upper(btrim(f->>'edu_country'))))
+               or (nullif(f->>'edu_country','') is null
+                   and exists (select 1 from catalogue.course_entry_requirements er where er.course_id = d.course_id and er.status = 'active' and er.min_entry_score is not null)))
+              = lower(f->>'has_academic_entry')::boolean)
+      and (f->'institution_types' is null or api.website_v2_institution_type_code(d.provider_id) = any(api.website_text_array(f->'institution_types')))
       and (v_groups is null or exists (select 1 from catalogue.provider_collection_memberships gm join ref.institution_collections gic on gic.id=gm.collection_id
             where gm.provider_id=d.provider_id and gm.status='active' and (gm.valid_to is null or gm.valid_to>=current_date)
               and gic.collection_type='university_group' and gic.status='active' and replace(gic.code,'au_','') = any(v_groups)))
