@@ -17,10 +17,13 @@ if grep -nEi '\bconcurrently\b' "$f"; then echo "::error::Refused: $FILE uses CO
 if grep -q 'cf_dryrun' "$f"; then echo "::error::Refused: $FILE contains the dry run's marker"; exit 1; fi
 probe="${PROBE:-}"
 [ -n "$probe" ] || probe="'no probe'"
+# s980: the probe is a read-back, not part of the migration. It runs through EXECUTE inside its own block, so a mistake in it (a wrong name, a
+# bracket, a time-out) is printed as PROBE-ERROR and does not fail a dry run whose migration passed.
+if grep -q 'cf_probe' <<< "$probe"; then echo "::error::Refused: the probe contains the dry run's probe marker"; exit 1; fi
 {
   printf "begin;\nset local statement_timeout = '%s';\n" "${DRYRUN_STATEMENT_TIMEOUT:-60s}"
   cat "$f"
-  printf "\n\ndo \$cf_dryrun\$ begin raise exception 'CF-DRYRUN-ROLLED-BACK %%', (%s)::text; end \$cf_dryrun\$;\nrollback;\n" "$probe"
+  printf "\n\ndo \$cf_dryrun\$ declare v text; begin\n  begin execute \$cf_probe\$select (%s)::text\$cf_probe\$ into v;\n  exception when others or query_canceled then v := 'PROBE-ERROR: ' || sqlerrm; end;\n  raise exception 'CF-DRYRUN-ROLLED-BACK %%', v; end \$cf_dryrun\$;\nrollback;\n" "$probe"
 } > dryrun.sql
 jq -n --rawfile q dryrun.sql '{query:$q}' > q.json
 code=$(curl -sS -o r.json -w '%{http_code}' -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" \
@@ -30,6 +33,7 @@ if grep -q 'CF-DRYRUN-ROLLED-BACK' r.json; then
   echo "::notice::$FILE dry run passed and was rolled back (md5 $(md5sum < "$f" | cut -c1-8))"
   printf '%s dry run passed, rolled back (md5 %s)\n\n```\n%s\n```\n' "$FILE" "$(md5sum < "$f" | cut -c1-8)" "$msg" >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
   echo "$msg"
+  if grep -q 'PROBE-ERROR' r.json; then echo "::warning::$FILE passed; its probe failed (printed above as PROBE-ERROR)"; fi
   exit 0
 fi
 echo "::error::$FILE dry run failed (HTTP $code): ${msg:0:800}"

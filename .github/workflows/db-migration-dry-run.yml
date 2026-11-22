@@ -5,9 +5,17 @@
 #   - a pull request labelled live-dry-run: every migration file the PR adds, in file-name order (re-runs on each push while labelled);
 #   - by hand (workflow_dispatch): the files named, with an optional probe expression, after typing the project ref to confirm.
 # Pull requests without the label are not touched.
+# s980 (S2-Build, Platform Admin 23 Nov 2026 08:47 AEDT): two jobs. `dry-run` is the merge gate: pull requests to main that add a migration,
+# labelled live-dry-run; it fails on any pre-flight or dry-run failure, and auto-merge counts only this check. `rehearsal` is the hand-started
+# run (rehearsing a migration before its pull request, or a read-back probe): it runs the same pre-flight and dry run but reports a failure as
+# a warning and the summary instead of failing the run, so a rehearsal or a probe typo never sends a failed-run notice and never counts as a
+# passed gate. Before either, scripts/ci/migration-preflight.mjs checks each new file against main and the live migration head. There is no
+# push trigger: a branch push without a pull request never runs this workflow.
+
 name: Database migration dry run (rolled back)
 on:
   pull_request:
+    branches: [main]
     types: [opened, synchronize, reopened, labeled]
     paths: ['supabase/migrations/*.sql']
   workflow_dispatch:
@@ -27,7 +35,37 @@ concurrency:
   cancel-in-progress: false
 jobs:
   dry-run:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'live-dry-run')
+    if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'live-dry-run')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pre-flight (names, order above main and the live head, transaction safety)
+        run: |
+          set -euo pipefail
+          if [ -z "$REF" ]; then echo "::error::Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
+          live="$(scripts/ci/live-migration-head.sh)"
+          echo "Live migration head: $live" | tee -a "$GITHUB_STEP_SUMMARY"
+          mapfile -t LIST < <(git diff --no-renames --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA" -- 'supabase/migrations/*.sql' | xargs -r -n1 basename | sort)
+          node scripts/ci/migration-preflight.mjs --base "$BASE_SHA" --live-head "$live" "${LIST[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Dry run each new migration
+        run: |
+          set -euo pipefail
+          mapfile -t LIST < <(git diff --no-renames --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA" -- 'supabase/migrations/*.sql' | xargs -r -n1 basename | sort)
+          if [ "${#LIST[@]}" -eq 0 ]; then echo "No new migrations." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          for f in "${LIST[@]}"; do PROBE="" scripts/ci/dry-run-migration.sh "$f"; done
+
+  rehearsal:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -38,25 +76,25 @@ jobs:
       PROBE: ${{ inputs.probe }}
       FILES_INPUT: ${{ inputs.files }}
       CONFIRM: ${{ inputs.confirm_project }}
-      BASE_SHA: ${{ github.event.pull_request.base.sha }}
-      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Dry run each new migration
+      - name: Pre-flight and rolled-back rehearsal (a failure is reported, not raised)
         run: |
-          set -euo pipefail
+          set -uo pipefail
           if [ -z "$REF" ]; then echo "::error::Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            if [ "$CONFIRM" != "$REF" ]; then echo "::error::Refused: the typed project ref does not match the Pilot"; exit 1; fi
-            IFS=',' read -ra LIST <<< "$FILES_INPUT"
-          else
-            PROBE=""
-            mapfile -t LIST < <(git diff --no-renames --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA" -- 'supabase/migrations/*.sql' | xargs -r -n1 basename | sort)
+          if [ "$CONFIRM" != "$REF" ]; then echo "::error::Refused: the typed project ref does not match the Pilot"; exit 1; fi
+          IFS=',' read -ra RAW <<< "$FILES_INPUT"; LIST=(); for r in "${RAW[@]}"; do LIST+=("$(echo "$r" | xargs)"); done
+          live="$(scripts/ci/live-migration-head.sh)" || live=""
+          echo "Live migration head: ${live:-unknown}" | tee -a "$GITHUB_STEP_SUMMARY"
+          if ! node scripts/ci/migration-preflight.mjs --base origin/main ${live:+--live-head "$live"} "${LIST[@]}" | tee -a "$GITHUB_STEP_SUMMARY"; then
+            echo "::warning::Rehearsal pre-flight failed (see the summary); fix the file before its pull request"
+            echo "REHEARSAL PRE-FLIGHT FAILED" >> "$GITHUB_STEP_SUMMARY"; exit 0
           fi
-          if [ "${#LIST[@]}" -eq 0 ]; then echo "No new migrations." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
-          for raw in "${LIST[@]}"; do
-            f="$(echo "$raw" | xargs)"
-            PROBE="$PROBE" scripts/ci/dry-run-migration.sh "$f"
+          for f in "${LIST[@]}"; do
+            if ! PROBE="$PROBE" scripts/ci/dry-run-migration.sh "$f"; then
+              echo "::warning::Rehearsal of $f failed (dry run failed); the pull request gate will fail until it is fixed"
+              echo "REHEARSAL FAILED: $f" >> "$GITHUB_STEP_SUMMARY"; exit 0
+            fi
           done
