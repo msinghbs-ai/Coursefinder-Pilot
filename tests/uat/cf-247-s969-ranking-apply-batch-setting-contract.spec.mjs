@@ -1,4 +1,4 @@
-// Guards: G2 (no operational value in code) for the THE and QS public readers: the apply batch size is the pipeline setting reading.ranking_apply_batch_rows
+// Guards: Platform Admin 22 Nov 2026 09:22 AEDT (IR-005 / RM1J): the THE and QS readers' apply batch size is the pipeline setting reading.ranking_apply_batch_rows, and a re-read keeps public access
 // s969 (third fix to s966): a re-read of a published edition (every row an update) passed the 8 s statement limit in batches of 200. The batch
 // size is now a setting read through svc_worker_settings_v1, and a re-read keeps the edition's public access.
 import { test, expect } from '@playwright/test'
