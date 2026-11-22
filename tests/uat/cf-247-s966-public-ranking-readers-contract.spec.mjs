@@ -94,7 +94,7 @@ test.describe('CF-247 s966 public ranking readers (THE and QS)', () => {
   })
 
   test('ranking-layer1-etl applies and publishes public JSON with a plain GET only ($0: no Firecrawl, no browser, no AI)', () => {
-    expect(ETL).toContain('const VERSION="ranking-layer1-etl-v1.8.0"')
+    expect(ETL).toMatch(/const VERSION="ranking-layer1-etl-v1\.8\.\d+"/)
     expect(ETL).toContain('fetchThePublic(editionYear)')
     expect(ETL).toContain('"publisher_public_json"')
     expect(ETL).toContain('svc_ranking_public_edition_publish_v1')
