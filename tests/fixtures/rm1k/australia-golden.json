@@ -1,0 +1,21 @@
+{
+  "suite": "rm1k_australia_golden_v1",
+  "verified": "2026-11-22 (rolled-back live read, S1-API-Frontend-Delivery): 10 of 10 sections agree on Admin and Website API v3",
+  "records": {
+    "course": "course:cricos:00026a:058180a",
+    "study_rule_id": "0d66fd1a-4cab-4be1-b588-7133dbfd5d7a",
+    "career_outcome_id": "c455e025-b9d2-4d20-9e43-a501b3b01d1f"
+  },
+  "sections": [
+    { "section": "course_detail", "golden": "Graduate Certificate in Publishing, The University of Sydney (CRICOS 058180A)" },
+    { "section": "entry_requirements", "golden": "A bachelor's degree from the University of Sydney, with a major in the humanities or social sciences, or an equivalent qualification" },
+    { "section": "english_requirements", "golden": "IELTS 6.5" },
+    { "section": "tuition_fees", "golden": "A$26,950 course total (CRICOS registered)" },
+    { "section": "scholarships", "golden": "8 scholarships shown, each one Admin maps to the course" },
+    { "section": "campuses", "golden": "Camperdown 2050" },
+    { "section": "accreditations", "golden": "CRICOS 058180A registered" },
+    { "section": "study_rules", "golden": "Student visa (subclass 500) Overseas Student Health Cover" },
+    { "section": "career_outcomes", "golden": "OSCA 1111 Corporate Services Managers, 10,000 employed (2021 Census)" },
+    { "section": "rankings", "golden": "THE, QS and ARWU side by side, each its latest published edition" }
+  ]
+}
