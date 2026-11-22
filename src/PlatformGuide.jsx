@@ -44,7 +44,7 @@ export function CoverageNow(){
 // s931 (Decision 279 §7.1): Filters & badges, searchable by words and by screen
 function FilterReference(){
   const[q,setQ]=useState(''),[scr,setScr]=useState(''),rows=filterEntries(scr,q)
-  return <section className="m-panel" id="pg-filters" data-guide-filters><h2>Filters & badges</h2><p>Every filter on Layer 4 Review, Courses, Providers, Entry requirements, English and Scholarships, and every badge: what it looks at and when to use it.</p>
+  return <section className="m-panel" id="pg-filters" data-guide-filters><h2>Filters & badges</h2><p>Every filter on Layer 4 Review, Courses, Providers, Entry requirements, English and Scholarships, every badge, and a glossary of the words on the screens (PRISMS, QILT, THE, QS, ARWU, Publication, Empty reason, feeds, Contacts; choose Glossary under Screen): what each looks at and when to use it.</p>
     <div className="pg-filter-bar"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search filters and badges…" aria-label="Search filters and badges" data-guide-filter-search/>
       <select value={scr} onChange={e=>setScr(e.target.value)} aria-label="Screen" data-guide-filter-screen><option value="">All screens</option>{FILTER_SCREENS.map(x=><option key={x} value={x}>{x}</option>)}</select></div>
     <div className="cf-table-wrap"><table className="cf-table" data-guide-filter-table><thead><tr><th>Screen</th><th>Filter / badge</th><th>What it looks at</th><th>Use it when…</th><th>Who sees it</th></tr></thead>

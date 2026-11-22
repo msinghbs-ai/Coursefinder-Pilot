@@ -180,6 +180,13 @@ export function fmtBytes(bytes, fallback = EMPTY) {
  * REQ-97 (India team 20 Nov 2026): a course duration in years, with the stored value in brackets, for example "3 years (156 weeks)".
  * Durations under a year (52 weeks, 12 months) stay as stored. Half years read as 1.5; other fractions to one decimal place.
  */
+// S2-Build s977: a calendar month's full name (1 to 12), for the Courses Intake month filter
+export function fmtMonthName(month) {
+  const n = Number(month)
+  if (!Number.isInteger(n) || n < 1 || n > 12) return EMPTY
+  return new Intl.DateTimeFormat('en-AU', { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2000, n - 1, 15)))
+}
+
 export function fmtDuration(value, unit) {
   const n = Number(value)
   if (value == null || value === '' || !Number.isFinite(n) || n <= 0) return null

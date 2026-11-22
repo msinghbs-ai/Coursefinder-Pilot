@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.508 — 23 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.16.86** (S2-Build, s977, Platform Admin 22 Nov 2026 22:01 and 22:57). Courses: filtered and sorted lists on the set-based state path (REQ-105 closed); counselling filters for Counsellor and Viewer; Settings › API usage in one compact table; glossary; Provider Contacts Clear / Reset.
+
 ## 0.1.507 — 22 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.85** (S1-API-Frontend-Delivery, s974, Platform Admin 22 Nov 2026 14:22). Courses opens faster: the default Active list reads only its page, the filter lists read their reference tables directly, and the page sends one list read with the remembered state (REQ-105; s972, s974).

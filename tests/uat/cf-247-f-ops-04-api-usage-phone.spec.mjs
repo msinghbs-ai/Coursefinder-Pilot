@@ -39,8 +39,8 @@ async function mount(page) {
   await page.route(BASE + 'admin_api_usage', (r) => r.fulfill({ json: usage }))
   await page.route(BASE + 'admin_api_key_rotate', (r) => r.fulfill({ json: { key_name: 'zoho_crm_sync_v2', key: NEW_KEY, key_hint: 'abcd1234', previous_valid_until: '2026-11-10T03:00:00Z', platform: 'zoho' } }))
   await page.goto('/#api-usage')
-  await expect(page.locator('.cf-api-platform[data-platform="zoho"]')).toBeVisible()
-  await expect(page.locator('.cf-api-keys tr[data-key="zoho_crm_sync_v2"]')).toBeVisible()
+  await expect(page.locator('tr.cf-api-row[data-platform="zoho"]')).toBeVisible()
+  await expect(page.locator('tr.cf-api-row[data-version-key="zoho_crm_sync_v2"]')).toBeVisible()
 }
 
 async function boxes(page, selector) {
@@ -51,11 +51,15 @@ async function boxes(page, selector) {
 }
 
 test.describe('Operations › API usage on a phone @responsive', () => {
-  test('panels and platform cards fit the phone; each table scrolls in its own frame; the page never scrolls sideways', async ({ page }) => {
+  test('the key table fits the phone with no sideways scroll; the detail tables scroll in their own frames; the page never scrolls sideways', async ({ page }) => {
     const w = await atPhoneWidth(page)
     await mount(page)
+    // s977 (Platform Admin addendum 22 Nov 2026 22:57): the one compact table never scrolls sideways at 375 px (each key reads as a card)
+    expect(await page.locator('.cf-api-summary-wrap').evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1)
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
+    await page.locator('.cf-api-detail > summary').click()
     const inside = []
-    for (const sel of ['.m-panel', '.cf-api-platform']) {
+    for (const sel of ['.m-panel', 'tr.cf-api-row']) {
       const bs = await boxes(page, sel)
       expect(bs.length, `${sel} is on the screen, so this check measures something`).toBeGreaterThanOrEqual(2)
       for (const b of bs) if (b.x < -1 || b.right > w + 1) inside.push(`${sel} "${b.label}" ${Math.round(b.x)}..${Math.round(b.right)}`)
@@ -76,6 +80,7 @@ test.describe('Operations › API usage on a phone @responsive', () => {
   test('every control a Platform Admin taps is at least 24 by 24 pixels', async ({ page }) => {
     await atPhoneWidth(page)
     await mount(page)
+    await page.locator('.cf-api-detail > summary').click()
     const small = []
     let measured = 0
     for (const sel of ['.m-page-stack button', '.m-page-stack select']) {
@@ -88,7 +93,7 @@ test.describe('Operations › API usage on a phone @responsive', () => {
   test('the rotate dialog and the one-time new key sit inside the screen and can be read and closed', async ({ page }) => {
     const w = await atPhoneWidth(page)
     await mount(page)
-    await page.locator('.cf-api-keys tr[data-key="zoho_crm_sync_v2"]').getByRole('button', { name: 'Rotate' }).click()
+    await page.locator('tr.cf-api-row[data-version-key="zoho_crm_sync_v2"]').getByRole('button', { name: 'Rotate' }).click()
     const dlg = page.getByRole('dialog', { name: 'Rotate zoho_crm_sync_v2' })
     await expect(dlg).toBeVisible()
     for (const name of ['Cancel', 'Rotate key']) {
