@@ -2,7 +2,7 @@
 /* S2-Build s977 (Platform Admin addendum 22 Nov 2026 22:57): Settings › API usage in one compact table that never scrolls sideways; on a
    phone each key reads as a card with its labels. */
 .cf-api-summary-wrap{max-width:100%}
-.cf-api-summary{width:100%;table-layout:fixed;border-collapse:collapse;font-size:var(--cf-fs-sm)}
+.cf-api-summary{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse;font-size:var(--cf-fs-sm)} /* not the global table{min-width:760px} */
 .cf-api-summary th,.cf-api-summary td{padding:8px 6px;text-align:left;vertical-align:top;overflow-wrap:anywhere;border-bottom:1px solid var(--cf-slate-200)}
 .cf-api-summary th{font-size:var(--cf-fs-xs);color:var(--cf-slate-500);font-weight:700}
 .cf-api-summary th:nth-child(1){width:20%}.cf-api-summary th:nth-child(2){width:24%}.cf-api-summary th:nth-child(3){width:13%}

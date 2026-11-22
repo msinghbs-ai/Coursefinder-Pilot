@@ -51,6 +51,6 @@ test('s977 API usage: one table, each metric once, legacy keys folded, nothing s
   expect(UI).not.toContain('cf-metric-grid')
   expect(UI).not.toContain('<Metric ')
   const css = fs.readFileSync('src/settings.css', 'utf8')
-  expect(css).toContain('.cf-api-summary{width:100%;table-layout:fixed')
+  expect(css).toContain('.cf-api-summary{width:100%;min-width:0;table-layout:fixed')
   expect(css).toContain('.cf-api-summary td::before{content:attr(data-label)')
 })
