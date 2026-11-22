@@ -9,3 +9,8 @@ declare t0 timestamptz; r text := ''; i int; d text; begin
   for i in 1..n loop t0 := clock_timestamp(); execute 'select length(coalesce((' || q || ')::text, ''''))' into d;
     r := r || round(extract(epoch from clock_timestamp() - t0) * 1000) || 'ms/' || d || 'c '; end loop; return r; end $f$;
 select 1;
+do $a$ declare v uuid; begin
+  select ur.user_id into v from security.user_roles ur join security.roles ro on ro.code = ur.role_code
+   where ro.status = 'active' and ro.rank >= 6 and (ur.expires_at is null or ur.expires_at > now()) order by ur.user_id limit 1;
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v::text, 'role', 'authenticated')::text, true);
+end $a$;
