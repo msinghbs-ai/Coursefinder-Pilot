@@ -13,6 +13,7 @@ import{DataTable}from'./DataTable'
 import{Button,EmptyInline,Pager,StatusChip,fmtDate,fmtNumber}from'./ui-kit'
 import{DEFAULT_COLS,GRID_COLUMNS,quoteValuePairs,toCsv,urlOf}from'./lib/layer4-grid'
 import Layer4GroupDecide from'./Layer4GroupDecide'
+import Layer4LockedBulk from'./Layer4LockedBulk' // s1023: bulk Yes (Approve & Keep Lock)
 import Layer4Clusters from'./Layer4Clusters' // v2.16.43: clusters by kind, university, reason and quote
 import AerRuleChecks from'./AerRuleChecks' // S831: the rule checks of an AER course entry read
 import{CountryFlag}from'./ProviderListParts' // s767: the drawn flags of Catalogue › Providers
@@ -164,6 +165,7 @@ export default function Layer4Grid({kinds={},targetDays=0,providerId='',sourceCo
     </div>
     {note&&<p className="l4g-note" role="status">{note}</p>}
     {err&&<p className="l4g-err" role="alert">{err}</p>}
+    {kind==='locked_field_update'&&<Layer4LockedBulk rank={rank??data?.rank} onDecided={()=>{onDecided?.();load(offset)}}/>}
     {!kind?<EmptyInline text="Choose a view or a kind to see its items."/>:<>
       <p className="l4g-count" data-l4g-total>{data?`${fmtNumber(data.total)} waiting · ${data.kind_label||kind}${cty?` · ${cty}`:''}${ptype?` · ${(TYPE_PILLS.find(x=>x[0]===ptype)||[])[1]||ptype}`:''}`:'Loading…'}</p>
       <DataTable tableId="l4-grid" rows={(data?.rows||[]).map(r=>({...r,id:`${r.kind}:${r.ref}`}))} columns={columns} loading={loading} onRow={r=>setOpen(r)} selected={open?`${open.kind}:${open.ref}`:undefined} cellOf={(r,k)=>r[k]??'—'}/>

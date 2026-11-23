@@ -130,13 +130,13 @@ export const THREE_DECISIONS={
   provider_departure:{yes:'reviewed',no:'closed',resubmit:null}
 }
 // registered hook kinds (for example course_english): the first allowed of these is Yes, reject_evidence is No, search_again is Resubmit
-const HOOK_YES=['correct_value','enter_value','confirm_identity','confirm_scope','confirm_not_published','provide_url','select_source','attach_document']
+const HOOK_YES=['approve_keep_lock','correct_value','enter_value','confirm_identity','confirm_scope','confirm_not_published','provide_url','select_source','attach_document']
 export const DECISION_LABEL={yes:'Yes (Approve)',no:'No (Reject)',resubmit:'Resubmit to Review with AI'}
 /** The three decisions of one card from its queue and the choices the server offers it: {yes, no, resubmit, more}. A decision whose choice the
  * server does not offer is null (its button is not drawn); `more` keeps every other choice, in the server's order. */
 export function decisionsFor(kind,choices){const list=Array.isArray(choices)?choices:[],by=k=>k?list.find(c=>c.key===k)||null:null
   const m=THREE_DECISIONS[kind]
-  const pick=m?{yes:by(m.yes),no:by(m.no),resubmit:by(m.resubmit)}:{yes:HOOK_YES.map(by).find(Boolean)||null,no:by('reject_evidence'),resubmit:by('search_again')}
+  const pick=m?{yes:by(m.yes),no:by(m.no),resubmit:by(m.resubmit)}:{yes:HOOK_YES.map(by).find(Boolean)||null,no:by('reject_evidence')||(kind==='locked_field_update'?by('reject'):null),resubmit:by('search_again')}
   const used=new Set([pick.yes,pick.no,pick.resubmit].filter(Boolean).map(c=>c.key))
   return{...pick,more:list.filter(c=>!used.has(c.key))}}
 /** D4: "Lock this value" is offered on Yes only where the server's decide already accepts set_manual_lock for that choice. */
@@ -169,7 +169,7 @@ export const MODULES=[
   ['Course data',['course_link','course_page_needed','not_offered','not_on_site','no_page_first_run','conjoint_first_run','counsellor_report']],
   ['Entry requirements',['aer_review']],
   ['English',['course_english']],
-  ['Fees',['fee_check']],
+  ['Fees',['fee_check','locked_field_update']],
   ['Scholarships',['held_scholarship']],
   ['Providers',['website_needed','pages_not_found','too_few_pages','nothing_ready','central_to_approve','onboarding_failed','site_down','provider_departure']],
   ['Descriptions',['provider_description']]
