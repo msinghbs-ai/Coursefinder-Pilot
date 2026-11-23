@@ -2,7 +2,7 @@
 import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
-import { openLayer2, openLayer2Tab, openRetiredLayer3 } from './support/navigation.mjs'
+import { openLayer2, openLayer2Tab, openRetiredLayer3, openServiceDetails } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
@@ -15,8 +15,10 @@ test.describe('M2.4.4 A26-A28 operator UX @deployed',()=>{
     // v2.15.200: Administration opens Scrapers & fetchers; the Acquisition and Scheduling sub-tabs are retired
     // (scheduling is on Scheduled jobs). v2.15.300: Scrapers & fetchers is Models & services › Fetchers.
     await expect(page.locator('.m-title-wrap h1')).toContainText('Models & services',{timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(page.locator('.cf-page-tabs [role="tab"][aria-selected="true"]')).toHaveText('Fetchers')
-    await expect(page.locator('.l2p-provider-list')).toBeVisible({timeout:20_000})
+    // SS-020 step 3 (Decision 269, 3 Nov 2026): Fetchers is part of Services & limits; v2.16.12: its registry is in the Details folds (s1015)
+    await expect(page.locator('.cf-page-tabs [role="tab"][aria-selected="true"]')).toHaveText('Services & limits')
+    await openServiceDetails(page)
+    await expect(page.locator('.l2p-provider-list').first()).toBeVisible({timeout:20_000})
     await expect(page.getByRole('tab',{name:'Scheduling',exact:true})).toHaveCount(0)
     await expect(page.locator('main, .m-main').first()).not.toBeEmpty()
   }finally{await finish(testInfo,runtime)}})
