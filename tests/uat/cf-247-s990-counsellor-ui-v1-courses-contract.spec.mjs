@@ -57,3 +57,16 @@ test('s990 ui: Scholarships reads only counsellor_scholarships_list; Providers s
   expect(read('ProvidersView.jsx')).toContain('No partner contacts recorded for this provider');
   expect(read('GuideView.jsx')).not.toMatch(/v2\.\d+|\b\d{2,}[,\d]*\s+(courses|providers|scholarships)\b|reviewed for/i);
 });
+
+test('s990 follow-up: ui-v1 imports only its own two stylesheets and keeps saves on the server, not in browser storage', () => {
+  const dir = 'src/ui-v1'
+  const files = fs.readdirSync(dir).filter(f => /\.(jsx?|css)$/.test(f))
+  for (const f of files) {
+    const t = fs.readFileSync(`${dir}/${f}`, 'utf8')
+    for (const m of t.matchAll(/(?:import\s+(?:[^'"]*from\s+)?|@import\s+(?:url\()?)['"]([^'"]+\.css)['"]/g)) expect(['./tokens.css', './ui-kit.css'], `${f} imports ${m[1]}`).toContain(m[1])
+    expect(t, f).not.toMatch(/localStorage/)
+  }
+  const store = fs.readFileSync(`${dir}/saved-store.js`, 'utf8')
+  for (const fn of ['saved_courses_read_v1', 'saved_course_toggle_v1']) expect(store).toContain(fn)
+  expect(fs.readFileSync(`${dir}/ProvidersView.jsx`, 'utf8')).toContain('provider_partner_contacts_v1')
+})

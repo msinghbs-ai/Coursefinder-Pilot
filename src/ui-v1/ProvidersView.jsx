@@ -2,9 +2,9 @@
 // (rank 2 may call them); no operator read (IR-021). The Study Square representation fields are not held yet (S2-RM-Design), so every provider
 // shows Not recorded until the additive v3 columns arrive: it is never shown as Not Represented.
 import { useEffect, useState } from 'react'
-import { api } from '../lib/supabase.js'
+import { api, supabase } from '../lib/supabase.js'
 import { useLookups, countryName } from '../lib/lookups.js'
-import { humanise } from './format.js'
+import { humanise, fdate } from './format.js'
 import { Locs } from './CoursesView.jsx'
 
 export const REP = { represented: ['Represented', 'success'], direct: ['Direct', 'info'], not_represented: ['Not Represented', 'neutral'] }
@@ -57,6 +57,8 @@ export default function ProvidersView() {
 function ProviderDrawer({ p, onClose }) {
   const [d, setD] = useState(null), [tab, setTab] = useState('overview'), [err, setErr] = useState('')
   useEffect(() => { let on = true; api.providerDetail(p.id).then(x => on && setD(x || {})).catch(() => on && setErr('Provider details could not be loaded.')); return () => { on = false } }, [p.id])
+  const [pc, setPc] = useState(null), [pcErr, setPcErr] = useState('')
+  useEffect(() => { if (tab !== 'contacts' || pc) return; let on = true; supabase.rpc('provider_partner_contacts_v1', { p_provider_id: p.id, p_status: 'active' }).then(({ data, error }) => { if (!on) return; if (error) setPcErr('Partner contacts could not be loaded.'); else setPc(data || {}) }); return () => { on = false } }, [tab, p.id])
   const camps = d?.campuses_page?.items || d?.campuses_page?.rows || []
   const points = d?.international_contacts?.items || (Array.isArray(d?.international_contacts) ? d.international_contacts : [])
   return <><div className="ui-backdrop" onClick={onClose} /><aside className="ui-drawer" role="dialog" aria-label={p.display_name || p.canonical_name}>
@@ -70,7 +72,9 @@ function ProviderDrawer({ p, onClose }) {
         {(d.website || p.website) && <><dt>Website</dt><dd><a href={d.website || p.website} target="_blank" rel="noreferrer">Provider website</a></dd></>}</dl>}
       {d && tab === 'contacts' && <>
         <section className="ui-section-head"><h3>Study Square partner contacts</h3></section>
-        <div className="ui-emptystate"><p className="ui-emptystate-title">No partner contacts recorded for this provider</p><p className="ui-note">Partner contacts come from Study Square's own partner records. None are held for this provider yet.</p></div>
+        {pcErr && <div className="ui-alert" role="alert">{pcErr}</div>}{!pc && !pcErr && <p className="ui-note">Loading…</p>}
+        {pc && (pc.rows || []).length > 0 && <ul className="ui-list" data-partner-contacts>{pc.rows.map(c => <li key={c.contact_id}><strong>{c.full_name || c.team_name || c.job_title || 'Contact'}</strong>{[c.job_title, c.functional_area, c.region_scope, c.countries_or_markets].filter(Boolean).map(x => ' · ' + x).join('')}<br />{[c.work_email, c.work_phone, c.staff_location].filter(Boolean).join(' · ') || 'No contact details recorded'}{c.verified_on ? ' · verified ' + fdate(c.verified_on) : ''}</li>)}</ul>}
+        {pc && (pc.rows || []).length === 0 && <div className="ui-emptystate"><p className="ui-emptystate-title">No partner contacts recorded for this provider</p><p className="ui-note">Partner contacts come from Study Square's own partner records.{pc.inactive_count > 0 ? ` ${pc.inactive_count} inactive contact${pc.inactive_count === 1 ? ' is' : 's are'} held.` : ' None are held for this provider yet.'}</p></div>}
         {points.length > 0 && <><section className="ui-section-head"><h3>Public contact points</h3></section><ul className="ui-list">{points.map((c, i) => <li key={i}>{[c.role || c.label || c.kind, c.value || c.email || c.phone].filter(Boolean).join(' · ')}</li>)}</ul></>}</>}
     </div></aside></>
 }
