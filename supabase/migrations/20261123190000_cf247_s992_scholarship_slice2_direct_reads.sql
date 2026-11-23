@@ -17,8 +17,9 @@
 --    scholarship lanes (security.scholarship_ai_fire_v1, public.svc_scholarship_ai_next, public.svc_scholarship_recheck_next). Firecrawl stays
 --    governed by public.svc_fc_spend: with the daily total at 0 every fallback is refused, so the change is $0.
 -- 2. The two Charles Darwin international pages become listing sources (source 'manual', the same row the Add listing page action writes,
---    checked to be on the provider's own website), read now.
--- 3. Lincoln's international listing source (#10) is read now (the Read now action), so it is read with the direct-first reader.
+--    checked to be on the provider's own website), read first: next_read_at null, which the listing picker takes first (order next_read_at nulls
+--    first); 367 sources are due and the lane reads about 36 pages an hour, so a source set to now() would wait about 10 hours.
+-- 3. Lincoln's international listing source (#10) is read first the same way, so it is read with the direct-first reader.
 -- G1: no job. G2: no new value (existing setting). G3: no consumer object (75/48 before and after). Manual locks untouched. $0 Firecrawl; AI only
 -- through the existing scheduled extraction within its ceiling. Nothing dropped or removed.
 -- Replaces: the scholarship stored-first rule while the Firecrawl lane is held (now direct reads); the scraper-first listing read (worker v1.0.35).
@@ -52,14 +53,14 @@ begin
   foreach v_url in array array['https://www.cdu.edu.au/international/how-apply/scholarships', 'https://www.cdu.edu.au/international/scholarships'] loop
     if not security.url_on_provider_sites(v_url, v_cdu) then raise exception 'guard: % is not on the provider''s own website', v_url; end if;
     insert into pipeline.scholarship_listing_pages(provider_id, url, url_norm, source, active, status, next_read_at, added_by)
-    values (v_cdu, v_url, security.scholarship_url_norm(v_url), 'manual', true, 'waiting', now(), security.system_actor_id())
-    on conflict (provider_id, url_norm) do update set active = true, next_read_at = now(),
+    values (v_cdu, v_url, security.scholarship_url_norm(v_url), 'manual', true, 'waiting', null, security.system_actor_id())
+    on conflict (provider_id, url_norm) do update set active = true, next_read_at = null,
        source = case when pipeline.scholarship_listing_pages.source = 'suggested' then 'manual' else pipeline.scholarship_listing_pages.source end,
        status = case when pipeline.scholarship_listing_pages.status = 'suggested' then 'waiting' else pipeline.scholarship_listing_pages.status end;
     insert into pipeline.admin_control_events (area, action, target, detail, actor)
     values ('scholarship_coverage', 'add_listing', v_cdu::text, jsonb_build_object('url', v_url, 'reason', 'Platform Admin 23 Nov 2026 17:49: Charles Darwin international awards (s992)', 'migration', '20261123190000'), security.system_actor_id());
   end loop;
-  update pipeline.scholarship_listing_pages set next_read_at = now()
+  update pipeline.scholarship_listing_pages set next_read_at = null
    where provider_id = v_lin and url_norm = security.scholarship_url_norm('https://www.lincoln.ac.nz/study/scholarships/international-scholarships') and active;
   insert into pipeline.admin_control_events (area, action, target, detail, actor)
   values ('scholarship_coverage', 'read_now', v_lin::text, jsonb_build_object('url', 'https://www.lincoln.ac.nz/study/scholarships/international-scholarships', 'reason', 'Platform Admin 23 Nov 2026 17:49: Lincoln international awards (s992)', 'migration', '20261123190000'), security.system_actor_id());
