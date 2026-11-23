@@ -73,7 +73,7 @@ begin
                  'open_date', pg.application_open_date, 'close_date', pg.application_close_date, 'source_url', pg.source_url,
                  'nationalities', to_jsonb(pg.nationalities), 'status_key', pg.status_key,
                  'status', case pg.status_key when 'Opens' then 'Opens ' || to_char(pg.application_open_date, 'DD Mon YYYY') else pg.status_key end)
-               order by pg.provider_name nulls last, pg.name, pg.id), '[]'::jsonb) from pg));
+               order by pg.provider_name nulls last, pg.name, pg.id), '[]'::jsonb) from pg)));
 end $function$;
 
 create or replace function public.admin_integrations_status()
