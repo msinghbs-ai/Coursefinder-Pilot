@@ -52,7 +52,8 @@ export async function openLayer2(page) {
 // v2.16.12: each service card on Services & limits keeps its lists (the acquisition provider registry among them) in a closed Details fold
 export async function openServiceDetails(page){
   await page.locator('[data-services-summary]').first().waitFor().catch(()=>{})
-  const folds=page.locator('details[data-fold^="service-details:"]:not([open]) > summary')
+  // s1016: and the Other page services fold, which holds the registered providers that have no card of their own (Scrape.do among them)
+  const folds=page.locator('details[data-fold^="service-details:"]:not([open]) > summary, details[data-fold="other-services"]:not([open]) > summary')
   for(let n=await folds.count();n>0;n=await folds.count())await folds.first().click()
 }
 
