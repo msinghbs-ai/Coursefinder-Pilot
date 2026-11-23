@@ -20,20 +20,21 @@ test.describe('CF-073 Administration Acquisition route regression @deployed',()=
       await page.goto(new URL('/#administration?section=layer2-providers',process.env.UAT_BASE_URL).toString())
 
       await expect(page.locator('.m-shell')).toBeVisible({timeout:45000})
-      await expect(page.locator('.l2p-shell')).toBeVisible({timeout:45000})
-      await expect(page.getByRole('heading',{name:'Acquisition providers',exact:true})).toBeVisible()
+      // v2.16.12 (15 Nov 2026): the old address opens Services & limits, where each service keeps its acquisition settings in its Details fold (s1013)
+      await expect(page.locator('[data-services-limits]')).toBeVisible({timeout:45000})
+      await expect(page.locator('[data-service-card="firecrawl"]')).toBeVisible()
       await expect(page.locator('.m-workspace-error')).toHaveCount(0)
       await expect(page.locator('.m-release-pill')).toContainText(`v${UI_VERSION}`)
       const rankLabel=(await page.locator('.m-role-pill').textContent())||''
       expect(rankLabel.trim()).not.toBe('')
 
       // v2.15.107 and v2.15.200: Administration is folded into Scrapers & fetchers, so the old Overview tab no longer exists.
-      // The direct address still renders the Acquisition providers screen. Leaving it by the menu and going Back recovers it.
+      // The direct address still renders (Services & limits since v2.16.12). Leaving it by the menu and going Back recovers it.
       await page.evaluate(()=>{location.hash='#dashboard'})
       await expect(page.locator('.m-shell')).toBeVisible()
       await page.goBack()
       await expect(page.locator('.m-shell')).toBeVisible({timeout:45000})
-      await expect(page.locator('.l2p-shell')).toBeVisible({timeout:45000})
+      await expect(page.locator('[data-services-limits]')).toBeVisible({timeout:45000})
       await expect(page.locator('.m-workspace-error')).toHaveCount(0)
       expect(pageErrors).toEqual([])
 

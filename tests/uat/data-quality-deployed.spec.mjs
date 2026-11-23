@@ -46,7 +46,8 @@ test.describe('StudySearch deployed Data Quality acceptance @deployed', () => {
       await expect(page.getByText(new RegExp(`^1–\\d+ of ${exceptionCount.toLocaleString('en-US')}$`))).toBeVisible()
       await milestoneScreenshot(page, testInfo, 'exceptions-page-1')
 
-      const next = page.locator('.dq-pager').getByRole('button', { name: /Next/i })
+      // s1013: the exceptions list's own pager (Field coverage below the filters has a second .dq-pager on this screen)
+      const next = page.locator('.dq-exceptions .dq-pager').getByRole('button', { name: /Next/i })
       await next.click()
       await expect(page.getByText(/^51–\d+ of \d+$/)).toBeVisible()
       await next.click()
