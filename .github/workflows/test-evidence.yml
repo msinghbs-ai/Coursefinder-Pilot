@@ -11,9 +11,12 @@
 # Nothing is tested differently: the project rules (@responsive on the phone project only), --grep-invert @deployed and retries come from
 # playwright.config.mjs and the unchanged command line; the bundle still checks the merged totals against `playwright test --list`.
 name: Test evidence
+# s1018 (Platform Admin 24 Nov 2026 06:15, UI-UX plan v1.2 section 6): no `labeled` trigger. A label (automerge, live-dry-run or any other)
+# never starts, cancels or adds a placeholder check to this workflow; a new push still cancels the older run (concurrency below). The label
+# full-suite-evidence keeps its meaning through .github/workflows/test-evidence-label.yml, which starts this workflow by workflow_dispatch.
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, labeled]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
       pr:

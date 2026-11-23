@@ -1,8 +1,35 @@
 # Guards: Provider Description autonomy mandate (4 November 2026), isolated development acceptance only.
 name: Provider description isolated acceptance
+# s1018 (Platform Admin 24 Nov 2026 06:15, UI-UX plan v1.2 section 6): the gate stays and runs when its inputs change: the replayed
+# migrations and fixtures, the provider-description worker, current provider-description migrations and prompts, its own specs and the
+# provider-description source. Every spec it runs is also in the full Test evidence suite on every pull request.
 on:
   pull_request:
     branches: [main]
+    paths:
+      - '.github/workflows/provider-description-integration.yml'
+      - 'supabase/functions/coverage-sweep/**'
+      - 'supabase/migrations-archive/**'
+      - 'supabase/migrations/*pdesc*'
+      - 'supabase/migrations/*provider_desc*'
+      - 'supabase/migrations/*provider_fill*'
+      - 'supabase/migrations/*description*'
+      - 'supabase/migrations/*prompt*'
+      - 'tests/fixtures/p1-provider-descriptions/**'
+      - 'tests/fixtures/pdesc-*/**'
+      - 'tests/fixtures/provider-description-autonomy/**'
+      - 'tests/uat/*pdesc*'
+      - 'tests/uat/*provider-description*'
+      - 'tests/uat/*provider-fill*'
+      - 'tests/uat/cf-247-s216-p1-provider-descriptions-contract.spec.mjs'
+      - 'tests/uat/cf-247-s528-calendar-edition-year-contract.spec.mjs'
+      - 'src/ProviderDescriptionPrompt.jsx'
+      - 'src/ProviderFillFields.jsx'
+      - 'src/provider-description-run-api.js'
+      - 'src/provider-fill-*'
+      - 'docs/platform/PROVIDER-DESCRIPTIONS-RUNBOOK.md'
+      - 'package.json'
+      - 'playwright.config.*'
   workflow_dispatch:
 permissions:
   contents: read

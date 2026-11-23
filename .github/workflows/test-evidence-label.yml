@@ -1,0 +1,27 @@
+# Guards: CI efficiency and gate integrity (Platform Admin 24 Nov 2026 06:15; UI-UX plan v1.2 section 6; s1018).
+# The label full-suite-evidence asks for the full Test evidence suite on a draft pull request. Test evidence no longer listens for labels (a
+# label used to cancel the evidence run in progress and leave skipped placeholder checks), so this workflow carries that one label: for
+# full-suite-evidence it starts Test evidence by workflow_dispatch with the pull request number; for any other label its only job is skipped
+# and Test evidence is not touched.
+name: Test evidence label
+on:
+  pull_request:
+    types: [labeled]
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: test-evidence-label-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+jobs:
+  full-suite-request:
+    if: github.event.label.name == 'full-suite-evidence' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Start Test evidence for this pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: gh workflow run test-evidence.yml --repo "$GITHUB_REPOSITORY" --ref "$HEAD_REF" -f pr="$PR"
