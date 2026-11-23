@@ -63,6 +63,8 @@ begin
                    and i.claimed_at is null and i.assigned_to is null
                    and not exists (select 1 from pipeline.aer_machine_admissions a where a.review_item_id = i.id and a.rule = 'aer-course-partial-v1' and a.outcome = 'admitted')
                    and not exists (select 1 from catalogue.course_entry_requirements a where a.course_id = i.entity_id and a.status = 'active')
+                   -- only reads the course machine rule last stopped at the completeness gate (job aer-machine-admission keeps this current)
+                   and (select a.reason_code from pipeline.aer_machine_admissions a where a.review_item_id = i.id order by a.created_at desc limit 1) = 'gate_incomplete'
                  order by i.created_at, i.id limit v_batch
       loop
         exit when clock_timestamp() - v_t0 > interval '60 seconds';  -- fixed: fire guard, the tick stays inside the job's statement limit
