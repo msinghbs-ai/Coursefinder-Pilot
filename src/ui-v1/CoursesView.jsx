@@ -43,7 +43,7 @@ export default function CoursesView({ saved, userId }) {
     const t = setTimeout(() => {
       setBusy(true); setErr('')
       api.coursePage({ query: q.trim(), country, level, limit: 50, offset, lifecycle: 'active' })
-        .then(p => on && setPage({ items: p?.items || [], total: Number(p?.total || 0), limit: Number(p?.limit || 50) }))
+        .then(p => { if (!on) return; setPage({ items: p?.items || [], total: Number(p?.total || 0), limit: Number(p?.limit || 50) }); saved.sync(p?.items) })
         .catch(() => on && setErr('Courses could not be loaded. Try again in a moment.'))
         .finally(() => on && setBusy(false))
     }, q ? 300 : 0)
@@ -51,6 +51,7 @@ export default function CoursesView({ saved, userId }) {
   }, [q, country, level, offset, view])
 
   const savedRows = saved.list()
+  const saveErr = saved.error
   const rows = view === 'saved' ? savedRows.map(s => ({ id: s.id, display_title: s.title, provider_name: s.provider, display_code: { code: s.code }, cities: s.cities, level_name: s.level, delivery_mode: s.delivery, duration_unit: s.du, duration_value: s.dv, fee_amount: s.fee, fee_currency: s.cur, field_states: s.field_states })) : page.items
   const toggleCmp = id => setCmp(c => c.includes(id) ? c.filter(x => x !== id) : c.length >= COMPARE_MAX ? c : [...c, id])
   const levels = useMemo(() => (lk.study_levels || []).map(l => [l.code, l.name || l.label || humanise(l.code)]), [lk])
@@ -72,6 +73,7 @@ export default function CoursesView({ saved, userId }) {
         {view === 'saved' ? <span><strong>{savedRows.length}</strong> saved courses · {cmp.length} of {COMPARE_MAX} selected to compare</span> : <span><strong>{page.total.toLocaleString('en-AU')}</strong> courses{busy ? ' · loading…' : ''}</span>}
       </div>
       {err && <div className="ui-alert" role="alert">{err}</div>}
+      {saveErr && <div className="ui-alert" role="alert" data-save-error>{saveErr} <button type="button" className="ui-btn ui-btn-sm" onClick={() => saved.clearError()}>Dismiss</button></div>}
       <table className="ui-grid" data-no-resize><thead><tr><th>Course</th><th>Location</th><th>Level</th><th>Delivery</th><th>Duration</th><th className="ui-num">Tuition</th><th>Completeness</th></tr></thead>
         <tbody>{rows.length ? rows.map(r => { const rd = readiness(r), on = cmp.includes(r.id); return <tr key={r.id}>
           <td data-primary><div className="ui-cell-head"><div><div className="ui-cell-title"><button type="button" className="ui-btn ui-btn-sm" onClick={() => setDetailRow(r)}>{r.display_title || r.canonical_title}</button></div><div className="ui-cell-sub">{r.provider_name}{(r.display_code?.code || r.course_code) ? ' · ' + (r.display_code?.code || r.course_code) : ''}</div></div>

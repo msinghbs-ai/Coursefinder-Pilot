@@ -8,6 +8,17 @@ const OPERATOR_TEXT = ['Layer 4 Review', 'Dry-Lane', 'AER & Coverage', 'Settings
 
 async function counsellor(page) {
   await mockAdmin(page, { rank: 2, role: 'counsellor' });
+  // s997 (live): saved courses and partner contacts are server reads; this mock keeps the user's saved set the way the server does
+  page.saved = new Map(); page.savedRefuse = false; page.rpcs = [];
+  const json = (r, data, status = 200) => r.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
+  await page.route('https://example.supabase.co/rest/v1/rpc/saved_courses_read_v1', r => { page.rpcs.push('saved_courses_read_v1'); return json(r, { count: page.saved.size, max: 500, items: [...page.saved.keys()].map(id => ({ course_id: id, saved_at: page.saved.get(id), title: 'Saved ' + id, provider_name: 'Test University' })) }); });
+  await page.route('https://example.supabase.co/rest/v1/rpc/saved_course_toggle_v1', r => {
+    const b = r.request().postDataJSON() || {}; page.rpcs.push('saved_course_toggle_v1');
+    if (page.savedRefuse) return json(r, { message: 'INVALID_INPUT: you can keep at most 500 saved courses; remove one first' }, 400);
+    if (b.p_saved) page.saved.set(b.p_course_id, new Date().toISOString()); else page.saved.delete(b.p_course_id);
+    return json(r, { course_id: b.p_course_id, is_saved: !!b.p_saved, saved_at: page.saved.get(b.p_course_id) || null, saved_count: page.saved.size, max: 500 });
+  });
+  await page.route('https://example.supabase.co/rest/v1/rpc/provider_partner_contacts_v1', r => json(r, { provider_id: 'p1', status: 'active', active_count: 1, inactive_count: 0, rows: [{ contact_id: 'c1', record_type: 'person', full_name: 'Alex Partner', job_title: 'Partnerships Manager', work_email: 'alex@example.edu.au', verified_on: '2026-10-01', lifecycle_status: 'active' }] }));
   await page.route('https://example.supabase.co/rest/v1/rpc/counsellor_scholarships_list', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ total: 2, page_rows: 50, offset: 0, today: '2026-11-23', status_counts: { Open: 1, Closed: 1 }, rows: [
     { id: 's1', name: 'International Excellence Scholarship', provider_name: 'Test University', type: 'provider_scholarship', value_text: '20% off tuition', open_date: '2026-09-01', close_date: '2026-12-31', status_key: 'Open', status: 'Open', nationalities: [] },
     { id: 's2', name: 'Placement Bursary', provider_name: 'Test University', type: 'provider_scholarship', value_text: '$2,000', open_date: '2026-06-01', close_date: '2026-11-22', status_key: 'Closed', status: 'Closed', nationalities: [] }] }) }));
@@ -66,6 +77,7 @@ test('scholarships show the database status; provider Contacts shows the partner
   await expect(page.locator('.ui-grid tbody tr')).toHaveCount(2);
   await expect(page.locator('.ui-grid tbody tr').nth(0).locator('.ui-badge')).toHaveText('Open');
   await expect(page.locator('.ui-grid tbody tr').nth(1).locator('.ui-badge')).toHaveText('Closed');
+  await page.route('https://example.supabase.co/rest/v1/rpc/provider_partner_contacts_v1', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ provider_id: 'p1', status: 'active', active_count: 0, inactive_count: 0, rows: [] }) }));
   await providers(page);
   await page.goto('/#ui-v1/providers');
   await expect(page.locator('.ui-grid tbody tr').first().locator('[data-rep="not_recorded"]')).toBeVisible();
@@ -108,4 +120,28 @@ test('opening a course shows its detail drawer with fees, requirements and a Sav
   await expect(drawer.getByRole('button', { name: /Saved/ })).toBeVisible();
   expect((page.readCalls || []).map(c => c.p_operation).filter(o => OPERATOR_READS.includes(o))).toEqual([]);
   expect(await overflow(page)).toBe(0);
+});
+
+test('saves go to the server (saved_course_toggle_v1) and the list is read from it; a refused save is put back with the server\'s words; no browser storage', async ({ page }) => {
+  await counsellor(page);
+  await page.goto('/#ui-v1/courses');
+  await expect(page.locator('.ui-grid tbody tr').first()).toBeVisible();
+  await page.locator('.ui-save').first().click();
+  await expect.poll(() => page.rpcs.filter(x => x === 'saved_course_toggle_v1').length).toBe(1);
+  expect(page.saved.size).toBe(1);
+  await expect(page.locator('.ui-save[aria-pressed="true"]')).toHaveCount(1);
+  expect(await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('ss.saved_courses')))).toEqual([]);
+  page.savedRefuse = true;
+  await page.locator('.ui-save[aria-pressed="false"]').first().click();
+  await expect(page.locator('[data-save-error]')).toContainText('at most 500 saved courses');
+  await expect(page.locator('.ui-save[aria-pressed="true"]')).toHaveCount(1);
+});
+
+test('the provider Contacts tab reads provider_partner_contacts_v1 and lists the people', async ({ page }) => {
+  await counsellor(page); await providers(page);
+  await page.goto('/#ui-v1/providers');
+  await page.locator('.ui-grid tbody tr').first().locator('button, a').first().click();
+  await page.getByRole('tab', { name: 'Contacts' }).click();
+  await expect(page.locator('[data-partner-contacts]')).toContainText('Alex Partner');
+  await expect(page.locator('[data-partner-contacts]')).toContainText('alex@example.edu.au');
 });
