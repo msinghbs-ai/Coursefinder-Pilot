@@ -3,7 +3,8 @@
 // reports for each what a counsellor would see wrong: no tuition fee for a year in the gate window (gates.fee_year_ahead), PTE or TOEFL iBT
 // missing or without four bands where IELTS is held, no campus or a campus of another provider, and course-linked scholarship GPA
 // thresholds with no stated scale. Each test course is also read through the Website API v3 course read (public.website_v3_course), so the
-// report says whether v3 serves it. Nothing is written. Exit 0 with the report; --strict exits 1 when a test course has a gap.
+// report says whether v3 serves it. The website looks a course up by its stable key (or code), never by the internal id; course
+// publication_status is not the serving switch (44,724 of 44,734 courses carry 'unpublished', 24 Nov 2026), the search documents are. Nothing is written. Exit 0 with the report; --strict exits 1 when a test course has a gap.
 // Usage: node scripts/ci/validate-golden-courses.mjs [--set feedback-4] [--json out/golden.json] [--strict]
 import fs from 'node:fs'
 import { need, read, lit, summary } from '../boost-live-lib.mjs'
@@ -18,12 +19,13 @@ const arr = (xs) => `array[${xs.map((x) => lit(x.id)).join(',')}]::uuid[]`
 // One row per course: the checks the pre-admission gates (s1020, s1021) apply to new admissions, applied to what is held now.
 export const COURSE_SQL = (where) => `
 with w as (select extract(year from now() at time zone 'Australia/Melbourne')::int y, security.pipeline_num_v1('gates.fee_year_ahead', 1)::int ahead),
-c as (select c.id, c.provider_id, c.canonical_title, c.publication_status from catalogue.courses c where ${where}),
+c as (select c.id, c.provider_id, c.canonical_title, c.stable_key from catalogue.courses c where ${where}),
 e as (select r.course_id, t.code, r.overall_score,
              (r.component_scores ? 'minimum_each' or (select count(*) from jsonb_object_keys(coalesce(r.component_scores, '{}'::jsonb)) k where k in ('listening', 'reading', 'writing', 'speaking')) = 4) four_bands
         from catalogue.course_english_requirements r join ref.english_tests t on t.id = r.english_test_id
        where r.status = 'active' and r.course_id in (select id from c) and t.code in ('IELTS', 'PTE', 'TOEFL_IBT'))
-select c.id, c.provider_id, c.canonical_title title, c.publication_status,
+select c.id, c.provider_id, c.canonical_title title, c.stable_key,
+  exists (select 1 from search.course_documents d where d.course_id = c.id) served,
   (select coalesce(array_agg(distinct f.fee_year order by f.fee_year), '{}') from catalogue.course_fees f
     where f.course_id = c.id and f.status = 'active' and f.fee_type = 'provider_current_tuition') fee_years,
   exists (select 1 from catalogue.course_fees f, w where f.course_id = c.id and f.status = 'active' and f.fee_type = 'provider_current_tuition'
@@ -55,10 +57,10 @@ export function gaps(r) {
 
 // The Management API's read-only role may not execute the v3 read (permission denied, 24 Nov 2026), so that one call runs as the API's own
 // role inside a transaction set read only: the database refuses any write it might attempt.
-async function readV3(id) {
+async function readV3(key) {
   const r = await fetch(`https://api.supabase.com/v1/projects/${process.env.REF}/database/query`, { method: 'POST',
     headers: { authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ query: `set transaction read only; select public.website_v3_course(${lit(id)}) v` }) })
+    body: JSON.stringify({ query: `set transaction read only; select public.website_v3_course(${lit(key)}) v` }) })
   const text = await r.text()
   if (!r.ok) throw Error(`v3 read failed (HTTP ${r.status}): ${text.slice(0, 400)}`)
   const rows = JSON.parse(text), v = rows[0]?.v
@@ -73,7 +75,8 @@ async function main() {
   const all = await read(COURSE_SQL(`c.provider_id = any(${arr(fx.providers)})`))
   const served = {}
   for (const c of fx.courses) {
-    const v = await readV3(c.id)
+    const r = courses.find((x) => x.id === c.id)
+    const v = r?.stable_key ? await readV3(r.stable_key) : { error: { code: 'NO_STABLE_KEY' } }
     served[c.id] = v?.error ? `not served (${v.error.code})` : 'served'
   }
   const lines = [`## Golden courses: ${fx.benchmark}`, '', '### Test courses', '', '| Course | Provider record | Website API v3 | Gaps |', '|---|---|---|---|']
@@ -84,16 +87,16 @@ async function main() {
     const g = gaps(r); if (g.length) failing++
     lines.push(`| ${f.label}: ${r.title} | ${fx.providers.find((p) => p.id === r.provider_id)?.name || r.provider_id} | ${served[f.id]} | ${g.join('; ') || 'none'} |`)
   }
-  lines.push('', '### Providers (every course held)', '', '| Provider | Courses | Published | Fee year in window | PTE and TOEFL with bands (IELTS courses) | Campus on its own list | Scholarship GPA with scale |', '|---|---|---|---|---|---|---|')
+  lines.push('', '### Providers (every course held)', '', '| Provider | Courses | Served by the website API | Fee year in window | PTE and TOEFL with bands (IELTS courses) | Campus on its own list | Scholarship GPA with scale |', '|---|---|---|---|---|---|---|')
   const byP = []
   for (const p of fx.providers) {
     const rs = all.filter((x) => x.provider_id === p.id), ie = rs.filter((x) => x.ielts)
     const gpa = rs.reduce((a, x) => a + x.gpa, 0), gs = rs.reduce((a, x) => a + x.gpa_scaled, 0)
-    const row = { provider_id: p.id, name: p.name, courses: rs.length, published: rs.filter((x) => x.publication_status === 'published').length,
+    const row = { provider_id: p.id, name: p.name, courses: rs.length, served: rs.filter((x) => x.served).length,
       fee_ok: rs.filter((x) => x.fee_ok).length, ielts: ie.length, elr_ok: ie.filter((x) => x.pte_ok && x.toefl_ok).length,
       campus_ok: rs.filter((x) => x.campuses > 0 && x.campuses_other === 0).length, gpa, gpa_scaled: gs }
     byP.push(row)
-    lines.push(`| ${p.name} | ${row.courses} | ${row.published} | ${row.fee_ok} (${pct(row.fee_ok, row.courses)}) | ${row.elr_ok} of ${row.ielts} (${pct(row.elr_ok, row.ielts)}) | ${row.campus_ok} (${pct(row.campus_ok, row.courses)}) | ${gs} of ${gpa} (${pct(gs, gpa)}) |`)
+    lines.push(`| ${p.name} | ${row.courses} | ${row.served} (${pct(row.served, row.courses)}) | ${row.fee_ok} (${pct(row.fee_ok, row.courses)}) | ${row.elr_ok} of ${row.ielts} (${pct(row.elr_ok, row.ielts)}) | ${row.campus_ok} (${pct(row.campus_ok, row.courses)}) | ${gs} of ${gpa} (${pct(gs, gpa)}) |`)
   }
   lines.push('', `Test courses with a gap: ${failing} of ${fx.courses.length}. Read-only; nothing was changed.`)
   await summary(lines.join('\n'))
