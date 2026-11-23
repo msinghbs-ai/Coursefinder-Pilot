@@ -13,7 +13,7 @@
 -- What changes (no table, job or setting; v2, Zoho v2 and every function of the consumer API unchanged):
 --   1. New security.entry_resolve_v3(course, country): security.entry_resolve_v1's answer, except that where it is step 5 (contact the provider),
 --      the course's own active rows of kind minimum_grade, prior_qualification or subject_prerequisite for international or all applicants, with
---      a quote and evidence, for this country or any country, are returned as rule 1 (course_override: "a course with its own international
+--      a quote and evidence, for this country or any country (a row whose stated minimum is an age is left out: 1,119 such rows read live), are returned as rule 1 (course_override: "a course with its own international
 --      rule"), in the v1 row shape. No enum value or field is added; any non-step-5 answer is returned unchanged.
 --   2. public.website_v3_course(text, text) uses it only where the v2 answer is step 5; zoho_v3_course copies the Website v3 entry, so Zoho v3
 --      follows. Website API v3 is open to additions (Decision 277); this is a data correction, not a shape change.
@@ -54,13 +54,14 @@ begin
     into v_rows from catalogue.course_entry_requirements x left join ref.countries k on k.id = x.country_id
    where x.course_id = p_course and x.status = 'active' and x.kind in ('minimum_grade', 'prior_qualification', 'subject_prerequisite')
      and x.audience in ('international', 'all') and x.evidence_id is not null and nullif(btrim(x.quote), '') is not null
+     and not (x.min_entry_score is not null and (coalesce(x.min_entry_score_basis, '') ~* '(\mage\M|years? (old|of age)|years (or|and) (over|older|above))' or x.quote ~* '(minimum age|years of age|years old)'))  -- an age limit is not an academic minimum
      and (x.country_id is null or k.iso_alpha2 = v_cc);
   if v_rows is null then return r; end if;
   return jsonb_build_object('country', v_cc, 'step', 1, 'rule', 'course_override', 'rows', v_rows,
     'outcome', case when exists (select 1 from jsonb_array_elements(v_rows) z where not (z->>'case_by_case')::boolean) then 'minimum_published' else 'case_by_case' end);
 end $f$;
 revoke all on function security.entry_resolve_v3(uuid, text) from public, anon, authenticated;
-comment on function security.entry_resolve_v3(uuid, text) is 'CF-247 s1000: security.entry_resolve_v1''s answer; where it is step 5, the course''s own active, quoted, evidence-backed academic rows (minimum_grade, prior_qualification, subject_prerequisite; international or all; this country or any) as rule 1. Used by Website and Zoho API v3 and the Admin resolve views; v2 keeps v1 (G3).';
+comment on function security.entry_resolve_v3(uuid, text) is 'CF-247 s1000: security.entry_resolve_v1''s answer; where it is step 5, the course''s own active, quoted, evidence-backed academic rows (an age limit left out) (minimum_grade, prior_qualification, subject_prerequisite; international or all; this country or any) as rule 1. Used by Website and Zoho API v3 and the Admin resolve views; v2 keeps v1 (G3).';
 
 do $e$
 declare r record; v_def text; v_src text; v_n int;
@@ -70,7 +71,8 @@ begin
   union  -- s1000 (23 Nov 2026): rule 1 of the v3 resolver, the course page's own evidence-backed academic rows
   select r.course_id from catalogue.course_entry_requirements r
    where r.status = 'active' and r.kind in ('minimum_grade', 'prior_qualification', 'subject_prerequisite') and r.audience in ('international', 'all')
-     and r.evidence_id is not null and nullif(btrim(r.quote), '') is not null$n1$),
+     and r.evidence_id is not null and nullif(btrim(r.quote), '') is not null
+     and not (r.min_entry_score is not null and (coalesce(r.min_entry_score_basis, '') ~* '(\mage\M|years? (old|of age)|years (or|and) (over|older|above))' or r.quote ~* '(minimum age|years of age|years old)'))$n1$),
   (2, 'security.course_coverage_build_v1()', '97f8eee0bd30d093070ea242fe710ebc', $o2$   where r.status = 'active' and r.kind = 'override' and r.audience in ('international', 'all') and (r.min_grade is not null or r.min_entry_score is not null)
      and r.course_id in (select course_id from _c);$o2$, $n2$   where r.status = 'active' and r.kind = 'override' and r.audience in ('international', 'all') and (r.min_grade is not null or r.min_entry_score is not null)
      and r.course_id in (select course_id from _c)
@@ -78,6 +80,7 @@ begin
   select r.course_id from catalogue.course_entry_requirements r
    where r.status = 'active' and r.kind in ('minimum_grade', 'prior_qualification', 'subject_prerequisite') and r.audience in ('international', 'all')
      and r.evidence_id is not null and nullif(btrim(r.quote), '') is not null
+     and not (r.min_entry_score is not null and (coalesce(r.min_entry_score_basis, '') ~* '(\mage\M|years? (old|of age)|years (or|and) (over|older|above))' or r.quote ~* '(minimum age|years of age|years old)'))
      and r.course_id in (select course_id from _c);$n2$),
   (3, 'public.website_v3_course(text,text)', '473289a0a58b4a37e951d54f6a99013d', $o3$declare v jsonb := public.website_v2_course(p_identifier, p_edu_country); v_course uuid; v_provider uuid; v_cc text := upper(btrim(coalesce(p_edu_country, '')));$o3$, $n3$declare v jsonb := public.website_v2_course(p_identifier, p_edu_country); v_course uuid; v_provider uuid; v_cc text := upper(btrim(coalesce(p_edu_country, ''))); v_res jsonb;$n3$),
   (4, 'public.website_v3_course(text,text)', null, $o4$  if v ? 'item' then v := jsonb_set(v, '{item}', public.website_v3_course_item_r28(v->'item')); end if;
