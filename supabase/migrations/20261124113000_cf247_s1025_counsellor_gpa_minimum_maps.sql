@@ -60,7 +60,7 @@ begin
 end $r$;
 
 do $post$
-declare v_api jsonb := security.consumer_api_check_v1(); d text := pg_get_functiondef('security.admin_course_page_fast_base(jsonb)'::regprocedure);
+declare v_api jsonb := security.consumer_api_check_v1(); d text := pg_get_functiondef('security.admin_course_page_fast_base(jsonb)'::regprocedure); m jsonb := security.gpa_min_maps_v1('IN', null);
 begin
   if jsonb_array_length(coalesce(v_api->'drift', '[]'::jsonb)) <> 0 or (v_api->>'functions')::int <> 75 or (v_api->>'relations')::int <> 48 then
     raise exception 'post-check: the consumer API moved: %', v_api;
@@ -69,10 +69,10 @@ begin
   if (select count(*) from cron.job where active) <> (select n from s1025_cron) then raise exception 'post-check: the number of active cron jobs changed'; end if;
   if d ~ 'course_gpa_min_percent_v1' or d !~ 'v_gpa_maps' then raise exception 'post-check: the course list still calls the per-course helper'; end if;
   -- the maps give the same minimum as the per-course function for every course that holds one (India)
-  if exists (select 1 from catalogue.courses c, lateral (select security.gpa_min_maps_v1('IN', null) m) x
+  if exists (select 1 from catalogue.courses c
               where c.lifecycle_status = 'active'
-                and security.course_gpa_min_percent_v1(c.id, c.provider_id, 'IN', null) is distinct from coalesce((x.m->'course'->>c.id::text)::numeric, (x.m->'provider'->>c.provider_id::text)::numeric)
-                and (c.id::text in (select jsonb_object_keys(x.m->'course')) or c.provider_id::text in (select jsonb_object_keys(x.m->'provider')))) then
+                and (m->'course' ? c.id::text or m->'provider' ? c.provider_id::text)
+                and security.course_gpa_min_percent_v1(c.id, c.provider_id, 'IN', null) is distinct from coalesce((m->'course'->>c.id::text)::numeric, (m->'provider'->>c.provider_id::text)::numeric)) then
     raise exception 'post-check: the maps and the per-course minimum disagree';
   end if;
   if has_function_privilege('anon', 'security.gpa_min_maps_v1(text,text)', 'execute') then raise exception 'post-check: anon can call the maps helper'; end if;
