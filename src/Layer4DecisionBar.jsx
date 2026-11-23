@@ -21,7 +21,7 @@ export default function Layer4DecisionBar({kind,choices,rank,open,needs,gated,on
   const btn=(c,which)=>{if(!c||hidden(c))return null;const low=rank<needs(c),stop=gated(c)
     return <button key={c.key} type="button" className={`l4d-btn l4d-${which}${open?.key===c.key?' on':''}${c.link?' link':''} role-${c.role||'primary'}`} data-l4-choice={c.key} data-l4-decision={which} data-l4-role={c.role}
       disabled={low||stop} title={low?`Needs ${roleName(needs(c))} (rank ${needs(c)}) or above`:stop?'Held: this read is incomplete (see above)':c.returns}
-      onClick={()=>onChoose(c)}><span>{DECISION_LABEL[which]}</span><small>{c.label}</small>{c.link&&<ArrowRight size={12}/>}</button>}
+      onClick={()=>onChoose(c)}><span>{c.key==='approve_keep_lock'?'Yes (Approve & Keep Lock)':DECISION_LABEL[which]}</span><small>{c.label}</small>{c.link&&<ArrowRight size={12}/>}</button>}
   const rest=t.more.filter(c=>!hidden(c))
   return <div className="l4d" data-l4-decisions>
     <div className="l4i-choices l4i-bar l4d-bar" data-l4-bar>
