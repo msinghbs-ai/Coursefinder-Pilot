@@ -1,4 +1,4 @@
--- CF-247 s985 (session S2-INT; Platform Admin 23 Nov 2026 13:02 AEDT, F-INT exact intake dates, objective: repair the source-to-date path): an intake whose course
+-- CF-247 s986 (session S2-INT; Platform Admin 23 Nov 2026 13:02 AEDT, F-INT exact intake dates, objective: repair the source-to-date path): an intake whose course
 -- page names several study periods takes the next start of the period that starts in the intake's month, for every university, when the page itself states that month.
 --
 -- Found (live read-backs 23 Nov 2026, rolled back): security.intake_dates_plan_v3 holds an intake with "the named period starts sooner in another month" when ANY
@@ -31,8 +31,8 @@ begin
     raise exception 'guard: the consumer API is not at its baseline before this change: %', v;
   end if;
 end $g$;
-create temp table s985_locks on commit drop as select count(*) n from pipeline.manual_locks;
-create temp table s985_cron on commit drop as select count(*) n from cron.job where active;
+create temp table s986_locks on commit drop as select count(*) n from pipeline.manual_locks;
+create temp table s986_cron on commit drop as select count(*) n from cron.job where active;
 
 create or replace function pg_temp.edit_counted(p_sig text, p_before text, p_after text, p_olds text[], p_news text[], p_counts int[]) returns text language plpgsql as $f$
 declare v_def text := pg_get_functiondef(p_sig::regprocedure); v_src text := (select p.prosrc from pg_proc p where p.oid = p_sig::regprocedure); v_c int; i int;
@@ -61,14 +61,14 @@ array[$o1$v_raw text; v_pq text; v_named text[]; v_named_all text[]; v_spec text
       $o5$    -- §14 item 4: an offering the course page ties to other years is never rolled into the next year's start
     if v_start is null and r.provider_id = any (v_next) and v_year > extract(year from v_today)::int$o5$],
 array[$n1$v_raw text; v_pq text; v_named text[]; v_named_all text[]; v_spec text; v_generic boolean := false; v_rescued boolean := false; v_narrow date;$n1$,
-      $n2$  -- S2-INT s985 (23 Nov 2026): a university that holds intakes skipped with "the named period starts sooner in another month" is planned again under the
+      $n2$  -- S2-INT s986 (23 Nov 2026): a university that holds intakes skipped with "the named period starts sooner in another month" is planned again under the
   -- month-stated rescue below; its rows carry ";rescue=1" in the inputs fingerprint, so they are looked at once more and no other university's rows are
   v_resc uuid[] := coalesce((select array_agg(distinct d.provider_id) from pipeline.course_intake_dates d
                               where d.outcome = 'skipped' and d.reason like 'the named period starts sooner%'), '{}');
   v_settings text := 'lists='$n2$,
       $n3$case when c.provider_id = any (v_next) then ';nextcycle=1' else '' end || case when c.provider_id = any (v_resc) then ';rescue=1' else '' end$n3$,
       $n4$case when r.provider_id = any (v_next) then ';nextcycle=1' else '' end || case when r.provider_id = any (v_resc) then ';rescue=1' else '' end$n4$,
-      $n5$    -- S2-INT s985 (23 Nov 2026): the §14 narrowing for any university, when the course page itself states this month as an intake. A named period that does not
+      $n5$    -- S2-INT s986 (23 Nov 2026): the §14 narrowing for any university, when the course page itself states this month as an intake. A named period that does not
     -- start in this month holds the intake only when it starts sooner in another month AND also starts in this month (Monash "Semester one (February)"). Here no
     -- named period that starts in this month starts sooner, and the page states the month as an intake or start in a sentence that is not about applications
     -- opening or closing ("applications for Semester 1 open in August" is not an August intake), as for a listed university. Nothing else changes.
@@ -97,6 +97,6 @@ begin
   if jsonb_array_length(coalesce(v->'drift', '[]'::jsonb)) <> 0 or (v->>'functions')::int <> 75 or (v->>'relations')::int <> 48 then
     raise exception 'post-check: the consumer API drifted: %', v;
   end if;
-  if (select n from s985_locks) <> (select count(*) from pipeline.manual_locks) then raise exception 'post-check: manual locks changed'; end if;
-  if (select n from s985_cron) <> (select count(*) from cron.job where active) then raise exception 'post-check: active cron jobs changed'; end if;
+  if (select n from s986_locks) <> (select count(*) from pipeline.manual_locks) then raise exception 'post-check: manual locks changed'; end if;
+  if (select n from s986_cron) <> (select count(*) from cron.job where active) then raise exception 'post-check: active cron jobs changed'; end if;
 end $p$;

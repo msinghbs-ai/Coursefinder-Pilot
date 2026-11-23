@@ -1,8 +1,8 @@
-// Guards: CF-247 s985 (session S2-INT, Platform Admin 23 Nov 2026 13:02 AEDT, F-INT exact intake dates): the planner's "named period starts sooner in another month" hold is narrowed for every university, only where the course page states the month as an intake outside application clauses; md5-guarded text edit, no new setting, job, shadow or consumer API change.
+// Guards: CF-247 s986 (session S2-INT, Platform Admin 23 Nov 2026 13:02 AEDT, F-INT exact intake dates): the planner's "named period starts sooner in another month" hold is narrowed for every university, only where the course page states the month as an intake outside application clauses; md5-guarded text edit, no new setting, job, shadow or consumer API change.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261123120000_cf247_s985_int_named_period_month_rescue.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261123120000_cf247_s986_int_named_period_month_rescue.sql', 'utf8')
 const dq = (tag) => [...MIG.matchAll(new RegExp('\\$' + tag + '\\$([\\s\\S]*?)\\$' + tag + '\\$', 'g'))].map((m) => m[1])
 const NEW = [1, 2, 3, 4, 5].map((i) => dq('n' + i)[0] || '').join('\n')
 const AFTER = (MIG.match(/body ([0-9a-f]{32}) to /) || [])[1]
