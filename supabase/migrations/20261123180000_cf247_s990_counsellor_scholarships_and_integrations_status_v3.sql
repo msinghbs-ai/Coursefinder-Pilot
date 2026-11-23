@@ -4,7 +4,7 @@
 --    (Open / Closed / Opens <date> / Dates not published) is worked out in the database on the Australia/Melbourne date, so the screen
 --    never decides it from the browser clock.
 -- 2. public.admin_integrations_status: one row per integration with { status: healthy | degraded | unknown, last_checked_at }. A check that
---    cannot be read returns unknown; it never raises a 403 or 500 to a screen. Website API reads the latest deploy check; Zoho Creator has no
+--    cannot be read, or is older than the setting integrations.status_fresh_hours (48), returns unknown; it never raises a 403 or 500 to a screen. Website API reads the latest deploy check; Zoho Creator has no
 --    check today and is reported unknown with a null date (the screen shows the date, so an old check is visible as old).
 -- G1: no job. G2: page size is a setting (scholarships.counsellor_page_rows). G3: reads only; no consumer object is touched (75/48 before and
 -- after). Manual locks untouched. Nothing dropped or removed. The pipeline.settings budget-cap key for the Dry-Lane banner belongs to S2-Build
@@ -28,6 +28,12 @@ values ('pipeline', 'scholarships.counsellor_page_rows', 'Counsellor scholarship
         'How many published scholarships one page of the Counsellor Scholarships screen returns. Further pages are fetched with the offset.',
         'number', to_jsonb(50), 10, 200, 'scholarships', 3320, 'Scholarships',
         'public.counsellor_scholarships_list', 'CF-247 s990 (Platform Admin 23 Nov 2026): Counsellor Scholarships screen')
+on conflict do nothing;
+insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason)
+values ('pipeline', 'integrations.status_fresh_hours', 'Integrations status: newest check still shown as current',
+        'An integration check older than this many hours is shown as unknown, never as healthy, so the Admin screen cannot display a stale green badge. The check date is always shown beside the badge.',
+        'number', to_jsonb(48), 1, 720, 'hours', 3321, 'Platform health',
+        'public.admin_integrations_status', 'CF-247 s990 (Platform Admin 23 Nov 2026 17:35): stale checks must not show healthy')
 on conflict do nothing;
 
 create or replace function public.counsellor_scholarships_list(p_args jsonb default '{}'::jsonb)
@@ -89,7 +95,8 @@ begin
   begin
     select d.ok, coalesce(d.operational_checked_at, d.checked_at) into v_ok, v_at
       from pipeline.integration_deploy_checks d order by d.checked_at desc limit 1;
-    v_web := case when v_ok is true then 'healthy' when v_ok is false then 'degraded' else 'unknown' end;
+    v_web := case when v_at is null or v_at < now() - make_interval(hours => security.pipeline_num_v1('integrations.status_fresh_hours', 48)::int) then 'unknown'
+                  when v_ok is true then 'healthy' when v_ok is false then 'degraded' else 'unknown' end;
   exception when others then
     v_web := 'unknown'; v_at := null; -- fixed: a failed check is reported as unknown, never raised to the screen
   end;

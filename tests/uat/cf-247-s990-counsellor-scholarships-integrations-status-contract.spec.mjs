@@ -22,6 +22,8 @@ test('s990: integrations status returns only healthy, degraded or unknown and sw
   expect(sql).toContain('create or replace function public.admin_integrations_status()');
   expect(sql).toContain("then 'healthy' when v_ok is false then 'degraded' else 'unknown'");
   expect(sql).toContain('exception when others then');
+  expect(sql).toContain("security.pipeline_num_v1('integrations.status_fresh_hours', 48)");
+  expect(sql).toContain("v_at < now() - make_interval(hours =>");
 });
 
 test('s990: additive only, G3 guarded before and after, grants exclude anon, nothing dropped', () => {
