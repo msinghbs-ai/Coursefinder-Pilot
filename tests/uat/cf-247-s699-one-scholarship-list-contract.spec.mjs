@@ -46,7 +46,8 @@ test('no schema change in this lane', () => {
 })
 
 test.describe('mocked browser', () => {
-  for (const [role, rank] of [['Viewer', 1], ['Counsellor', 2], ['Editor', 3], ['Platform Admin', 6]]) {
+  // s990: a Counsellor (rank 2) is given the v1.1 build only, so it is not listed here
+  for (const [role, rank] of [['Viewer', 1], ['Editor', 3], ['Platform Admin', 6]]) {
     test(`${role}: each scholarship appears once and the entry card has no scholarship line`, async ({ page }) => {
       const drawer = await open(page, rank)
       const entry = drawer.locator('[data-correlated="course"] [data-cb-card="entry"]')

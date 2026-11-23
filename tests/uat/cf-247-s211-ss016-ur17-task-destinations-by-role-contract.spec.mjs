@@ -19,6 +19,12 @@ test.describe('mocked browser', () => {
       await asRole(page, rank)
       await mockAer(page, rank)
       await mockInbox(page, rank)
+      if (rank === 2) { // s990: a Counsellor is given the v1.1 build only, which has no specialist task list to open
+        await page.goto('/#platform-guide')
+        await expect(page.locator('.ui-shell')).toBeVisible()
+        await expect(page.locator('[data-guide-task]')).toHaveCount(0)
+        return
+      }
       const opened = []
       for (const [i, t] of SPECIALIST_TASKS.entries()) {
         await page.goto('/#platform-guide')

@@ -71,7 +71,7 @@ test.describe('mocked browser', () => {
     for (const el of await drawer.locator('[data-job-button], [data-scholarship-actions]').all()) await expect(el).toBeHidden()
   })
 
-  for (const rank of [6, 2]) {
+  for (const rank of [6, 1]) { // s990: a Counsellor (rank 2) is given the v1.1 build only; a Viewer keeps this drawer
     test(`Related insights & funding is folded by default and scholarships are listed once (rank ${rank})`, async ({ page }) => {
       const drawer = await open(page, rank)
       await drawer.locator('[data-course-more] > summary').click()

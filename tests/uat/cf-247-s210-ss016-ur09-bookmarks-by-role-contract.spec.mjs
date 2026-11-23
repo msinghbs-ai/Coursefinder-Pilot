@@ -67,6 +67,11 @@ test.describe('mocked browser', () => {
     test(`${ROLE[rank][1]} (${rank}): saved addresses, then Back and Forward, each land on the destination or a named handoff`, async ({ page }) => {
       await asRole(page, rank)
       await mockInbox(page, rank)
+      if (rank === 2) { // s990: a Counsellor is given the v1.1 build only; every saved address, Back and Forward lands in it
+        for (const [route, q] of JOURNEY) { await page.goto(`/#${route}${q ? `?${q}` : ''}`); await expect(page.locator('.ui-shell')).toBeVisible(); await expect(page.locator('[data-handoff], [data-tab-handoff]')).toHaveCount(0) }
+        await page.goBack(); await expect(page.locator('.ui-shell')).toBeVisible()
+        return
+      }
       const steps = JOURNEY.map(([route, q]) => ({ addr: `#${route}${q ? `?${q}` : ''}`, ...landing(route, q, rank) }))
       const check = async (s) => {
         await expect.poll(() => page.evaluate(() => location.hash), { message: s.addr }).toBe(s.href)

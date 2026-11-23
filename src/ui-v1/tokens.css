@@ -1,6 +1,7 @@
 /* tokens.css — semantic design tokens for the StudySearch PIM mockups (v1.1, 23 Nov 2026).
    Single source of truth. No legacy variables, no !important. */
 :root {
+  --ui-scrim: rgba(16, 24, 40, 0.38);
   /* colour: surfaces and text */
   --color-bg: #f5f6f8;
   --color-surface: #ffffff;

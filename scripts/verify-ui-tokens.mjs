@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const root = process.cwd()
-const ALLOWED = new Set(['src/tokens.css'])
+const ALLOWED = new Set(['src/tokens.css', 'src/ui-v1/tokens.css']) // s990: the locked v1.1 prototype's own token file (Counsellor build); it is a token file, so literals live only there
 const RAMP = new Set(['#0d366b', '#1c5cab', '#2a78d6', '#5598e7', '#86b6ef'])
 const COLOUR = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b|rgba?\(\s*\d[^)]*\)|hsla?\(\s*\d[^)]*\)/g
 const files = []
