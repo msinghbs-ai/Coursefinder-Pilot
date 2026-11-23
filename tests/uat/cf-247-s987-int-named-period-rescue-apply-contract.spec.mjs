@@ -23,13 +23,13 @@ test('the three parts split the courses by a hash and cover 0, 1 and 2 once each
   for (const m of FILES) expect(m).not.toMatch(/provider_id::text like|36086f5e|c5c5d225/)
 })
 
-test('no date is written outside the planner and nothing in the consumer API, locks or cron changes', () => {
+test('no date is written outside the planner and nothing in the consumer API or locks changes and no cron statement', () => {
   for (const m of FILES) {
     expect(m).not.toMatch(/update catalogue\.course_intakes|insert into catalogue\.course_intakes/)
     expect(m.match(/consumer_api_check_v1\(\)/g)).toHaveLength(2)
     expect(m).toContain("(v->>'functions')::int <> 75")
     expect(m).toContain('pipeline.manual_locks')
-    expect(m).toContain('cron.job where active')
+    expect(m).not.toMatch(/cron\./) // no cron statement; the active cron count moves on its own and is not compared
     expect(m).toContain('a filled decision lacks its quote or calendar')
   }
 })

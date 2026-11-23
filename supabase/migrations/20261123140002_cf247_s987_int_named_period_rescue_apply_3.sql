@@ -5,7 +5,7 @@
 -- and event log), once, for the courses that hold an active intake with that reason. The courses are split in three parts by a hash of the course id so each part
 -- stays inside one request (no provider is named). It changes no function, setting or schedule. Dates come only from the planner's own output: a date is one of the
 -- university's official calendar starts, in the intake's own month, with the page wording stored beside it. Nothing is invented.
--- G1: no job. G2: no number in code (the row limit is the count of the selected courses' intakes). G3 stays 75/48. Locks and active cron unchanged (checked).
+-- G1: no job. G2: no number in code (the row limit is the count of the selected courses' intakes). G3 stays 75/48. Locks unchanged (checked); no cron statement (the active cron count moves on its own while this runs, so it is not compared).
 -- Replaces: nothing.
 -- Retires: nothing. Nothing dropped, deleted or renamed; reversal is security.intake_date_day_withdraw_v1 per row.
 set local lock_timeout = '5s';
@@ -19,7 +19,6 @@ begin
   end if;
 end $g$;
 create temp table s987_locks on commit drop as select count(*) n from pipeline.manual_locks;
-create temp table s987_cron on commit drop as select count(*) n from cron.job where active;
 
 do $r$
 declare v_ids uuid[]; v_lim int; v_res jsonb; v_before int; v_after int; v_new int;
@@ -54,5 +53,4 @@ begin
     raise exception 'post-check: the consumer API drifted: %', v;
   end if;
   if (select n from s987_locks) <> (select count(*) from pipeline.manual_locks) then raise exception 'post-check: manual locks changed'; end if;
-  if (select n from s987_cron) <> (select count(*) from cron.job where active) then raise exception 'post-check: active cron jobs changed'; end if;
 end $p$;
