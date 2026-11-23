@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261123220000_cf247_s1012_provider_representation_and_cbse_grade_scale.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261123223000_cf247_s1012_provider_representation_and_cbse_grade_scale.sql', 'utf8')
 
 test('s1012: restriction mode and markets follow one rule, entered with a reason and logged', () => {
   expect(MIG).toContain("restriction_mode in ('include', 'exclude', 'none')")
