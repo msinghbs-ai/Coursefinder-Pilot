@@ -223,7 +223,7 @@ body.ui-v1 :focus-visible { outline: 2px solid var(--color-focus); outline-offse
 .ui-admin { height: 100vh; overflow: hidden; }
 .ui-admin .ui-nav { overflow-y: auto; }
 .ui-admin-content { min-width: 0; min-height: 0; overflow: hidden; background: var(--color-bg); }
-.ui-admin-content > * { height: calc(100vh - var(--size-topbar)); }
+.ui-admin .ui-admin-content > * { height: calc(100vh - var(--size-topbar)); }
 .ui-nav-count { margin-left: auto; font-size: var(--text-xs); color: var(--color-text-muted); }
 .ui-topbar-user { font-size: var(--text-sm); color: var(--color-text-muted); }
 .ui-nav-toggle { display: none; }
