@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261124110000_cf247_s1025_counsellor_feedback.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261124115000_cf247_s1025_counsellor_feedback.sql', 'utf8')
 const fn = (name) => MIG.slice(MIG.indexOf(`CREATE OR REPLACE FUNCTION ${name}`), MIG.indexOf('$function$;', MIG.indexOf(`CREATE OR REPLACE FUNCTION ${name}`) + 40))
 
 test('s1025: rank 2 inserts and reads their own; rank 3 reads and triages all; signed-in users reach the table only through the RPCs', () => {
