@@ -97,7 +97,7 @@ async function signIn(page,email,password){
 
 async function shellReady(page,timeout=45_000){
   try{
-    await expect(page.locator('.m-nav')).toBeVisible({timeout})
+    await expect(page.locator('[data-ui-admin-nav]')).toBeVisible({timeout})
     await expect(page.locator('.m-role-pill')).not.toContainText(/Loading/i,{timeout})
     await expect(page.locator('.m-release-pill')).toBeVisible({timeout})
     return true
@@ -124,7 +124,7 @@ export async function loginAsUatUser(page) {
   if(!(await shellReady(page,30_000))){
     const visibleEmail=await emailInput.isVisible().catch(()=>false)
     if(visibleEmail)await signIn(page,email,password)
-    await expect(page.locator('.m-nav')).toBeVisible({timeout:45_000})
+    await expect(page.locator('[data-ui-admin-nav]')).toBeVisible({timeout:45_000})
     await expect(page.locator('.m-role-pill')).not.toContainText(/Loading/i,{timeout:45_000})
     await expect(page.locator('.m-release-pill')).toBeVisible({timeout:45_000})
   }
@@ -163,13 +163,13 @@ export async function clickPrimaryNav(page,label){
     await t.click({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(t).toHaveAttribute('aria-selected','true',{timeout:DETERMINISTIC_UI_TIMEOUT})}
   return}
-  const item=page.locator('button.m-nav-item').filter({hasText:label}).first()
+  const item=page.locator('a[data-nav-page]').filter({hasText:label}).first()
   await expect(item,`Missing accepted primary navigation item: ${label}`).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   if(!(await inViewport(item,page))){
-    const menu=page.locator('.m-mobile-menu')
+    const menu=page.locator('[data-ui-admin-shell] .ui-nav-toggle')
     if(await menu.isVisible().catch(()=>false)){
       await menu.click({timeout:DETERMINISTIC_UI_TIMEOUT})
-      await expect(page.locator('.m-sidebar')).toHaveClass(/is-open/,{timeout:DETERMINISTIC_UI_TIMEOUT})
+      await expect(page.locator('.ui-admin')).toHaveClass(/is-open/,{timeout:DETERMINISTIC_UI_TIMEOUT})
     }
     await item.scrollIntoViewIfNeeded({timeout:DETERMINISTIC_UI_TIMEOUT})
   }
@@ -180,10 +180,10 @@ export async function signOutUatUser(page){
   const button=page.getByTitle('Sign out')
   await expect(button).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   if(!(await inViewport(button,page))){
-    const menu=page.locator('.m-mobile-menu')
+    const menu=page.locator('[data-ui-admin-shell] .ui-nav-toggle')
     if(await menu.isVisible().catch(()=>false)){
       await menu.click({timeout:DETERMINISTIC_UI_TIMEOUT})
-      await expect(page.locator('.m-sidebar')).toHaveClass(/is-open/,{timeout:DETERMINISTIC_UI_TIMEOUT})
+      await expect(page.locator('.ui-admin')).toHaveClass(/is-open/,{timeout:DETERMINISTIC_UI_TIMEOUT})
     }
     await button.scrollIntoViewIfNeeded({timeout:DETERMINISTIC_UI_TIMEOUT})
   }

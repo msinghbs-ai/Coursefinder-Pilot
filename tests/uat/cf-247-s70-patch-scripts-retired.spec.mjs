@@ -52,7 +52,7 @@ test.describe('mocked browser', () => {
     await page.goto('/#dashboard')
     await expect(page).toHaveTitle(`StudySearch PIM Admin v${UI_VERSION}`)
     expect(await page.evaluate(() => document.documentElement.dataset.cfReleaseVersion)).toBe(UI_VERSION)
-    await expect(page.locator('.m-brand-copy small')).toHaveText(`PIM Admin v${UI_VERSION}`)
+    await expect(page.locator('.ui-brand-version')).toHaveText(`PIM Admin v${UI_VERSION}`)
     const pill = page.locator('.m-release-pill')
     await expect(pill).toHaveText(`v${UI_VERSION}`)
     await expect(pill).toHaveAttribute('role', 'button')

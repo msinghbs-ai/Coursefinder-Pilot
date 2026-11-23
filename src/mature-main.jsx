@@ -69,6 +69,7 @@ import{DataTable as SharedDataTable,FilterSelect}from'./DataTable'
 import{useCourseLayout,ColumnsControl,useCourseTableColumns,providerTableColumns}from'./CatalogueColumns'
 import{sortSentence,COURSE_SCREEN,PROVIDER_SCREEN,QUALITY_FILTER_OPTIONS,STUDY_LOAD_LABELS,EMPTY_REASON_LABELS}from'./catalogue-columns'
 import './provider-fill-fields.css' // small: the Provider row's tick box and button need it before the lazy panel is opened
+import AdminShell from'./ui-v1/AdminShell.jsx'
 const CounsellorApp=React.lazy(()=>import('./ui-v1/CounsellorApp.jsx')) // s990: the v1.1 Counsellor build (its own tokens and kit; loads only when drawn)
 // v2.15.217 (code split): screens used only inside one page load on demand. If a screen's file is gone because a newer release was deployed
 // while this tab was open, the page reloads once to pick up the new release instead of showing an error.
@@ -356,23 +357,9 @@ function App(){
   const tone=health===undefined?'unknown':healthTone(health?.overall)
   const healthLabel=health===undefined?'Checking platform health':HEALTH_WORDS[tone]
   const datasetHeader=pageKey==='rankings'?RANKING_DATASET_HEADER[route.params?.get?.('dataset')||'']:null
-  return <ViewerContext.Provider value={{rank}}><div className={`m-shell ${collapsed?'is-collapsed':''}`}>
-    <aside className={`m-sidebar ${navOpen?'is-open':''}`}>
-      <div className="m-brand-row">
-        <button className="m-brand" onClick={()=>go('dashboard')} aria-label="Dashboard"><span className="m-brand-mark">SS</span><span className="m-brand-copy"><strong>StudySearch</strong><small>PIM Admin v{UI_VERSION}</small></span></button>
-        <button className="m-sidebar-collapse" onClick={()=>setCollapsed(x=>!x)} title={collapsed?'Expand navigation':'Collapse navigation'}>{collapsed?<PanelLeftOpen size={17}/>:<PanelLeftClose size={17}/>}</button>
-      </div>
-      <div className="m-nav-scroll"><nav className="m-nav" aria-label="Main menu">{SECTIONS.map(section=>{const allowed=section.pages.filter(k=>canOpen(k,rank));if(!allowed.length)return null;return <div className={`m-nav-group${section.label?'':' is-plain'}`} key={section.label||'home'}>{section.label&&<div className="m-nav-label">{section.label}</div>}{allowed.map(k=>{const p=PAGES[k],Icon=ICONS[p.icon]||Settings2;return <button key={k} title={collapsed?p.label:undefined} aria-current={pageKey===k?'page':undefined} className={`m-nav-item ${pageKey===k?'active':''}`} onClick={()=>go(k)}><Icon size={17}/><span>{p.label}</span>{k==='health'&&<StatusDot tone={tone} label={healthLabel}/>}</button>})}</div>})}</nav></div>
-      <div className="m-account">
-        <div className="m-avatar">{(session.user.email?.[0]||'U').toUpperCase()}</div>
-        <div className="m-account-copy"><strong>{roleLabel(context?.role||'Authorised user')}</strong><small>{session.user.email}</small></div>
-        <button className="m-icon-button" title="Sign out" onClick={()=>supabase.auth.signOut()}><LogOut size={17}/></button>
-      </div>
-    </aside>
-    {navOpen&&<button className="m-backdrop" onClick={()=>setNavOpen(false)} aria-label="Close navigation"/>}
+  return <ViewerContext.Provider value={{rank}}><AdminShell version={UI_VERSION} open={navOpen} setOpen={setNavOpen} sections={SECTIONS} pages={PAGES} rank={rank} canOpen={canOpen} hrefFor={hrefFor} active={pageKey} roleLabel={roleLabel(context?.role||'Authorised user')} email={session.user.email} onGo={go} onSignOut={()=>supabase.auth.signOut()}>
     <main className="m-main" ref={mainRef}>
       <PageHeader
-        leading={<button className="m-mobile-menu" onClick={()=>setNavOpen(true)} aria-label="Open menu"><Menu size={20}/></button>}
         breadcrumbs={<AppBreadcrumbs pageKey={pageKey} tab={tab} routeParams={route.params} navigate={go}/>}
         title={datasetHeader?.title||page.title} subtitle={datasetHeader?.subtitle||page.subtitle}
         actions={<>{HELP_TOPIC[pageKey]&&<HelpButton topic={HELP_TOPIC[pageKey]}/>}{canOpen('health',rank)&&<button type="button" className="cf-health-link" onClick={()=>go('health')} title={`Platform health: ${healthLabel}`} aria-label={`Platform health: ${healthLabel}`}><StatusDot tone={tone} label={healthLabel}/><span className="cf-health-text">Health</span></button>}<ReleasePill/><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></>}/>
@@ -384,7 +371,7 @@ function App(){
         <React.Suspense fallback={<div className="m-page-loading" role="status"><span className="m-spinner"/>Loading…</div>}><Page pageKey={pageKey} tab={tab} requestedTab={route.tab} routeParams={route.params} rank={rank} actorId={String(context?.user_id||'')} onError={report} navigate={go}/></React.Suspense>
       </WorkspaceErrorBoundary>
     </main>
-  </div></ViewerContext.Provider>
+  </AdminShell></ViewerContext.Provider>
 }
 
 // v2.15.341 (UI audit Phase 0, the v2.15.339/v2.15.340 mismatch): a release deploys new screen chunks while the shell a person already has open keeps the

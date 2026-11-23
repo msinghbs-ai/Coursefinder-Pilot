@@ -82,7 +82,7 @@ export async function openRetiredLayer3(page, address = '/#layer-3-ai') {
   await expect(page).toHaveURL(/#layer-2-discovery\?tab=universities$/, ui)
   await expect(page.locator('.m-topbar h1')).toHaveText('Layer 2/3 Build & enrich', ui)
   await expect(page.locator('[data-adapters-workspace]')).toBeVisible(data)
-  await expect(page.locator('.m-nav').getByRole('button', { name: 'Layer 3 AI validation', exact: true })).toHaveCount(0)
+  await expect(page.locator('[data-ui-admin-nav]').getByRole('link', { name: 'Layer 3 AI validation', exact: true })).toHaveCount(0)
   return page.locator('main').first()
 }
 

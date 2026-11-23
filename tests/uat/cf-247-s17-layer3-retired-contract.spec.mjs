@@ -62,7 +62,7 @@ test.describe('mocked browser', () => {
     await expect(page).toHaveURL(/#layer-2-discovery\?tab=universities$/) // v2.15.300: Layer 2/3 › Universities
     await expect(page.locator('.m-topbar h1')).toHaveText('Layer 2/3 Build & enrich')
     await expect(page.getByRole('tab', { name: 'Universities' })).toHaveAttribute('aria-selected', 'true')
-    await expect(page.locator('.m-nav').getByRole('button', { name: 'Layer 3 AI validation', exact: true })).toHaveCount(0)
+    await expect(page.locator('[data-ui-admin-nav]').getByRole('link', { name: 'Layer 3 AI validation', exact: true })).toHaveCount(0)
     await page.goto('/#layer-3-ai-interpretation?tab=work')
     await expect(page).toHaveURL(/#layer-2-discovery\?tab=universities$/)
   })
