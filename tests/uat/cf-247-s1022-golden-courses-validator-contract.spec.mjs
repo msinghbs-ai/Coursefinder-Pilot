@@ -31,6 +31,7 @@ test('s1022: the checks are the gate checks, with the fee window from the G2 set
 
 test('s1022: read-only, v3 read per test course, daily before the digest, never red on a data gap', () => {
   expect(SRC).toContain('public.website_v3_course(')
+  expect(SRC).toContain('set transaction read only; select public.website_v3_course(')
   expect(SRC).toContain("from '../boost-live-lib.mjs'")
   expect(SRC).not.toMatch(/\b(insert|update|delete)\s+(into|from)?\s*[a-z_]+\.|\bset_config\(|svc_pilot_submit_nonce|worker\(/i)
   expect(WF).toContain('cron: "35 20 * * *"')

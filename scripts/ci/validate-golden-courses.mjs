@@ -53,6 +53,18 @@ export function gaps(r) {
   return g
 }
 
+// The Management API's read-only role may not execute the v3 read (permission denied, 24 Nov 2026), so that one call runs as the API's own
+// role inside a transaction set read only: the database refuses any write it might attempt.
+async function readV3(id) {
+  const r = await fetch(`https://api.supabase.com/v1/projects/${process.env.REF}/database/query`, { method: 'POST',
+    headers: { authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ query: `set transaction read only; select public.website_v3_course(${lit(id)}) v` }) })
+  const text = await r.text()
+  if (!r.ok) throw Error(`v3 read failed (HTTP ${r.status}): ${text.slice(0, 400)}`)
+  const rows = JSON.parse(text), v = rows[0]?.v
+  return typeof v === 'string' ? JSON.parse(v) : v
+}
+
 const pct = (n, d) => (d ? `${Math.round((100 * n) / d)}%` : '–')
 
 async function main() {
@@ -61,8 +73,7 @@ async function main() {
   const all = await read(COURSE_SQL(`c.provider_id = any(${arr(fx.providers)})`))
   const served = {}
   for (const c of fx.courses) {
-    const [row] = await read(`select public.website_v3_course(${lit(c.id)}) v`)
-    const v = typeof row.v === 'string' ? JSON.parse(row.v) : row.v
+    const v = await readV3(c.id)
     served[c.id] = v?.error ? `not served (${v.error.code})` : 'served'
   }
   const lines = [`## Golden courses: ${fx.benchmark}`, '', '### Test courses', '', '| Course | Provider record | Website API v3 | Gaps |', '|---|---|---|---|']
