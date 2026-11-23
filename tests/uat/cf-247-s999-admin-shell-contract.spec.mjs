@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { SECTIONS, PAGES, canOpen } from '../../src/nav-map.js'
-import { menuFor } from '../../src/ui-v1/AdminShell.jsx'
+import { menuFor } from '../../src/ui-v1/admin-menu.js'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 const expected = rank => menuFor({ sections: SECTIONS, pages: PAGES, rank, canOpen })
@@ -43,8 +43,10 @@ test('1440x900: rank 6 sees the route-table menu, opens Layer 4 Review from it, 
 test('a Curator (rank 3) is not shown pages above the rank', async ({ page }) => {
   await mockAdmin(page, { rank: 3 })
   await page.goto('/#dashboard')
+  const want = expected(3).flatMap(s => s.items.map(i => i.key)).sort()
+  await expect(page.locator('[data-ui-admin-nav] a[data-nav-page]')).toHaveCount(want.length)
   const shown = await page.locator('[data-ui-admin-nav] a[data-nav-page]').evaluateAll(a => a.map(x => x.dataset.navPage))
-  expect(shown.sort()).toEqual(expected(3).flatMap(s => s.items.map(i => i.key)).sort())
+  expect(shown.sort()).toEqual(want)
 })
 
 test('@responsive 375x812: the menu opens from Menu, closes on choosing a page, and nothing overflows sideways', async ({ page }) => {

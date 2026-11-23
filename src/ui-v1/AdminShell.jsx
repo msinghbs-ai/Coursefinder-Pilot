@@ -3,11 +3,7 @@
 // inside it unchanged; each later port replaces one of them. Only the two ui-v1 stylesheets are imported (never a legacy file).
 import './tokens.css'
 import './ui-kit.css'
-
-/** The menu: sections in the route table's order; a page appears only when the rank may open it. Pure, so the guide check can read the same list. */
-export function menuFor({ sections, pages, rank, canOpen }) {
-  return sections.map(s => ({ label: s.label, items: s.pages.filter(k => canOpen(k, rank)).map(k => ({ key: k, label: pages[k].label })) })).filter(s => s.items.length)
-}
+import { menuFor } from './admin-menu.js'
 
 export default function AdminShell({ sections, pages, rank, canOpen, hrefFor, active, roleLabel, email, version, open, setOpen, onGo, onSignOut, children }) {
   const menu = menuFor({ sections, pages, rank, canOpen })
