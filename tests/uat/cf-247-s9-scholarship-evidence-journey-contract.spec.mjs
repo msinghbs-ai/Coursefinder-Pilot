@@ -14,7 +14,7 @@ const m85 = fs.readFileSync('supabase/migrations-archive/20261011008500_cf247_sc
 test('site maps through the scraper; listing pages page by page; a page waiting for the scraper is tried again; register search retired', () => {
   expect(worker).toContain('const SCH_VERSION = "scholarship-sweep-v0.7.3"')
   expect(worker).toContain('const pg = await readSchPage(it.url, it.provider_id);') // scholarship pages and candidates (v0.58.0: through readSch, with award sections and redirects)
-  expect(worker).toContain('const pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000), false);') // listing pages, page by page (v0.58.0), scraper first (v0.77.0)
+  expect(worker).toContain('let pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000), true);') // listing pages, page by page (v0.58.0), scraper first (v0.77.0)
   expect(worker).toContain('const gm = await useFcWhy("sch_map", p.provider_id, origin, true);') // site maps through the scraper (v0.58.0: each source of the provider)
   expect(worker).not.toContain('svc_scholarship_search_next') // register search phase retired
   expect(m84).toContain("when p_read_status='waiting_scraper' then now()+interval '1 hour'")
