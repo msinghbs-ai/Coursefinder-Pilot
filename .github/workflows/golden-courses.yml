@@ -1,0 +1,43 @@
+# Golden courses (CF-247 s1022, S1-Build; Platform Admin 24 Nov 2026 05:54 and 06:27 AEDT; UI-UX plan v1.2 slice 6). Daily at 07:35 AEDT
+# (20:35 UTC; 06:35 AEST from April), before the 08:00 executive digest, which reads this run's summary and golden-courses.json. Reads the
+# UAT feedback-4 benchmark (tests/fixtures/golden-courses/feedback-4.json) read-only through the Management API; nothing is written.
+# The report never fails the run on a data gap (gaps are what it reports); a failed read fails it.
+name: Golden courses
+on:
+  schedule:
+    - cron: "35 20 * * *"
+  workflow_dispatch:
+    inputs:
+      set:
+        description: "Fixture set in tests/fixtures/golden-courses"
+        required: false
+        default: "feedback-4"
+concurrency:
+  group: golden-courses
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SET: ${{ inputs.set || 'feedback-4' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check settings
+        run: |
+          if [ "$REF" != "fxcwkweaxjtknorudmwp" ]; then echo "Refusing project $REF"; exit 1; fi
+      - name: Validate the golden courses (read-only)
+        run: node scripts/ci/validate-golden-courses.mjs --set "$SET" --json out/golden-courses.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: golden-courses
+          path: out/
+          if-no-files-found: ignore

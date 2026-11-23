@@ -1,0 +1,15 @@
+{
+  "benchmark": "UAT feedback-4 (Portal, 23 Nov 2026; Platform Admin 24 Nov 2026 05:42 and 05:54 AEDT)",
+  "note": "The providers and test courses whose fee year, English bands, campus and scholarship GPA scale the counsellors checked. Rows in admin docs/monitoring/S1-BLOCKER-QUEUE.csv (UAT_FEEDBACK:P1).",
+  "providers": [
+    { "id": "bac82321-ded7-4e10-a71d-b18f3ae4d1c7", "name": "Victoria University" },
+    { "id": "0f5373c8-d724-4303-9267-739530a5ce53", "name": "Victoria University (second record, duplicate identity)" },
+    { "id": "de2201a1-69ee-40ff-b6aa-0e54e535e6c0", "name": "Adelaide University" },
+    { "id": "1822b40a-8b13-44dc-8c37-106ae31bb447", "name": "The University of Newcastle" },
+    { "id": "dce54a01-39c1-4bdf-877d-b67da3afc81e", "name": "The University of Notre Dame Australia" }
+  ],
+  "courses": [
+    { "id": "d75b54d3-a88c-4a48-a41a-b62d9b4d9386", "label": "VU EBCL", "title": "Bachelor of Early Childhood Education and Leadership" },
+    { "id": "272a8517-482d-40e2-a8ff-feaf7fe29608", "label": "VU EBCL (second VU record)", "title": "Bachelor of Early Childhood Education and Leadership" }
+  ]
+}
