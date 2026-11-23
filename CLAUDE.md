@@ -122,6 +122,38 @@ Platform Admin, 23 Nov 2026 08:47 AEDT (S2-Build). It applies to every session i
 2. **Rehearse, then open the pull request.** Read the live head, and rehearse a new migration with the hand-started rolled-back run (`workflow_dispatch`, job `rehearsal`) before labelling its pull request `live-dry-run`. The rehearsal runs the same pre-flight against the live migration head. It reports a failure as a warning and in its summary, and never fails the run, so a rehearsal or read-back typo sends no failed-run notice. A read-back probe that errors prints `PROBE-ERROR` and does not fail a migration that passed.
 3. **The gate stays strict and scoped.** The `dry-run` job runs only for pull requests to `main` that add `supabase/migrations/*.sql` and carry the `live-dry-run` label (there is no push trigger). It fails on any pre-flight or dry-run failure, and auto-merge counts only this check. Guard: `tests/uat/cf-247-s980-migration-preflight-contract.spec.mjs`.
 
+### Standing Authority Charter: Gate Upgrades (Exception-Only Escalation)
+
+Platform Admin, 23 Nov 2026 18:52 AEDT. It applies to every lane in both repositories, and replaces per-batch and micro-spend sign-offs. Design detail: admin `docs/platform/2026-11-23-file-driven-continuous-delivery-design.md` section 10.
+
+1. **AER v2 readers are pre-authorised (Decision 276 clarified).**
+   - AER v1 stays frozen.
+   - Every AER v2 proven-structure source (`PDF_TABLE` cell-grid matchers, `HTML_TABLE`, `HTML_ACCORDION`) is permanently pre-authorised.
+   - So are deterministic degree-abbreviation expansions: `B` → Bachelor, `M` → Master, `Hons` → Honours, `GradDip` → Graduate Diploma.
+   - A course matched through an expanded title goes to Layer 4 for a person. It is never admitted by the machine.
+   - Lanes do not ask per batch.
+2. **Two-tier fetch and a micro-budget of US$5.00 a day.**
+   - **Tier 1 fetch, $0, always authorised.** Use the stored artifact first. Then make a $0 plain-HTTP direct read of a page with no stored copy. This retires the 3 Nov 2026 stored-first block for $0 HTTP reads. robots.txt and site policies still apply, and a challenge page is never bypassed.
+   - **Tier 2 micro-spend, at most US$5.00 a day across the whole platform.** Lanes may run paid Firecrawl fetches or pinned AI description cascades, without asking, for Tier 1 universities and courses already linked to an official page. Every dollar is logged in `docs/monitoring/DAILY-EXECUTIVE-STATUS.md`.
+   - A batch that would take the day over US$5.00, or that targets paid crawling of Tier 2 or Tier 3 providers, is marked `HELD:BUDGET_GATE` and waits.
+   - The cap is a setting (G2), changed only on Settings with a reason. Until the platform enforces it, each lane checks the day's logged spend before a paid call.
+3. **Downstream work is enqueued automatically.**
+   - When `S2-CF` admits an official course URL, the Descriptions, AER, Intakes and Scholarships items for that course are enqueued in the same change.
+   - The same applies when `S2-CF` saves a snapshot to `aer-artifacts/<provider>/`.
+   - No course sits unqueued as an orphan.
+4. **Intake Rule B is global, and international courses inherit the calendar.**
+   - Rule B (the stated month equals the calendar start month) is permanent for every provider. A day is never inferred from a month.
+   - A university's official International Academic Calendar dates apply to its international courses, even when a course page does not say "international".
+5. **Escalation is by exception only.**
+   - Never pause mid-loop to ask the Platform Admin for a batch approval.
+   - Halt and escalate, as `HELD:<reason>` in the 08:00 AEDT `docs/monitoring/DAILY-EXECUTIVE-STATUS.md`, only when a change would:
+     - (a) touch the frozen G3 v2 surface (75 functions / 48 relations);
+     - (b) touch the 7,585 manual locks;
+     - (c) take active cron jobs above 140;
+     - (d) take spend above US$5.00 a day;
+     - (e) delete or withdraw live admitted records in bulk without replacements.
+   - Every other rule in this file still applies: G1 to G4, the single-writer domains, Layer 4 human decisions, no drop or delete by an applied migration, and live dry runs.
+
 ### Standing Rule: Continuous Delivery Master Plan (Read at Start, Update Before Parking)
 
 Platform Admin, 21 Nov 2026 21:15 AEDT (S1-API-Frontend-Delivery). It applies to every session in both repositories.
