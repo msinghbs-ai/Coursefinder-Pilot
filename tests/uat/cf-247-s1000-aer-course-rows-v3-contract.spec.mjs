@@ -19,7 +19,7 @@ test('s1000: the v3 resolver only replaces step 5, with quoted, evidence-backed 
   expect(sql).toContain("x.kind in ('minimum_grade', 'prior_qualification', 'subject_prerequisite')");
   expect(sql).toContain("x.audience in ('international', 'all') and x.evidence_id is not null and nullif(btrim(x.quote), '') is not null");
   expect(sql).toContain("'step', 1, 'rule', 'course_override'");
-  expect((sql.match(/years of age\|years old/g) || []).length).toBe(3);  // an age limit is never served or counted as an academic minimum
+  expect((sql.match(/years of age\|years old/g) || []).length).toBe(4);  // an age limit is never served or counted as an academic minimum
   expect(sql).toContain("if v_res->>'step' is distinct from '5' then v := jsonb_set(v, '{item,entry,resolution}', v_res); end if;");
 });
 

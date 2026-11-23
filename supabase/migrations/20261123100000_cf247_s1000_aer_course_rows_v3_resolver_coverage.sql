@@ -135,7 +135,8 @@ begin
                  where d.course_stable_key is not null
                    and exists (select 1 from catalogue.course_entry_requirements x where x.course_id = d.course_id and x.status = 'active'
                                  and x.kind in ('minimum_grade', 'prior_qualification', 'subject_prerequisite') and x.audience in ('international', 'all')
-                                 and x.evidence_id is not null and nullif(btrim(x.quote), '') is not null and x.country_id is null)
+                                 and x.evidence_id is not null and nullif(btrim(x.quote), '') is not null and x.country_id is null
+                                 and not (x.min_entry_score is not null and (coalesce(x.min_entry_score_basis, '') ~* '(\mage\M|years? (old|of age)|years (or|and) (over|older|above))' or x.quote ~* '(minimum age|years of age|years old)')))
                  limit 60),  -- fixed: post-check sample size
               chk as materialized (select course_stable_key, security.entry_resolve_v1(course_id, 'IN')->>'step' st from cand)
               select course_stable_key from chk where st = '5' limit 10 loop  -- fixed: post-check sample size
