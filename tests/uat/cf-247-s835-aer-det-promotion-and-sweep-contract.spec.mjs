@@ -1,4 +1,4 @@
-// Guards: S835 automated deterministic academic AER promotion and scheduled sweep (Platform Admin 20 Nov 2026 15:08 AEDT; Decision 276: the AI and Boost aer_entry readers stay shadow only; G1 job catalogued; G2 no number in a job command; G3 no public object; housekeeping s42; AER and English are separate)
+// Guards: s1009 (a new AER reader version is named by the newest migration that sets it); S835 automated deterministic academic AER promotion and scheduled sweep (Platform Admin 20 Nov 2026 15:08 AEDT; Decision 276: the AI and Boost aer_entry readers stay shadow only; G1 job catalogued; G2 no number in a job command; G3 no public object; housekeeping s42; AER and English are separate)
 // CF-247 S835. Migration 20261120163000_cf247_s835_aer_det_academic_promotion_and_sweep.sql, reader aer-det-v1.3, worker mode aer_det_read.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -71,7 +71,13 @@ test('the sweep sends only the academic reader version, refuses a worker on anot
   expect(sw).toContain('security.maintenance_hold_v1()')
   expect(sw).toContain('security.aer_det_propose_v1()')
   const ver = READER.match(/AER_DET_VERSION = "([^"]+)"/)[1]
-  for (const m of MIG.matchAll(/v_ext constant text := '([^']+)'/g)) expect(m[1]).toBe(ver)
+  // s1009 (23 Nov 2026): a new reader version ships with its own migration; the newest migration that sets the AER reader constant names this reader's version
+  const migs = fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql')).sort()
+  const last = migs.filter((f) => /v_ext constant text := 'aer-det-v/.test(fs.readFileSync('supabase/migrations/' + f, 'utf8'))).pop()
+  const lastSql = fs.readFileSync('supabase/migrations/' + last, 'utf8')
+  const set = [...lastSql.matchAll(/v_ext constant text := '(aer-det-v[^']+)'/g)].map((m) => m[1])
+  expect(set[set.length - 1]).toBe(ver)
+  for (const m of MIG.matchAll(/v_ext constant text := '([^']+)'/g)) expect(m[1]).toMatch(/^aer-det-v1\.[0-9]+$/)
   expect(RUN).toContain("const V = '" + ver + "'")
 })
 

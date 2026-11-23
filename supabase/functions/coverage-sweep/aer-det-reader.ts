@@ -2,7 +2,7 @@
 // qualifications a stored course page states in words. No model, no fetch, no write: it takes the page's text and returns readings, each with a verbatim quote that is a substring of that text
 // (checked here, so a reading can never carry words the page does not hold). Readings are recorded beside Layer 4 and enter it only as ordinary course entry reads, which the existing gates
 // (quote on the page, page identity, completeness, manual locks, no-overwrite, audit sample) decide (Decision 276: AER v1 is frozen and the AI reader stays shadow only).
-export const AER_DET_VERSION = "aer-det-v1.3" // v1.3 (20 Nov 2026, s834, Platform Admin 15:08 AEDT: AER and English are separate): English tests are not read at all (the English requirement has its own pipeline); IB points, A-level grades and Indian board averages are read; "42 level 3 credits" reads 42, never the 3 of "level 3"; Year 12 needs a stated score, mark or percentage; the v1.2 collapsed-row guard is kept (a flattened table line is skipped and a value is never taken across another test or qualification)
+export const AER_DET_VERSION = "aer-det-v1.4" // v1.4 (23 Nov 2026, s1009, Platform Admin 15:52 AEDT): a maximum or "up to" figure is never read as a minimum; a reading's quote carries the value it gives; a mark in one subject ("65% in English") is not read as an overall minimum. v1.3 (20 Nov 2026, s834, Platform Admin 15:08 AEDT: AER and English are separate): English tests are not read at all (the English requirement has its own pipeline); IB points, A-level grades and Indian board averages are read; "42 level 3 credits" reads 42, never the 3 of "level 3"; Year 12 needs a stated score, mark or percentage; the v1.2 collapsed-row guard is kept (a flattened table line is skipped and a value is never taken across another test or qualification)
 
 export type DetReading = {
   kind: "academic_entry"
@@ -44,7 +44,7 @@ const ENGLISH_TEST = /\b(?:IELTS|TOEFL|PTE|OET|CELPIP|Cambridge English|C1 Advan
 const FAMILIES: [string, RegExp][] = [
   ["english", ENGLISH_TEST],
   ["atar", /\bATAR\b/], ["year12", /\b(?:Year 12|Victorian Certificate of Education|VCE|HSC|Higher School Certificate|QCE|Queensland Certificate of Education|South Australian Certificate of Education|SACE|WACE|Tasmanian Certificate of Education|TCE|NTCET|ACT Senior Secondary)\b/],
-  ["ncea", /\bNCEA\b/], ["ue", /\bUniversity Entrance\b/i], ["ca", /\b(?:Ontario Secondary School Diploma|OSSD|Grade 12|secondary school diploma|high school diploma|senior matriculation|BC Dogwood|Baccalaur[eé]at)/i],
+  ["ncea", /\bNCEA\b/], ["ue", /\bUniversity Entrance\b/i], ["ca", /\b(?:Ontario Secondary School Diploma|OSSD|Grade 12|secondary school diploma|high school diploma|senior matriculation|BC Dogwood|(?<!national )Baccalaur[eé]at)/i],  // v1.4 (s1009): "International Baccalaureate" is the IB, never the Québec or French baccalauréat (it cut IB quotes to "International")
   ["gpa", /\b(?:GPA|grade point average)\b/i], ["ncuk", /\bNCUK\b/], ["alevel", /\bA[- ]?levels?\b/i], ["ib", /\bInternational Baccalaureate\b|\bIB Diploma\b|\bIB\b/],
   ["india", /\b(?:CBSE|CISCE|ICSE|ISC|Indian School Certificate|State Board|Senior School Certificate)\b/],
 ]
@@ -90,7 +90,7 @@ const RULES: Rule[] = [
   { key: "ib", win: true, re: /\b(?:International Baccalaureate|IB Diploma|IB)\b[^.\n]{0,60}?\b(\d{2})\s*(?:points?|total)\b/i, make: (m) => { const v = N(m[1]); return inRange(v, 24, 45) ? { points: v, basis: "points" } : null } },
   { key: "alevel", win: true, re: /\bA[- ]?levels?\b[^.\n]{0,60}?\b((?:A\*|[A-E]){2,4})\b/, make: (m) => /^(?:A\*|[A-E]){2,4}$/.test(m[1]) && !/^E+$/.test(m[1]) ? { grades: m[1] } : null },
   { key: "india_board", win: true, re: /\b(?:CBSE|CISCE|ICSE|ISC|Indian School Certificate|Senior School Certificate|State Board)\b[^.\n]{0,100}?\b(\d{2}(?:\.\d)?)\s*(?:%|per ?cent)/i, make: (m) => { const v = N(m[1]); return inRange(v, 40, 100) ? { average_percent: v } : null } },
-  { key: "ca_secondary", re: /\b(?:Ontario Secondary School Diploma|OSSD|Grade 12|secondary school diploma|high school diploma|senior matriculation|BC Dogwood|Baccalaur[eé]at)\b[^.\n]{0,200}?\b(\d{2}(?:\.\d)?)\s*(?:%|per cent)/i, make: (m) => { const v = N(m[1]); return inRange(v, 50, 95) ? { average_percent: v } : null } },
+  { key: "ca_secondary", re: /\b(?:Ontario Secondary School Diploma|OSSD|Grade 12|secondary school diploma|high school diploma|senior matriculation|BC Dogwood|(?<!national )Baccalaur[eé]at)\b[^.\n]{0,200}?\b(\d{2}(?:\.\d)?)\s*(?:%|per cent)/i, make: (m) => { const v = N(m[1]); return inRange(v, 50, 95) ? { average_percent: v } : null } },
   { key: "bachelor_gpa", re: /\b(?:bachelor|honours|undergraduate|first degree)\b[^.\n]{0,140}?\b(?:GPA|grade point average|GPA of)\b[^.\n]{0,40}?\b(\d(?:\.\d{1,2})?)\b(?:\s*(?:out of|\/)\s*(\d(?:\.\d)?))?/i, make: (m) => { const v = N(m[1]); const sc = m[2] ? N(m[2]) : null; return inRange(v, 1, 10) && (sc === null || [4, 5, 7, 10].includes(sc)) ? { gpa: v, scale: sc } : null } },
 ]
 
@@ -116,6 +116,13 @@ export function detRead(text: string): DetReading[] {
       }
       if (!value) continue
       if (!q || !text.includes(q)) continue  // the quote must be on the page word for word
+      // v1.4 (s1009): a maximum or an "up to" figure ("Up to a maximum international ATAR of 99.95") is never a minimum
+      if (/\b(?:maximum|up to|max\.)/i.test(q)) continue
+      // v1.4 (s1009): the quote carries the value it gives (never a value read from words outside its own quote)
+      const vals = Object.entries(value).filter(([k, v]) => k !== "basis" && (typeof v === "number" || typeof v === "string")).map(([, v]) => String(v))
+      if (vals.length && !vals.some((v) => q.includes(v))) continue
+      // v1.4 (s1009): an overall average is never taken from a mark in one subject ("CBSE ... 65% in English")
+      if (value.average_percent !== undefined && vals.some((v) => /^\d/.test(v) && new RegExp("(?:^|[^0-9.])" + v.replace(/\./g, "\\.") + "(?:\\.0+)?\\s*(?:%|per ?cent)?\\s+(?:in|for)\\s+[A-Z][a-z]").test(q))) continue
       const k = r.key + "|" + q
       if (seen.has(k)) continue
       seen.add(k)
