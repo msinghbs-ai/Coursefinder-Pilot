@@ -161,7 +161,7 @@ test.describe('mocked browser', () => {
     await expect(panel).toContainText('Starting needs the Pipeline Operator role')
     await expect(panel.getByRole('button', { name: /^Queue/ })).toBeDisabled()
     const p2 = await page.context().newPage()
-    await mockAdmin(p2, { rank: 2 }); await mockOnDemand(p2)
+    await mockAdmin(p2, { rank: 1 }); await mockOnDemand(p2)  // s990: a Counsellor (rank 2) is given the v1.1 build only; a Viewer (rank 1) keeps this screen
     await p2.goto('/#courses')
     await expect(p2.getByRole('heading', { name: 'Course catalogue' })).toBeVisible()
     await expect(p2.locator('[data-cdod-bar]')).toHaveCount(0)

@@ -80,8 +80,8 @@ test.describe('mocked browser', () => {
     await expect(archive).toBeVisible()
   })
 
-  test('a Counsellor with no approved entry requirement sees one empty-state line and no pipeline', async ({ page }) => {
-    const drawer = await open(page, 2, { entryRows: [{ id: 'p1', kind: 'prerequisite', description: 'English units 3 and 4', status: 'proposed', quote: 'English' }] })
+  test('a Viewer with no approved entry requirement sees one empty-state line and no pipeline', async ({ page }) => { // s990: a Counsellor (rank 2) is given the v1.1 build only
+    const drawer = await open(page, 1, { entryRows: [{ id: 'p1', kind: 'prerequisite', description: 'English units 3 and 4', status: 'proposed', quote: 'English' }] })
     await expect(drawer).toHaveAttribute('data-view-audience', 'student')
     await expect(drawer.locator('[data-course-entry]')).toBeHidden()
     await expect(drawer.locator('[data-student-entry-empty]')).toHaveText(STUDENT_ONLY_EMPTY_ENTRY)

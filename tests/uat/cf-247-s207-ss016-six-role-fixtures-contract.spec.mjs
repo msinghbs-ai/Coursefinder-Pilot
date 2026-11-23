@@ -42,17 +42,14 @@ test.describe('mocked browser', () => {
 
   test('Counsellor (2): reads courses, contacts and the guide\'s counsellor tasks; Layer 4 and Evidence are a Curator\'s', async ({ page }) => {
     await asRole(page, 2)
-    await page.goto('/#platform-guide')
-    await expect(page.locator('[data-guide-role="2"]')).toContainText('Your role: Counsellor')
-    await expect(page.locator('[data-guide-role="2"]')).toContainText('report it from the record in Zoho')
-    for (const shown of ['Courses', 'Provider contacts', 'Entry requirements', 'Rankings & statistics']) await expect(menu(page)).toContainText(shown)
-    for (const hidden of ['Layer 4 Review', 'Evidence', 'Scheduled jobs']) await expect(menu(page)).not.toContainText(hidden)
-    // the SOP tabs need a Curator: the address falls back to the Platform guide and says so
-    await page.goto('/#platform-guide?tab=operator-sop')
-    await expect(page.locator('[data-platform-guide]')).toBeVisible()
-    await expect(page.locator('[data-tab-handoff]')).toContainText('Guides › Operator SOP opens from Curator (rank 3)')
+    // s990: a Counsellor is given the v1.1 build only: four screens, and no operator screen or address reaches them
+    await page.goto('/#ui-v1/guide')
+    const nav = page.locator('.ui-shell nav')
+    for (const shown of ['Courses', 'Universities & Providers', 'Scholarships', 'Guide']) await expect(nav).toContainText(shown)
+    for (const hidden of ['Layer 4 Review', 'Evidence', 'Scheduled jobs']) await expect(page.locator('.ui-shell')).not.toContainText(hidden)
     await page.goto('/#evidence')
-    await expect(handoff(page)).toContainText('Evidence opens from Curator (rank 3)')
+    await expect(page.locator('.ui-shell')).toBeVisible()
+    await expect(page.locator('[data-handoff]')).toHaveCount(0)
   })
 
   test('Curator (3): withdraws an active row with a reason; reads AER but cannot decide it; value choices name the Pipeline Operator', async ({ page }) => {

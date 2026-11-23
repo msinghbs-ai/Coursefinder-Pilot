@@ -405,7 +405,7 @@ test.describe('the Provider Catalogue', () => {
   })
 
   test('below Curator the row has no tick box and no Extract button', async ({ page }) => {
-    await mountCatalogue(page, { rank: 2 })
+    await mountCatalogue(page, { rank: 1 }) // s990: a Counsellor (rank 2) is given the v1.1 build only
     await expect(page.locator('input[aria-label$="for description extraction"]')).toHaveCount(0)
     await expect(page.getByRole('button', { name: /^Extract \/ refresh description now for / })).toHaveCount(0)
   })

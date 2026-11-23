@@ -234,8 +234,8 @@ test.describe('mocked browser', () => {
     await expect.poll(() => argsSeen.some((a) => a.disposition === 'not_discovered')).toBe(true)
   })
 
-  test('a counsellor (rank 2) sees no AER panel and the server is not asked', async ({ page }) => {
-    await mockAdmin(page, { rank: 2, role: 'counsellor' })
+  test('a viewer (rank 1) sees no AER panel and the server is not asked', async ({ page }) => {
+    await mockAdmin(page, { rank: 1, role: 'viewer' }) // s990: a Counsellor (rank 2) is given the v1.1 build only
     const calls = []
     await page.route('**/rest/v1/rpc/admin_aer', (route) => { calls.push((route.request().postDataJSON() || {}).p_action); return route.fulfill({ json: COVERAGE }) })
     await page.goto('/#coverage?tab=attributes')

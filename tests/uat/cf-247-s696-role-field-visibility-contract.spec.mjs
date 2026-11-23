@@ -54,8 +54,8 @@ test.describe('mocked browser', () => {
     await expect(share).toBeVisible()
   })
 
-  test('a Counsellor gets no switcher, a student-facing drawer and the live figures (v2.16.47, s712)', async ({ page }) => {
-    await mockAdmin(page, { rank: 2 })
+  test('a Viewer gets no switcher, a student-facing drawer and the live figures (v2.16.47, s712)', async ({ page }) => {
+    await mockAdmin(page, { rank: 1 }) // s990: a Counsellor (rank 2) is given the v1.1 build only
     await routeCorrelated(page)
     await page.goto('/#courses?id=0b1fb6d4-c02f-47c7-98d0-9f0d57240fd5')
     const drawer = page.locator('aside.m-drawer')
@@ -69,7 +69,7 @@ test.describe('mocked browser', () => {
   })
 
   test('a failed figure read shows one plain note, not an empty card (v2.16.47)', async ({ page }) => {
-    await mockAdmin(page, { rank: 2 })
+    await mockAdmin(page, { rank: 1 }) // s990: a Counsellor (rank 2) is given the v1.1 build only
     await routeCorrelated(page)
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_destination_review', r => r.fulfill({ status: 403, json: { code: '42501', message: 'Curator role or above required' } }))
     await page.goto('/#courses?id=0b1fb6d4-c02f-47c7-98d0-9f0d57240fd5')
