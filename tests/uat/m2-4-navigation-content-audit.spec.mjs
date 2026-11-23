@@ -39,7 +39,7 @@ async function closeVisibleDialog(page){
   await closeAuxiliarySurface(page)
 }
 
-async function visibleNavigation(page){return page.locator('.m-nav').evaluate(nav=>[...nav.querySelectorAll('.m-nav-group')].map(g=>({group:g.querySelector('.m-nav-label')?.textContent?.trim()||'',items:[...g.querySelectorAll('button.m-nav-item')].filter(b=>getComputedStyle(b).display!=='none'&&b.offsetParent!==null).map(b=>b.querySelector('span')?.textContent?.trim()||b.textContent.trim())})).filter(x=>x.group&&x.items.length))}
+async function visibleNavigation(page){return page.locator('[data-ui-admin-nav]').evaluate(nav=>[...nav.querySelectorAll('[data-nav-group]')].map(g=>({group:g.querySelector('[data-nav-group] > .ui-nav-label')?.textContent?.trim()||'',items:[...g.querySelectorAll('a[data-nav-page]')].filter(b=>getComputedStyle(b).display!=='none'&&b.offsetParent!==null).map(b=>b.querySelector('span')?.textContent?.trim()||b.textContent.trim())})).filter(x=>x.group&&x.items.length))}
 
 async function openMenuItem(page,label){
   await closeAuxiliarySurface(page)

@@ -88,7 +88,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page)
     await page.goto('/#data-quality-readiness')
     await expect(page).toHaveURL(/#coverage\?tab=attributes$/)
-    await expect(page.locator('.m-sidebar')).toBeVisible()
+    await expect(page.locator('[data-ui-admin-nav]')).toBeVisible()
     await expect(page.locator('.dq-shell')).toHaveCount(0)
     await expect(page.locator('.m-topbar h1')).toHaveText('Coverage & completeness')
     await expect(page.getByRole('tab', { name: 'Attributes' })).toHaveAttribute('aria-selected', 'true')

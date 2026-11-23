@@ -9,10 +9,10 @@ test.describe('StudySearch canonical Administration and Operations navigation @d
   test.beforeAll(async()=>{await writeRunEnvironment({suite:'admin-canonical-navigation-a20-a28-cf092',change_control:'CF-CHG-20260830-048 / CF-CHG-20260910-092'})})
 
   test('primary sidebar exposes the governed non-floating information architecture',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-    await loginAsUatUser(page);const nav=page.locator('.m-nav')
+    await loginAsUatUser(page);const nav=page.locator('[data-ui-admin-nav]')
     // v2.15.107 (Decision 171): five-section menu from src/nav-map.js. Only items open to every operator rank are asserted.
     for(const group of ['Catalogue','Data pipeline','Operations']){ // Administration is rank-gated now (Platform settings and Administration hold admin-only pages)
-      await expect(nav.locator('.m-nav-label').filter({hasText:group}).first()).toHaveText(group,{timeout:DETERMINISTIC_UI_TIMEOUT})
+      await expect(nav.locator('[data-nav-group] > .ui-nav-label').filter({hasText:group}).first()).toHaveText(group,{timeout:DETERMINISTIC_UI_TIMEOUT})
     }
     for(const label of ['Dashboard','Courses','Scholarships','Coverage & completeness','Layer 4 Review','Evidence','Provider contacts']){
       await expect(nav.getByRole('button',{name:label,exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})

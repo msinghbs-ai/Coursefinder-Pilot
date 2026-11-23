@@ -61,9 +61,11 @@ const pageOf=(sum,k,d)=>Number(sum?.paging?.[k])||d
 let lazyMax=3,lazyRun=0;const lazyQ=[]
 const lazyNext=()=>{while(lazyRun<lazyMax&&lazyQ.length){const[f,ok,no]=lazyQ.shift();lazyRun++;Promise.resolve().then(f).then(ok,no).finally(()=>{lazyRun--;lazyNext()})}}
 const lazy=f=>new Promise((ok,no)=>{lazyQ.push([f,ok,no]);lazyNext()})
+// the nearest scrolling ancestor is the observer's root, so the 400px margin applies inside the shell's own scroll area (a viewport root ignores it)
+function scroller(el){for(let n=el.parentElement;n;n=n.parentElement){const o=getComputedStyle(n).overflowY;if(o==='auto'||o==='scroll')return n}return null}
 function useOnScreen(ref){const[on,setOn]=useState(false)
   useEffect(()=>{if(on)return;const el=ref.current;if(!el||typeof IntersectionObserver==='undefined'){setOn(true);return}
-    const o=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){setOn(true);o.disconnect()}},{rootMargin:'400px 0px'});o.observe(el);return()=>o.disconnect()},[on])
+    const o=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){setOn(true);o.disconnect()}},{root:scroller(el),rootMargin:'400px 0px'});o.observe(el);return()=>o.disconnect()},[on])
   return on}
 // AER decision 06:58 §2: the university and the kind pill chosen are kept for this browser tab (paging, refresh, decisions, coming back)
 const SEL='l4i-sel'

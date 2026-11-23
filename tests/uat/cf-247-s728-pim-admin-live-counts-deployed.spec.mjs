@@ -24,7 +24,7 @@ test.describe('S2-BOOST-Courses live counts in PIM Admin (read-only) @deployed',
         await page.goto(at(hash))
         const t = page.getByRole('tab', { name: tab, exact: true }).first()
         if (await t.isVisible({ timeout: DETERMINISTIC_UI_TIMEOUT }).catch(() => false)) await t.click()
-        await expect(page.locator('.m-nav')).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })
+        await expect(page.locator('[data-ui-admin-nav]')).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })
         await page.waitForTimeout(6000)
         const lines = report(name, await page.locator('body').innerText())
         expect(lines.length, `${name} shows figures`).toBeGreaterThan(0)

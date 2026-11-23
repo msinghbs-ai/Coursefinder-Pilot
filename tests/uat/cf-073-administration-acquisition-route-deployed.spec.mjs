@@ -19,7 +19,7 @@ test.describe('CF-073 Administration Acquisition route regression @deployed',()=
       await loginAsUatUser(page)
       await page.goto(new URL('/#administration?section=layer2-providers',process.env.UAT_BASE_URL).toString())
 
-      await expect(page.locator('.m-shell')).toBeVisible({timeout:45000})
+      await expect(page.locator('[data-ui-admin-shell]')).toBeVisible({timeout:45000})
       // v2.16.12 (15 Nov 2026): the old address opens Services & limits, where each service keeps its acquisition settings in its Details fold (s1013)
       await expect(page.locator('[data-services-limits]')).toBeVisible({timeout:45000})
       await expect(page.locator('[data-service-card="firecrawl"]')).toBeVisible()
@@ -31,9 +31,9 @@ test.describe('CF-073 Administration Acquisition route regression @deployed',()=
       // v2.15.107 and v2.15.200: Administration is folded into Scrapers & fetchers, so the old Overview tab no longer exists.
       // The direct address still renders (Services & limits since v2.16.12). Leaving it by the menu and going Back recovers it.
       await page.evaluate(()=>{location.hash='#dashboard'})
-      await expect(page.locator('.m-shell')).toBeVisible()
+      await expect(page.locator('[data-ui-admin-shell]')).toBeVisible()
       await page.goBack()
-      await expect(page.locator('.m-shell')).toBeVisible({timeout:45000})
+      await expect(page.locator('[data-ui-admin-shell]')).toBeVisible({timeout:45000})
       await expect(page.locator('[data-services-limits]')).toBeVisible({timeout:45000})
       await expect(page.locator('.m-workspace-error')).toHaveCount(0)
       expect(pageErrors).toEqual([])

@@ -18,6 +18,7 @@ const SCREENS = { courses: CoursesView, providers: ProvidersView, scholarships: 
 export default function CounsellorApp({ userId, screens = SCREENS }) {
   const [route, setRoute] = useState(routeOf)
   const saved = useMemo(() => createSavedStore(userId), [userId])
+  useEffect(() => { document.body.classList.add('ui-v1'); return () => document.body.classList.remove('ui-v1') }, [])
   useEffect(() => { const f = () => setRoute(routeOf()); addEventListener('hashchange', f); return () => removeEventListener('hashchange', f) }, [])
   const View = screens[route]
   return <div className="ui-shell">

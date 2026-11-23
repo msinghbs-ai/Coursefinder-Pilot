@@ -10,7 +10,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
   // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation retired; three Layer workspaces remain.
   test('canonical Operations navigation owns the Layer workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
-    const nav=page.locator('.m-nav')
+    const nav=page.locator('[data-ui-admin-nav]')
     for(const label of ['Layer 1 Register','Layer 2/3 Build & enrich','Layer 4 Review'])
       await expect(nav.getByRole('button',{name:label,exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(nav.getByRole('button',{name:'Layer 3 AI validation',exact:true})).toHaveCount(0)
@@ -42,7 +42,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
     const workspace=page.locator('[data-adapters-workspace]')
     await expect(page.getByRole('heading',{name:'Layer 2/3 Build & enrich',exact:true}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(workspace).toBeVisible({timeout:30_000}) // v2.15.300: Adapters is the Universities tab of Layer 2/3
-    await expect(page.locator('.m-sidebar')).toBeVisible()
+    await expect(page.locator('[data-ui-admin-nav]')).toBeVisible()
     await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0)
     await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)
     await expect(workspace.getByRole('button',{name:'Start production enrichment',exact:true})).toHaveCount(0)
