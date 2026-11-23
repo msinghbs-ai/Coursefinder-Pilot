@@ -7,7 +7,7 @@ const sql = fs.readFileSync('supabase/migrations/20261123200000_cf247_s992_schol
 const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8');
 
 test('s992: listing page read directly first; direct copy used only when it gives items; scraper fallback unchanged', () => {
-  expect(w).toContain('const WORKER = "coverage-sweep-worker-v1.0.35"; // v1.0.35 (23 Nov 2026, CF-247 s992');
+  expect(w).toContain('// was v1.0.35 (23 Nov 2026, CF-247 s992');  // v1.0.36 from s1017 keeps the s992 note
   expect(w).toContain('let pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000), true);');
   expect(w).toContain('if (pg.via === "direct" && pg.status === "read" && scholarshipListing(pg.html, pg.finalUrl || url, r.hosts || [], maxItems).length + awardSections(pg.html, pg.finalUrl || url).length === 0)');
   expect(w).toContain('pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000), false);');
