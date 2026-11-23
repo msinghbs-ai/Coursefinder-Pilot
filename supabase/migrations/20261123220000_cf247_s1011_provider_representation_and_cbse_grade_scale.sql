@@ -14,6 +14,17 @@
 -- G1: no job. G2: no operational value (the role ranks are fixed role codes, marked). G3: no consumer object is touched (75/48 before and after).
 -- Replaces: nothing
 -- Retires: nothing
+set local lock_timeout = '5s';  -- fixed: lock wait for the new tables
+
+do $g$
+declare v jsonb := security.consumer_api_check_v1();
+begin
+  if jsonb_array_length(coalesce(v->'drift', '[]'::jsonb)) <> 0 or (v->>'functions')::int <> 75 or (v->>'relations')::int <> 48 then
+    raise exception 'guard: the consumer API is not at its baseline before this change: %', v;
+  end if;
+end $g$;
+create temp table s1011_locks on commit drop as select count(*) n from pipeline.manual_locks;
+create temp table s1011_cron on commit drop as select count(*) n from cron.job where active;
 
 create table if not exists pipeline.provider_representation (
   provider_id uuid primary key references catalogue.providers(id) on delete restrict,
@@ -109,7 +120,13 @@ select c.id, 'IN_CBSE_X', 'Secondary School Examination (Class X)', 'CBSE', 'CBS
    and not exists (select 1 from ref.grade_scale_conversions g where g.country_id = c.id and g.scale_code = 'CBSE_X_GP10' and g.raw_min_value = v.gp);
 
 do $post$
+declare v_api jsonb := security.consumer_api_check_v1();
 begin
+  if jsonb_array_length(coalesce(v_api->'drift', '[]'::jsonb)) <> 0 or (v_api->>'functions')::int <> 75 or (v_api->>'relations')::int <> 48 then
+    raise exception 'post-check: the consumer API moved: %', v_api;
+  end if;
+  if (select count(*) from pipeline.manual_locks) <> (select n from s1011_locks) then raise exception 'post-check: manual locks changed'; end if;
+  if (select count(*) from cron.job where active) <> (select n from s1011_cron) then raise exception 'post-check: the number of active cron jobs changed'; end if;
   if has_table_privilege('anon', 'pipeline.provider_representation', 'select') or has_table_privilege('authenticated', 'pipeline.provider_representation', 'select')
      or has_function_privilege('anon', 'public.admin_provider_representation_save_v1(uuid,jsonb)', 'execute') or has_function_privilege('anon', 'public.admin_provider_representation_read_v1(uuid)', 'execute') then
     raise exception 'post-check: a role can reach a new object it should not';
