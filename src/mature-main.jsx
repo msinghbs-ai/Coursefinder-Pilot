@@ -69,6 +69,7 @@ import{DataTable as SharedDataTable,FilterSelect}from'./DataTable'
 import{useCourseLayout,ColumnsControl,useCourseTableColumns,providerTableColumns}from'./CatalogueColumns'
 import{sortSentence,COURSE_SCREEN,PROVIDER_SCREEN,QUALITY_FILTER_OPTIONS,STUDY_LOAD_LABELS,EMPTY_REASON_LABELS}from'./catalogue-columns'
 import './provider-fill-fields.css' // small: the Provider row's tick box and button need it before the lazy panel is opened
+const CounsellorApp=React.lazy(()=>import('./ui-v1/CounsellorApp.jsx')) // s990: the v1.1 Counsellor build (its own tokens and kit; loads only when drawn)
 // v2.15.217 (code split): screens used only inside one page load on demand. If a screen's file is gone because a newer release was deployed
 // while this tab was open, the page reloads once to pick up the new release instead of showing an error.
 function lazyPage(load,name='default'){return React.lazy(()=>load().then(m=>({default:m[name]})).catch(e=>{let again=false;try{again=sessionStorage.getItem('cf-chunk-reload')!==String(location.pathname+location.hash)}catch{}if(again&&/dynamically imported module|Importing a module script failed|Failed to fetch/i.test(String(e?.message||e))){try{sessionStorage.setItem('cf-chunk-reload',String(location.pathname+location.hash))}catch{}location.reload();return new Promise(()=>{})}throw e}))}
@@ -345,6 +346,8 @@ function App(){
   if(booting)return <div className="m-boot"><div className="m-loader"/><span>Loading StudySearch Admin…</span></div>
   if(!session)return <Login onError={m=>setError(m?plainError(m):'')} error={error}/>
   if(passwordSetup)return <SetPassword kind={passwordSetup} user={session.user} onDone={()=>setPasswordSetup(null)}/>
+  // s990 (Commit 1): the v1.1 Counsellor build is reachable at #ui-v1/<screen> for any signed-in role; Commit 2 makes it the Counsellor's only build
+  if(/^#ui-v1(\/|$)/.test(location.hash))return <React.Suspense fallback={<div className="m-boot"><div className="m-loader"/></div>}><CounsellorApp userId={session.user?.id}/></React.Suspense>
   const pageKey=route.page,page=PAGES[pageKey]||PAGES.dashboard,tab=effectiveTab(pageKey,route.tab,rank)
   const tone=health===undefined?'unknown':healthTone(health?.overall)
   const healthLabel=health===undefined?'Checking platform health':HEALTH_WORDS[tone]
