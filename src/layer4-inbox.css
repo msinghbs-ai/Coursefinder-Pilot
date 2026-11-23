@@ -295,3 +295,21 @@ mark.dea-ban{background:var(--cf-amber-100);color:inherit;padding:0 2px;border-r
   .l4d-bar{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .l4d-more-toggle{margin-left:0}
 }
+
+/* UI/UX Unification v1.2, Slice 1 step 2 (Platform Admin 24 Nov 2026): Layer 4 Review drawn with the ui-v1 tokens inside the Admin shell. Only appearance;
+   every data-l4-* hook, label and behaviour is unchanged. Scoped to .ui-admin so the legacy shell never sees it. */
+.ui-admin .l4i-other-toggle{display:inline-flex;align-items:center;gap:var(--space-2);min-height:var(--size-save);padding:var(--space-2) var(--space-4);border:1px solid var(--color-border-strong);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font:inherit;font-size:var(--text-sm);font-weight:600;cursor:pointer}
+.ui-admin .l4i-other-toggle:hover{background:var(--color-surface-alt)}
+.ui-admin .l4i-other-toggle.open{background:var(--color-primary-soft);border-color:var(--color-primary);color:var(--color-primary)}
+.ui-admin .dea-hold{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-2) var(--space-3);padding:var(--space-3) var(--space-4);border:1px solid var(--color-warning);border-radius:var(--radius-md);background:var(--color-warning-soft)}
+.ui-admin .dea-hold>strong{font-size:var(--text-md);font-weight:700;color:var(--color-text)}
+.ui-admin .dea-hold .dea-tech{flex-basis:100%;font-size:var(--text-xs);color:var(--color-text-muted)}
+.ui-admin .l4d-bar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3)}
+.ui-admin .l4d-btn{display:inline-flex;align-items:baseline;gap:var(--space-2);min-height:var(--size-save);padding:var(--space-2) var(--space-4);border-radius:var(--radius-md);border:1px solid var(--color-border-strong);background:var(--color-surface);color:var(--color-text);font:inherit;font-size:var(--text-sm);font-weight:700;cursor:pointer}
+.ui-admin .l4d-btn small{font-size:var(--text-xs);font-weight:500;color:var(--color-text-muted)}
+.ui-admin .l4d-btn.l4d-yes{border-color:var(--color-success);background:var(--color-success-soft)}
+.ui-admin .l4d-btn.l4d-no{border-color:var(--color-danger);background:var(--color-danger-soft)}
+.ui-admin .l4d-btn.l4d-resubmit{border-color:var(--color-info);background:var(--color-info-soft)}
+.ui-admin .l4d-btn:disabled{opacity:.5;cursor:not-allowed}
+.ui-admin .l4d-btn:focus-visible,.ui-admin .l4i-other-toggle:focus-visible{outline:2px solid var(--color-focus);outline-offset:2px}
+@media(max-width:700px){.ui-admin .l4d-bar{flex-direction:column;align-items:stretch}.ui-admin .l4d-btn{justify-content:center;min-height:var(--size-save)}}
