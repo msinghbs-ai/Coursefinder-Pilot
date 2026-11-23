@@ -177,37 +177,37 @@ CREATE OR REPLACE FUNCTION security.monitor_watchlist_plan_v1()
 AS $function$
 declare v_cap numeric := security.monitor_setting_v1('monitor_weekly_credits', 150); v_per numeric := security.monitor_setting_v1('monitor_credits_per_url', 5);
         v_n int := security.monitor_setting_v1('monitor_urls_per_provider', 3)::int; v_res int := security.monitor_setting_v1('monitor_search_results', 10)::int;
-        v_search numeric; v_planned int; v_held int; v_week numeric;
+        v_search numeric; v_planned int; v_held int; v_week numeric; v_rows jsonb;
 begin
   v_search := 2 * ceil(v_res / 10.0);  -- fixed: Firecrawl's price, 2 credits per 10 search results
-  create temp table if not exists _plan (provider_id uuid, target_type text, url text, queries text[], course_id uuid, rk int, psort int, est numeric) on commit drop;
-  truncate _plan;
-  insert into _plan
-  select y.provider_id, 'scrape', y.course_url, null, y.id, y.rk, y.sort, v_per from (
-    select x.*, row_number() over (partition by x.provider_id order by x.golden desc, x.score desc, x.id) rk from (
-      -- one row per page (sibling courses can share a page): the page's best course
-      select distinct on (c.provider_id, security.monitor_url_key_v1(c.course_url)) c.id, c.provider_id, c.course_url, w.sort, (g.course_id is not null) golden,
-             (select count(*) from catalogue.course_fees f where f.course_id = c.id and f.status = 'active' and f.fee_type = 'provider_current_tuition')
-             + (select count(*) from catalogue.course_intakes i where i.course_id = c.id and i.status = 'active') score
-        from catalogue.courses c join pipeline.monitor_watch_providers w on w.provider_id = c.provider_id
-        left join pipeline.monitor_watch_courses g on g.course_id = c.id
-       where c.lifecycle_status = 'active' and c.course_url ~* '^https://'
-       order by c.provider_id, security.monitor_url_key_v1(c.course_url), (g.course_id is not null) desc,
-                (select count(*) from catalogue.course_fees f where f.course_id = c.id and f.status = 'active' and f.fee_type = 'provider_current_tuition')
-                + (select count(*) from catalogue.course_intakes i where i.course_id = c.id and i.status = 'active') desc, c.id) x) y
-   where y.rk <= v_n;
-  insert into _plan
-  select w.provider_id, 'search', null, w.search_queries, null, 1, w.sort, v_search from pipeline.monitor_watch_providers w where cardinality(w.search_queries) > 0;
+  -- the plan as rows held in a variable: each university's pages (one per page; sibling courses can share a page, so the page's best course),
+  -- test courses first, then the pages holding the most live fees and intakes; then each search monitor
+  select coalesce(jsonb_agg(z), '[]'::jsonb) into v_rows from (
+    select y.provider_id, 'scrape' target_type, y.course_url url, null::text[] queries, y.id course_id, y.rk, y.sort psort, v_per est from (
+      select x.*, row_number() over (partition by x.provider_id order by x.golden desc, x.score desc, x.id) rk from (
+        select distinct on (c.provider_id, security.monitor_url_key_v1(c.course_url)) c.id, c.provider_id, c.course_url, w.sort, (g.course_id is not null) golden,
+               (select count(*) from catalogue.course_fees f where f.course_id = c.id and f.status = 'active' and f.fee_type = 'provider_current_tuition')
+               + (select count(*) from catalogue.course_intakes i where i.course_id = c.id and i.status = 'active') score
+          from catalogue.courses c join pipeline.monitor_watch_providers w on w.provider_id = c.provider_id
+          left join pipeline.monitor_watch_courses g on g.course_id = c.id
+         where c.lifecycle_status = 'active' and c.course_url ~* '^https://'
+         order by c.provider_id, security.monitor_url_key_v1(c.course_url), (g.course_id is not null) desc,
+                  (select count(*) from catalogue.course_fees f where f.course_id = c.id and f.status = 'active' and f.fee_type = 'provider_current_tuition')
+                  + (select count(*) from catalogue.course_intakes i where i.course_id = c.id and i.status = 'active') desc, c.id) x) y
+     where y.rk <= v_n
+    union all
+    select w.provider_id, 'search', null, w.search_queries, null, 1, w.sort, v_search from pipeline.monitor_watch_providers w where cardinality(w.search_queries) > 0) z;
   -- round-robin across universities, within the weekly cap
   insert into pipeline.monitor_watchlist (provider_id, target_type, url, queries, course_id, rank, est_credits, status, planned_at)
   select p.provider_id, p.target_type, p.url, p.queries, p.course_id, p.rk, p.est,
          case when sum(p.est) over (order by p.rk, p.psort, p.target_type desc, p.url) <= v_cap then 'planned' else 'held_budget' end, now()
-    from _plan p
+    from jsonb_to_recordset(v_rows) as p(provider_id uuid, target_type text, url text, queries text[], course_id uuid, rk int, psort int, est numeric)
   on conflict (provider_id, target_type, coalesce(url, '')) do update
     set queries = excluded.queries, course_id = excluded.course_id, rank = excluded.rank, est_credits = excluded.est_credits, planned_at = now(),
         status = case when pipeline.monitor_watchlist.status in ('registered', 'paused') and excluded.status = 'planned' then pipeline.monitor_watchlist.status else excluded.status end;
   update pipeline.monitor_watchlist m set status = 'retired', planned_at = now()
-   where m.status in ('planned', 'held_budget') and not exists (select 1 from _plan p where p.provider_id = m.provider_id and p.target_type = m.target_type and coalesce(p.url, '') = coalesce(m.url, ''));
+   where m.status in ('planned', 'held_budget') and not exists (select 1 from jsonb_to_recordset(v_rows) as p(provider_id uuid, target_type text, url text)
+                                                                 where p.provider_id = m.provider_id and p.target_type = m.target_type and coalesce(p.url, '') = coalesce(m.url, ''));
   select count(*) filter (where status in ('planned', 'registered')), count(*) filter (where status = 'held_budget'), coalesce(sum(est_credits) filter (where status in ('planned', 'registered')), 0)
     into v_planned, v_held, v_week from pipeline.monitor_watchlist;
   return jsonb_build_object('planned', v_planned, 'held_budget', v_held, 'est_week_credits', v_week, 'weekly_cap', v_cap);
