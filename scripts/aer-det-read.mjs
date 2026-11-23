@@ -8,7 +8,7 @@ need()
 const mode = process.argv[2] || 'status', total = Math.max(0, Number(process.argv[3] || 0)), country = String(process.argv[4] || 'all').toUpperCase()
 const conc = Math.min(12, Math.max(1, Number(process.argv[5] || 6))) // fixed: bound on parallel worker calls (an operator input of the workflow, default 6)
 const ctry = country === 'ALL' ? '' : `and co.iso_alpha2 = ${lit(country)}`
-const V = 'aer-det-v1.3'
+const V = 'aer-det-v1.4'
 const base = `from pipeline.coverage_course_pages g join catalogue.courses c on c.id = g.course_id and c.lifecycle_status = 'active'
   join catalogue.providers p on p.id = c.provider_id join ref.countries co on co.id = p.country_id
   join pipeline.evidence_artifacts e on e.id = g.evidence_id and e.storage_path is not null

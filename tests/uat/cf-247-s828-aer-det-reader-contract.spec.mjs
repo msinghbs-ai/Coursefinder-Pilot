@@ -1,4 +1,4 @@
-// Guards: S828, S829, S832 and S834 deterministic academic entry reader (Platform Admin 20 Nov 2026 10:51 AEDT Decision 2 and 15:08 AEDT: AER and English are separate; Decision 276 kept): a pure reader with no model, fetch or write; every reading's quote is on the page text word for word; no English test is ever read here.
+// Guards: S828, S829, S832, S834 and s1009 (Platform Admin 23 Nov 2026 15:52 AEDT: no maximum read as a minimum; the quote carries its value; no overall average taken from one subject's mark) deterministic academic entry reader (Platform Admin 20 Nov 2026 10:51 AEDT Decision 2 and 15:08 AEDT: AER and English are separate; Decision 276 kept): a pure reader with no model, fetch or write; every reading's quote is on the page text word for word; no English test is ever read here.
 // CF-247 S828 (reader), S829 (precision), S832 (collapsed-row guard) and S834 (academic only, aer-det-v1.3). Module supabase/functions/coverage-sweep/aer-det-reader.ts.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -10,7 +10,7 @@ const one = (t, k) => detRead(t).find((r) => r.key === k)
 
 test('the module is pure: no model, fetch, storage, database or environment access', () => {
   expect(SRC).not.toMatch(/\bfetch\s*\(|openrouter|firecrawl|Deno\.|supabase|\.rpc\(|\.storage\b|XMLHttpRequest/i)
-  expect(AER_DET_VERSION).toBe('aer-det-v1.3')
+  expect(AER_DET_VERSION).toBe('aer-det-v1.4')
 })
 
 test('academic only: no English test is read, whatever the wording, and an academic value is never taken from an English sentence', () => {
@@ -111,4 +111,18 @@ test('s834 other requirements: a prerequisite, portfolio or interview line the r
   const u = detUncovered(t, detRead(t))
   expect(u).toEqual(['Prerequisite: Mathematics Methods units 3 and 4.', 'Applicants must submit a portfolio.'])
   expect(detUncovered('A minimum ATAR of 70 is required.', detRead('A minimum ATAR of 70 is required.'))).toEqual([])
+})
+
+test('s1009 (aer-det-v1.4): a maximum or "up to" figure is never a minimum; an overall average is not taken from one subject\'s mark; the quote carries the value', () => {
+  expect(keys('*Up to a maximum international ATAR of 99.95 applies to this offer.')).toEqual([])
+  expect(keys('Applicants may receive up to 5 ATAR adjustment points; the maximum ATAR is 99.95.')).toEqual([])
+  expect(keys('Senior School Certificate awarded by CBSE Senior Secondary 65% in English.')).not.toContain('india_board')
+  expect(one('Guaranteed ATAR: 57.70', 'atar').value.atar).toBe(57.7)
+  expect(one('CBSE Senior School Certificate with an overall average of 65%.', 'india_board').value.average_percent).toBe(65)
+  expect(one('International Baccalaureate Diploma with a minimum of 28 points.', 'ib').value.points).toBe(28)
+  expect(one('International Baccalaureate Diploma with a minimum of 28 points.', 'ib').quote).toContain('28 points')  // v1.3 cut this quote to "International"
+  for (const r of detRead('The minimum ATAR for this course is 70.\nInternational Baccalaureate Diploma with a minimum of 28 points.')) {
+    const v = Object.entries(r.value).filter(([k, x]) => k !== 'basis' && (typeof x === 'number' || typeof x === 'string')).map(([, x]) => String(x))
+    expect(v.some((x) => r.quote.includes(x))).toBe(true)
+  }
 })
