@@ -145,7 +145,9 @@ const TABBED_NAV={
   'Layer 3 — AI Interpretation':['Layer 2/3 Build & enrich','Universities'],'Layer 4 — Human Resolution':['Layer 4 Review',''],
   'Completeness':['Coverage & completeness',''],'Statistics & Rankings':['Rankings & statistics',''],'Compare':['Rankings & statistics','Compare'],
   'Campuses':['Providers','Campuses'],'Provider Contacts':['Provider contacts',''],'Important Dates':['Reference data',''],
-  'Important Links':['Reference data',''],'Administration':['Models & services','Fetchers'],'Scrapers & fetchers':['Models & services','Fetchers'],
+  'Important Links':['Reference data',''],
+  // SS-020 step 3 (Decision 269, 3 Nov 2026): Fetchers is part of Models & services › Services & limits (s1015)
+  'Administration':['Models & services','Services & limits'],'Scrapers & fetchers':['Models & services','Services & limits'],
 }
 export async function clickPrimaryNav(page,label){
   if(TABBED_NAV[label]){const[menu,tab]=TABBED_NAV[label];await clickPrimaryNav(page,menu);if(tab){

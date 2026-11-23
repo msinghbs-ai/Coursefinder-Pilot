@@ -49,9 +49,10 @@ test.describe('StudySearch canonical Administration and Operations navigation @d
 
   test('Administration subcontext and Scheduled Tasks survive deep-link browser history',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
-    // v2.15.200: #administration?section=layer2-providers is a retired address; v2.15.300: it lands on Models & services › Fetchers.
+    // v2.15.200: #administration?section=layer2-providers is a retired address; v2.15.300: it lands on Models & services › Fetchers;
+    // SS-020 step 3 (Decision 269, 3 Nov 2026): Fetchers is part of Services & limits, the page's first tab, whose address is #models-services (s1015).
     await page.evaluate(()=>{location.hash='#administration?section=layer2-providers'})
-    await expect(page).toHaveURL(/#models-services\?tab=fetchers/)
+    await expect(page).toHaveURL(/#models-services$/)
     await expect(page.locator('.m-title-wrap h1')).toContainText('Models & services',{timeout:DETERMINISTIC_UI_TIMEOUT})
     await page.reload()
     await expect(page.locator('.m-title-wrap h1')).toContainText('Models & services',{timeout:DETERMINISTIC_UI_TIMEOUT})
@@ -59,7 +60,7 @@ test.describe('StudySearch canonical Administration and Operations navigation @d
     await expect(page).toHaveURL(/#scheduled-jobs/)
     await expect(page.locator('.m-title-wrap h1')).toContainText('Scheduled jobs',{timeout:DETERMINISTIC_UI_TIMEOUT})
     await page.goBack()
-    await expect(page).toHaveURL(/#models-services\?tab=fetchers/)
+    await expect(page).toHaveURL(/#models-services$/)
     await expect(page.locator('.m-title-wrap h1')).toContainText('Models & services')
     await page.goForward()
     await expect(page).toHaveURL(/#scheduled-jobs/)

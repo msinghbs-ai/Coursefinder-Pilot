@@ -1,5 +1,6 @@
 // Guards: M2.4.4: A23 quota-aware Layer 2 background execution
 import fs from 'node:fs/promises'
+import { openServiceDetails } from './support/navigation.mjs'
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
@@ -24,7 +25,10 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
   await expect(page.locator('[data-adapters-workspace]')).toBeVisible({timeout:30_000})
   await page.goto(new URL('/#scrapers',process.env.UAT_BASE_URL).toString())
   // Clean-up batch 2 (9 Oct 2026): Source profiles were retired; the provider registry stays.
-  await expect(page.locator('.l2p-provider-list')).toBeVisible({timeout:30_000})
+  // v2.16.12: the registry is inside each service's Details fold on Services & limits (s1015)
+  await expect(page.locator('[data-services-limits]')).toBeVisible({timeout:30_000})
+  await openServiceDetails(page)
+  await expect(page.locator('.l2p-provider-list').first()).toBeVisible({timeout:30_000})
   await expect(page.locator('[data-card="scrapers.source-profiles"]')).toHaveCount(0)
   await milestoneScreenshot(page,testInfo,'a23-scrapers-registry')
  }finally{await finish(testInfo,runtime)}})

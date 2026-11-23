@@ -49,12 +49,16 @@ export async function openLayer2(page) {
 // v2.15.107: former Administration tools now live on their own pages (src/nav-map.js).
 // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is Models & services › Fetchers (old addresses redirect).
 // Clean-up batch 2 (9 Oct 2026): Source profiles were retired; the acquisition provider registry stays on Fetchers.
-async function openFetchersCard(page,heading){
-  await clickPrimaryNav(page,'Scrapers & fetchers')
-  // v2.16.12: each service card keeps its lists in a closed Details fold below the summary
+// v2.16.12: each service card on Services & limits keeps its lists (the acquisition provider registry among them) in a closed Details fold
+export async function openServiceDetails(page){
   await page.locator('[data-services-summary]').first().waitFor().catch(()=>{})
   const folds=page.locator('details[data-fold^="service-details:"]:not([open]) > summary')
   for(let n=await folds.count();n>0;n=await folds.count())await folds.first().click()
+}
+
+async function openFetchersCard(page,heading){
+  await clickPrimaryNav(page,'Scrapers & fetchers')
+  await openServiceDetails(page)
   const headingLocator=page.getByRole('heading',{name:heading,exact:true}).first()
   await visibleOrExplain(headingLocator, page, `Fetchers › ${heading}`)
   return headingLocator.locator('xpath=ancestor-or-self::*[@role="region"][1] | ancestor::section[1]').first()
