@@ -11,12 +11,26 @@ export const REP = { represented: ['Represented', 'success'], direct: ['Direct',
 export function RepBadge({ rep }) {
   const m = rep && REP[rep.representation_status]
   if (!m) return <span className="ui-badge" data-tone="muted" data-rep="not_recorded" title="Study Square has not recorded a status for this provider">Not recorded</span>
-  const mk = rep.restriction_scope === 'listed' && rep.restriction_markets?.length
-  return <><span className="ui-badge" data-tone={m[1]} data-rep={rep.representation_status} title={`Study Square: ${m[0]}`}>{m[0]}</span>{mk && <span className="ui-market" data-market={rep.restriction_mode}>{rep.restriction_mode === 'except' ? 'Except' : 'Only'} {rep.restriction_markets.join(', ')}</span>}</>
+  const mk = (rep.restriction_mode === 'include' || rep.restriction_mode === 'exclude') && rep.restriction_markets?.length
+  return <><span className="ui-badge" data-tone={m[1]} data-rep={rep.representation_status} title={`Study Square: ${m[0]}`}>{m[0]}</span>{mk && <span className="ui-market" data-market={rep.restriction_mode}>{rep.restriction_mode === 'exclude' ? 'Except' : 'Only'} {rep.restriction_markets.join(', ')}</span>}</>
+}
+
+/** REQ-118 (s1012 read): Study Square's relationship with each provider and its market restriction. The drawer shows the agreement's end date; the screen does not decide an agreement has ended from the browser clock. */
+export function useRepresentation() {
+  const [map, setMap] = useState(() => new Map())
+  useEffect(() => {
+    let on = true
+    supabase.rpc('admin_provider_representation_read_v1', { p_provider: null }).then(({ data, error }) => {
+      if (!on || error) return
+      setMap(new Map((data || []).map(x => [x.provider_id, x])))
+    })
+    return () => { on = false }
+  }, [])
+  return map
 }
 
 export default function ProvidersView() {
-  const lk = useLookups()
+  const lk = useLookups(), reps = useRepresentation()
   const [q, setQ] = useState(''), [country, setCountry] = useState(''), [offset, setOffset] = useState(0)
   const [page, setPage] = useState({ items: [], total: 0, limit: 50 }), [err, setErr] = useState(''), [busy, setBusy] = useState(false), [pick, setPick] = useState(null)
   useEffect(() => { setOffset(0) }, [q, country])
@@ -46,15 +60,16 @@ export default function ProvidersView() {
           <td data-primary><div className="ui-cell-title"><button type="button" className="ui-btn ui-btn-sm" onClick={() => setPick(p)}>{p.display_name || p.canonical_name}</button></div></td>
           <td data-label="Country">{p.country_name || countryName(lk, p.country_code)}</td><td data-label="City">{humanise(p.city?.toLowerCase())}</td>
           <td data-label="Courses" className="ui-num">{Number(p.course_count || 0).toLocaleString('en-AU')}</td>
-          <td data-label="Study Square"><RepBadge rep={p.provider_representation} /></td></tr>)
+          <td data-label="Study Square"><RepBadge rep={reps.get(p.id) || p.provider_representation} /></td></tr>)
           : <tr><td data-primary><div className="ui-emptystate"><p className="ui-emptystate-title">{busy ? 'Loading providers…' : 'No providers match these filters'}</p></div></td></tr>}</tbody></table>
       <div className="ui-filter-actions"><button type="button" className="ui-btn" disabled={offset <= 0 || busy} onClick={() => setOffset(Math.max(0, offset - page.limit))}>Previous</button><button type="button" className="ui-btn" disabled={offset + page.limit >= page.total || busy} onClick={() => setOffset(offset + page.limit)}>Next</button></div>
     </section>
-    {pick && <ProviderDrawer p={pick} onClose={() => setPick(null)} />}
+    {pick && <ProviderDrawer p={pick} rep={reps.get(pick.id) || pick.provider_representation} onClose={() => setPick(null)} />}
   </>
 }
 
-function ProviderDrawer({ p, onClose }) {
+function ProviderDrawer({ p, rep, onClose }) {
+  const lk = useLookups()
   const [d, setD] = useState(null), [tab, setTab] = useState('overview'), [err, setErr] = useState('')
   useEffect(() => { let on = true; api.providerDetail(p.id).then(x => on && setD(x || {})).catch(() => on && setErr('Provider details could not be loaded.')); return () => { on = false } }, [p.id])
   const [pc, setPc] = useState(null), [pcErr, setPcErr] = useState('')
@@ -62,11 +77,12 @@ function ProviderDrawer({ p, onClose }) {
   const camps = d?.campuses_page?.items || d?.campuses_page?.rows || []
   const points = d?.international_contacts?.items || (Array.isArray(d?.international_contacts) ? d.international_contacts : [])
   return <><div className="ui-backdrop" onClick={onClose} /><aside className="ui-drawer" role="dialog" aria-label={p.display_name || p.canonical_name}>
-    <div className="ui-drawer-head"><div><h2>{p.display_name || p.canonical_name}</h2><div className="ui-page-sub"><RepBadge rep={p.provider_representation} /></div></div><button type="button" className="ui-btn ui-btn-sm ui-close" onClick={onClose}>Close</button></div>
+    <div className="ui-drawer-head"><div><h2>{p.display_name || p.canonical_name}</h2><div className="ui-page-sub"><RepBadge rep={rep} /></div></div><button type="button" className="ui-btn ui-btn-sm ui-close" onClick={onClose}>Close</button></div>
     <div className="ui-tabs" role="tablist">{[['overview', 'Overview'], ['contacts', 'Contacts']].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}</div>
     <div className="ui-drawer-body">{err && <div className="ui-alert" role="alert">{err}</div>}{!d && !err && <p className="ui-note">Loading…</p>}
       {d && tab === 'overview' && <dl className="ui-kv"><dt>Country</dt><dd>{p.country_name || p.country_code}</dd>
-        <dt>Study Square</dt><dd>{p.provider_representation ? <RepBadge rep={p.provider_representation} /> : 'Not recorded by Study Square'}</dd>
+        <dt>Market restriction</dt><dd data-restriction>{(rep?.restriction_mode === 'include' || rep?.restriction_mode === 'exclude') && rep.restriction_markets?.length ? `${rep.restriction_mode === 'include' ? 'Only these markets' : 'All markets except'}: ${rep.restriction_markets.map(c => countryName(lk, c) || c).join(', ')}` : rep ? 'No restriction recorded' : 'Not recorded'}{rep?.effective_to ? ` · agreement to ${fdate(rep.effective_to)}` : ''}</dd>
+        <dt>Study Square</dt><dd>{rep ? <RepBadge rep={rep} /> : 'Not recorded by Study Square'}</dd>
         <dt>Courses</dt><dd>{Number(d.course_count ?? p.course_count ?? 0).toLocaleString('en-AU')}</dd><dt>Scholarships</dt><dd>{Number(d.scholarship_count ?? 0).toLocaleString('en-AU')}</dd>
         <dt>Campuses</dt><dd>{camps.length ? <Locs max={99} cities={camps.map(c => ({ subdivision_code: c.subdivision_code, subdivision_name: c.subdivision_name, city: c.city || c.locality, campus: c.campus_name || c.name }))} /> : '—'}</dd>
         {(d.website || p.website) && <><dt>Website</dt><dd><a href={d.website || p.website} target="_blank" rel="noreferrer">Provider website</a></dd></>}</dl>}
