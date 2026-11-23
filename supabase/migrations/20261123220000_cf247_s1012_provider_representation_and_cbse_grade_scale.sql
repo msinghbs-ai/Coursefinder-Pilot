@@ -1,4 +1,4 @@
--- CF-247 s1011 (S1-RM-Design; Platform Admin 23 Nov 2026 20:38 AEDT): two additive parts.
+-- CF-247 s1012 (S1-RM-Design; Platform Admin 23 Nov 2026 20:38 AEDT): two additive parts.
 -- 1. REQ-118 / IR-023 (approved contract, admin docs/platform/2026-11-23-counsellor-feedback-1-3-traceability.md section 5 and P3, provider level):
 --    pipeline.provider_representation holds Study Square's relationship with a provider (representation_status: represented, direct, not_represented;
 --    no row = "Not recorded"), restriction_mode (include, exclude, none) and restriction_markets (ISO 3166-1 alpha-2, empty when none), the dates the
@@ -23,8 +23,8 @@ begin
     raise exception 'guard: the consumer API is not at its baseline before this change: %', v;
   end if;
 end $g$;
-create temp table s1011_locks on commit drop as select count(*) n from pipeline.manual_locks;
-create temp table s1011_cron on commit drop as select count(*) n from cron.job where active;
+create temp table s1012_locks on commit drop as select count(*) n from pipeline.manual_locks;
+create temp table s1012_cron on commit drop as select count(*) n from cron.job where active;
 
 create table if not exists pipeline.provider_representation (
   provider_id uuid primary key references catalogue.providers(id) on delete restrict,
@@ -42,7 +42,7 @@ create table if not exists pipeline.provider_representation (
     (restriction_mode = 'none' and cardinality(restriction_markets) = 0) or (restriction_mode in ('include', 'exclude') and cardinality(restriction_markets) > 0)),
   constraint provider_representation_dates_chk check (effective_to is null or effective_from is null or effective_to >= effective_from)
 );
-comment on table pipeline.provider_representation is 'CF-247 s1011 (REQ-118 / IR-023): Study Square representation status of a provider with its market restriction (restriction_mode include, exclude or none, and restriction_markets as ISO 3166-1 alpha-2 codes). Entered in Admin from the partner agreement register, never read from a website; a provider with no row is Not recorded. Admin-only: not served to the website or Zoho.';
+comment on table pipeline.provider_representation is 'CF-247 s1012 (REQ-118 / IR-023): Study Square representation status of a provider with its market restriction (restriction_mode include, exclude or none, and restriction_markets as ISO 3166-1 alpha-2 codes). Entered in Admin from the partner agreement register, never read from a website; a provider with no row is Not recorded. Admin-only: not served to the website or Zoho.';
 alter table pipeline.provider_representation enable row level security;
 revoke all on pipeline.provider_representation from public, anon, authenticated;
 
@@ -55,7 +55,7 @@ create table if not exists pipeline.provider_representation_events (
   after jsonb,
   created_at timestamptz not null default now()
 );
-comment on table pipeline.provider_representation_events is 'CF-247 s1011 (REQ-118 / IR-023): every change to a provider representation row with its reason, the actor and the row before and after. Append only.';
+comment on table pipeline.provider_representation_events is 'CF-247 s1012 (REQ-118 / IR-023): every change to a provider representation row with its reason, the actor and the row before and after. Append only.';
 alter table pipeline.provider_representation_events enable row level security;
 revoke all on pipeline.provider_representation_events from public, anon, authenticated;
 create index if not exists provider_representation_events_provider_idx on pipeline.provider_representation_events (provider_id, created_at desc);
@@ -91,7 +91,7 @@ begin
   return jsonb_build_object('provider_id', p_provider, 'representation_status', v_new.representation_status, 'restriction_mode', v_new.restriction_mode,
                             'restriction_markets', to_jsonb(v_new.restriction_markets));
 end $function$;
-comment on function public.admin_provider_representation_save_v1(uuid, jsonb) is 'CF-247 s1011 (REQ-118 / IR-023): Admin entry of a provider representation row (status, restriction_mode, restriction_markets, dates, source) with a required reason; PIM Admin and above; every change is logged. Not a consumer object.';
+comment on function public.admin_provider_representation_save_v1(uuid, jsonb) is 'CF-247 s1012 (REQ-118 / IR-023): Admin entry of a provider representation row (status, restriction_mode, restriction_markets, dates, source) with a required reason; PIM Admin and above; every change is logged. Not a consumer object.';
 revoke all on function public.admin_provider_representation_save_v1(uuid, jsonb) from public, anon;
 grant execute on function public.admin_provider_representation_save_v1(uuid, jsonb) to authenticated;
 
@@ -105,7 +105,7 @@ begin
            'effective_to', r.effective_to, 'source', r.source, 'recorded_at', r.recorded_at) order by r.provider_id)
            from pipeline.provider_representation r where p_provider is null or r.provider_id = p_provider), '[]'::jsonb);
 end $function$;
-comment on function public.admin_provider_representation_read_v1(uuid) is 'CF-247 s1011 (REQ-118 / IR-023): Admin read of provider representation rows (one provider or all). A provider with no row is not returned: the screen shows Not recorded. Counsellor and above. Not a consumer object.';
+comment on function public.admin_provider_representation_read_v1(uuid) is 'CF-247 s1012 (REQ-118 / IR-023): Admin read of provider representation rows (one provider or all). A provider with no row is not returned: the screen shows Not recorded. Counsellor and above. Not a consumer object.';
 revoke all on function public.admin_provider_representation_read_v1(uuid) from public, anon;
 grant execute on function public.admin_provider_representation_read_v1(uuid) to authenticated;
 
@@ -125,8 +125,8 @@ begin
   if jsonb_array_length(coalesce(v_api->'drift', '[]'::jsonb)) <> 0 or (v_api->>'functions')::int <> 75 or (v_api->>'relations')::int <> 48 then
     raise exception 'post-check: the consumer API moved: %', v_api;
   end if;
-  if (select count(*) from pipeline.manual_locks) <> (select n from s1011_locks) then raise exception 'post-check: manual locks changed'; end if;
-  if (select count(*) from cron.job where active) <> (select n from s1011_cron) then raise exception 'post-check: the number of active cron jobs changed'; end if;
+  if (select count(*) from pipeline.manual_locks) <> (select n from s1012_locks) then raise exception 'post-check: manual locks changed'; end if;
+  if (select count(*) from cron.job where active) <> (select n from s1012_cron) then raise exception 'post-check: the number of active cron jobs changed'; end if;
   if has_table_privilege('anon', 'pipeline.provider_representation', 'select') or has_table_privilege('authenticated', 'pipeline.provider_representation', 'select')
      or has_function_privilege('anon', 'public.admin_provider_representation_save_v1(uuid,jsonb)', 'execute') or has_function_privilege('anon', 'public.admin_provider_representation_read_v1(uuid)', 'execute') then
     raise exception 'post-check: a role can reach a new object it should not';
