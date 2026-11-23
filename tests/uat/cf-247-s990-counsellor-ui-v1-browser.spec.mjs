@@ -18,6 +18,7 @@ async function counsellor(page) {
     if (b.p_saved) page.saved.set(b.p_course_id, new Date().toISOString()); else page.saved.delete(b.p_course_id);
     return json(r, { course_id: b.p_course_id, is_saved: !!b.p_saved, saved_at: page.saved.get(b.p_course_id) || null, saved_count: page.saved.size, max: 500 });
   });
+  await page.route('https://example.supabase.co/rest/v1/rpc/admin_provider_representation_read_v1', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ provider_id: 'p1', representation_status: 'represented', restriction_mode: 'include', restriction_markets: ['IN', 'NP'], effective_from: '2026-01-01', effective_to: null, source: 'agreement' }]) }));
   await page.route('https://example.supabase.co/rest/v1/rpc/provider_partner_contacts_v1', r => json(r, { provider_id: 'p1', status: 'active', active_count: 1, inactive_count: 0, rows: [{ contact_id: 'c1', record_type: 'person', full_name: 'Alex Partner', job_title: 'Partnerships Manager', work_email: 'alex@example.edu.au', verified_on: '2026-10-01', lifecycle_status: 'active' }] }));
   await page.route('https://example.supabase.co/rest/v1/rpc/counsellor_scholarships_list', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ total: 2, page_rows: 50, offset: 0, today: '2026-11-23', status_counts: { Open: 1, Closed: 1 }, rows: [
     { id: 's1', name: 'International Excellence Scholarship', provider_name: 'Test University', type: 'provider_scholarship', value_text: '20% off tuition', open_date: '2026-09-01', close_date: '2026-12-31', status_key: 'Open', status: 'Open', nationalities: [] },
@@ -79,6 +80,7 @@ test('scholarships show the database status; provider Contacts shows the partner
   await expect(page.locator('.ui-grid tbody tr').nth(1).locator('.ui-badge')).toHaveText('Closed');
   await page.route('https://example.supabase.co/rest/v1/rpc/provider_partner_contacts_v1', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ provider_id: 'p1', status: 'active', active_count: 0, inactive_count: 0, rows: [] }) }));
   await providers(page);
+  await page.route('https://example.supabase.co/rest/v1/rpc/admin_provider_representation_read_v1', r => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' })); // no row held: Not recorded
   await page.goto('/#ui-v1/providers');
   await expect(page.locator('.ui-grid tbody tr').first().locator('[data-rep="not_recorded"]')).toBeVisible();
   await page.locator('.ui-grid tbody tr').first().locator('.ui-btn').click();
@@ -144,4 +146,14 @@ test('the provider Contacts tab reads provider_partner_contacts_v1 and lists the
   await page.getByRole('tab', { name: 'Contacts' }).click();
   await expect(page.locator('[data-partner-contacts]')).toContainText('Alex Partner');
   await expect(page.locator('[data-partner-contacts]')).toContainText('alex@example.edu.au');
+});
+
+test('REQ-118: the provider list and drawer show Study Square status and the market restriction from the server', async ({ page }) => {
+  await counsellor(page); await providers(page);
+  await page.goto('/#ui-v1/providers');
+  const row = page.locator('.ui-grid tbody tr').first();
+  await expect(row.locator('[data-rep="represented"]')).toBeVisible();
+  await expect(row.locator('[data-market="include"]')).toContainText('Only IN, NP');
+  await row.locator('button').first().click();
+  await expect(page.locator('[data-restriction]')).toContainText('Only these markets');
 });
