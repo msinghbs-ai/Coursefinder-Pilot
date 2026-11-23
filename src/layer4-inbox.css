@@ -264,7 +264,13 @@ mark.dea-ban{background:var(--cf-amber-100);color:inherit;padding:0 2px;border-r
 .l4z-hint{font-size:var(--cf-fs-sm)}
 .l4z-hint summary{cursor:pointer;color:var(--cf-indigo-700);font-size:var(--cf-fs-xs);width:max-content}
 .l4z-hint p{margin:4px 0 0;padding:6px 10px;border-left:3px solid var(--cf-indigo-300);background:var(--cf-indigo-50);border-radius:var(--cf-radius-sm)}
-.l4z-pair{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 12px}
+.l4z-desc{display:block;min-width:0}
+/* s998: Proposed value and Live value now share the row in two equal columns (label above its text); one column on a narrow pane. The wrapper was a 110px label grid, which put the whole pair in 110px. */
+.l4z-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 16px}
+.l4z-pair dt{grid-row:1}.l4z-pair dd{grid-row:2;min-width:0;overflow-wrap:anywhere}
+.l4z-pair dt:nth-of-type(1),.l4z-pair dd:nth-of-type(1){grid-column:1}
+.l4z-pair dt:nth-of-type(2),.l4z-pair dd:nth-of-type(2){grid-column:2}
+@media (max-width:700px){.l4z-pair{grid-template-columns:minmax(0,1fr)}.l4z-pair dt,.l4z-pair dd{grid-column:1!important;grid-row:auto}}
 .l4z-fold{font-size:var(--cf-fs-sm)}
 .l4z-fold summary{cursor:pointer;color:var(--cf-slate-600);font-size:var(--cf-fs-xs)}
 .l4d{display:grid;gap:6px}

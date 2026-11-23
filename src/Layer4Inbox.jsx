@@ -283,7 +283,7 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh,holdLabel='',hold
     {hooked&&(!hd?<Loading compact/>:hd.error?<p className="l4i-err" role="alert">{hd.error}</p>:Array.isArray(hd.sections)&&hd.sections.length>0&&<div className="l4i-hook" data-l4-hook-detail>
       {hd.sections.map((x,n)=><details key={x.key||n} data-l4-section={x.key} open={x.key==='summary'||undefined}><summary>{x.title||String(x.key||'').replace(/_/g,' ')}</summary>
         {x.body&&typeof x.body==='object'?(Array.isArray(x.body)?<HookValue v={x.body}/>:<dl className="l4i-dl">{Object.entries(x.body).map(([a,b])=><React.Fragment key={a}><dt>{a.replace(/_/g,' ')}</dt><dd><HookValue v={b} label={a}/></dd></React.Fragment>)}</dl>):<p className="l4i-why"><small>{String(x.body??'')}</small></p>}</details>)}</div>)}
-    {it.kind==='provider_description'&&<div className="l4i-dl" data-l4-description>{/* CF-247 P1 (Platform Admin 2 Nov 2026 10:28): the proposed description, each sentence with the page's own words */}
+    {it.kind==='provider_description'&&<div className="l4z-desc" data-l4-description>{/* CF-247 P1 (Platform Admin 2 Nov 2026 10:28): the proposed description, each sentence with the page's own words */}
       <dl className="l4i-dl l4z-pair"><dt>Proposed value</dt><dd data-l4-description-text><strong>{d.proposed?.description}</strong></dd><dt>Live value now</dt><dd data-l4-live>{d.before?.description||'— none held'}</dd></dl>
       <ol className="l4i-sample">{(Array.isArray(d.proposed?.sentences)?d.proposed.sentences:[]).map((x,i)=><li key={i}>{x.text}<br/><small>Page: <q>{x.quote}</q></small></li>)}</ol>
     </div>}
