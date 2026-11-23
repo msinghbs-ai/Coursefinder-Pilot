@@ -327,7 +327,7 @@ test.describe('mocked browser', () => {
     await expect(page.locator('tr[data-row="p1"] [role="switch"]')).toBeEnabled()
   })
   test('roles: a viewer can choose columns and read, but cannot change the Published switch', async ({ page }) => {
-    await mount(page, { rank: 2 })
+    await mount(page, { rank: 1 }) // s990: a Counsellor (rank 2) is given the v1.1 build only
     expect(await keys(page)).not.toContain('adapter')
     await expect(page.locator('tr[data-row="p1"] [role="switch"]')).toBeDisabled()
     await page.locator('[data-columns-toggle]').click()

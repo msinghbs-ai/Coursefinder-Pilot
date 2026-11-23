@@ -34,7 +34,7 @@ export default function CoursesView({ saved, userId }) {
   const [q, setQ] = useState(''), [country, setCountry] = useState(''), [level, setLevel] = useState('')
   const [view, setView] = useState('all'), [offset, setOffset] = useState(0)
   const [page, setPage] = useState({ items: [], total: 0, limit: 50 }), [err, setErr] = useState(''), [busy, setBusy] = useState(false)
-  const [cmp, setCmp] = useState([]), [open, setOpen] = useState(false), [, bump] = useState(0)
+  const [cmp, setCmp] = useState([]), [open, setOpen] = useState(false), [, bump] = useState(0), [detailRow, setDetailRow] = useState(null)
   useEffect(() => saved.subscribe(() => bump(n => n + 1)), [saved])
   useEffect(() => { setOffset(0) }, [q, country, level])
   useEffect(() => {
@@ -72,9 +72,9 @@ export default function CoursesView({ saved, userId }) {
         {view === 'saved' ? <span><strong>{savedRows.length}</strong> saved courses · {cmp.length} of {COMPARE_MAX} selected to compare</span> : <span><strong>{page.total.toLocaleString('en-AU')}</strong> courses{busy ? ' · loading…' : ''}</span>}
       </div>
       {err && <div className="ui-alert" role="alert">{err}</div>}
-      <table className="ui-grid"><thead><tr><th>Course</th><th>Location</th><th>Level</th><th>Delivery</th><th>Duration</th><th className="ui-num">Tuition</th><th>Completeness</th></tr></thead>
+      <table className="ui-grid" data-no-resize><thead><tr><th>Course</th><th>Location</th><th>Level</th><th>Delivery</th><th>Duration</th><th className="ui-num">Tuition</th><th>Completeness</th></tr></thead>
         <tbody>{rows.length ? rows.map(r => { const rd = readiness(r), on = cmp.includes(r.id); return <tr key={r.id}>
-          <td data-primary><div className="ui-cell-head"><div><div className="ui-cell-title">{r.display_title || r.canonical_title}</div><div className="ui-cell-sub">{r.provider_name}{(r.display_code?.code || r.course_code) ? ' · ' + (r.display_code?.code || r.course_code) : ''}</div></div>
+          <td data-primary><div className="ui-cell-head"><div><div className="ui-cell-title"><button type="button" className="ui-btn ui-btn-sm" onClick={() => setDetailRow(r)}>{r.display_title || r.canonical_title}</button></div><div className="ui-cell-sub">{r.provider_name}{(r.display_code?.code || r.course_code) ? ' · ' + (r.display_code?.code || r.course_code) : ''}</div></div>
             <SaveButton saved={saved.has(r.id)} onToggle={() => saved.toggle(r.id, snapshotOf(r))} /></div>
             {view === 'saved' && <div className="ui-chip-row ui-cell-badges"><button type="button" className="ui-btn ui-btn-sm" aria-pressed={on} disabled={!on && cmp.length >= COMPARE_MAX} title={!on && cmp.length >= COMPARE_MAX ? `Up to ${COMPARE_MAX} courses` : undefined} onClick={() => toggleCmp(r.id)}>{on ? '✓ In compare' : 'Add to compare'}</button></div>}</td>
           <td data-label="Location"><Locs cities={r.cities} /></td>
@@ -86,6 +86,7 @@ export default function CoursesView({ saved, userId }) {
           : <tr><td data-primary>{view === 'saved' ? <div className="ui-emptystate"><p className="ui-emptystate-title">No saved courses yet</p><p className="ui-note">Select ♡ on any course to save it here.</p></div> : <div className="ui-emptystate"><p className="ui-emptystate-title">{busy ? 'Loading courses…' : 'No courses match these filters'}</p></div>}</td></tr>}</tbody></table>
       {view === 'all' && <div className="ui-filter-actions"><button type="button" className="ui-btn" disabled={!hasPrev || busy} onClick={() => setOffset(Math.max(0, offset - page.limit))}>Previous</button><button type="button" className="ui-btn" disabled={!hasNext || busy} onClick={() => setOffset(offset + page.limit)}>Next</button></div>}
     </section>
+    {detailRow && <CourseDrawer row={detailRow} saved={saved} snapshot={snapshotOf(detailRow)} onClose={() => setDetailRow(null)} />}
     {open && <CompareModal ids={cmp} rowsById={Object.fromEntries(savedRows.map(s => [s.id, s]))} onRemove={toggleCmp} onClose={() => setOpen(false)} />}
   </>
 }
@@ -119,4 +120,31 @@ export function CompareModal({ ids, rowsById, onRemove, onClose }) {
 }
 function FragmentRow({ label, ids, det, fn }) {
   return <><div className="ui-compare-label">{label}</div>{ids.map(id => <div key={id} className="ui-compare-cell" data-label={label}>{!det[id] ? '…' : det[id].error ? 'Could not be loaded' : fn(det[id])}</div>)}</>
+}
+
+/** Screen 2: the course detail drawer. One read (course_detail); fees, intakes with exact dates, English sub-scores, entry, scholarships, location, the provider's own page. */
+export function CourseDrawer({ row, saved, snapshot, onClose }) {
+  const [d, setD] = useState(null), [tab, setTab] = useState('overview'), [err, setErr] = useState(''), [, bump] = useState(0)
+  useEffect(() => saved.subscribe(() => bump(n => n + 1)), [saved])
+  useEffect(() => { let on = true; api.courseDetail(row.id).then(x => on && setD(x || {})).catch(() => on && setErr('Course details could not be loaded.')); return () => { on = false } }, [row.id])
+  const title = row.display_title || row.canonical_title
+  const isSaved = saved.has(row.id)
+  const feeRows = (d?.fees || []).filter(f => f.amount != null)
+  const link = d?.course_url
+  return <><div className="ui-backdrop" onClick={onClose} /><aside className="ui-drawer" role="dialog" aria-label={title}>
+    <div className="ui-drawer-head"><div><h2>{title}</h2><div className="ui-page-sub">{row.provider_name}</div></div><button type="button" className="ui-btn ui-btn-sm ui-close" onClick={onClose}>Close</button></div>
+    <div className="ui-tabs" role="tablist">{[['overview', 'Overview'], ['fees', 'Fees & intakes'], ['requirements', 'Entry & English'], ['links', 'Links']].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}</div>
+    <div className="ui-drawer-body">{err && <div className="ui-alert" role="alert">{err}</div>}{!d && !err && <p className="ui-note">Loading…</p>}
+      {d && tab === 'overview' && <dl className="ui-kv"><dt>Study level</dt><dd>{d.level_name || row.level_name || '—'}</dd><dt>Field of study</dt><dd>{d.field_name || '—'}</dd>
+        <dt>Delivery</dt><dd>{humanise(d.delivery_mode)}</dd><dt>Duration</dt><dd>{duration(d.duration_value, d.duration_unit)}</dd>
+        <dt>State & campus</dt><dd><Locs max={99} cities={(d.campuses || []).map(c => ({ subdivision_code: c.subdivision_code, subdivision_name: c.subdivision_name, city: c.city || c.locality, campus: c.campus_name || c.name }))} /></dd>
+        <dt>Course code</dt><dd>{d.course_code || '—'}</dd>{d.description && <><dt>About</dt><dd>{d.description}</dd></>}</dl>}
+      {d && tab === 'fees' && <><section className="ui-section-head"><h3>Tuition</h3></section>{feeRows.length ? <ul className="ui-list">{feeRows.map((f, i) => <li key={i}>{money(f.amount, f.currency)} · {humanise(f.basis)}{f.audience ? ' · ' + humanise(f.audience) : ''}{f.year ? ' · ' + f.year : ''}</li>)}</ul> : <p className="ui-note">Not published by provider.</p>}
+        <section className="ui-section-head"><h3>Intakes</h3></section>{(d.intakes || []).length ? <ul className="ui-list">{d.intakes.map((i, k) => <li key={k}>{i.start_date ? fdate(i.start_date) : `${i.label || ''} ${i.year || ''}`.trim() + ' (month only)'}{i.deadline ? ' · apply by ' + fdate(i.deadline) : ''}</li>)}</ul> : <p className="ui-note">Not published by provider.</p>}</>}
+      {d && tab === 'requirements' && <><section className="ui-section-head"><h3>Academic entry</h3></section><p>{textOf(d.entry_summary) || 'Not recorded'}</p>
+        <section className="ui-section-head"><h3>English</h3></section>{(d.english || []).length ? <ul className="ui-list">{d.english.map((e, k) => <li key={k}><strong>{e.test_name || e.test_code}</strong>: overall {e.overall_score}{e.components && Object.keys(e.components).length ? ' · ' + Object.entries(e.components).map(([a, b]) => `${humanise(a)} ${b}`).join(', ') : ''}</li>)}</ul> : <p className="ui-note">Not recorded.</p>}
+        <section className="ui-section-head"><h3>Scholarships</h3></section><p>{textOf(d.course_scholarships) || 'None recorded'}</p></>}
+      {d && tab === 'links' && <dl className="ui-kv"><dt>Course page</dt><dd>{link ? <a href={link} target="_blank" rel="noreferrer">Provider course page</a> : 'Not published by provider'}</dd>{d.provider_website && <><dt>Provider website</dt><dd><a href={d.provider_website} target="_blank" rel="noreferrer">Provider website</a></dd></>}</dl>}
+    </div>
+    <div className="ui-drawer-foot"><button type="button" className="ui-btn" aria-pressed={isSaved} onClick={() => saved.toggle(row.id, snapshot)}>{isSaved ? '♥ Saved' : '♡ Save course'}</button></div></aside></>
 }

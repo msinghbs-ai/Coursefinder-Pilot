@@ -6,7 +6,7 @@ import fs from 'node:fs';
 const dir = 'src/ui-v1/';
 const read = f => fs.readFileSync(dir + f, 'utf8');
 const css = read('ui-kit.css') + read('tokens.css');
-const code = ['CoursesView.jsx', 'CounsellorApp.jsx', 'format.js', 'saved-store.js'].map(read).join('\n');
+const code = ['CoursesView.jsx', 'CounsellorApp.jsx', 'format.js', 'saved-store.js', 'ProvidersView.jsx', 'ScholarshipsView.jsx', 'GuideView.jsx'].map(read).join('\n');
 const stripComments = s => s.replace(/\/\*[\s\S]*?\*\//g, '');
 
 test('s990 ui: stylesheet lint (no !important, no table min-width, no legacy tokens or class families)', () => {
@@ -39,5 +39,21 @@ test('s990 ui: location shows State · campus names, never a bare region count; 
 
 test('s990 ui: lists come from the live lookups (s930), not from lists in the code', () => {
   expect(code).toContain('useLookups()');
-  expect(code).not.toMatch(/\b(Australia|New Zealand|Canada)\b/);
+  expect(code.replace(/^\s*\/\/.*$/gm, '')).not.toMatch(/\b(Australia|New Zealand|Canada)\b/);
+});
+
+test('s990 ui: the Counsellor build has exactly the four approved screens and is the only build rank 2 is given', () => {
+  const app = read('CounsellorApp.jsx');
+  expect(app).toContain("[['courses', 'Courses'], ['providers', 'Universities & Providers'], ['scholarships', 'Scholarships'], ['guide', 'Guide']]");
+  const main = fs.readFileSync('src/mature-main.jsx', 'utf8');
+  expect(main).toContain('if((context&&rank===2)||/^#ui-v1');
+  expect(main).toContain('if(!context&&!error)return');
+});
+
+test('s990 ui: Scholarships reads only counsellor_scholarships_list; Providers shows Not recorded and the REQ-116 empty state; the guide types no version or count', () => {
+  expect(read('ScholarshipsView.jsx')).toContain("supabase.rpc('counsellor_scholarships_list'");
+  expect(read('ScholarshipsView.jsx')).not.toMatch(/new Date\(\)/);
+  expect(read('ProvidersView.jsx')).toContain('Not recorded');
+  expect(read('ProvidersView.jsx')).toContain('No partner contacts recorded for this provider');
+  expect(read('GuideView.jsx')).not.toMatch(/v2\.\d+|\b\d{2,}[,\d]*\s+(courses|providers|scholarships)\b|reviewed for/i);
 });

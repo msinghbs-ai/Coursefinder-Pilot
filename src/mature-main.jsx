@@ -270,6 +270,8 @@ function focusTarget(cards,at){
 }
 function routeFromHash(){
   const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?')
+  // s990: the v1.1 Counsellor build owns #ui-v1/<screen>; the operator router leaves that address as it is
+  if(/^ui-v1(\/|$)/.test(raw))return resolveTarget('dashboard',new URLSearchParams())
   const r=resolveTarget(route||'dashboard',new URLSearchParams(query))
   // Old addresses keep working: show the new page and quietly replace the address with the new one.
   const canonical=hrefFor(r.page,r.tab,Object.fromEntries(r.params))
@@ -346,8 +348,10 @@ function App(){
   if(booting)return <div className="m-boot"><div className="m-loader"/><span>Loading StudySearch Admin…</span></div>
   if(!session)return <Login onError={m=>setError(m?plainError(m):'')} error={error}/>
   if(passwordSetup)return <SetPassword kind={passwordSetup} user={session.user} onDone={()=>setPasswordSetup(null)}/>
-  // s990 (Commit 1): the v1.1 Counsellor build is reachable at #ui-v1/<screen> for any signed-in role; Commit 2 makes it the Counsellor's only build
-  if(/^#ui-v1(\/|$)/.test(location.hash))return <React.Suspense fallback={<div className="m-boot"><div className="m-loader"/></div>}><CounsellorApp userId={session.user?.id}/></React.Suspense>
+  // s990: until the person's role is known no shell is drawn, so a Counsellor never sees (or reads for) the operator shell
+  if(!context&&!error)return <div className="m-boot"><div className="m-loader"/><span>Loading StudySearch…</span></div>
+  // s990: the v1.1 Counsellor build is the only build a Counsellor (rank 2) is given (IR-021: no operator navigation, view or read is created for it); other roles can preview it at #ui-v1/<screen>
+  if((context&&rank===2)||/^#ui-v1(\/|$)/.test(location.hash))return <React.Suspense fallback={<div className="m-boot"><div className="m-loader"/></div>}><CounsellorApp userId={session.user?.id}/></React.Suspense>
   const pageKey=route.page,page=PAGES[pageKey]||PAGES.dashboard,tab=effectiveTab(pageKey,route.tab,rank)
   const tone=health===undefined?'unknown':healthTone(health?.overall)
   const healthLabel=health===undefined?'Checking platform health':HEALTH_WORDS[tone]
