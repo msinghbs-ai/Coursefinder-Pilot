@@ -55,6 +55,7 @@ begin
     E'coalesce((v_gpa_maps->''course''->>numbered.id::text)::numeric,(v_gpa_maps->''provider''->>numbered.provider_id::text)::numeric)', 2);
   d := pg_temp.s1025_rep(d, E'security.course_gpa_min_percent_v1(e.id,null,v_gpa_cc,v_gpa_qual)',
     E'coalesce((v_gpa_maps->''course''->>e.id::text)::numeric,(v_gpa_maps->''provider''->>(select c9.provider_id from catalogue.courses c9 where c9.id=e.id)::text)::numeric)', 1);
+  d := pg_temp.s1025_rep(d, E'(security.course_gpa_min_percent_v1)', E'(s1025: security.gpa_min_maps_v1, read once per call)', 1);
   execute d;
 end $r$;
 
