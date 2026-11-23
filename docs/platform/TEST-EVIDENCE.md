@@ -55,6 +55,8 @@ The workflow looks, newest first, through the pull request's own commits and its
 
 On a pull request that is ready for review, that carries the label `full-suite-evidence`, or by `workflow_dispatch` with the PR number. A draft gets the reuse path where valid and otherwise a report saying the full suite was deferred. A push cancels the earlier run for the same PR.
 
+Since s1018 (Platform Admin 24 Nov 2026 06:15) the workflow does not listen for labels. Adding a label such as `automerge` or `live-dry-run` neither starts nor cancels a Test evidence run, and adds no placeholder check. The label `full-suite-evidence` is carried by `.github/workflows/test-evidence-label.yml`, which starts Test evidence by `workflow_dispatch` with the PR number.
+
 ### How the full suite is split across runners (CF-247, CI wall-clock only)
 
 The full suite is the same command, `npx playwright test --grep-invert @deployed`, run as a matrix of shards and merged. The evidence contract does not change.
