@@ -1,9 +1,15 @@
 // Guards: Platform Admin 23 Nov 2026 17:50 AEDT (S2-CF s991): known-wrong accepted official course URLs are demoted through the existing governed remediation route, never the manual locks, with counts recorded
-// Pure code contract: the s991 migration file.
+// Pure code contract: the four s991 migration files (ranges 1 to 4 of the course id hash).
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 
-const sql = fs.readFileSync('supabase/migrations/20261123203000_cf247_s991_wrong_accepted_url_demotion.sql', 'utf8');
+const files = fs.readdirSync('supabase/migrations').filter((f) => f.includes('_cf247_s991_wrong_accepted_url_demotion_r')).sort();
+const sql = files.map((f) => fs.readFileSync('supabase/migrations/' + f, 'utf8')).join('\n');
+
+test('s991: four range files cover the whole hash space once', () => {
+  expect(files.length).toBe(4);
+  for (const [lo, hi] of [['0', '3'], ['4', '7'], ['8', 'b'], ['c', 'f']]) expect(sql).toContain("between '" + lo + "' and '" + hi + "'");
+});
 
 test('s991: demotion goes through the existing governed remediation function, not new logic', () => {
   expect(sql).toContain('security.binding_remediation_apply_v1(');
@@ -25,9 +31,9 @@ test('s991: refused pages and soft 404s are the only candidates, with the four r
 
 test('s991: G2 and G3 and housekeeping: batch size is a setting, consumer API checked before and after, headers present, nothing else written', () => {
   expect(sql).toContain("security.pipeline_num_v1('remediation.max_batch_courses', 50)");
-  expect((sql.match(/security\.consumer_api_check_v1\(\)/g) || []).length).toBeGreaterThanOrEqual(2);
+  expect((sql.match(/security\.consumer_api_check_v1\(\)/g) || []).length).toBeGreaterThanOrEqual(8);
   expect(sql).toMatch(/^-- Replaces: nothing\.$/m);
   expect(sql).toMatch(/^-- Retires: nothing\.$/m);
   expect(sql).toContain('post-check: descriptions changed');
-  expect(sql).toContain("'s991_demote_wrong_urls'");
+  expect(sql).toContain("'s991_demote_wrong_urls_r1'");
 });

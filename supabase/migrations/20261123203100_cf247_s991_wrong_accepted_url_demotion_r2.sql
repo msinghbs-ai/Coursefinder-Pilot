@@ -10,7 +10,9 @@
 -- Cost: $0 (no Firecrawl, no AI, no fetch). G1: no job. G2: the batch size is the existing setting remediation.max_batch_courses. G3: consumer API baseline read
 -- before and after (75 functions, 48 relations); no consumer object is touched. The official URL served by Website and Zoho v3 for a demoted course follows the
 -- link status (data, not shape).
--- Counts are written to pipeline.admin_control_events (area course_link, action s991_demote_wrong_urls) so the rolled-back rehearsal can report them.
+-- The pass is split in four migrations (s991 ranges 1 to 4, by the first hex character of the course id) because one call of the migration API stops at about two minutes
+-- and the page check takes about 12 ms a link (measured live 23 Nov 2026 18:55 AEDT: 72 links in 0.84 s). This file is range 2: course id hash 4 to 7.
+-- Counts are written to pipeline.admin_control_events (area course_link, action s991_demote_wrong_urls_r2) so the rolled-back rehearsal can report them.
 -- Replaces: nothing.
 -- Retires: nothing.
 -- Nothing dropped, deleted or renamed.
@@ -48,6 +50,7 @@ begin
        where l.link_type = 'official_course' and l.status = 'active'
          and (x.chk->>'verdict' = 'refuse' or (g.http_status = 200 and coalesce(g.candidates->>'h1', '') ~* '(page|course|program(me)?) not found|^404\b'))
          and not exists (select 1 from pipeline.manual_locks k where k.entity = 'course' and k.entity_id = c.id and k.field in ('official_url', 'course_url', 'all'))
+         and left(md5(c.id::text), 1) between '4' and '7'
          and not security.course_held_v1(c.id)) q;
   v_cand := jsonb_array_length(v_all);
 
@@ -75,7 +78,7 @@ begin
   end if;
 
   insert into pipeline.admin_control_events(area, action, target, detail, actor)
-  values ('course_link', 's991_demote_wrong_urls', 's991', jsonb_build_object('candidates', v_cand, 'demoted', v_demoted, 'links_unverified', v_unv, 'by_class', v_by,
+  values ('course_link', 's991_demote_wrong_urls_r2', 's991', jsonb_build_object('candidates', v_cand, 'demoted', v_demoted, 'links_unverified', v_unv, 'by_class', v_by,
           'calls', v_chunks, 'active_official_links_before', v_links_before, 'active_official_links_after', v_links_after, 'manual_locks', v_locks_after,
           'approval', v_approval), null);
   raise notice 's991: candidates %, demoted %, links unverified %, by class %, active official links % to %, locks %', v_cand, v_demoted, v_unv, v_by, v_links_before, v_links_after, v_locks_after;
