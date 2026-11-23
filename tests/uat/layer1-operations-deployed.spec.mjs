@@ -44,7 +44,7 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
   }finally{await finish(testInfo,runtime)}})
 
   test('Administration preserves the Platform Admin boundary for Layer 1 source configuration',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-    await loginAsUatUser(page)
+    await loginAsUatUser(page,4)
     await page.goto(new URL('/#administration?section=layer1-sources',process.env.UAT_BASE_URL).toString())
     await expect(page.locator('.m-release-pill')).toContainText(/^v2\.\d+\.\d+$/)
     // v2.15.246: the old address opens Layer 1 › Sources; editing a source's settings stays Platform Admin only (rank 6), so the

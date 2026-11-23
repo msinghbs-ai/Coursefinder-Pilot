@@ -104,9 +104,25 @@ async function shellReady(page,timeout=45_000){
   }catch{return false}
 }
 
-export async function loginAsUatUser(page) {
-  const email = process.env.UAT_EMAIL?.trim(), password = process.env.UAT_PASSWORD
-  if (!email || !password) throw new Error('Missing UAT_EMAIL/UAT_PASSWORD. Configure repository Actions secrets COURSEFINDER_UAT_EMAIL and COURSEFINDER_UAT_PASSWORD.')
+// Role-specific UAT accounts (Platform Admin 23 Nov 2026 22:10; secrets added 24 Nov 2026 09:05): rank 6 Platform Admin for full
+// administrative acceptance (UAT_EMAIL), rank 4 Pipeline Operator for operational access and permission regression (UAT_R4_*), rank 2
+// Counsellor for Counsellor workflows (UAT_R2_*). Each sign-in also proves the account holds the role the spec asserts.
+export const UAT_ACCOUNTS = {
+  6: { email: 'UAT_EMAIL', password: 'UAT_PASSWORD', secrets: 'COURSEFINDER_UAT_EMAIL and COURSEFINDER_UAT_PASSWORD', role: /Platform Admin/i },
+  4: { email: 'UAT_R4_EMAIL', password: 'UAT_R4_PASSWORD', secrets: 'SS_UATR4_Email and SS_UATR4_PWD', role: /Pipeline Operator/i },
+  2: { email: 'UAT_R2_EMAIL', password: 'UAT_R2_PASSWORD', secrets: 'SS_UATR2_Email and SS_UATR2_PWD', role: /Counsellor/i },
+}
+
+export async function loginAsUatUser(page, rank = 6) {
+  const acct = UAT_ACCOUNTS[rank]
+  if (!acct) throw new Error(`No UAT account is set up for rank ${rank}`)
+  const email = process.env[acct.email]?.trim(), password = process.env[acct.password]
+  if (!email || !password) throw new Error(`Missing ${acct.email}/${acct.password}. Configure repository Actions secrets ${acct.secrets}.`)
+  await signInShell(page, email, password)
+  if (rank !== 6) await expect(page.locator('.m-role-pill'), `the rank ${rank} UAT account must hold its role`).toContainText(acct.role, { timeout: 45_000 })
+}
+
+async function signInShell(page, email, password) {
   await page.goto('/')
   const emailInput = page.locator('input[type="email"]').first()
   if (await emailInput.isVisible().catch(() => false)) await signIn(page,email,password)
