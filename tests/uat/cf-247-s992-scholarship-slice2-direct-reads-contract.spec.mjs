@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 
-const sql = fs.readFileSync('supabase/migrations/20261123190000_cf247_s992_scholarship_slice2_direct_reads.sql', 'utf8');
+const sql = fs.readFileSync('supabase/migrations/20261123200000_cf247_s992_scholarship_slice2_direct_reads.sql', 'utf8');
 const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8');
 
 test('s992: listing page read directly first; direct copy used only when it gives items; scraper fallback unchanged', () => {

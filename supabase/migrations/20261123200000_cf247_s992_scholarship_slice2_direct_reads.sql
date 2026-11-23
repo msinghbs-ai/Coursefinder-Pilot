@@ -44,7 +44,7 @@ update pipeline.platform_toolset_settings set value = to_jsonb(0), updated_at = 
  where toolset_key = 'pipeline' and key = 'lanes.stored_first_on' and value = to_jsonb(1);
 insert into pipeline.admin_control_events (area, action, target, detail, actor)
 values ('settings', 'migration', 'pipeline.platform_toolset_settings', jsonb_build_object('key', 'lanes.stored_first_on', 'before', 1, 'after', 0,
-        'reason', 'Platform Admin 23 Nov 2026 17:49: direct reads for scholarship pages without a stored copy (s992)', 'migration', '20261123190000'), security.system_actor_id());
+        'reason', 'Platform Admin 23 Nov 2026 17:49: direct reads for scholarship pages without a stored copy (s992)', 'migration', '20261123200000'), security.system_actor_id());
 
 -- 2 and 3. Charles Darwin's international pages as listing sources; Lincoln's international source read now
 do $l$
@@ -58,12 +58,12 @@ begin
        source = case when pipeline.scholarship_listing_pages.source = 'suggested' then 'manual' else pipeline.scholarship_listing_pages.source end,
        status = case when pipeline.scholarship_listing_pages.status = 'suggested' then 'waiting' else pipeline.scholarship_listing_pages.status end;
     insert into pipeline.admin_control_events (area, action, target, detail, actor)
-    values ('scholarship_coverage', 'add_listing', v_cdu::text, jsonb_build_object('url', v_url, 'reason', 'Platform Admin 23 Nov 2026 17:49: Charles Darwin international awards (s992)', 'migration', '20261123190000'), security.system_actor_id());
+    values ('scholarship_coverage', 'add_listing', v_cdu::text, jsonb_build_object('url', v_url, 'reason', 'Platform Admin 23 Nov 2026 17:49: Charles Darwin international awards (s992)', 'migration', '20261123200000'), security.system_actor_id());
   end loop;
   update pipeline.scholarship_listing_pages set next_read_at = null
    where provider_id = v_lin and url_norm = security.scholarship_url_norm('https://www.lincoln.ac.nz/study/scholarships/international-scholarships') and active;
   insert into pipeline.admin_control_events (area, action, target, detail, actor)
-  values ('scholarship_coverage', 'read_now', v_lin::text, jsonb_build_object('url', 'https://www.lincoln.ac.nz/study/scholarships/international-scholarships', 'reason', 'Platform Admin 23 Nov 2026 17:49: Lincoln international awards (s992)', 'migration', '20261123190000'), security.system_actor_id());
+  values ('scholarship_coverage', 'read_now', v_lin::text, jsonb_build_object('url', 'https://www.lincoln.ac.nz/study/scholarships/international-scholarships', 'reason', 'Platform Admin 23 Nov 2026 17:49: Lincoln international awards (s992)', 'migration', '20261123200000'), security.system_actor_id());
 end $l$;
 
 do $p$
