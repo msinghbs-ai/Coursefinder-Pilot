@@ -81,7 +81,8 @@ $o$;
      where s.id = ok.id and s.award_amount is null and s.award_percentage is null
     returning s.id, ok.kind, ok.num, ok.is_max, ok.evidence_id)
   insert into pipeline.scholarship_sweep_changes (scholarship_id, field, before_value, after_value, evidence_id)
-  select u.id, 'award_value', 'text_only', u.kind || ' ' || u.num || case when u.is_max then ' (up to)' else '' end || ' (s984: read from the stored note)', u.evidence_id
+  select u.id, 'award_value', to_jsonb('text_only'::text),
+         jsonb_build_object('type', u.kind, 'value', u.num, 'up_to', u.is_max, 'rule', 's984: read from the stored note'), u.evidence_id
     from u;
 $n$;
 begin
