@@ -31,4 +31,7 @@ test('s1016: no drop or delete; G3, manual locks and cron checked; the provider 
   expect(l2p).toContain("for(const input of await page.locator('input[type=\"password\"]').all())await expect(input).toHaveValue('');")
   expect(l2p).toContain('not.toMatch(/sb_secret_|service_role|SUPABASE_SERVICE_ROLE_KEY/i)')
   expect(l2p).toContain("drawer.getByText(/Configured in Vault|Not configured/)")
+  const qilt = fs.readFileSync('tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs', 'utf8')
+  expect(qilt).toContain("page.locator('details[data-ci-fold=\"course\"]').first()")
+  expect(qilt).toContain("await expect(page.locator('.ci-outcome-card').first()).toBeVisible()")
 })

@@ -99,6 +99,10 @@ test.describe('CF-061 QILT PRISMS comparison experience @deployed',()=>{
   const insights=(await(await insightsResponse).json()).contextual_insights
   expect(insights?.student_outcomes?.granularity).toBe('provider_context')
   expect(Number(insights?.student_outcomes?.total||0)).toBeGreaterThan(0)
+  // s698 (Platform Admin 18 Nov 2026 23:51): Related insights & funding is folded by default; open it to see the outcome cards (s1016)
+  const fold=page.locator('details[data-ci-fold="course"]').first()
+  await fold.locator(':scope > summary').click()
+  await expect(fold).toHaveAttribute('open','')
   await expect(page.locator('.ci-outcome-card').first()).toBeVisible()
   await expect(page.locator('.ci-benchmark-copy').first()).toBeVisible() // a national benchmark is shown only where the source holds one; otherwise the collection years
 
