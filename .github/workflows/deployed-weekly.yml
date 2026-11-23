@@ -37,6 +37,10 @@ jobs:
       UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
+      UAT_R4_EMAIL: ${{ secrets.SS_UATR4_Email }}
+      UAT_R4_PASSWORD: ${{ secrets.SS_UATR4_PWD }}
+      UAT_R2_EMAIL: ${{ secrets.SS_UATR2_Email }}
+      UAT_R2_PASSWORD: ${{ secrets.SS_UATR2_PWD }}
       LIVE_ACTING: ${{ inputs.live_acting || vars.DEPLOYED_WEEKLY_LIVE_ACTING || 'off' }}
     steps:
       - uses: actions/checkout@v4

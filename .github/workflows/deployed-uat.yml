@@ -40,6 +40,11 @@ jobs:
       UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
+      # role-specific accounts (Platform Admin 23 Nov 2026 22:10): rank 4 Pipeline Operator and rank 2 Counsellor
+      UAT_R4_EMAIL: ${{ secrets.SS_UATR4_Email }}
+      UAT_R4_PASSWORD: ${{ secrets.SS_UATR4_PWD }}
+      UAT_R2_EMAIL: ${{ secrets.SS_UATR2_Email }}
+      UAT_R2_PASSWORD: ${{ secrets.SS_UATR2_PWD }}
       # specs tagged @live-acting change live data or the UAT user's saved settings; they run only when switched on
       LIVE_GREP: ${{ inputs.live_acting == 'on' && '.*' || '@live-acting' }}
       GH_TOKEN: ${{ github.token }}
@@ -85,6 +90,10 @@ jobs:
       - name: Preflight governed UAT credentials
         shell: bash
         run: |
+          if [ -z "$UAT_R4_EMAIL" ] || [ -z "$UAT_R4_PASSWORD" ] || [ -z "$UAT_R2_EMAIL" ] || [ -z "$UAT_R2_PASSWORD" ]; then
+            echo "Required Actions secrets are missing: SS_UATR4_Email / SS_UATR4_PWD / SS_UATR2_Email / SS_UATR2_PWD"
+            exit 1
+          fi
           if [ -z "$UAT_EMAIL" ] || [ -z "$UAT_PASSWORD" ]; then
             echo "Required Actions secrets are missing: COURSEFINDER_UAT_EMAIL / COURSEFINDER_UAT_PASSWORD"
             exit 1
