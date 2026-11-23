@@ -135,9 +135,40 @@ function gridRows(pg: PdfPage, g: Grid, items: PdfItem[], H: number): Row[] {
     const hi = fulls[j], lo = fulls[j + 1];
     if (!bounds.some((bs) => bs.some((y) => y < hi - 0.5 && y > lo + 0.5))) spans.push({ hi, lo, items: [] });
   }
+  // v1.4.1 (23 Nov 2026, CF-247 s996, Platform Admin standing authority, University of Auckland): a cell merged across columns. A line that
+  // crosses a column edge is one merged cell only when NO vertical rule runs at any edge it crosses anywhere in its row band; the cell then
+  // reaches from the nearest vertical rule on its left to the nearest on its right, and every item of that band inside it belongs to it. It is
+  // kept as a note line ("§ Note: ...") and is never a cell under a column header, so it can never be read as a minimum. A vertical rule at a
+  // crossed edge, even a part of one, still holds the document (fail closed).
+  const vrules = (pg.rules || []).filter((r) => r.o === "v" && !r.box && typeof r.x === "number");
+  const merges: { hi: number; lo: number; left: number; right: number; items: PdfItem[]; done?: boolean }[] = [];
+  const bandOf = (k: number, y: number) => { const bs = bounds[k]; const i = bs.findIndex((b, j) => j + 1 < bs.length && y >= bs[j + 1] - 0.5 && y <= b + 0.5); return i < 0 ? null : { hi: bs[i], lo: bs[i + 1] } };
+  const mergeFor = (it: PdfItem, k: number) => {
+    const band = bandOf(k, it.y); if (!band) return null;
+    const crossed = g.edges.filter((e) => it.x < e - 1 && it.x + it.w > e + 1); if (!crossed.length) return null;
+    const hit = (r: PdfRule) => r.a < band.hi - 0.5 && r.b > band.lo + 0.5;  // a rule on any part of the band
+    if (crossed.some((e) => vrules.some((r) => Math.abs(r.x! - e) <= EDGE && hit(r)))) return null;
+    const cover = vrules.filter((r) => r.a <= band.lo + EDGE && r.b >= band.hi - EDGE).map((r) => r.x!);
+    const left = Math.max(...cover.filter((x) => x <= it.x + 1), -Infinity), right = Math.min(...cover.filter((x) => x >= it.x + it.w - 1), Infinity);
+    if (!isFinite(left) || !isFinite(right)) return null;
+    // no vertical rule may run inside the cell in this band at all
+    if (vrules.some((r) => r.x! > left + EDGE && r.x! < right - EDGE && hit(r))) return null;
+    let m = merges.find((x) => Math.abs(x.hi - band.hi) <= 0.5 && Math.abs(x.lo - band.lo) <= 0.5 && Math.abs(x.left - left) <= EDGE && Math.abs(x.right - right) <= EDGE);
+    if (!m) { m = { hi: band.hi, lo: band.lo, left, right, items: [] }; merges.push(m) }
+    return m;
+  };
+  // pass 1: find the merged cells (items that cross a column edge with no vertical rule there)
+  for (const it of items) {
+    if (spans.some((x) => it.y <= x.hi + 0.5 && it.y >= x.lo - 0.5)) continue;
+    const k = cols.findIndex((c) => it.x >= c.a - 1 && it.x < c.b);
+    if (k >= 0 && it.x + it.w > cols[k].b + 1) mergeFor(it, k);
+  }
   for (const it of items) {
     const sp = spans.find((x) => it.y <= x.hi + 0.5 && it.y >= x.lo - 0.5);
     if (sp) { if (it.y + 0.7 * it.h > sp.hi + 1) throw Error(`page ${pg.p}: "${clean(it.s).slice(0, 60)}" crosses a row rule`); sp.items.push(it); continue }
+    // an item of a merged cell's band that lies inside it (a line that does not itself cross an edge) belongs to the merged cell
+    const mg = merges.find((m) => it.y <= m.hi + 0.5 && it.y >= m.lo - 0.5 && it.x >= m.left - 1 && it.x + it.w <= m.right + 1);
+    if (mg) { if (it.y + 0.7 * it.h > mg.hi + 1) throw Error(`page ${pg.p}: "${clean(it.s).slice(0, 60)}" crosses a row rule`); mg.items.push(it); continue }
     const k = cols.findIndex((c) => it.x >= c.a - 1 && it.x < c.b);
     if (k < 0) throw Error(`page ${pg.p}: "${clean(it.s).slice(0, 60)}" lies inside the table but outside its columns`);
     if (it.x + it.w > cols[k].b + 1) throw Error(`page ${pg.p}: "${clean(it.s).slice(0, 60)}" crosses a column edge`);
@@ -165,7 +196,12 @@ function gridRows(pg: PdfPage, g: Grid, items: PdfItem[], H: number): Row[] {
       return t;
     });
     if (own) rows.push(row);
+    // a merged cell of this band follows its row as a note line (never a cell under a column header)
+    for (const m of merges) if (!m.done && Math.abs(m.hi - hi) <= 0.5 && Math.abs(m.lo - lo) <= 0.5) { m.done = true; const t = textOf(m.items, H); if (t) rows.push([SPAN + "Note: " + t]) }
   }
+  // a merged cell whose band is not one of the table's row bands (another column has a rule inside it) is not placed: the document is held
+  const lost = merges.find((m) => !m.done);
+  if (lost) throw Error(`page ${pg.p}: "${clean(textOf(lost.items, H)).slice(0, 60)}" is a merged cell that does not sit in one row band`);
   return rows;
 }
 
