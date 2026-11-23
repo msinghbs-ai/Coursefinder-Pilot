@@ -26,13 +26,47 @@ begin
 end $g$;
 create temp table s988_locks on commit drop as select count(*) n from pipeline.manual_locks;
 
+do $a$
+declare v_ids uuid[] := array['9cc8ef21-52ec-4c18-849a-598ba1072459', 'db910e88-67d1-4d2b-a65c-cea290aa0692', '00e5f26c-446e-453c-a3fb-bc5239a4feec']::uuid[];  -- Federation, Canterbury, Waikato
+        v_wk uuid := '00e5f26c-446e-453c-a3fb-bc5239a4feec'; v_before jsonb; v_after jsonb; v_reason text; v_cs uuid := 'f30cd2cd-01fc-458e-a061-b7aa5faa8a00'; v_n int; v_course uuid[]; v_lim int;
+begin
+  v_reason := 'Decision 271 (Rule B), Platform Admin 23 Nov 2026 15:38: list Federation, Canterbury and Waikato where the official calendar gives an exact date; Southern Cross not listed; cross-month days held';
+  if (select count(*) from pipeline.intake_rule_b_qualifications q where q.provider_id = any (v_ids) and q.status in ('qualified', 'listed')) <> 3 then
+    raise exception 's988: the three universities are not all qualified';
+  end if;
+  select s.value into v_before from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'intake_dates.nearest_start_providers' for update;
+  v_after := coalesce(v_before, '[]'::jsonb) || coalesce((select jsonb_agg(x::text) from unnest(v_ids) x where not (coalesce(v_before, '[]'::jsonb) ? x::text)), '[]'::jsonb);
+  if v_after is distinct from v_before then  -- idempotent: each part lists the three universities first, only the first to run changes the setting
+    update pipeline.platform_toolset_settings set value = v_after, reason = v_reason, updated_at = now() where toolset_key = 'pipeline' and key = 'intake_dates.nearest_start_providers';
+    insert into pipeline.admin_control_events(area, action, target, detail)
+    values ('toolsets', 'setting', 'pipeline.intake_dates.nearest_start_providers',
+            jsonb_build_object('before', v_before, 'after', v_after, 'reason', v_reason, 'approved', to_jsonb(v_ids), 'via', 'cf247 s988 (Platform Admin decision 23 Nov 2026 15:38)'));
+  end if;
+  update pipeline.intake_rule_b_qualifications q set status = 'listed', approved_at = now(), updated_at = now() where q.provider_id = any (v_ids) and q.status = 'qualified';
+  if v_after ? v_cs::text then raise exception 's988: Southern Cross must not be listed'; end if;
+  -- hold: Waikato intakes whose Rule B start falls in a month the page does not name (the planner's own output, not yet applied)
+  select array_agg(distinct i.course_id) into v_course from catalogue.course_intakes i join catalogue.courses c on c.id = i.course_id
+   where c.provider_id = v_wk and i.status = 'active' and i.start_date is null;
+  if v_course is not null then
+    select count(*) into v_lim from catalogue.course_intakes where course_id = any (v_course);
+    insert into pipeline.course_intake_date_events(intake_id, course_id, provider_id, run_at, rule, outcome, reason, next_action, calendar_set, proposal_id, periods, start_precision,
+                                                   deadline_kind, before_value, after_value, page_quote, start_quote, deadline_quote, calendar_url, calendar_evidence_id, bounded, related_case)
+    select p.intake_id, p.course_id, p.provider_id, now(), 'withdrawal', 'withdrawn',
+           left('cross-month day not admitted (Platform Admin decision 23 Nov 2026 15:38): the page names ' || i.intake_label || ' and the calendar start is ' || p.new_start::text, 500),
+           null, p.calendar_set, p.proposal_id, p.periods, 'year', p.deadline_kind,
+           jsonb_build_object('year', i.intake_year, 'start_date', p.new_start, 'application_deadline', i.application_deadline),
+           jsonb_build_object('year', i.intake_year, 'start_date', null, 'application_deadline', i.application_deadline),
+           p.page_quote, p.start_quote, null, p.calendar_url, p.calendar_evidence_id, false, 'F-INT Rule B'
+      from security.intake_dates_plan_v3(v_course, v_lim) p join catalogue.course_intakes i on i.id = p.intake_id
+     where p.rule = 'calendar-v3-nearest-start' and p.outcome = 'filled' and i.intake_label !~* to_char(p.new_start, 'Mon')
+       and not exists (select 1 from pipeline.course_intake_date_events w where w.intake_id = p.intake_id and w.outcome = 'withdrawn' and (w.before_value->>'start_date')::date = p.new_start);
+    get diagnostics v_n = row_count;
+    raise notice 's988: % cross-month Waikato day(s) held', v_n;
+  end if;
+end $a$;
 do $r$
 declare v_ids uuid[]; v_lim int; v_res jsonb; v_before int; v_after int;
 begin
-  if not (select s.value ? '9cc8ef21-52ec-4c18-849a-598ba1072459' and s.value ? 'db910e88-67d1-4d2b-a65c-cea290aa0692' and s.value ? '00e5f26c-446e-453c-a3fb-bc5239a4feec'
-            from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'intake_dates.nearest_start_providers') then
-    raise exception 's988: the three universities are not listed yet (part 1 not applied)';
-  end if;
   select array_agg(distinct i.course_id) into v_ids from catalogue.course_intakes i join catalogue.courses c on c.id = i.course_id
    where c.provider_id = any (array['9cc8ef21-52ec-4c18-849a-598ba1072459', '00e5f26c-446e-453c-a3fb-bc5239a4feec']::uuid[]) and i.status = 'active' and i.start_date is null;
   if v_ids is null then raise notice 's988: Federation and Waikato: no course to apply'; return; end if;

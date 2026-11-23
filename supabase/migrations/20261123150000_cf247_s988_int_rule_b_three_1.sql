@@ -36,10 +36,12 @@ begin
   end if;
   select s.value into v_before from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'intake_dates.nearest_start_providers' for update;
   v_after := coalesce(v_before, '[]'::jsonb) || coalesce((select jsonb_agg(x::text) from unnest(v_ids) x where not (coalesce(v_before, '[]'::jsonb) ? x::text)), '[]'::jsonb);
-  update pipeline.platform_toolset_settings set value = v_after, reason = v_reason, updated_at = now() where toolset_key = 'pipeline' and key = 'intake_dates.nearest_start_providers';
-  insert into pipeline.admin_control_events(area, action, target, detail)
-  values ('toolsets', 'setting', 'pipeline.intake_dates.nearest_start_providers',
-          jsonb_build_object('before', v_before, 'after', v_after, 'reason', v_reason, 'approved', to_jsonb(v_ids), 'via', 'cf247 s988 (Platform Admin decision 23 Nov 2026 15:38)'));
+  if v_after is distinct from v_before then  -- idempotent: each part lists the three universities first, only the first to run changes the setting
+    update pipeline.platform_toolset_settings set value = v_after, reason = v_reason, updated_at = now() where toolset_key = 'pipeline' and key = 'intake_dates.nearest_start_providers';
+    insert into pipeline.admin_control_events(area, action, target, detail)
+    values ('toolsets', 'setting', 'pipeline.intake_dates.nearest_start_providers',
+            jsonb_build_object('before', v_before, 'after', v_after, 'reason', v_reason, 'approved', to_jsonb(v_ids), 'via', 'cf247 s988 (Platform Admin decision 23 Nov 2026 15:38)'));
+  end if;
   update pipeline.intake_rule_b_qualifications q set status = 'listed', approved_at = now(), updated_at = now() where q.provider_id = any (v_ids) and q.status = 'qualified';
   if v_after ? v_cs::text then raise exception 's988: Southern Cross must not be listed'; end if;
   -- hold: Waikato intakes whose Rule B start falls in a month the page does not name (the planner's own output, not yet applied)
@@ -56,7 +58,8 @@ begin
            jsonb_build_object('year', i.intake_year, 'start_date', null, 'application_deadline', i.application_deadline),
            p.page_quote, p.start_quote, null, p.calendar_url, p.calendar_evidence_id, false, 'F-INT Rule B'
       from security.intake_dates_plan_v3(v_course, v_lim) p join catalogue.course_intakes i on i.id = p.intake_id
-     where p.rule = 'calendar-v3-nearest-start' and p.outcome = 'filled' and i.intake_label !~* to_char(p.new_start, 'Mon');
+     where p.rule = 'calendar-v3-nearest-start' and p.outcome = 'filled' and i.intake_label !~* to_char(p.new_start, 'Mon')
+       and not exists (select 1 from pipeline.course_intake_date_events w where w.intake_id = p.intake_id and w.outcome = 'withdrawn' and (w.before_value->>'start_date')::date = p.new_start);
     get diagnostics v_n = row_count;
     raise notice 's988: % cross-month Waikato day(s) held', v_n;
   end if;

@@ -26,13 +26,28 @@ begin
 end $g$;
 create temp table s988_locks on commit drop as select count(*) n from pipeline.manual_locks;
 
+do $a$
+declare v_ids uuid[] := array['9cc8ef21-52ec-4c18-849a-598ba1072459', 'db910e88-67d1-4d2b-a65c-cea290aa0692', '00e5f26c-446e-453c-a3fb-bc5239a4feec']::uuid[];  -- Federation, Canterbury, Waikato
+        v_before jsonb; v_after jsonb; v_reason text; v_cs uuid := 'f30cd2cd-01fc-458e-a061-b7aa5faa8a00';
+begin
+  v_reason := 'Decision 271 (Rule B), Platform Admin 23 Nov 2026 15:38: list Federation, Canterbury and Waikato where the official calendar gives an exact date; Southern Cross not listed; cross-month days held';
+  if (select count(*) from pipeline.intake_rule_b_qualifications q where q.provider_id = any (v_ids) and q.status in ('qualified', 'listed')) <> 3 then
+    raise exception 's988: the three universities are not all qualified';
+  end if;
+  select s.value into v_before from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'intake_dates.nearest_start_providers' for update;
+  v_after := coalesce(v_before, '[]'::jsonb) || coalesce((select jsonb_agg(x::text) from unnest(v_ids) x where not (coalesce(v_before, '[]'::jsonb) ? x::text)), '[]'::jsonb);
+  if v_after is distinct from v_before then  -- idempotent: each part lists the three universities first, only the first to run changes the setting
+    update pipeline.platform_toolset_settings set value = v_after, reason = v_reason, updated_at = now() where toolset_key = 'pipeline' and key = 'intake_dates.nearest_start_providers';
+    insert into pipeline.admin_control_events(area, action, target, detail)
+    values ('toolsets', 'setting', 'pipeline.intake_dates.nearest_start_providers',
+            jsonb_build_object('before', v_before, 'after', v_after, 'reason', v_reason, 'approved', to_jsonb(v_ids), 'via', 'cf247 s988 (Platform Admin decision 23 Nov 2026 15:38)'));
+  end if;
+  update pipeline.intake_rule_b_qualifications q set status = 'listed', approved_at = now(), updated_at = now() where q.provider_id = any (v_ids) and q.status = 'qualified';
+  if v_after ? v_cs::text then raise exception 's988: Southern Cross must not be listed'; end if;
+end $a$;
 do $r$
 declare v_ids uuid[]; v_lim int; v_res jsonb; v_before int; v_after int;
 begin
-  if not (select s.value ? '9cc8ef21-52ec-4c18-849a-598ba1072459' and s.value ? 'db910e88-67d1-4d2b-a65c-cea290aa0692' and s.value ? '00e5f26c-446e-453c-a3fb-bc5239a4feec'
-            from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'intake_dates.nearest_start_providers') then
-    raise exception 's988: the three universities are not listed yet (part 1 not applied)';
-  end if;
   select array_agg(distinct i.course_id) into v_ids from catalogue.course_intakes i join catalogue.courses c on c.id = i.course_id
    where c.provider_id = any (array['db910e88-67d1-4d2b-a65c-cea290aa0692']::uuid[]) and i.status = 'active' and i.start_date is null;
   if v_ids is null then raise notice 's988: Canterbury: no course to apply'; return; end if;
