@@ -20,7 +20,7 @@
 -- Locks and cron unchanged (checked below). Spend: none.
 -- Replaces: security.intake_dates_plan_v3 (same name; md5-guarded text edit, resulting md5 checked).
 -- Retires: nothing. Nothing dropped, deleted or renamed.
--- Reversal: reverse the edit (body 44b8739ba8a418f221f1f8dd24b46517 to cf7fff5026511c05be87c5e842a8570d); admitted dates are withdrawn through security.intake_date_day_withdraw_v1.
+-- Reversal: reverse the edit (body f05b31dd74378cce5cdc77f0b20abb79 to cf7fff5026511c05be87c5e842a8570d); admitted dates are withdrawn through security.intake_date_day_withdraw_v1.
 set local lock_timeout = '5s';
 set local statement_timeout = '120s';  -- fixed: the planner body is replaced and its guards read the consumer API check
 
@@ -53,7 +53,7 @@ begin
   return p_sig || ': applied';
 end $f$;
 
-select pg_temp.edit_counted('security.intake_dates_plan_v3(uuid[],integer)', 'cf7fff5026511c05be87c5e842a8570d', '44b8739ba8a418f221f1f8dd24b46517',
+select pg_temp.edit_counted('security.intake_dates_plan_v3(uuid[],integer)', 'cf7fff5026511c05be87c5e842a8570d', 'f05b31dd74378cce5cdc77f0b20abb79',
 array[$o1$v_raw text; v_pq text; v_named text[]; v_named_all text[]; v_spec text; v_generic boolean := false;$o1$,
       $o2$  v_settings text := 'lists='$o2$,
       $o3$case when c.provider_id = any (v_next) then ';nextcycle=1' else '' end$o3$,
@@ -91,7 +91,7 @@ array[1, 1, 2, 1, 1]);
 do $p$
 declare v jsonb := security.consumer_api_check_v1();
 begin
-  if md5((select prosrc from pg_proc where oid = 'security.intake_dates_plan_v3(uuid[],integer)'::regprocedure)) <> '44b8739ba8a418f221f1f8dd24b46517' then
+  if md5((select prosrc from pg_proc where oid = 'security.intake_dates_plan_v3(uuid[],integer)'::regprocedure)) <> 'f05b31dd74378cce5cdc77f0b20abb79' then
     raise exception 'post-check: the planner body is not the edited text';
   end if;
   if jsonb_array_length(coalesce(v->'drift', '[]'::jsonb)) <> 0 or (v->>'functions')::int <> 75 or (v->>'relations')::int <> 48 then
