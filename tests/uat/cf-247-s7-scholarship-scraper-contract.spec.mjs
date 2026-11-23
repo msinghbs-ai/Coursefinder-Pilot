@@ -11,7 +11,7 @@ test('worker reads scholarship and listing pages through the scraper (rendered p
   // v0.58.0 (CF-247 scholarship recovery F10): the render wait is a setting; listing pages are read page by page (F6), still through the scraper
   expect(w).toContain('formats: ["rawHtml"], onlyMainContent: false, waitFor: waitMs')
   // v0.77.0 (F-SCH redesign, 12 Nov 2026): a rendered listing catalogue keeps the scraper first (directFirst false); single pages are read directly first (cf-247-f-sch-04)
-  expect(w).toContain('const pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000), false);')
+  expect(w).toContain('let pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000), true);')
   expect(w).toContain('const pg = await readSchPage(it.url, it.provider_id);')
 })
 

@@ -41,5 +41,5 @@ test('the replay compares deadlines with held course intake deadlines', () => {
 })
 
 test('the worker that carries the v2 prompt is v1.0.25', () => {
-  expect(fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')).toContain('const WORKER = "coverage-sweep-worker-v1.0.34"')  // v1.0.34 from s851
+  expect(fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')).toContain('const WORKER = "coverage-sweep-worker-v1.0.35"')  // v1.0.35 from s992  // v1.0.34 from s851
 })

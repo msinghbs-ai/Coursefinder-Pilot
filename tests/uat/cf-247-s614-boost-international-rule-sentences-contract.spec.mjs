@@ -19,7 +19,7 @@ test('migration: every earlier reading is given back; nothing is qualified or ad
   expect(code).toContain("set value = to_jsonb('bench-4'::text)")
   expect(code).not.toMatch(/insert into pipeline\.boost_model_qualifications|boost_promote_v1\(|update catalogue\.|insert into catalogue\.|create or replace function/)
   expect(code).not.toMatch(/\bdrop\s+(table|function|trigger|schema|index|view)\b|\bdelete\s+from\b|\btruncate\b/i)
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.34"')  // v1.0.34 from s851  // v1.0.25 from s721  // v1.0.19 from s674
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.35"')  // v1.0.35 from s992  // v1.0.34 from s851  // v1.0.25 from s721  // v1.0.19 from s674
   expect(B.BOOST_STUDY_LOAD_PROMPT_VERSION).toBe('boost-study-load-v5')  // v5 from worker v1.0.17 (s647)
 })
 

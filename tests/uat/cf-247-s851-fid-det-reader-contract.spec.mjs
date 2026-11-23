@@ -16,7 +16,8 @@ test('the module is pure and versioned; the worker mode reads only', () => {
   const block = IX.slice(IX.indexOf('if (mode === "fid_det_read") {'), IX.indexOf('if (mode === "page_text") {'))
   expect(block).not.toMatch(/\.rpc\(|\.from\("[a-z_]+"\)\.(insert|update|upsert|delete)|openrouter|firecrawl/i)
   expect(block).toContain('.slice(0, 40);  // fixed: bound on one call')
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.34"; // v1.0.34 (20 Nov 2026, CF-247 s851')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.35"')  // v1.0.35 from s992
+  expect(IX).toContain('// v1.0.34 (20 Nov 2026, CF-247 s851')
 })
 
 test('international fee: amount, country currency, basis and the year beside the amount', () => {
