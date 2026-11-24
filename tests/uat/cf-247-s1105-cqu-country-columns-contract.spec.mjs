@@ -47,9 +47,23 @@ test('CQU country table: the cell reader reads per cent as a percentage and drop
 
 test('fails closed: an item left of the first column, or a header with no level words, gives no table', async () => {
   const m = await load('supabase/functions/coverage-sweep/entry-pdf-columns.ts', 'pc1105c')
-  const off = pages(); off[0].items.push({ x: 20, y: 600, w: 10, h: 10, s: 'stray' })
+  const off = pages(); off.find((p) => p.p === 2).items.push({ x: 20, y: 600, w: 10, h: 10, s: 'stray' })
   expect(m.pdfCountryColumnTableLines(off, { minRows: 5 }).tables).toEqual([])
   expect(m.pdfCountryColumnTableLines(off, { minRows: 5 }).skipped[0].reason).toBe('pdf_columns_item_off_anchor')
-  const bad = pages(); bad[0].items.find((i) => i.s === 'Undergraduate').s = 'Column Three'
+  const bad = pages(); bad.find((p) => p.p === 2).items.find((i) => i.s === 'Undergraduate').s = 'Column Three'
   expect(m.pdfCountryColumnTableLines(bad, { minRows: 5 }).skipped[0].reason).toBe('pdf_columns_header_level_unmapped')
+})
+
+test('a country-header table with blank cells at one level (not accepted there) is still read: blanks are not a misread', async () => {
+  const m = await load('supabase/functions/coverage-sweep/entry-pdf-columns.ts', 'pc1105d')
+  const pg = pages()
+  // blank the Undergraduate cell of six countries on page 2 (more than a tenth of all rows), as the printed table does for qualifications accepted at one level only
+  const blank = new Set(['Germany', 'France', 'Fiji', 'Denmark', 'Ecuador', 'Greece'])
+  const p2 = pg.find((p) => p.p === 2)
+  const ys = p2.items.filter((i) => blank.has(i.s)).map((i) => i.y)
+  p2.items = p2.items.filter((i) => !(i.x > 387 && i.x < 389 && ys.some((y) => i.y <= y + 1 && i.y > y - 38)))
+  const r = m.entryPdfColumnsRead(pg, REFS, [], {}, { minRows: 5 })
+  expect(r).not.toBeNull()
+  expect(r.answer.rows.filter((x) => x.country_code === 'DE').map((x) => x.study_level)).toEqual(['Diploma'])
+  expect(r.answer.rows.filter((x) => x.country_code === 'IN').length).toBe(4)
 })

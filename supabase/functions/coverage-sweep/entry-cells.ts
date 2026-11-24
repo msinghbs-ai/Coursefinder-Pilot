@@ -134,13 +134,13 @@ export function entryCellLines(page: string): { lines: CellLine[]; heads: string
 // lines, and every row label giving a cell for most levels); otherwise null and the page goes to the pinned model as before.
 export type CellRead = { answer: { rows: any[] }; dropped: { reason: string; country: string; quote: string }[]; stats: Record<string, number>; levels: string[] };
 export function entryCellRead(page: string, refs: EntryCountryRef[], quals: EntryQualification[] = [], aliases: Record<string, string> = {},
-                              opt: { minLevels?: number; minLines?: number } = {}): CellRead | null {
+                              opt: { minLevels?: number; minLines?: number; fullShare?: number } = {}): CellRead | null {
   const { lines, levels } = entryCellLines(page);
   const minLevels = opt.minLevels ?? 4, minLines = opt.minLines ?? 20;
   if (levels.length < minLevels || lines.length < minLines) return null;
   const perLabel = new Map<string, Set<string>>(); for (const l of lines) { if (!perLabel.has(l.label)) perLabel.set(l.label, new Set()); perLabel.get(l.label)!.add(l.level) }
   const full = [...perLabel.values()].filter((s) => s.size >= Math.ceil(levels.length * 0.75)).length;
-  if (full < Math.ceil(perLabel.size * 0.9)) return null;  // not a country-by-level grid
+  if (full < Math.ceil(perLabel.size * (opt.fullShare ?? 0.9))) return null;  // not a country-by-level grid
   const idx = entryCellCountryIndex(refs, aliases);
   const rows: any[] = [], dropped: CellRead["dropped"] = [], stats: Record<string, number> = { cells: lines.length, labels: perLabel.size };
   const bump = (k: string) => { stats[k] = (stats[k] || 0) + 1 };

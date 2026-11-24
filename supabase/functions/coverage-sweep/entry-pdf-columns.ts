@@ -36,7 +36,7 @@ function pageLines(pg: PdfPage): Line[] {
   return out;
 }
 
-export type PdfColumnTable = { index: number; head: string; levelFrom: "column"; levels: string[]; lines: string[]; rows: number; noMinimum: { label: string; level: string; cell: string }[] };
+export type PdfColumnTable = { anchored?: boolean; index: number; head: string; levelFrom: "column"; levels: string[]; lines: string[]; rows: number; noMinimum: { label: string; level: string; cell: string }[] };
 
 export function pdfColumnTableLines(pages: PdfPage[], opt: { minRows?: number } = {}): { tables: PdfColumnTable[]; skipped: { index: number; reason: string; heading: string }[] } {
   const minRows = opt.minRows ?? 5;
@@ -169,7 +169,7 @@ export function pdfCountryColumnTableLines(pages: PdfPage[], opt: { minRows?: nu
   const tables: PdfColumnTable[] = [];
   for (const t of byKey.values()) {
     if (t.rows < minRows) { skipped.push({ index: t.index, reason: "pdf_columns_too_few_rows", heading: t.levels.join(" | ") }); continue }
-    tables.push({ index: t.index, head: "Country or Qualification", levelFrom: "column", levels: t.levels, lines: t.lines, rows: t.rows, noMinimum: t.noMinimum });
+    tables.push({ anchored: true, index: t.index, head: "Country or Qualification", levelFrom: "column", levels: t.levels, lines: t.lines, rows: t.rows, noMinimum: t.noMinimum });
   }
   return { tables, skipped };
 }
@@ -181,7 +181,9 @@ export function entryPdfColumnsRead(pages: PdfPage[], refs: EntryCountryRef[], q
   if (!tables.length) return null;
   const rows: any[] = [], dropped: HtmlTableRead["dropped"] = [], pieces: HtmlTableRead["tables"] = [], stats: Record<string, number> = {}, all: string[] = [];
   for (const t of tables) {
-    const r = entryCellRead(t.lines.join("\n"), refs, quals, aliases, { minLevels: 1, minLines: Math.min(opt.minRows ?? 5, t.lines.length) });
+    const r = entryCellRead(t.lines.join("\n"), refs, quals, aliases, { minLevels: 1, minLines: Math.min(opt.minRows ?? 5, t.lines.length),
+      // a country-header table's columns are proven by the printed header, so a qualification with no cell at one level (not accepted there) is a blank cell, not a misread: at least half the rows must still carry every level
+      ...(t.anchored ? { fullShare: 0.5 } : {}) });
     if (!r) { skipped.push({ index: t.index, reason: "pdf_columns_not_a_country_grid", heading: t.levels.join("; ") }); continue }
     // s1073: a cell with no printed number is a pathway sentence, not a minimum: it is listed as dropped (no_minimum_published), never kept as a row named by the sentence
     const pathway = new Set(t.noMinimum.map((n) => `Country or Qualification: ${n.label} | ${n.level}: ${n.cell}`.trim()));
