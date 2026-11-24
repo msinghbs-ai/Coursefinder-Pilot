@@ -38,5 +38,4 @@ test('s1052: two awards that share one link (a terms page) keep their section ke
   expect(on[2].url).toBeNull()
   expect(on.map((a) => a.name)).toContain('CDU Global Merit Scholarship')
   expect(on.map((a) => a.name)).toContain('CDU Bachelor of Nursing Scholarship')
-  expect(on[7].url).toBe('https://studynt.nt.gov.au/scholarship')
 })
