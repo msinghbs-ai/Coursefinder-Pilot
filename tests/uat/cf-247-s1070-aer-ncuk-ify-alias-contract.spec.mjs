@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const sql = fs.readFileSync('supabase/migrations/20261124260000_cf247_s1070_aer_ncuk_ify_alias_reread.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations/20261125020000_cf247_s1070_aer_ncuk_ify_alias_reread.sql', 'utf8')
 const code = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 
 test('one alias of NCUK_IFY, nothing inferred', () => {
