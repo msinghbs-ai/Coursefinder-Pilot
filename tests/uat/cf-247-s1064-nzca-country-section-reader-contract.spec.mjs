@@ -104,3 +104,25 @@ test('VUW: explicit undergraduate IB Diploma minimum is global qualification-fir
   expect(ht.entryHtmlTableRead(source.replace('<h2>Undergraduate entry requirements</h2>', ''), COUNTRIES, QUALS, {}, { providerCountry: 'NZ' })).toBeNull()
   expect(ht.entryHtmlTableRead(source.replace('Minimum 24 points', 'Expected around 24 points'), COUNTRIES, QUALS, {}, { providerCountry: 'NZ' })).toBeNull()
 })
+
+test('Confederation: printed country and Diploma/Certificate vs postgraduate level, no country sharing', async () => {
+  const ht = await load('confederation')
+  const html = [
+    '<h1>Admission Requirements - by country</h1><h2>Africa</h2>',
+    '<h3>Cameroon</h3><h4>Diploma/Certificate</h4>',
+    '<p>OSSD Equiv: General Certificate Advanced Level (A) with minimum 2 courses OR Baccalaureat</p>',
+    '<p>Minimum GPA: C; 10</p><h4>Postgraduate Certificate</h4>',
+    '<p>Bachelor Equiv: Bachelor’s Transcripts &amp; Degree</p><p>Minimum GPA: 50%</p>',
+    '<h3>India</h3><h4>Diploma/Certificate</h4>',
+    '<p>OSSD Equiv: Higher Secondary School Certificate (Class 12)</p><p>Minimum GPA: 50%</p>',
+    '<h4>Postgraduate Certificate</h4><p>Bachelor Equiv: Bachelor Degree</p><p>Minimum GPA: 55%</p>'
+  ].join('')
+  const refs = [...COUNTRIES, { a2: 'CM', name: 'Cameroon' }]
+  const r = ht.entryHtmlTableRead(html, refs, [], {}, { minRows: 5, providerCountry: 'CA' })
+  expect(r).not.toBeNull()
+  expect(r.tables).toHaveLength(2)
+  expect(r.answer.rows).toHaveLength(4)
+  expect(r.answer.rows.filter(x => x.country_code === 'CM')).toHaveLength(2)
+  expect(r.answer.rows.filter(x => x.country_code === 'IN')).toHaveLength(2)
+  expect(r.answer.rows.find(x => x.country_code === 'CM' && x.grade_scale === 'percentage')?.min_value).toBe(50)
+})
