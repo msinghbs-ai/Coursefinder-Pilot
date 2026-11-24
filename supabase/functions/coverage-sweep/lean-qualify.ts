@@ -62,3 +62,42 @@ export function feeFound(rows: any[], gold: string[]): boolean {
   const want = new Set(gold.map((x) => Math.round(Number(String(x).replace(/[^0-9.]/g, "")))).filter((n) => n > 0));
   return rows.some((r) => [r?.amount_min, r?.amount_max].some((a) => Number(a) > 0 && want.has(Math.round(Number(a)))));
 }
+
+// CF-247 s1125 (S1-Build, P0 AER preprocessing, Admin #1063): course entry requirements (service course_entry_requirements). Each labelled stored
+// course page is read with the production prompt course-entry-v1 on one named candidate model (the route is off; nothing is switched on here):
+// baseline is today's whole text, candidate is courseEntryInput (course-entry.ts), the exact text entryRead sends. The answer's rows are judged
+// against the label rows: an earlier paid AI answer's rows (gold_source ai_earlier: NOT ground truth, each gold row is first checked against the
+// stored page) or rows a person accepted in Layer 4 (aer_accepted). A gold row is found when an answer row's quote and the gold quote are the
+// same words (one inside the other in the flat form, at least 12 letters and digits) or share their opening 40; then kind, audience and score are compared.
+export const ENTRY_QUALIFY = "lean-qualify-entry-v1";  // never edited in place once released
+const ff = (s: unknown) => flatForm(unEntity(String(s ?? "")));
+export const ENTRY_MATCH_MIN = 12;  // fixed: the shortest quote that identifies a requirement (the selector check's floor)
+export const ENTRY_MATCH_HEAD = 40;  // fixed: a long quote cut at a different place still opens with the same words
+export function entryQuoteMatch(a: unknown, g: unknown): boolean {
+  const x = ff(a), y = ff(g);
+  if (x.length < ENTRY_MATCH_MIN || y.length < ENTRY_MATCH_MIN) return false;
+  if (x.includes(y) || y.includes(x)) return true;
+  return x.length >= ENTRY_MATCH_HEAD && y.length >= ENTRY_MATCH_HEAD && (x.includes(y.slice(0, ENTRY_MATCH_HEAD)) || y.includes(x.slice(0, ENTRY_MATCH_HEAD)));
+}
+const num = (v: unknown) => v === null || v === undefined || v === "" || !Number.isFinite(Number(v)) ? null : Number(v);
+export type EntryGold = { quote: string; kind?: string | null; audience?: string | null; min_entry_score?: number | null; min_value?: number | null };
+export function entryJudge(rows: any[], gold: EntryGold[], page: string) {
+  const P = ff(page), rs = Array.isArray(rows) ? rows : [], used = new Set<number>();
+  const out = { gold: gold.length, gold_on_page: 0, found: 0, kind_same: 0, audience_same: 0, score_compared: 0, score_same: 0, rows: rs.length, extra: 0, missed: [] as string[] };
+  for (const g of gold) {
+    const fg = ff(g.quote); const onPage = fg.length >= ENTRY_MATCH_MIN && (P.includes(fg) || (fg.length >= ENTRY_MATCH_HEAD && P.includes(fg.slice(0, ENTRY_MATCH_HEAD))));
+    if (!onPage) continue;  // a gold row whose words are not on the stored page is not a label (an earlier answer is not ground truth)
+    out.gold_on_page++;
+    const k = rs.findIndex((r, i) => !used.has(i) && entryQuoteMatch(r?.quote, g.quote));
+    if (k < 0) { out.missed.push(String(g.quote).slice(0, 120)); continue }
+    used.add(k); out.found++;
+    const r = rs[k];
+    if (!g.kind || r?.kind === g.kind) out.kind_same++;
+    if (!g.audience || r?.audience === g.audience) out.audience_same++;
+    const gs = num(g.min_entry_score ?? g.min_value), as = num(r?.min_entry_score);
+    if (gs !== null || as !== null) { out.score_compared++; if (gs !== null && as !== null && Math.abs(gs - as) < 1e-6) out.score_same++ }
+  }
+  out.extra = rs.length - used.size;
+  out.missed = out.missed.slice(0, 8);  // fixed: examples kept on the result
+  return out;
+}
