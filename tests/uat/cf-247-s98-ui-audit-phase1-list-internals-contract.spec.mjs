@@ -8,9 +8,9 @@ import fs from 'node:fs'
 const ui = fs.readFileSync('src/mature-main.jsx', 'utf8')
 const pc = fs.readFileSync('src/ProviderContactsWorkspace.jsx', 'utf8')
 const refs = fs.readFileSync('src/ReferenceSources.jsx', 'utf8')
-const health = fs.readFileSync('src/PlatformHealth.jsx', 'utf8')
+const health = fs.readFileSync('src/ui-v1/PlatformHealthView.jsx', 'utf8')
 const queues = fs.readFileSync('src/QueueWatch.jsx', 'utf8')
-const autos = fs.readFileSync('src/Automations.jsx', 'utf8')
+const autos = fs.readFileSync('src/ui-v1/AutomationsView.jsx', 'utf8')
 // SS-020 follow-up (4 Nov 2026): the Refresh schedules section (ScheduledJobsWorkspace.jsx) is retired; its target-id assertion went with it
 const evidence = fs.readFileSync('src/EvidenceWorkspace.jsx', 'utf8')
 const models = fs.readFileSync('src/ModelsServices.jsx', 'utf8')
@@ -64,11 +64,11 @@ test('Reference sources: the last check reads in words with the HTTP number on h
 })
 
 test('Platform health: route fragments become screen-named links, cron text becomes schedule words, the heading does not repeat the health dot sentence', () => {
-  expect(health).toContain("import{describeSchedule}from'./automation-schedule'")
+  expect(health).toContain("import{describeSchedule}from'../automation-schedule'")
   expect(health).toContain('export function isRouteFragment(v)')
-  expect(health).toContain('export function ScreenLink({href,prefix=\'Go to \'}){return <a className="ph-fix" href={href} data-screen-link>{prefix}{screenName(href)}</a>}')
+  expect(health).toContain('export function ScreenLink({href,prefix=\'Go to \'}){return <a className="ui-ph-fix" href={href} data-screen-link>{prefix}{screenName(href)}</a>}')
   expect(health).toContain('if(isRouteFragment(v))return screenName(v);if(looksCron(v))return describeSchedule(v).text;')
-  expect(health).toContain('if(isRouteFragment(value))return <span className="ph-detail"><ScreenLink href={String(value).trim()}/></span>')
+  expect(health).toContain('if(isRouteFragment(value))return <span className="ui-ph-detail"><ScreenLink href={String(value).trim()}/></span>')
   expect(health).toContain("const PAGE_WORDS={ok:'Every check passed',warning:'Some checks need attention',critical:'Fix the critical checks first'")
   expect(health).toContain('<h2 data-health-heading>{PAGE_WORDS[tone]}</h2>')
   expect(health).not.toContain('<h2>{HEALTH_WORDS[tone]}</h2>')
@@ -78,9 +78,9 @@ test('Platform health: route fragments become screen-named links, cron text beco
 
 test('Scheduled jobs: the row shows the label only (slug on hover and in data-job); decision references leave the description; target ids sit on hover', () => {
   expect(autos).toContain("export const plainDescription=t=>String(t||'').replace(/\\s*\\((?:Decision|Decisions)\\s+\\d+[^)]*\\)/gi,'')")
-  expect(autos).toContain('<tr className={j.active?\'\':\'l3c-off\'} data-job={j.job}>')
-  expect(autos).toContain('<td title={j.job}><strong>{j.label||j.job}</strong><span className="au-desc" title={j.description||undefined}>{plainDescription(j.description)}</span>')
-  expect(autos).not.toContain('<span className="l3v-code">{j.job}</span>')
+  expect(autos).toContain('<tr className={j.active?\'\':\'is-off\'} data-job={j.job}>')
+  expect(autos).toContain('<td title={j.job}><strong>{j.label||j.job}</strong><span className="ui-au-desc" title={j.description||undefined}>{plainDescription(j.description)}</span>')
+  expect(autos).not.toContain('<span className="ui-code">{j.job}</span>')
 })
 
 test('Evidence: no id or hash fragments in the list; job slugs and state strings read as words', () => {

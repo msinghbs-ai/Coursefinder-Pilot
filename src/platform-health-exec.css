@@ -1,9 +1,0 @@
-/* CF-247 s817 (20 Nov 2026): the Platform Health executive view */
-.ph-exec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
-.ph-exec-tile{display:grid;gap:4px;padding:12px;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg);background:var(--cf-slate-50)}
-.ph-exec-tile>span:first-child{font-size:var(--cf-fs-xs);color:var(--cf-slate-500);text-transform:uppercase;letter-spacing:.04em}
-.ph-exec-tile strong{font-size:var(--cf-fs-xl,1.25rem)}
-.ph-exec-bar{display:block;height:6px;border-radius:3px;background:var(--cf-slate-200);overflow:hidden}.ph-exec-bar i{display:block;height:100%;background:var(--cf-slate-600)}
-.ph-attention-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}.ph-attention-list li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--cf-slate-200)}
-.ph-attention-list p{margin:2px 0 0;color:var(--cf-slate-600);font-size:var(--cf-fs-sm)}
-.ph-tech{margin-top:12px}.ph-tech>summary{cursor:pointer;padding:10px 12px;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg)}

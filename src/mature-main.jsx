@@ -38,7 +38,7 @@ import{useLookups,intakeYears}from'./lib/lookups'
 import{SectionTitle,fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRememberedState,StatusChip,FilterChip,PageHeader,PageLayout,StatusDot,Metric}from'./ui-kit'
 import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,shownTabs,effectiveTab,refusedTab,roleName}from'./nav-map'
 import{ViewerContext}from'./lib/viewer'
-import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
+import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./ui-v1/PlatformHealthView.jsx'
 import HelpButton from'./HelpDrawer' // CF-247 S1-UX s827: the ? help drawer on each main screen header
 const HELP_TOPIC={dashboard:'dashboard',health:'health',layer4:'layer4',courses:'catalogue',providers:'catalogue'}
 import QueueWatch from'./QueueWatch'
@@ -87,7 +87,7 @@ const AerWorkspace=lazyPage(()=>import('./AerWorkspace'))
 const ProviderContactsWorkspace=lazyPage(()=>import('./ProviderContactsWorkspace'))
 const Layer4Inbox=lazyPage(()=>import('./Layer4Inbox'))
 const HumanEditsAudit=lazyPage(()=>import('./HumanEditsAudit')) // CF-247 s804/s805: Data & Governance › Human Edits & Periodic Audit
-const Automations=lazyPage(()=>import('./Automations'))
+const Automations=lazyPage(()=>import('./ui-v1/AutomationsView.jsx'))
 const SearchCapCard=lazyPage(()=>import('./SearchCapCard'))
 const PipelineSettings=lazyPage(()=>import('./PipelineSettings'))
 const CoverageView=lazyPage(()=>import('./course-coverage'),'CoverageView')
@@ -120,7 +120,7 @@ const RoleGuides=lazyPage(()=>import('./RoleGuides'))
 const Layer1Sources=lazyPage(()=>import('./layer1-operations-entry'),'Layer1Sources')
 // SS-020 follow-up (Decision 269 amendment, Platform Admin 4 Nov 2026 "Rewire, then retire"): Automations › Refresh schedules and one-off runs
 // retired; Layer 1 › Sources' Schedule edits the Layer 1 refresh policies. Its runtime health panel stays on Automations.
-const ScheduledRuntimeHealth=lazyPage(()=>import('./ScheduledRuntimeHealth'))
+const ScheduledRuntimeHealth=lazyPage(()=>import('./ui-v1/ScheduledRuntimeHealthView.jsx'))
 const Layer2ProviderConfig=lazyPage(()=>import('./layer2-provider-entry'),'Console')
 const PlatformMaturity=lazyPage(()=>import('./platform-maturity-entry'))
 const EnvironmentMigrationWorkspace=lazyPage(()=>import('./EnvironmentMigrationWorkspace'))

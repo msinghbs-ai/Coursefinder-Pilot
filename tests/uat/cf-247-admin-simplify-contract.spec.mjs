@@ -110,8 +110,8 @@ test.describe('mocked browser', () => {
     await page.locator('[data-ph-technical] > summary').click()  // s817: the technical sections sit under Technical details
     await expect(page.getByRole('heading', { name: 'Some checks need attention' })).toBeVisible() // UI audit Phase 1: the heading does not repeat the health dot's sentence
     await expect(page.getByText('Open issues')).toBeVisible()
-    await expect(page.locator('.ph-checks tbody tr')).toHaveCount(8)
-    await expect(page.locator('.ph-day')).toHaveCount(14)
+    await expect(page.locator('.ui-ph-checks tbody tr')).toHaveCount(8)
+    await expect(page.locator('.ui-ph-day')).toHaveCount(14)
     await expect(page.locator('.cf-health-link .cf-status-dot.tone-warning')).toBeVisible()
   })
 

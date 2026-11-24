@@ -15,7 +15,7 @@ const JOBS = [
 ]
 
 test('source: dispatchers are named once, retired jobs are filtered before the counts, and links are named from the menu', () => {
-  const a = fs.readFileSync('src/Automations.jsx', 'utf8'), p = fs.readFileSync('src/PlatformHealth.jsx', 'utf8')
+  const a = fs.readFileSync('src/ui-v1/AutomationsView.jsx', 'utf8'), p = fs.readFileSync('src/ui-v1/PlatformHealthView.jsx', 'utf8')
   for (const d of ['rollup-scheduler', 'admission-rule-runner', 'coverage-lane-dispatch']) expect(a).toContain(`job:'${d}'`)
   expect(a).toContain("const jobs=useMemo(()=>retired?everyJob:everyJob.filter(j=>!isRetired(j)),[everyJob,retired])")
   expect(p).not.toMatch(/'Platform health › Work queues'/) // the tab was renamed Queues & yield on 3 Nov
@@ -37,12 +37,12 @@ test.describe('mocked browser', () => {
     await expect(d.locator('[data-au-dispatcher="coverage-lane-dispatch"]')).toContainText('Failures in 24 hours')
     const box = await d.boundingBox(), list = await page.locator('[data-area]').first().boundingBox()
     expect(box.y).toBeLessThan(list.y)
-    await expect(page.locator('.cf-metric').filter({ hasText: 'Automations' })).toContainText('8 running')
-    await expect(page.locator('.cf-metric').filter({ hasText: 'Automations' })).toContainText('1 paused · 4 retired, hidden')
+    await expect(page.locator('.ui-metric').filter({ hasText: 'Automations' })).toContainText('8 running')
+    await expect(page.locator('.ui-metric').filter({ hasText: 'Automations' })).toContainText('1 paused · 4 retired, hidden')
     await expect(page.locator('[data-job="report-cache-a"]')).toHaveCount(0)
     await page.locator('[data-au-show-retired]').check()
     await expect(page.locator('[data-job="report-cache-a"]')).toContainText('Retiring')
-    await expect(page.locator('.cf-metric').filter({ hasText: 'Automations' })).toContainText('5 paused')
+    await expect(page.locator('.ui-metric').filter({ hasText: 'Automations' })).toContainText('5 paused')
   })
 
   test('Open issues: the queue watchdog link reads Queues & yield and opens it', async ({ page }) => {

@@ -49,7 +49,7 @@ test('browser: Health checks shows no Layer 3 block and links Capacity to the Go
   await expect(main).not.toContainText('Layer 3')
   await expect(main).not.toContainText('stuck in reserved/interpreting')
   await expect(main.getByText('Layer 2 and 4 queues').first()).toBeVisible()
-  const src = read('src/PlatformHealth.jsx')
+  const src = read('src/ui-v1/PlatformHealthView.jsx')
   expect(src).toContain("db_capacity:['#environment-migration','Go-live checklist › Capacity']")
   expect(src).not.toContain('tab=readiness')
 })

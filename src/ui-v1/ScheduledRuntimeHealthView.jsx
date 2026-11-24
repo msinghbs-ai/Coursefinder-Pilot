@@ -1,9 +1,10 @@
+import './tokens.css'
+import './ui-kit.css'
 import React,{useEffect,useMemo,useState}from'react'
-import{StatusChip}from'./ui-kit'
+import{StatusChip}from'./kit.jsx'
 import{ExternalLink}from'lucide-react'
-import{supabase}from'./lib/supabase'
-import{fmtDateTime}from'./lib/format.js'
-import'./scheduled-jobs-config.css' // SS-020 follow-up: was loaded by the retired Refresh schedules section
+import{supabase}from'../lib/supabase'
+import{fmtDateTime}from'../lib/format.js'
 
 const UNKNOWN='Unavailable'
 const terminal=new Set(['completed','failed','cancelled','blocked','succeeded','success'])
@@ -36,11 +37,11 @@ export default function ScheduledRuntimeHealth({jobs=[],error,onNavigate=()=>{}}
    const evidenceProduced=recent.reduce((sum,j)=>sum+(Number(j?.evidence_count)||0),0)
    return{recent,queueAvg:average(queue),runAvg:average(runs),terminalMissingCompleted,queueMeasured:queue.length,runMeasured:runs.length,processed,weightedRate:executionSeconds>0?processed/executionSeconds*60:null,evidenceProduced}
  },[sourceJobs])
- return <section className="m23-panel cf-scheduler-v2 cf-scheduler-runtime" aria-label="Scheduled Tasks Runtime Health">
-   <div className="cf-scheduler-v2__subhead"><div><h3>Runtime Health</h3><p className="cf-scheduler-v2__note">How scheduled work is running. A missing figure is shown as unavailable, not as zero.</p></div><div className="cf-scheduler-v2__links"><button onClick={()=>onNavigate('#jobs')}>Jobs <ExternalLink size={12}/></button><button onClick={()=>onNavigate('#evidence')}>Evidence <ExternalLink size={12}/></button></div></div>
-   {runtimeError&&<div className="cf-scheduler-v2__message" data-error="true">Runtime metrics read unavailable; basic Jobs timing remains visible where available: {runtimeError}</div>}
-   {!runtimeError&&error&&<div className="cf-scheduler-v2__message" data-error="true">Generic Jobs panel read unavailable; governed Runtime Health remains available: {error}</div>}
-   <div className="cf-scheduler-runtime__summary">
+ return <section className="ui-card ui-sr-panel" aria-label="Scheduled Tasks Runtime Health">
+   <div className="ui-st"><div><h3>Runtime Health</h3><p className="ui-muted">How scheduled work is running. A missing figure is shown as unavailable, not as zero.</p></div><div className="ui-l3c-actions"><button type="button" className="ui-btn ui-btn-sm" onClick={()=>onNavigate('#jobs')}>Jobs <ExternalLink size={12}/></button><button type="button" className="ui-btn ui-btn-sm" onClick={()=>onNavigate('#evidence')}>Evidence <ExternalLink size={12}/></button></div></div>
+   {runtimeError&&<div className="ui-sr-message" data-error="true">Runtime metrics read unavailable; basic Jobs timing remains visible where available: {runtimeError}</div>}
+   {!runtimeError&&error&&<div className="ui-sr-message" data-error="true">Generic Jobs panel read unavailable; governed Runtime Health remains available: {error}</div>}
+   <div className="ui-sr-summary">
      <article><strong>{metrics.recent.length}</strong><span>Recent Job sample</span></article>
      <article><strong>{durationLabel(metrics.queueAvg)}</strong><span>Average queue wait · {metrics.queueMeasured} measurable</span></article>
      <article><strong>{durationLabel(metrics.runAvg)}</strong><span>Average execution · {metrics.runMeasured} measurable</span></article>
@@ -48,7 +49,7 @@ export default function ScheduledRuntimeHealth({jobs=[],error,onNavigate=()=>{}}
      <article><strong>{metrics.evidenceProduced}</strong><span>Evidence produced in sample</span></article>
      <article data-warning={metrics.terminalMissingCompleted>0?'true':'false'}><strong>{metrics.terminalMissingCompleted}</strong><span>Terminal Jobs missing completion timestamp</span></article>
    </div>
-   <div className="cf-scheduler-v2__table-wrap"><table className="cf-scheduler-runtime__table"><thead><tr><th>Job / Profile</th><th>Status</th><th>Queue</th><th>Execution</th><th>Work</th><th>Rate</th><th>Evidence</th><th>Retry / Dedupe</th><th>Failure / Outcome</th><th>Follow</th></tr></thead><tbody>{metrics.recent.length?metrics.recent.slice(0,12).map((j,i)=><tr key={j.id||i}><td><strong>{human(j.job_type||j.domain||'Job')}</strong>{j.profile_key&&<><br/><small>{j.profile_key}</small></>}<br/><small className="cf-scheduler-v2__technical">{j.id||UNKNOWN}</small></td><td><StatusChip value={jobState(j)} label={human(jobState(j))}/></td><td>{durationLabel(queueWait(j))}</td><td>{durationLabel(runDuration(j))}<br/><small>{strictWhen(j.completed_at)}</small></td><td>{countLabel(j.processed_count)} processed{j.failed_count!=null&&<><br/><small>{j.failed_count} failed</small></>}</td><td>{rateLabel(j.throughput_records_per_min)}</td><td>{evidenceLabel(j)}</td><td>{j.retry_exhausted_count!=null?`${j.retry_exhausted_count} exhausted`:UNKNOWN}{j.dedupe_replay!=null&&<><br/><small>{j.dedupe_replay?'Dedupe replay':'Not replayed'}</small></>}</td><td className="cf-scheduler-runtime__failure">{failureClass(j)}</td><td><div className="cf-scheduler-v2__row-actions"><button onClick={()=>onNavigate('#jobs')}>Jobs</button><button onClick={()=>onNavigate('#evidence')}>Evidence</button></div></td></tr>):<tr><td colSpan={10} className="cf-empty-cell">No recent jobs.</td></tr>}</tbody></table></div>
-   <p className="cf-scheduler-v2__note">Evidence produced and verified are separate counters; no acceptance/yield percentage is manufactured from unreviewed Evidence. Retry exhaustion is shown only when the runtime records that counter. Job <code>attempt_count</code> is intentionally not treated as retry count.</p>
+   <div className="ui-tablewrap"><table className="ui-table"><thead><tr><th>Job / Profile</th><th>Status</th><th>Queue</th><th>Execution</th><th>Work</th><th>Rate</th><th>Evidence</th><th>Retry / Dedupe</th><th>Failure / Outcome</th><th>Follow</th></tr></thead><tbody>{metrics.recent.length?metrics.recent.slice(0,12).map((j,i)=><tr key={j.id||i}><td><strong>{human(j.job_type||j.domain||'Job')}</strong>{j.profile_key&&<><br/><small>{j.profile_key}</small></>}<br/><small className="ui-muted">{j.id||UNKNOWN}</small></td><td><StatusChip value={jobState(j)} label={human(jobState(j))}/></td><td>{durationLabel(queueWait(j))}</td><td>{durationLabel(runDuration(j))}<br/><small>{strictWhen(j.completed_at)}</small></td><td>{countLabel(j.processed_count)} processed{j.failed_count!=null&&<><br/><small>{j.failed_count} failed</small></>}</td><td>{rateLabel(j.throughput_records_per_min)}</td><td>{evidenceLabel(j)}</td><td>{j.retry_exhausted_count!=null?`${j.retry_exhausted_count} exhausted`:UNKNOWN}{j.dedupe_replay!=null&&<><br/><small>{j.dedupe_replay?'Dedupe replay':'Not replayed'}</small></>}</td><td className="ui-sr-failure">{failureClass(j)}</td><td><div className="ui-muted"><button type="button" className="ui-btn ui-btn-sm" onClick={()=>onNavigate('#jobs')}>Jobs</button><button type="button" className="ui-btn ui-btn-sm" onClick={()=>onNavigate('#evidence')}>Evidence</button></div></td></tr>):<tr><td colSpan={10} className="ui-muted">No recent jobs.</td></tr>}</tbody></table></div>
+   <p className="ui-muted">Evidence produced and verified are separate counters; no acceptance/yield percentage is manufactured from unreviewed Evidence. Retry exhaustion is shown only when the runtime records that counter. Job <code>attempt_count</code> is intentionally not treated as retry count.</p>
  </section>
 }

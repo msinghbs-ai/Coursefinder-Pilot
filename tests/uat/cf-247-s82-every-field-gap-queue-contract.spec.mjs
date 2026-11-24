@@ -63,7 +63,7 @@ test('stalled fields: daily history, rules from settings, health check, actions,
   const s = fs.readFileSync('supabase/migrations-archive/20261021130000_cf247_field_stalled.sql', 'utf8')
   const sops = fs.readFileSync('src/guide/sops.js', 'utf8')
   const guide = fs.readFileSync('src/guide/platformGuide.js', 'utf8')
-  const health = fs.readFileSync('src/PlatformHealth.jsx', 'utf8')
+  const health = fs.readFileSync('src/ui-v1/PlatformHealthView.jsx', 'utf8')
   const ui2 = fs.readFileSync('src/FieldCoverage.jsx', 'utf8')
   expect(s).toContain('create table if not exists pipeline.field_coverage_daily')
   for (const k of ['stall.days', 'stall.min_points', 'stall.country_gap_points', 'stall.queue_hours']) expect(s).toContain(`security.pipeline_num_v1('${k}'`)

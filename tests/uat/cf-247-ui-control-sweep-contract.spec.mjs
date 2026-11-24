@@ -70,7 +70,7 @@ test.describe('mocked browser', () => {
     await page.goto('/#scheduled-jobs')
     await openAutomationAreas(page) // SS-020 step 2: areas start closed
     await expect(page.getByRole('tab', { name: 'Automations' })).toHaveAttribute('aria-selected', 'true')
-    await expect(page.locator('.au-area')).toHaveCount(4)
+    await expect(page.locator('.ui-au-area')).toHaveCount(4)
     const read = page.locator('tr[data-job="coverage-read"]')
     await expect(read).toContainText('Read course pages')
     await expect(read).toContainText('Every 2 minutes')
@@ -88,10 +88,10 @@ test.describe('mocked browser', () => {
     await read.getByLabel('Batch size for Read course pages').fill('40')
     await read.getByRole('button', { name: 'Save' }).click()
     await expect.poll(() => page.l3calls.find(c => c.p_action === 'set_batch')?.p_args).toEqual({ batch: 40 })
-    await page.locator('.au-area[data-area="Layer 3 AI"]').getByRole('button', { name: 'Pause area' }).click()
+    await page.locator('.ui-au-area[data-area="Layer 3 AI"]').getByRole('button', { name: 'Pause area' }).click()
     await expect.poll(() => page.l3calls.find(c => c.p_action === 'pause_area')?.p_args).toEqual({ area: 'Layer 3 AI' })
     await page.getByLabel('Show', { exact: true }).selectOption('failed')
-    await expect(page.locator('.au-table tbody tr')).toHaveCount(1)
+    await expect(page.locator('.ui-au-table tbody tr')).toHaveCount(1)
   })
 
   // v2.15.252 (Platform Admin, 12 Oct 2026): Send back to AI and the Layer 3 task cards retired with Layer 3.
