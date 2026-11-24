@@ -30,8 +30,7 @@ test('no GPA argument is sent until a country is chosen; then the live arguments
   await expect(page.locator('[data-gpa-col]')).toBeVisible()
   await expect(page.locator('[data-gpa-min]').first()).toContainText('65% · meets')
   await expect(page.locator('[data-gpa-min]').nth(1)).toContainText('Not published')
-  const last = calls[calls.length - 1]
-  expect(last).toMatchObject({ gpa_country: opt, gpa_percent: 72, gpa_qualification: 'CBSE Class XII', gpa_meets: true, sort: 'gpa' })
+  await expect.poll(() => calls[calls.length - 1]).toMatchObject({ gpa_country: opt, gpa_percent: 72, gpa_qualification: 'CBSE Class XII', gpa_meets: true, sort: 'gpa' })
 })
 
 test('the percentage is held to 0 to 100', async ({ page }) => {

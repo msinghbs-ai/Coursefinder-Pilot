@@ -14,6 +14,7 @@ import{supabase}from'./lib/supabase'
 import{Button,Loading,SectionTitle,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
 import SettingsRegister from'./SettingsRegister'
+import KeyControls from'./ui-v1/KeyControls.jsx' // v1.2 Slice 2: the most-changed limits and switches first
 import InstitutionTypeRules from'./InstitutionTypeRules'
 import{plainError}from'./lib/errors'
 
@@ -33,7 +34,7 @@ function NumberRow({label,help,value,min,max,step=1,unit,can,onSave,busy,confirm
 }
 
 export default function PipelineSettings({onError}){
-  const[s,setS]=useState(null),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[saved,setSaved]=useState('')
+  const[s,setS]=useState(null),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[saved,setSaved]=useState(''),[advN,setAdvN]=useState(null)
   const load=async()=>{setErr('');const{data,error}=await supabase.rpc('admin_pipeline_settings_read');if(error)throw error;setS(data)}
   useEffect(()=>{load().catch(e=>{setErr(errText(e));onError?.(errText(e))})},[])
   const write=async(key,value,label)=>{setBusy(true);setSaved('');setErr('');try{const{data,error}=await supabase.rpc('admin_pipeline_settings_write',{p_key:key,p_value:value});if(error)throw error;setS(data);setSaved(`Saved: ${label||key}.`)}catch(e){setErr(errText(e))}finally{setBusy(false)}}
@@ -41,6 +42,7 @@ export default function PipelineSettings({onError}){
   const can=Boolean(s.can_change)&&!busy,cp=s.course_pages||{},rd=s.reading||{},bg=s.budgets||{},ids=s.identity||{}
   const fcLeft=Math.max(0,Number(bg.firecrawl_monthly_limit||0)-Number(bg.firecrawl_used_this_month||0))
   return <div className="m-page-stack" data-pipeline-settings>
+    <KeyControls/>
     <style>{`.ps-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--cf-slate-100)}.ps-row:first-of-type{border-top:0}.ps-row-text{display:grid;gap:2px}.ps-row-text small{color:var(--cf-slate-500)}.ps-row-edit{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.ps-input{width:120px}.ps-unit{color:var(--cf-slate-500);font-size:var(--cf-fs-xs)}.ps-value{font-size:var(--cf-fs-md)}.ps-id-table{width:100%;border-collapse:collapse;font-size:var(--cf-fs-sm)}.ps-id-table th,.ps-id-table td{padding:6px 8px;border-top:1px solid var(--cf-slate-100);text-align:left;vertical-align:top}.ps-id-table label{display:inline-flex;gap:4px;align-items:center;margin-right:10px;white-space:nowrap}.ps-profiles td code{font-size:11px}.ps-note{color:var(--cf-slate-500);font-size:var(--cf-fs-xs);margin:4px 0 0}@media (max-width:720px){.ps-id-table label{min-height:32px;align-items:center}.ps-id-table .cf-link{min-height:32px;padding:0 6px}}`}</style>
     {!s.can_change&&<p className="l3v-note">You can see every setting. Only a Platform Admin can change one.</p>}
     {saved&&<p className="sd-desc" role="status">{saved}</p>}{err&&<p className="fr-error" role="alert">{err}</p>}
@@ -76,7 +78,9 @@ export default function PipelineSettings({onError}){
       {bg.firecrawl_by_purpose&&<p className="ps-note">By purpose: {Object.entries(bg.firecrawl_by_purpose).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${fmtNumber(Number(v))}`).join(' · ')}</p>}
     </section>
 
-    <SettingsRegister onError={onError}/>
+    <details className="ps-advanced" data-advanced-keys><summary><strong>Advanced System Keys</strong> <small data-advanced-count>{advN==null?'':`(${fmtNumber(advN)})`}</small> <small>every low-level setting, searchable by name or key</small></summary>
+      <SettingsRegister onError={onError} onCount={setAdvN}/>
+    </details>
 
     <section className="m-panel" data-settings-section="changes">
       <SectionTitle icon={Sliders} title="Recent changes" subtitle="Every change made here, on Automations or by a recorded migration."/>

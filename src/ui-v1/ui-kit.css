@@ -259,3 +259,10 @@ body.ui-v1 :focus-visible { outline: 2px solid var(--color-focus); outline-offse
 }
 @media (max-width: 760px) { .ui-nav a { border: 1px solid var(--color-nav-active); } .ui-admin .ui-nav a { border: 0; } .ui-nav a[aria-current="page"] { border-color: var(--color-nav-accent); } }
 [data-gpa-panel] .ui-note { grid-column: 1 / -1; margin: 0; }
+
+/* Settings: key controls (Slice 2) */
+.ui-keycontrols { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-4); display: grid; gap: var(--space-3); }
+.ui-section-title { margin: 0; font-size: var(--text-lg); }
+.ui-keyrow { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--space-3); align-items: start; padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
+.ui-keyedit { display: grid; gap: var(--space-2); }
+@media (max-width: 760px) { .ui-keyrow { grid-template-columns: minmax(0, 1fr); } }
