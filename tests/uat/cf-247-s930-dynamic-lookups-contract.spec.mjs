@@ -28,7 +28,7 @@ test('public.admin_lookups_v1: countries, study levels and the rolling intake ye
 })
 
 test('screens read countries from the lookups, not from lists written in the code', () => {
-  for (const f of ['ProviderOnboarding.jsx', 'EnrichPlan.jsx', 'HumanEditsAudit.jsx', 'Layer4Grid.jsx', 'FieldCoverage.jsx', 'data-quality-entry.jsx', 'lib/ops-pulse.js']) {
+  for (const f of ['ProviderOnboarding.jsx', 'EnrichPlan.jsx', 'HumanEditsAudit.jsx', 'Layer4Grid.jsx', 'ui-v1/FieldCoverageView.jsx', 'data-quality-entry.jsx', 'lib/ops-pulse.js']) {
     const s = src(f)
     expect(s, f).not.toMatch(/\[\s*'AU'\s*,\s*'NZ'\s*,\s*'CA'\s*\]/)
     expect(s, f).not.toMatch(/\['AU',\s*'Australia/)

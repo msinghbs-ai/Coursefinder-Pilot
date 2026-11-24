@@ -12,25 +12,25 @@ import{Metric,Button}from'./kit.jsx'
 // (migration 20260929190000_cf247_coverage_completeness_states).
 // Pipeline stages use one blue ordinal ramp (validated light, ordinal: steps 250/350/450/550/700; = --cf-seq-1..5).
 export const COVERAGE_STAGES=[
-  {key:'admitted',label:'Admitted',states:['admitted'],color:'var(--color-primary-hover)'},
+  {key:'admitted',label:'Admitted',states:['admitted'],color:'var(--color-ramp-1)'},
   // v2.15.303: the fill queue (standing Fill the gaps queue and Enrich fields tasks) is work in progress too
-  {key:'progress',label:'Found or queued, awaiting admission or review',states:['candidate','in_review','awaiting_l3','in_queue'],color:'var(--color-primary)'},
-  {key:'read',label:'Page read, not published',states:['not_on_page'],color:'var(--color-info)'},
-  {key:'found',label:'Page found or site blocked',states:['page_found','blocked'],color:'var(--color-border-strong)'},
-  {key:'unreached',label:'Course page not found yet, or no reader yet',states:['site_known','no_website','missing_l1','no_reader'],color:'var(--color-primary-soft)'},
+  {key:'progress',label:'Found or queued, awaiting admission or review',states:['candidate','in_review','awaiting_l3','in_queue'],color:'var(--color-ramp-2)'},
+  {key:'read',label:'Page read, not published',states:['not_on_page'],color:'var(--color-ramp-3)'},
+  {key:'found',label:'Page found or site blocked',states:['page_found','blocked'],color:'var(--color-ramp-4)'},
+  {key:'unreached',label:'Course page not found yet, or no reader yet',states:['site_known','no_website','missing_l1','no_reader'],color:'var(--color-ramp-5)'},
 ]
 // The nine completeness states (Design Reference §3). `built` marks the states the hourly build produces today;
 // the others are always shown, as 0, so a gap is visible rather than hidden.
 export const COMPLETENESS_STATES=[
-  {key:'present',label:'Present',hint:'An admitted value is held',color:'var(--cf-green-700)',built:true},
-  {key:'source_null',label:'Source says nothing',hint:'The source was read and does not publish this',color:'var(--cf-slate-400)',built:true},
-  {key:'ambiguous',label:'Ambiguous',hint:'A value was found and awaits a decision (Layer 3 or Layer 4)',color:'var(--cf-amber-500)',built:true},
-  {key:'not_yet_enriched',label:'Not yet enriched',hint:'The source has not been read yet',color:'var(--cf-slate-200)',built:true},
-  {key:'stale',label:'Stale',hint:'Held, but past its refresh cycle',color:'var(--cf-orange-500)'},
-  {key:'rejected',label:'Rejected',hint:'A found value was rejected',color:'var(--cf-red-600)'},
-  {key:'suppressed',label:'Suppressed',hint:'Held but withheld from publication',color:'var(--cf-violet-400)'},
-  {key:'not_applicable',label:'Not applicable',hint:'Does not apply to this course',color:'var(--cf-slate-300)'},
-  {key:'zero',label:'Zero',hint:'The source states zero (for example no fee)',color:'var(--cf-blue-300)'},
+  {key:'present',label:'Present',hint:'An admitted value is held',color:'var(--color-success)',built:true},
+  {key:'source_null',label:'Source says nothing',hint:'The source was read and does not publish this',color:'var(--color-text-muted)',built:true},
+  {key:'ambiguous',label:'Ambiguous',hint:'A value was found and awaits a decision (Layer 3 or Layer 4)',color:'var(--color-warning)',built:true},
+  {key:'not_yet_enriched',label:'Not yet enriched',hint:'The source has not been read yet',color:'var(--color-border)',built:true},
+  {key:'stale',label:'Stale',hint:'Held, but past its refresh cycle',color:'var(--color-warning)'},
+  {key:'rejected',label:'Rejected',hint:'A found value was rejected',color:'var(--color-danger)'},
+  {key:'suppressed',label:'Suppressed',hint:'Held but withheld from publication',color:'var(--color-info)'},
+  {key:'not_applicable',label:'Not applicable',hint:'Does not apply to this course',color:'var(--color-border-strong)'},
+  {key:'zero',label:'Zero',hint:'The source states zero (for example no fee)',color:'var(--color-ramp-4)'},
 ]
 const CSTATE=Object.fromEntries(COMPLETENESS_STATES.map(s=>[s.key,s]))
 const STATE_LABEL={admitted:'Admitted',candidate:'Found on verified page (awaiting admission)',in_review:'In human review (Layer 4)',awaiting_l3:'Awaiting AI check (Layer 3)',not_on_page:'Page read, not published',
@@ -57,7 +57,7 @@ const PAGE=50
 // v2.15.210 (Platform Admin, 6 Oct 2026): the 80% coverage target is measured per field, not once for the whole catalogue.
 export const COVERAGE_TARGET=80
 export const TARGET_FIELDS=[['intakes','Intakes / start dates'],['english','English requirements'],['fee','Provider tuition (fee year)']]
-export const FIELD_SOURCES=[['adapter','Adapter','var(--cf-blue-700)'],['central','Central page','var(--cf-green-700)'],['reader','Page reader','var(--cf-violet-400)'],['hand','Entered by hand','var(--cf-amber-500)'],['other','Other source','var(--cf-slate-400)']]
+export const FIELD_SOURCES=[['adapter','Adapter','var(--color-primary-hover)'],['central','Central page','var(--color-success)'],['reader','Page reader','var(--color-info)'],['hand','Entered by hand','var(--color-warning)'],['other','Other source','var(--color-text-muted)']]
 
 // CF-247 W34 (Platform Admin 30 Oct 2026 06:53): the totals come from a snapshot rebuilt after each hourly build (job
 // course-coverage-snapshot). Say when it was built and last checked, and mark it stale; course lists opened from here stay live.

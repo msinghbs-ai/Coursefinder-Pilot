@@ -35,6 +35,11 @@
   --color-info: #3b5aa0;
   --color-info-soft: #eaeefa;
   --color-focus: #0b57d0;
+  --color-ramp-1: #0d366b; /* the validated five-step ordinal ramp of Coverage (admitted, in progress, read, found, not reached) */
+  --color-ramp-2: #1c5cab;
+  --color-ramp-3: #2a78d6;
+  --color-ramp-4: #5598e7;
+  --color-ramp-5: #86b6ef;
 
   /* spacing scale (4px base) */
   --space-1: 4px;
