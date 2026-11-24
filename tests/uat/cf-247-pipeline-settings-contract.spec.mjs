@@ -17,7 +17,7 @@ test('Settings page: one page by pipeline step, backed by the read/write pair, l
   for (const key of ['course_pages.search_monthly_credit_cap', 'identity.attribute'])
     expect(ps).toContain(`'${key}'`)
   // v2.15.269: the matcher, search and read sizes moved to the settings register on the same page, with every other job size
-  expect(ps).toContain('<SettingsRegister onError={onError}/>')
+  expect(ps).toContain('<SettingsRegister onError={onError} onCount={setAdvN}/>')
   for (const key of ['course_pages.matcher_prepare_universities', 'course_pages.matcher_items_per_minute', 'reading.read_batch_per_30s']) expect(ps).not.toContain(`'${key}'`)
   // v2.15.252 (Platform Admin, 12 Oct 2026): the Layer 3 section (requests a day, route run, spend guards, credit floor) is removed.
   expect(ps).not.toContain('data-settings-section="layer3"')

@@ -53,6 +53,7 @@ test.describe('mocked browser', () => {
     const calls = []
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_toolsets_write', async route => { calls.push(route.request().postDataJSON()); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }) })
     await page.goto('/#environment')
+    await page.locator('[data-advanced-keys] > summary').click() // the register sits in the Advanced System Keys drawer
     const sec = page.locator('[data-register-section="Website API"]')
     await sec.locator('.cf-card-toggle').click()
     // Settings Hub (v2.16.8, decision 4): the Website API section is in Consumer APIs, read-only until an approved change is unlocked

@@ -52,6 +52,7 @@ test.describe('mocked browser', () => {
     const calls = []
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_toolsets_write', async (route) => { calls.push(route.request().postDataJSON()); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }) })
     await page.goto('/#environment')
+    await page.locator('[data-advanced-keys] > summary').click() // the register sits in the Advanced System Keys drawer
     const sec = page.locator('[data-register-section="Intake dates"]')
     await sec.locator('.cf-card-toggle').click()
     const row = sec.locator('[data-register-setting="intake_dates.nearest_start_providers"]')
