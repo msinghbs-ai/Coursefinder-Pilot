@@ -5,6 +5,7 @@ import { api } from '../lib/supabase.js'
 import { useLookups, countryName } from '../lib/lookups.js'
 import { money, humanise, duration, locGroups, fdate, annualFee, textOf } from './format.js'
 import { COMPARE_MAX } from './saved-store.js'
+import { ReportIssue } from './FeedbackReport.jsx'
 
 const TEN = [['duration', 'Duration'], ['delivery', 'Delivery mode'], ['intakes', 'Intakes'], ['deadline', 'Application deadline'], ['english', 'English requirement'],
   ['academic_entry', 'Academic entry'], ['official_url', 'Course page'], ['description', 'Description'], ['level', 'Study level'], ['campus', 'Campus']]
@@ -141,7 +142,7 @@ function FragmentRow({ label, ids, det, fn }) {
 
 /** Screen 2: the course detail drawer. One read (course_detail); fees, intakes with exact dates, English sub-scores, entry, scholarships, location, the provider's own page. */
 export function CourseDrawer({ row, saved, snapshot, onClose }) {
-  const [d, setD] = useState(null), [tab, setTab] = useState('overview'), [err, setErr] = useState(''), [, bump] = useState(0)
+  const [d, setD] = useState(null), [tab, setTab] = useState('overview'), [err, setErr] = useState(''), [, bump] = useState(0), [report, setReport] = useState(false)
   useEffect(() => saved.subscribe(() => bump(n => n + 1)), [saved])
   useEffect(() => { let on = true; api.courseDetail(row.id).then(x => on && setD(x || {})).catch(() => on && setErr('Course details could not be loaded.')); return () => { on = false } }, [row.id])
   const title = row.display_title || row.canonical_title
@@ -163,5 +164,5 @@ export function CourseDrawer({ row, saved, snapshot, onClose }) {
         <section className="ui-section-head"><h3>Scholarships</h3></section><p>{textOf(d.course_scholarships) || 'None recorded'}</p></>}
       {d && tab === 'links' && <dl className="ui-kv"><dt>Course page</dt><dd>{link ? <a href={link} target="_blank" rel="noreferrer">Provider course page</a> : 'Not published by provider'}</dd>{d.provider_website && <><dt>Provider website</dt><dd><a href={d.provider_website} target="_blank" rel="noreferrer">Provider website</a></dd></>}</dl>}
     </div>
-    <div className="ui-drawer-foot"><button type="button" className="ui-btn" aria-pressed={isSaved} onClick={() => saved.toggle(row.id, snapshot)}>{isSaved ? '♥ Saved' : '♡ Save course'}</button></div></aside></>
+    <div className="ui-drawer-foot"><button type="button" className="ui-btn" aria-pressed={isSaved} onClick={() => saved.toggle(row.id, snapshot)}>{isSaved ? '♥ Saved' : '♡ Save course'}</button><button type="button" className="ui-btn" onClick={() => setReport(true)} data-report-open>Report a data issue</button></div></aside>{report && <ReportIssue row={row} detail={d} snapshot={{ ...snapshot, fees: feeRows.slice(0, 6).map(f => ({ amount: f.amount, cur: f.currency, basis: f.basis, year: f.year })), intakes: (d?.intakes || []).slice(0, 8).map(i => ({ start: i.start_date, label: i.label, year: i.year })), course_url: link || null }} onClose={() => setReport(false)} />}</>
 }

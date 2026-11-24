@@ -266,3 +266,10 @@ body.ui-v1 :focus-visible { outline: 2px solid var(--color-focus); outline-offse
 .ui-keyrow { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--space-3); align-items: start; padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
 .ui-keyedit { display: grid; gap: var(--space-2); }
 @media (max-width: 760px) { .ui-keyrow { grid-template-columns: minmax(0, 1fr); } }
+
+/* s1044: Report a data issue and My reports */
+.ui-modal-foot { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: flex-end; margin-top: var(--space-3); }
+.ui-pillbar { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-3) 0; }
+.ui-pillbar .ui-btn[aria-pressed="true"] { background: var(--color-primary-soft, var(--color-surface-alt)); border-color: var(--color-primary); }
+.ui-modal fieldset { border: 0; padding: 0; margin: 0 0 var(--space-3); display: grid; gap: var(--space-1); }
+.ui-modal textarea.ui-input { padding: var(--space-2) var(--space-3); min-height: 72px; }

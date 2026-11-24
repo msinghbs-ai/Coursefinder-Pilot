@@ -35,3 +35,4 @@
 .he-tuning-table{width:100%;border-collapse:collapse;font-size:var(--cf-fs-xs)}.he-tuning-table th,.he-tuning-table td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--cf-slate-200)}
 .he-periodic{margin:var(--cf-space-3) 0;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);padding:var(--cf-space-3)}
 .he-periodic>summary{cursor:pointer}
+.he-audit-reason{min-width:0;flex:1 1 200px;max-width:320px;min-height:32px;padding:0 var(--cf-space-2);border:1px solid var(--cf-border);border-radius:var(--cf-radius-md)}

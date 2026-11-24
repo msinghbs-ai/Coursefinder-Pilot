@@ -313,3 +313,8 @@ mark.dea-ban{background:var(--cf-amber-100);color:inherit;padding:0 2px;border-r
 .ui-admin .l4d-btn:disabled{opacity:.5;cursor:not-allowed}
 .ui-admin .l4d-btn:focus-visible,.ui-admin .l4i-other-toggle:focus-visible{outline:2px solid var(--color-focus);outline-offset:2px}
 @media(max-width:700px){.ui-admin .l4d-bar{flex-direction:column;align-items:stretch}.ui-admin .l4d-btn{justify-content:center;min-height:var(--size-save)}}
+
+/* s1044: Decide several at once, on the rows of a standard queue in the Grid */
+.ui-admin .l4g-bulk { border: 1px solid var(--cf-border); border-radius: var(--cf-radius-md); padding: var(--cf-space-3); margin: var(--cf-space-3) 0; background: var(--cf-surface); }
+.ui-admin .l4g-bulk > summary { cursor: pointer; min-height: 32px; display: flex; flex-wrap: wrap; gap: var(--cf-space-2); align-items: center; }
+.ui-admin .l4g-bulk > summary small { color: var(--cf-muted); }
