@@ -88,7 +88,7 @@ test('(d) the Filter & Badge Reference covers every filter of the six screens an
   expect(LAYER4_GUIDE.map((x) => x.key)).toEqual(['tell', 'card', 'decide', 'who', 'report'])
   const g = src('PlatformGuide.jsx')
   for (const p of ["['filters','Filters & badges'", "['layer4','Layer 4 guide'", "['examples','Worked examples'", 'data-guide-filters', 'data-guide-layer4', 'data-guide-examples', '<CoverageNotice']) expect(g).toContain(p)
-  expect(src('CoverageNotice.jsx')).toContain('useLookups()')                                     // §6.3: countries from the database
+  expect(src('ui-v1/CoverageNoticeView.jsx')).toContain('useLookups()')                                     // §6.3: countries from the database
 })
 
 test('(e) the UI map is regenerated for this release', () => {

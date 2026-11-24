@@ -63,5 +63,5 @@ test('mocked browser: a finished task in Jobs is named with its title and univer
 test('source: the Task manager shows the journey for scholarship tasks; Coverage shows the runs', () => {
   expect(read('src/AdminTasks.jsx')).toContain('<ScholarshipJourney jobId={job.id}/>')
   expect(read('src/ScholarshipCoverage.jsx')).toContain('<ProviderRuns providerId={providerId}/>')
-  expect(read('src/ScholarshipJourney.jsx')).toContain("supabase.rpc('admin_scholarship_job_journey',{p_job:jobId})")
+  expect(read('src/ui-v1/ScholarshipJourneyView.jsx')).toContain("supabase.rpc('admin_scholarship_job_journey',{p_job:jobId})")
 })

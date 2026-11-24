@@ -79,7 +79,7 @@ const ModelsServices=lazyPage(()=>import('./ModelsServices'))
 // v2.16.0 (Platform Admin 13 Nov 2026 19:14): Models & services › AI is one page of four panes; AiConfig.jsx is retired
 const AiModelsServices=lazyPage(()=>import('./AiModelsServices'))
 const StatisticsDatasets=lazyPage(()=>import('./StatisticsDatasets'))
-const ReferenceSources=lazyPage(()=>import('./ReferenceSources'))
+const ReferenceSources=lazyPage(()=>import('./ui-v1/ReferenceSourcesView'))
 const ReferenceTables=lazyPage(()=>import('./ReferenceTables'))
 const KeyDates=lazyPage(()=>import('./KeyDates'))
 const ComparisonWorkspace=lazyPage(()=>import('./ComparisonWorkspace'))

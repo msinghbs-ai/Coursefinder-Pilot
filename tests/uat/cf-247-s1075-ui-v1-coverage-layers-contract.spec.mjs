@@ -4,11 +4,11 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 const VIEWS = ['CourseCoverageView', 'FieldCoverageView', 'CoverageTelemetryView', 'AerCoverageView', 'CoverageNoticeView', 'PipelineEtaView', 'LinkRefreshView',
-  'Layer1RegisterView', 'Layer1BaselinePreviewView', 'Layer1InductionWizardView', 'Layer23OperationsView']
+  'Layer1RegisterView', 'Layer1BaselinePreviewView', 'Layer1InductionWizardView', 'Layer23OperationsView', 'ExpandListView', 'ReferenceSourcesView', 'ScholarshipJourneyView']
 const code = f => fs.readFileSync(`src/ui-v1/${f}.jsx`, 'utf8').split('\n').filter(l => !l.trim().startsWith('//')).join('\n')
 const STATE_WORDS = /^(up|down|active|attention|button|current|done|failed|found|missing|ok|rotated|status|wide|late|on|off|low|warn|warning|danger|success|info|neutral|running|paused|healthy|due|draft|stale|stuck|blocked|passed|queued|completed|no_change|safe|critical)$/
 
-test('source: the eleven views import only the ui-v1 stylesheet and kit, carry no inline style sheet or legacy class prefix, and type no colour', () => {
+test('source: the fourteen views import only the ui-v1 stylesheet and kit, carry no inline style sheet or legacy class prefix, and type no colour', () => {
   for (const f of VIEWS) {
     const raw = fs.readFileSync(`src/ui-v1/${f}.jsx`, 'utf8'), c = code(f)
     expect([...raw.matchAll(/^import\s*'([^']+\.css)'/gm)].map(m => m[1]), f).toEqual(['./ui-kit.css'])
@@ -18,7 +18,7 @@ test('source: the eleven views import only the ui-v1 stylesheet and kit, carry n
   }
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
   for (const v of ['CourseCoverageView', 'FieldCoverageView', 'CoverageTelemetryView', 'AerCoverageView', 'PipelineEtaView', 'LinkRefreshView', 'Layer23OperationsView']) expect(main, v).toContain(`./ui-v1/${v}`)
-  for (const gone of ['src/course-coverage.jsx', 'src/FieldCoverage.jsx', 'src/CoverageTelemetry.jsx', 'src/AerCoverage.jsx', 'src/PipelineEta.jsx', 'src/LinkRefresh.jsx', 'src/layer1-operations-entry.jsx', 'src/Layer1BaselinePreview.jsx', 'src/Layer1InductionWizard.jsx', 'src/Layer23Operations.jsx', 'src/coverage-telemetry.css'])
+  for (const gone of ['src/course-coverage.jsx', 'src/FieldCoverage.jsx', 'src/CoverageTelemetry.jsx', 'src/AerCoverage.jsx', 'src/PipelineEta.jsx', 'src/LinkRefresh.jsx', 'src/layer1-operations-entry.jsx', 'src/Layer1BaselinePreview.jsx', 'src/Layer1InductionWizard.jsx', 'src/Layer23Operations.jsx', 'src/ExpandList.jsx', 'src/ReferenceSources.jsx', 'src/ScholarshipJourney.jsx', 'src/coverage-telemetry.css', 'src/layer1-induction.css'])
     expect(fs.existsSync(gone), gone).toBe(false)
 })
 
