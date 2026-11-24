@@ -368,7 +368,7 @@ body.ui-v1 :focus-visible { outline: 2px solid var(--color-focus); outline-offse
 .ui-ph-attention-list p { margin: 2px 0 0; color: var(--color-text-muted); font-size: var(--text-sm); }
 .ui-ph-tech { margin-top: var(--space-3); }
 .ui-ph-tech > summary { cursor: pointer; padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
-.ui-ph-fix { display: inline-block; margin-left: var(--space-2); font-size: var(--text-xs); }
+.ui-ph-fix { display: inline-flex; align-items: center; min-height: 24px; margin-left: var(--space-2); font-size: var(--text-xs); }
 .ui-ph-ack { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-2) 0 0; }
 .ui-ph-ack input { min-width: 0; flex: 1 1 220px; padding: var(--space-1) var(--space-2); border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); font: inherit; }
 .ui-ph-missing { display: grid; gap: var(--space-3); justify-items: start; }
