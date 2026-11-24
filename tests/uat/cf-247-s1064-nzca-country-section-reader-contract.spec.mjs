@@ -5,6 +5,7 @@
 // blocks. Stored-copy run read-back is required; this fixture is not source proof.
 import { test, expect } from '@playwright/test'
 import path from 'node:path'
+import fs from 'node:fs'
 import os from 'node:os'
 import { execFileSync } from 'node:child_process'
 
@@ -19,6 +20,20 @@ const COUNTRIES = [
   { a2: 'IN', name: 'India' }, { a2: 'BD', name: 'Bangladesh' },
   { a2: 'NP', name: 'Nepal' }, { a2: 'CN', name: 'China' }
 ]
+
+test('existing real-source-shaped Otago quote-correction fixture: four country accordion tables without headers', async () => {
+  const ht = await load('otago-existing-fixture')
+  const source = fs.readFileSync('tests/fixtures/entry-matrix/quote-corrections/otago-country-tables.html', 'utf8')
+  const refs = [...COUNTRIES, { a2: 'DZ', name: 'Algeria' }, { a2: 'KE', name: 'Kenya' }]
+  const parsed = ht.entryHtmlTableRead(source, refs, [], {}, { minRows: 5, providerCountry: 'NZ' })
+  expect(parsed).not.toBeNull()
+  expect(parsed.tables).toHaveLength(4)
+  expect(parsed.answer.rows).toHaveLength(8)
+  expect(new Set(parsed.answer.rows.map(x => x.country_code))).toEqual(new Set(['DZ','AR','AU','KE']))
+  expect(parsed.answer.rows.find(x => x.country_code === 'AU' && x.study_level.includes('Degree'))?.min_value).toBe(65)
+  expect(parsed.answer.rows.every(x => parsed.text.includes(x.quote))).toBe(true)
+})
+
 test('Otago Polytechnic: country, NCEA and degree divs; no invented grade or country', async () => {
   const ht = await load('otago')
   const html = [
