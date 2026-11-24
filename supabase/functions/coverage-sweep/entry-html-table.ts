@@ -190,6 +190,10 @@ export function htmlCountrySectionPieces(html: string, refs: EntryCountryRef[], 
                                          aliases: Record<string, string> = {}) {
   const index = entryCellCountryIndex(refs, aliases);
   const lines = semanticBlockLines(html);
+  // Only country names printed as an actual heading/accordion label establish scope;
+  // a country in a prose paragraph, dropdown option or adjacent qualification does not.
+  const countryHeadings = new Set([...String(html || "").matchAll(/<(h[2-6]|button|summary)\b[^>]*>([\s\S]*?)<\/\1>/gi)]
+    .map((m) => text(m[2])));
   const tables: { index: number; head: string; levelFrom: "row"; levels: string[]; lines: string[]; rows: number }[] = [];
   let country = "", level = "", ncea = "", requirement: string[] = [], got: { level: string; value: string }[] = [];
   let sequence = 0, consumed = 0;
@@ -210,7 +214,7 @@ export function htmlCountrySectionPieces(html: string, refs: EntryCountryRef[], 
   };
   for (const t of lines) {
     const identity = t.length <= 75 ? entryCellLabel(t, index, quals) : null;
-    if (identity?.kind === "country" && identity.country) {
+    if (identity?.kind === "country" && identity.country && countryHeadings.has(t)) {
       finishCountry(); country = t; continue;
     }
     if (!country) continue;
