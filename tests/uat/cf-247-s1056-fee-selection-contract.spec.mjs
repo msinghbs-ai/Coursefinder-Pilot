@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261125150000_cf247_s1056_fee_selection_and_feedback4.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261125180000_cf247_s1056_fee_selection_and_feedback4.sql', 'utf8')
 const fnStart = MIG.indexOf('CREATE OR REPLACE FUNCTION security.course_fee_selected_v1')
 const fn = MIG.slice(fnStart, MIG.indexOf('$function$;', fnStart))
 
