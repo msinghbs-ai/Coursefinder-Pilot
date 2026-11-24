@@ -26,13 +26,13 @@ const PAGE=50
 
 export default function HumanEditsAudit({tab,rank,onError}){
   const scope=tab==='all'?'all':'mine'
-  const[filter,setFilter]=useState('open'),[entity,setEntity]=useState(''),[country,setCountry]=useState(''),[off,setOff]=useState(0)
+  const[auditReason,setAuditReason]=useState(''),[filter,setFilter]=useState('open'),[entity,setEntity]=useState(''),[country,setCountry]=useState(''),[off,setOff]=useState(0)
   const lk=useLookups() // s930: countries from the database
   const[data,setData]=useState(null),[sel,setSel]=useState([]),[busy,setBusy]=useState(''),[note,setNote]=useState(''),[err,setErr]=useState(''),[confirm,setConfirm]=useState(null),[openId,setOpenId]=useState('')
   const load=(o=off)=>{setData(null);setErr('');rpc('human_edits',{scope,filter,entity_type:entity,country,limit:PAGE,offset:o}).then(d=>{setData(d);setSel(s=>s.filter(id=>(d.items||[]).some(x=>x.id===id)))}).catch(e=>{setErr(e.message);onError?.(e.message)})}
   useEffect(()=>{setOff(0);setSel([]);load(0)},[scope,filter,entity,country])
   const act=async(action,ids,extra)=>{setBusy(action);setErr('');setNote('')
-    try{const r=await rpc(action,{ids,...(extra||{})});setNote(`${LABEL[action]}: ${fmtNumber(r.rows)} edit${r.rows===1?'':'s'}.`);setConfirm(null);load(off)}catch(e){setErr(e.message)}finally{setBusy('')}}
+    try{const r=await rpc(action,{ids,...((action==='human_edits_ack'||action==='human_edits_recheck')&&auditReason.trim()?{reason:auditReason.trim()}:{}),...(extra||{})});if(action==='human_edits_ack'||action==='human_edits_recheck')setAuditReason('');setNote(`${LABEL[action]}: ${fmtNumber(r.rows)} edit${r.rows===1?'':'s'}.`);setConfirm(null);load(off)}catch(e){setErr(e.message)}finally{setBusy('')}}
   if(rank<4)return <Empty text="Human Edits & Periodic Audit is for a Pipeline Operator or above."/>
   const items=data?.items||[],all=items.length>0&&items.every(x=>sel.includes(x.id)),c=data?.counts||{}
   const toggle=id=>setSel(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id])
@@ -55,6 +55,7 @@ export default function HumanEditsAudit({tab,rank,onError}){
     </div>
     <div className="he-actions" role="toolbar" aria-label="Actions on the ticked edits" data-he-actions>
       <small>{sel.length?`${fmtNumber(sel.length)} ticked`:'Tick edits to act on them'}</small>
+      <input className="he-audit-reason" value={auditReason} onChange={e=>setAuditReason(e.target.value)} maxLength={300} placeholder="Audit reason (optional)" aria-label="Audit reason (optional)" data-he-audit-reason/>
       <Button compact variant="primary" disabled={!sel.length||!!busy} onClick={()=>act('human_edits_ack',sel)} data-he-act="ack">{busy==='human_edits_ack'?'Saving…':'Acknowledge & Keep Lock'}</Button>
       <Button compact disabled={!sel.length||!!busy} onClick={()=>act('human_edits_recheck',sel)} data-he-act="recheck">{busy==='human_edits_recheck'?'Comparing…':'Re-Verify by Machine'}</Button>
       {admin&&<Button compact disabled={!sel.length||!!busy} onClick={()=>setConfirm('release')} data-he-act="release">Release Lock to Machine</Button>}

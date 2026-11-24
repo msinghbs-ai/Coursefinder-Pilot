@@ -42,9 +42,9 @@ test('s990 ui: lists come from the live lookups (s930), not from lists in the co
   expect(code.replace(/^\s*\/\/.*$/gm, '')).not.toMatch(/\b(Australia|New Zealand|Canada)\b/);
 });
 
-test('s990 ui: the Counsellor build has exactly the four approved screens and is the only build rank 2 is given', () => {
+test('s990 ui: the Counsellor build has exactly the approved screens (the four of s990 and My reports, s1025 hand-off, s1044) and is the only build rank 2 is given', () => {
   const app = read('CounsellorApp.jsx');
-  expect(app).toContain("[['courses', 'Courses'], ['providers', 'Universities & Providers'], ['scholarships', 'Scholarships'], ['guide', 'Guide']]");
+  expect(app).toContain("[['courses', 'Courses'], ['providers', 'Universities & Providers'], ['scholarships', 'Scholarships'], ['reports', 'My reports'], ['guide', 'Guide']]");
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8');
   expect(main).toContain('if((context&&rank===2)||/^#ui-v1');
   expect(main).toContain('if(!context&&!error)return');

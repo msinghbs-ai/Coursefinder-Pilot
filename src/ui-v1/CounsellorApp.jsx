@@ -7,14 +7,15 @@ import CoursesView from './CoursesView.jsx'
 import ProvidersView from './ProvidersView.jsx'
 import ScholarshipsView from './ScholarshipsView.jsx'
 import GuideView from './GuideView.jsx'
+import MyReportsView from './FeedbackReport.jsx'
 import { supabase } from '../lib/supabase.js'
 import { createSavedStore } from './saved-store.js'
 import { UI_VERSION } from '../release-manifest.js'
 
-export const COUNSELLOR_NAV = [['courses', 'Courses'], ['providers', 'Universities & Providers'], ['scholarships', 'Scholarships'], ['guide', 'Guide']]
+export const COUNSELLOR_NAV = [['courses', 'Courses'], ['providers', 'Universities & Providers'], ['scholarships', 'Scholarships'], ['reports', 'My reports'], ['guide', 'Guide']]
 const routeOf = () => { const m = /^#ui-v1\/([a-z-]+)/.exec(globalThis.location?.hash || ''); return COUNSELLOR_NAV.some(n => n[0] === m?.[1]) ? m[1] : 'courses' }
 
-const SCREENS = { courses: CoursesView, providers: ProvidersView, scholarships: ScholarshipsView, guide: GuideView }
+const SCREENS = { courses: CoursesView, providers: ProvidersView, scholarships: ScholarshipsView, reports: MyReportsView, guide: GuideView }
 
 export default function CounsellorApp({ userId, screens = SCREENS }) {
   const [route, setRoute] = useState(routeOf)

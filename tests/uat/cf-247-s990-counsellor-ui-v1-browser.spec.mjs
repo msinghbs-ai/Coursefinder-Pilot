@@ -35,12 +35,12 @@ async function providers(page) {
 }
 const overflow = page => page.evaluate(() => Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth, ...[...document.querySelectorAll('.ui-drawer-body,.ui-modal,.ui-compare')].map(e => e.scrollWidth - e.clientWidth)));
 
-test('counsellor session: the new build only, four nav items, no operator text, no operator read, ui-* classes only', async ({ page }) => {
+test('counsellor session: the new build only, five nav items (My reports added by s1044), no operator text, no operator read, ui-* classes only', async ({ page }) => {
   await counsellor(page);
   await page.goto('/#courses');
   await expect(page.locator('.ui-shell')).toBeVisible();
   await expect(page).toHaveURL(/#courses$|#ui-v1/);
-  await expect(page.locator('.ui-nav a')).toHaveText(['Courses', 'Universities & Providers', 'Scholarships', 'Guide']);
+  await expect(page.locator('.ui-nav a')).toHaveText(['Courses', 'Universities & Providers', 'Scholarships', 'My reports', 'Guide']);
   await expect(page.locator('.ui-grid tbody tr').first()).toBeVisible();
   const body = (await page.locator('body').innerText()).toLowerCase();
   for (const t of OPERATOR_TEXT) expect(body).not.toContain(t.toLowerCase());
