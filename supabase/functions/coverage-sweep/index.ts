@@ -2953,6 +2953,14 @@ async function handle(req: Request): Promise<Response> {
           if (!r.storage_path) { out.push({ source_id: r.source_id, url: r.url, error: "no stored copy" }); continue }
           const { data, error } = await c.storage.from("evidence").download(r.storage_path); if (error || !data) throw Error(error?.message || "missing");
           const b = new Uint8Array(await data.arrayBuffer());
+          // v1.0.39 (s1047, S1-AER-Claude, Platform Admin 24 Nov 2026 16:15 AEDT: "retrieve the archived ACU PDF ... authorised mechanism"): a stored PDF returns its drawn rules and
+          // positioned text items per page (same pdfPages the readers use), so a layout reader is built against the real data. Stored copy only; nothing is written.
+          if (/pdf/i.test(String(r.mime || "")) || /\.pdf(\.gz)?$/i.test(r.storage_path)) {
+            const raw = b[0] === 0x1f && b[1] === 0x8b ? new Uint8Array(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer()) : b;
+            const doc = await getDocumentProxy(raw); const { OPS } = await getResolvedPDFJS();
+            const pg = await pdfPages(doc, OPS, 60);  // fixed: diagnostic page cap
+            out.push({ source_id: r.source_id, url: r.url, content_hash: r.content_hash, storage_path: r.storage_path, sha256: await sha256(raw), pdf_pages: pg.length, pages: pg.map((q) => ({ p: q.p, w: Math.round(q.width), h: Math.round(q.height), rules: q.rules.length, items: q.items.map((i) => [Math.round(i.x * 10) / 10, Math.round(i.y * 10) / 10, Math.round(i.w * 10) / 10, i.s]) })) }); continue;
+          }
           const t = b[0] === 0x1f && b[1] === 0x8b ? await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text() : new TextDecoder().decode(b);
           const pick = (re: RegExp) => (t.match(re) || [])[0] || "";
           const tables = t.match(/<table\b[\s\S]*?<\/table>/gi) || [];
