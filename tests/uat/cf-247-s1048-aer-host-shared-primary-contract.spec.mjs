@@ -1,9 +1,9 @@
-// Guards: CF-247 s1045 AER shared-host primary record and Curtin CDN alias (Platform Admin 24 Nov 2026 15:16, S2-RM-Design brief decisions 2 and 3; Standing Authority Charter):
+// Guards: CF-247 s1048 AER shared-host primary record and Curtin CDN alias (Platform Admin 24 Nov 2026 15:16, S2-RM-Design brief decisions 2 and 3; Standing Authority Charter):
 // the machine check goes on for the one provider with the most active courses on a shared website host (a tie stays held), Curtin University alone gains s30991.pcdn.co, both by anchored md5-guarded edits.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const sql = fs.readFileSync('supabase/migrations/20261124213000_cf247_s1045_aer_host_shared_primary_curtin_alias.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations/20261124213000_cf247_s1048_aer_host_shared_primary_curtin_alias.sql', 'utf8')
 const code = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 
 test('primary record: switch setting, strictly-more-courses rule, one md5-guarded anchored edit', () => {
