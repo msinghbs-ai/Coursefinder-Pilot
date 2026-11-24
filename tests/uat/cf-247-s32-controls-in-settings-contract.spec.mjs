@@ -76,13 +76,14 @@ test('worker v0.21.7: the Firecrawl proxy, site map sizes and search results com
 test('live guard: the controls check is a notice and shows on Pipeline settings', () => {
   expect(mig).toContain("'key', 'pipeline:0:fixed_value:' || c.jobname")
   expect(fs.readFileSync('src/Toolsets.jsx', 'utf8')).toContain("case'pipeline:fixed_value':return{need:'action'")
-  expect(fs.readFileSync('src/PipelineSettings.jsx', 'utf8')).toContain('<SettingsRegister onError={onError}/>')
+  expect(fs.readFileSync('src/PipelineSettings.jsx', 'utf8')).toContain('<SettingsRegister onError={onError} onCount={setAdvN}/>')
 })
 
 test.describe('mocked browser', () => {
   test('Pipeline settings: controls check, the register by section, a change needs a reason; policy tables change with a reason', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#environment')
+    await page.locator('[data-advanced-keys] > summary').click() // the register sits in the Advanced System Keys drawer
     const reg = page.locator('[data-settings-register]').first()
     await expect(reg.locator('[data-controls-check="ok"]')).toContainText('all 89 running jobs read their sizes from settings')
     const sec = reg.locator('[data-register-section="Job sizes"]')

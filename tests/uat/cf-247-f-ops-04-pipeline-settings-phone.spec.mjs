@@ -55,6 +55,7 @@ async function mount(page, { admin }) {
     ReactDOM.createRoot(document.getElementById('ps-root')).render(React.default.createElement(PipelineSettings, {}))
   })
   await expect(page.locator('[data-pipeline-settings]').first()).toBeVisible()
+  await page.locator('[data-advanced-keys]').evaluate(d => { d.open = true }) // the drawer opens as a person would; set directly so sticky table headers on a phone cannot intercept the tap
   await expect(page.locator('[data-settings-register]')).toBeVisible()
 }
 

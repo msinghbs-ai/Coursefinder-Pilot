@@ -48,6 +48,7 @@ test.describe('mocked browser', () => {
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_settings_register_read', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(register) }))
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_toolsets_write', async route => { calls.push(route.request().postDataJSON()); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }) })
     await page.goto('/#environment')
+    await page.locator('[data-advanced-keys] > summary').click() // the register sits in the Advanced System Keys drawer
     const reg = page.locator('[data-settings-register]').first()
     // v2.16.11: the groups are tabs, one drawn at a time; it opens on the settings a person changed
     for (const g of ['Edited', 'Schedulers & Cadence', 'Circuit Breakers', 'Consumer APIs', 'Pipeline steps']) await expect(reg.locator(`[data-hub-tab="${g}"]`)).toBeVisible()

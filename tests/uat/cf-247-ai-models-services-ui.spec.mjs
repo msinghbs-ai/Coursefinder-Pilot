@@ -495,6 +495,7 @@ test.describe('Models & services › AI, mocked browser', () => {
     await page.route(/\/rest\/v1\/rpc\/admin_settings_register_read$/, r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(register) }))
     await openCards(page, ['settings.register.job-sizes'])
     await page.goto('/#environment')
+    await page.locator('[data-advanced-keys] > summary').click()
     const reg = page.locator('[data-settings-register]').last()
     await expect(reg.locator('[data-register-setting="batch.job_1"]')).toBeVisible({ timeout: 30_000 })
     // the one line, with its link
