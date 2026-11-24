@@ -95,9 +95,89 @@ export function pdfColumnTableLines(pages: PdfPage[], opt: { minRows?: number } 
   return { tables, skipped };
 }
 
+// CF-247 s1105 (S1-AER-Claude; Admin #1028, Standing Authority Charter item 1): the country-header layout (CQUniversity "Country Specific Academic Requirements"): a header "Country |
+// Qualification | <level> | <level>" at fixed x positions, the first word split in two items ("C", "ountry"); a country's name sits once in the first column and carries over the
+// qualification rows below it (each qualification starts a row of its own); a cell's text may run on in a second item on the same line; a full upper-case heading ends the table
+// (the Gao Kao province scores). Same fail-closed rules: an item left of the first column fails the table; nothing is placed by guesswork. A row's label is the country and its
+// qualification as printed, so the cell reader finds one country in it or drops the row.
+const SUB_GAP = 12;  // fixed: points between a qualification's first line and the line above in that column (wrapped lines are about 9.6 apart, separate entries 13 or more)
+const HEADING = /^[A-Z][A-Z0-9 ,'()/-]{11,}$/;
+// a qualification printed with no country of its own, right after another country's rows, that is an award of another system (CQUniversity prints "SQA Advanced Diploma" and "BTEC level 3", UK awards, under China): its country is
+// not the one it follows, so the row is left out and listed (nothing is placed by guesswork)
+const FOREIGN_AWARD = /\b(SQA|BTEC|GCE|A[- ]?Levels?|IGCSE|Cambridge|Pearson|International Baccalaureate)\b/i;
+function countryHeader(ln: Line): { x: number; s: string }[] | null {
+  const it = ln.items.map((i) => ({ ...i }));
+  if (it.length >= 2 && it[0].s.length === 1 && /^[a-z]/.test(it[1].s) && it[1].x - it[0].x < 12) it.splice(0, 2, { x: it[0].x, s: it[0].s + it[1].s });
+  return it.length >= 4 && /^Country$/i.test(it[0].s) && /^Qualification$/i.test(it[1].s) ? it : null;
+}
+export function pdfCountryColumnTableLines(pages: PdfPage[], opt: { minRows?: number } = {}): { tables: PdfColumnTable[]; skipped: { index: number; reason: string; heading: string }[] } {
+  const minRows = opt.minRows ?? 5;
+  const skipped: { index: number; reason: string; heading: string }[] = [];
+  const byKey = new Map<string, { levels: string[]; lines: string[]; rows: number; index: number; noMinimum: { label: string; level: string; cell: string }[] }>();
+  let index = -1, failed = false;
+  for (const pg of pages) {
+    const lines = pageLines(pg);
+    let anchors: number[] = [], levels: string[] = [], key = "", inBody = false, country = { text: "", y: Infinity };
+    let sub: { qual: string; cells: string[]; qy: number; own: boolean } | null = null;
+    const flush = () => {
+      if (!sub || !key) { sub = null; return }
+      const t = byKey.get(key)!, cty = part(country.text), qual = part(sub.qual);
+      if (cty && qual && !sub.own && FOREIGN_AWARD.test(qual)) skipped.push({ index: t.index, reason: "pdf_columns_foreign_award_row", heading: `${cty} - ${qual}`.slice(0, 80) });
+      else if (cty && qual) {
+        const label = `${cty} - ${qual}`.replace(/:/g, " -"); let any = false;
+        sub.cells.forEach((c, k) => { const cell = part(c); if (cell) { any = true; t.lines.push(`| Country or Qualification: ${label} | ${levels[k]}: ${cell} |`); if (!/\d/.test(cell)) t.noMinimum.push({ label, level: levels[k], cell }) } });
+        if (any) t.rows++;
+      }
+      sub = null;
+    };
+    for (const ln of lines) {
+      if (failed) break;
+      const hdr = countryHeader(ln);
+      if (hdr) {
+        flush();
+        const cols = hdr.map((i) => i.s);
+        index++;
+        if (cols.slice(2).some((c) => !LEVEL_WORDS.test(c))) { skipped.push({ index, reason: "pdf_columns_header_level_unmapped", heading: cols.join(" | ") }); failed = true; break }
+        anchors = hdr.map((i) => i.x); levels = cols.slice(2).map(title); key = cols.join("|").toLowerCase();
+        if (!byKey.has(key)) byKey.set(key, { levels, lines: [], rows: 0, index, noMinimum: [] });
+        inBody = true; country = { text: "", y: Infinity }; sub = null; continue;
+      }
+      if (!inBody) continue;
+      if (ln.y < pg.height * 0.05) continue;  // page foot margin: page numbers and the like
+      if (ln.items.length === 1 && HEADING.test(ln.items[0].s)) { flush(); inBody = false; anchors = []; key = ""; continue }
+      const cells: { c: number; s: string }[] = [];
+      for (const i of ln.items) { let c = -1; for (let a = 0; a < anchors.length; a++) if (anchors[a] <= i.x + COL_TOL) c = a; if (c < 0) { skipped.push({ index, reason: "pdf_columns_item_off_anchor", heading: i.s.slice(0, 60) }); failed = true; break } cells.push({ c, s: i.s }) }
+      if (failed) break;
+      const text = (c: number) => cells.filter((x) => x.c === c).map((x) => x.s).join(" ");
+      if (cells.some((x) => x.c === 0)) {
+        if (!country.text || country.y - ln.y >= ROW_GAP) { flush(); country = { text: "", y: ln.y } }
+        country.text = (country.text + " " + text(0)).trim(); country.y = ln.y;
+      }
+      if (cells.some((x) => x.c === 1)) {
+        if (!sub || sub.qy - ln.y >= SUB_GAP) { flush(); sub = { qual: "", cells: levels.map(() => ""), qy: ln.y, own: cells.some((x) => x.c === 0) } }
+        sub.qual = (sub.qual + " " + text(1)).trim(); sub.qy = ln.y;
+      }
+      if (cells.some((x) => x.c >= 2)) {
+        if (!sub) { skipped.push({ index, reason: "pdf_columns_line_before_first_row", heading: ln.items[0]?.s.slice(0, 60) || "" }); failed = true; break }
+        for (const x of cells) if (x.c >= 2) sub.cells[x.c - 2] = (sub.cells[x.c - 2] + " " + x.s).trim();
+      }
+    }
+    flush();
+    if (failed) break;
+  }
+  if (failed) return { tables: [], skipped };
+  const tables: PdfColumnTable[] = [];
+  for (const t of byKey.values()) {
+    if (t.rows < minRows) { skipped.push({ index: t.index, reason: "pdf_columns_too_few_rows", heading: t.levels.join(" | ") }); continue }
+    tables.push({ index: t.index, head: "Country or Qualification", levelFrom: "column", levels: t.levels, lines: t.lines, rows: t.rows, noMinimum: t.noMinimum });
+  }
+  return { tables, skipped };
+}
+
 // The reader: the proven tables' lines read by the cell reader, in the shape of entryHtmlTableRead; null when no table is proven
 export function entryPdfColumnsRead(pages: PdfPage[], refs: EntryCountryRef[], quals: EntryQualification[] = [], aliases: Record<string, string> = {}, opt: { minRows?: number } = {}): HtmlTableRead | null {
-  const { tables, skipped } = pdfColumnTableLines(pages, opt);
+  const first = pdfColumnTableLines(pages, opt), second = pdfCountryColumnTableLines(pages, opt);
+  const tables = [...first.tables, ...second.tables], skipped = [...first.skipped, ...second.skipped];
   if (!tables.length) return null;
   const rows: any[] = [], dropped: HtmlTableRead["dropped"] = [], pieces: HtmlTableRead["tables"] = [], stats: Record<string, number> = {}, all: string[] = [];
   for (const t of tables) {
