@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin guide
 
-**Version:** 1.1 (reviewed for platform release v2.16.61)  
+**Version:** 1.1 (reviewed for platform release v2.16.86)  
 **Role:** Platform Admin (rank 6)  
 **Change control:** CF-247  
 **Source:** generated from the Pilot `src/guide/roleGuides.js` and the menu; never edited by hand.
@@ -53,7 +53,7 @@ Own the platform: approve and publish, activate sources, set limits and settings
 
 ### Invite a person
 
-1. Open Users & roles › Create user.
+1. Open Users & roles and choose Create user.
 2. Enter the email and name, choose one role (its permissions are shown), choose Send invitation.
 3. Review and create: the person gets an email whose link opens the admin sign-in.
 

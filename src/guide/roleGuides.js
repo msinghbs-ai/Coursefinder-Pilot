@@ -8,8 +8,10 @@
 // When a release changes what a role can do: change the guide here, raise its version, add a line to its changes, run
 // `node scripts/export-role-guides.mjs` and mirror it with `--write-mirror <coursefinder-admin>/docs/platform/role-guides`.
 import { PAGES, canOpen, shownTabs } from '../nav-map.js'
+import { UI_VERSION } from '../release-manifest.js'
 
-export const ROLE_GUIDES_REVIEWED_FOR = '2.16.61'
+// The guides are reviewed against the live route map in every release: tests/uat/cf-247-s1046 fails the build when a guide names a page or tab absent from docs/UI-MAP.md
+export const ROLE_GUIDES_REVIEWED_FOR = UI_VERSION
 
 // security.roles ranks 1 to 6 (the same names the menu and Users & roles show)
 export const ROLE_GUIDES = [
@@ -30,12 +32,13 @@ export const ROLE_GUIDES = [
     changes: [{ version: '1.0', date: '18 Nov 2026', release: '2.16.35', change: 'First issue.' }],
   },
   {
-    id: 'counsellor', role: 'Counsellor', rank: 2, version: '1.1',
+    id: 'counsellor', role: 'Counsellor', rank: 2, version: '1.2',
     purpose: 'Find the right course and scholarship for a student, and check what they need to get in: English, academic entry and study load.',
     can: ['Everything a Viewer can.',
       'Use course search for a student: study level, field, city, fees, intakes, study load (full-time, part-time or both) and English requirement.',
       'Read entry requirements for the student\'s country of prior education, and the scholarships open to international students.',
       'Pick up the searches you were working on from Dashboard › Continue where you left off.',
+      'Report a wrong or missing value from a course (Report a data issue) and follow its outcome under My reports; you see only your own reports.',
       'Read how complete each record is: a bar and a percentage on every course and provider row, and Missing field pills (Fee, Intake, English, Scholarship, Description, Study load on Courses) that narrow the list to records lacking those fields.'],
     cannot: ['Change any value, status or setting.',
       'Decide review items, approve, publish or run jobs. Those are Curator, operator and Platform Admin work.'],
@@ -45,7 +48,7 @@ export const ROLE_GUIDES = [
       { task: 'Find scholarships', steps: ['Open Scholarships.', 'Filter to international students and the study level; each scholarship links to the provider\'s own page.'] },
       { task: 'See which courses are incomplete', steps: ['Open Courses and choose one or more Missing field pills, for example Fee and Intake.', 'The list keeps courses lacking every pill you chose; the Completeness bar shows how much of each course is held.'] }],
     ask: 'Spotted a wrong value? Tell a Curator or Platform Admin with the course and what the provider\'s page says.',
-    changes: [{ version: '1.0', date: '18 Nov 2026', release: '2.16.35', change: 'First issue.' }, { version: '1.1', date: '20 Nov 2026', release: '2.16.61', change: 'Completeness bars and Missing field pills on Courses and Providers.' }],
+    changes: [{ version: '1.0', date: '18 Nov 2026', release: '2.16.35', change: 'First issue.' }, { version: '1.1', date: '20 Nov 2026', release: '2.16.61', change: 'Completeness bars and Missing field pills on Courses and Providers.' }, { version: '1.2', date: '24 Nov 2026', release: '2.16.86', change: 'Report a data issue on a course and My reports in the app.' }],
   },
   {
     id: 'curator', role: 'Curator', rank: 3, version: '1.1',
@@ -59,7 +62,7 @@ export const ROLE_GUIDES = [
       'Layer 1 Register › + Add source is where a new country is prepared (country, record type, field mapping).'],
     cannot: ['Activate a source, approve or publish destination data, change settings, run or pause jobs, or manage users. Those buttons are greyed for you, and the server refuses them too.',
       'Re-infer a parser or send work back to the AI (Pipeline Operator and above).'],
-    start: ['Layer 4 Review › Review by rule: choose the queue and the largest rule group; work one card at a time.',
+    start: ['Layer 4 Review › Inbox, Review by rule: choose the queue and the largest rule group; work one card at a time.',
       'Layer 1 Register › + Add source › Continue a draft: finish the mapping, then tell a Platform Admin it is ready to activate.'],
     tasks: [{ task: 'Work the Inbox', steps: ['Open Layer 4 Review (Review by rule opens first).', 'Pick a queue and a rule group; read the quote and the source page; decide it, or correct the record, where your role allows.', 'The decision is kept with who, when and why.'] },
       { task: 'Fix the incomplete providers in a country', steps: ['Open Providers, choose the country, then the Missing field pills you care about (for example Website).', 'Tick the providers to work on; the bar offers Fill fields (description only), Queue to Intake Run & Validate, Flag primary campus (Platform Admin) and Export selected (CSV).', 'Open a provider: the Completeness and provenance panel shows what is held, what is missing and where the description came from.'] },
@@ -95,7 +98,7 @@ export const ROLE_GUIDES = [
     cannot: ['Nothing is closed to you, but every approval, activation and setting change needs a reason and is kept in the control log; a passing test never switches anything on by itself.'],
     start: ['Dashboard: the five cards and Active failures, then Layer 1 Register and Layer 4 Review for what only you can do.',
       'Follow the Platform Admin SOP (Guides › Platform Admin SOP) for the daily routine.'],
-    tasks: [{ task: 'Invite a person', steps: ['Open Users & roles › Create user.', 'Enter the email and name, choose one role (its permissions are shown), choose Send invitation.', 'Review and create: the person gets an email whose link opens the admin sign-in.'] },
+    tasks: [{ task: 'Invite a person', steps: ['Open Users & roles and choose Create user.', 'Enter the email and name, choose one role (its permissions are shown), choose Send invitation.', 'Review and create: the person gets an email whose link opens the admin sign-in.'] },
       { task: 'Publish a destination edition', steps: ['Approve its localities and figures (Bulk Approve Drafts on each tab).', 'Record the edition terms, then Publish edition on Overview & editions with a reason.'] }],
     ask: 'Changes to the consumer API need your recorded approval (G3); drops and deletes go out as a paste file, never a migration.',
     changes: [{ version: '1.0', date: '18 Nov 2026', release: '2.16.35', change: 'First issue.' }, { version: '1.1', date: '20 Nov 2026', release: '2.16.61', change: 'Completeness and provenance workflows added.' }],

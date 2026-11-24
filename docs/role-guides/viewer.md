@@ -1,6 +1,6 @@
 # StudySearch – Viewer guide
 
-**Version:** 1.0 (reviewed for platform release v2.16.61)  
+**Version:** 1.0 (reviewed for platform release v2.16.86)  
 **Role:** Viewer (rank 1)  
 **Change control:** CF-247  
 **Source:** generated from the Pilot `src/guide/roleGuides.js` and the menu; never edited by hand.

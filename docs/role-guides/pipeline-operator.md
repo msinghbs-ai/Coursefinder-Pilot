@@ -1,6 +1,6 @@
 # StudySearch – Pipeline Operator guide
 
-**Version:** 1.0 (reviewed for platform release v2.16.61)  
+**Version:** 1.0 (reviewed for platform release v2.16.86)  
 **Role:** Pipeline Operator (rank 4)  
 **Change control:** CF-247  
 **Source:** generated from the Pilot `src/guide/roleGuides.js` and the menu; never edited by hand.
