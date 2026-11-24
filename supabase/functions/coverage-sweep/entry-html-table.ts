@@ -167,11 +167,78 @@ export function htmlCountryHeadingTables(html: string, refs: EntryCountryRef[], 
   return { tables, skipped };
 }
 
+
+// s1064 F-AER.08: a country heading followed by printed academic level and
+// requirement blocks is a table in the document's structure, even where its HTML
+// uses div/p/accordion components rather than <table>. Preserve the source
+// words and fail closed: a country is one *isolated* reference-country label,
+// followed by at least TWO distinct explicitly printed programme-level rows.
+// NCEA 2/3 is a printed qualification context, not a guessed grade or level.
+// Plain text and HTML use the same strict block adapter; no network, OCR or AI.
+const BLOCK_LEVEL = /^(?:certificate(?:\s*\(level\s*[234567]\))?(?:\s+(?:academic|vocational))?|certificate\s*\/\s*diploma\s+level|diploma(?:\s*\(level\s*[45678]\))?(?:\s+(?:academic|vocational))?|degree\s+level|bachelor(?:'?s)?(?:\s+degree|\s+level)?|undergraduate(?:\s+degree|\s+level)?|postgraduate(?:\s+(?:certificate|diploma|degree))?|master(?:'?s)?(?:\s+degree)?|foundation(?:\s+level)?|associate\s+degree)$/i;
+const BLOCK_CUTOFF = /^(?:english(?:\s+language)?(?:\s+requirement)?s?|how\s+to\s+apply|international\s+high\s+school\s+qualifications|postgraduate\s+entry\s+requirements|academic\s+entry\s+requirements|view\s+entry\s+requirements|download\s+pdf|contact\s+us)$/i;
+function semanticBlockLines(html: string): string[] {
+  const source = String(html || "")
+    .replace(/<(script|style|noscript|svg|template|nav|footer|aside)\b[\s\S]*?<\/\1>/gi, "\n")
+    .replace(/<table\b[\s\S]*?<\/table>/gi, "\n")  // conventional tables belong to htmlTableLines
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/?(?:h[1-6]|p|div|li|section|article|dt|dd|summary|button|tr|td|th)\b[^>]*>/gi, "\n")
+    .replace(/<[^>]*>/g, " ");
+  return source.split(/\n+/).map(text).filter((x) => !!x && x.length <= 1200);
+}
+export function htmlCountrySectionPieces(html: string, refs: EntryCountryRef[], quals: EntryQualification[] = [],
+                                         aliases: Record<string, string> = {}) {
+  const index = entryCellCountryIndex(refs, aliases);
+  const lines = semanticBlockLines(html);
+  const tables: { index: number; head: string; levelFrom: "row"; levels: string[]; lines: string[]; rows: number }[] = [];
+  let country = "", level = "", ncea = "", requirement: string[] = [], got: { level: string; value: string }[] = [];
+  let sequence = 0, consumed = 0;
+  const finishLevel = () => {
+    const value = requirement.join(" ").replace(/\s+/g, " ").trim();
+    if (level && value.length >= 6 && value.length <= 1200) got.push({ level, value });
+    level = ""; requirement = [];
+  };
+  const finishCountry = () => {
+    finishLevel();
+    const distinct = new Set(got.map((g) => g.level.toLowerCase()));
+    if (country && got.length >= 2 && distinct.size >= 2 && got.length <= 6) {
+      const cellLines = got.map((g) => "| Country: " + part(country) + " | " + levelLabel(g.level) + ": " + part(g.value) + " |");
+      tables.push({ index: -1000 - sequence++, head: "Country", levelFrom: "row",
+                    levels: [...new Set(got.map((g) => levelLabel(g.level)))], lines: cellLines, rows: got.length });
+    }
+    country = ""; level = ""; ncea = ""; requirement = []; got = []; consumed = 0;
+  };
+  for (const t of lines) {
+    const identity = t.length <= 75 ? entryCellLabel(t, index, quals) : null;
+    if (identity?.kind === "country" && identity.country) {
+      finishCountry(); country = t; continue;
+    }
+    if (!country) continue;
+    // Long, unrelated sections must never borrow the last recognised country.
+    if (++consumed > 60 || BLOCK_CUTOFF.test(t)) { finishCountry(); continue }
+    if (/^NCEA\s+Level\s+[23]$/i.test(t)) { ncea = t; continue }
+    // A printed "Level | Requirement" pair can appear in a single block.
+    const inline = /^(.{4,90}?)\s*(?:\||:)\s*(.{6,1200})$/.exec(t);
+    if (inline && BLOCK_LEVEL.test(inline[1])) {
+      finishLevel(); level = (ncea ? ncea + " " : "") + inline[1];
+      ncea = ""; requirement = [inline[2]]; continue;
+    }
+    if (BLOCK_LEVEL.test(t)) {
+      finishLevel(); level = (ncea ? ncea + " " : "") + t; ncea = ""; continue;
+    }
+    if (level && requirement.join(" ").length < 1150 && !/^(?:apply|enrol|fees|scholarships|intake dates)\b/i.test(t))
+      requirement.push(t);  // OR, qualification names and exact grades remain the provider's printed words
+  }
+  finishCountry();
+  return { tables, skipped: [] as { index: number; reason: string; heading: string }[] };
+}
+
 export function entryHtmlTableRead(html: string, refs: EntryCountryRef[], quals: EntryQualification[] = [], aliases: Record<string, string> = {},
                                    opt: HtmlTableOptions = {}): HtmlTableRead | null {
   const { tables: headed, skipped: plainSkipped } = htmlTableLines(html, opt);
   const country = htmlCountryHeadingTables(html, refs, quals, aliases);
-  const tables = [...headed, ...country.tables.filter((t) => !headed.some((h) => h.index === t.index))];
+  const sections = htmlCountrySectionPieces(html, refs, quals, aliases);
+  const tables = [...headed, ...country.tables.filter((t) => !headed.some((h) => h.index === t.index)), ...sections.tables];
   const skipped = [...plainSkipped.filter((s) => !tables.some((t) => t.index === s.index)), ...country.skipped.filter((s) => !tables.some((t) => t.index === s.index))];
   if (!tables.length) return null;
   const rows: any[] = [], dropped: HtmlTableDrop[] = [], pieces: HtmlTablePiece[] = [], stats: Record<string, number> = {};
