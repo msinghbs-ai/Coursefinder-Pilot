@@ -11,6 +11,8 @@
 //   4. Decision 260: a "Replaces:" and a "Retires:" comment line;
 //   5. it can run inside the dry run's transaction: no BEGIN, COMMIT, ROLLBACK or END of its own outside dollar-quoted bodies, no CONCURRENTLY,
 //      and not the dry run's own marker.
+//   6. (s1125, 25 Nov 2026) the deploy will apply it: no line that scripts/ci/apply-migration.sh refuses (a top-level drop, delete or truncate,
+//      or "alter table ... drop"; the Platform Admin pastes those). Pilot #1604 passed the dry run and was refused at deploy for this.
 // Prints one line per finding; exits 1 when any check fails, 0 otherwise ("no new migrations" is a pass).
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -52,6 +54,8 @@ for (const f of [...list].sort()) {
   if (/^\s*(begin|commit|rollback|end)\s*;/im.test(outside)) problems.push(`${f}: opens or ends its own transaction`);
   if (/\bconcurrently\b/i.test(sql)) problems.push(`${f}: uses CONCURRENTLY, which cannot run in the dry run's transaction`);
   if (sql.includes('cf_dryrun')) problems.push(`${f}: contains the dry run's marker`);
+  // the same test as scripts/ci/apply-migration.sh (grep -nEi '^(drop|delete|truncate)\b|^alter table .* drop '), so a migration the deploy would refuse fails here first
+  if (sql.split('\n').some((l) => /^(drop|delete|truncate)\b/i.test(l) || /^alter table .* drop /i.test(l))) problems.push(`${f}: drops, deletes or truncates at top level (the deploy refuses it; the Platform Admin pastes those)`);
 }
 for (const p of problems) console.log(`migration-preflight: FAIL ${p}`);
 if (problems.length) process.exit(1);

@@ -12,7 +12,8 @@ async function load(file, name) {
   return import(out)
 }
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const MIG = fs.readFileSync('supabase/migrations/20261126180000_cf247_s1125_entry_sections_first_qualify.sql', 'utf8')
+const PASTE = fs.readFileSync('tests/fixtures/paste/PASTE-20261125-s1125-lean-harness-entry-labels.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261126190000_cf247_s1125_entry_sections_first_qualify.sql', 'utf8')
 
 // a course page as providers publish it: navigation, a long overview, then the entry requirements with a table and its footnote
 const PAGE = `<html><body><nav><a href="/">Home</a> <a href="/study">Study</a> Apply now Entry requirements ATAR</nav>
@@ -92,8 +93,17 @@ test('s1125: one input function for every course entry read and for its qualific
 
 test('s1125: the migration seeds the existing harnesses, keeps the route off and the holds, and switches nothing on', () => {
   expect(MIG).toContain("'reading.course_entry_sections_on', 'Course entry requirements: send the selected sections'")
-  expect(MIG).toContain("check (gold_source in ('aer_accepted', 'adapter', 'ai_earlier', 'cohort_size'))")
-  expect(MIG).toContain("check (field in ('fees', 'intakes', 'entry_requirements'))")
+  // the two CHECK constraints are widened by the Platform Admin's paste file (a migration never drops), which then starts the run once
+  expect(PASTE).toContain("check (gold_source in ('aer_accepted', 'adapter', 'ai_earlier', 'cohort_size'))")
+  expect(PASTE).toContain("check (field in ('fees', 'intakes', 'entry_requirements'))")
+  expect(PASTE).toContain("raise exception 'stop: a harness CHECK constraint is not the definition read on 25 Nov 2026'")
+  expect(PASTE).toContain('select security.lean_entry_qualify_start_v1() as started;')
+  expect(MIG).toContain("create or replace function security.lean_entry_qualify_start_v1() returns jsonb")
+  expect(MIG).toContain("pg_get_constraintdef(oid) like '%entry_requirements%'")
+  expect(MIG).toContain("if exists (select 1 from pipeline.lean_qualify_cases where run_label = 's1125-entry-qualify-2026-11-25') then")
+  // the deploy's own refusal rule, now also in the pre-flight, finds nothing in the migration
+  expect(MIG.split('\n').filter((l) => /^(drop|delete|truncate)\b/i.test(l) || /^alter table .* drop /i.test(l))).toEqual([])
+  expect(fs.readFileSync('scripts/ci/migration-preflight.mjs', 'utf8')).toContain("/^alter table .* drop /i.test(l)")
   expect(MIG).toContain("if md5(pg_get_functiondef('public.svc_lean_qualify_next_v1(integer)'::regprocedure)) <> 'b0274eab6c8fbf0061854305a7623cf2' then")
   expect(MIG).toContain("or (c.field = 'entry_requirements' and v_ent_ok and exists (select 1 from pipeline.ai_model_catalogue mc where mc.code = c.model_code and mc.status = 'allowed')))")
   expect(MIG).toContain("v_ent_ok := coalesce((v_ent->'key'->>'held')::boolean, true) = false")
