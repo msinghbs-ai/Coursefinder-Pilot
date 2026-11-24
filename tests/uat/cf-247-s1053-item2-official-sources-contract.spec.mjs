@@ -27,7 +27,7 @@ test('s1053: equivalence rows are insert only, four section scores, from the sto
   expect(fn).toContain("'concordance:' || v_src || ':' || lower(co.test_code)")
   expect(fn).toContain('insert into pipeline.admin_control_events')
   expect(fn).not.toMatch(/update catalogue\.course_english_requirements|delete from/i)
-  expect(MIG).toContain('create or replace trigger english_concordance_on_store after update of evidence_id on pipeline.provider_fact_sources')
+  expect(MIG).toContain('create or replace trigger english_concordance_on_store after update of status on pipeline.elr_central_fetches')
   expect(MIG).toContain("exception when others then")
 })
 

@@ -27,7 +27,7 @@
 --      has an overall score and four equal band scores that the table lists. Insert only; a course holding the test keeps it; regulated
 --      disciplines (health, teaching, law, social work, psychology) are left out because the universities publish their own tables for them;
 --      only from a stored copy of the table's page. Run now for Adelaide (its page is stored); Newcastle's runs by trigger the moment its procedure is
---      stored (security.english_concordance_on_store_tg on pipeline.provider_fact_sources).
+--      stored (security.english_concordance_on_store_tg on pipeline.elr_central_fetches).
 --   4. The Vice-Chancellor's International Academic Merit Scholarship gets its postgraduate entry GPA, 4.5 out of 7, from its 2027 conditions.
 -- G1: no new job (elr-det-sweep and fee-reader carry the work). G2: no operational value (the tables are published facts; the page bound is the
 --   existing batch.elr_central_fetch). G3: no consumer object changed (checked before and after). Manual locks and active cron checked unchanged.
@@ -241,7 +241,7 @@ end $function$;
 comment on function security.provider_english_concordance_apply_v1(uuid) is 'CF-247 s1053: adds the PTE, TOEFL iBT and CAE rows a university''s published IELTS equivalence table gives a course whose active IELTS row has an overall score and four equal band scores the table lists. Insert only; not for regulated disciplines; only from the table page''s stored copy. Logged.';
 revoke all on function security.provider_english_concordance_apply_v1(uuid) from public, anon, authenticated;
 
--- the moment a table's page is stored (a new stored copy), its equivalences are applied: no waiting for a person or a later change
+-- the moment a table's page is stored by the governed fetch, its equivalences are applied: no waiting for a person or a later change
 CREATE OR REPLACE FUNCTION security.english_concordance_on_store_tg()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -249,20 +249,20 @@ CREATE OR REPLACE FUNCTION security.english_concordance_on_store_tg()
  SET search_path TO ''
 AS $function$
 begin
-  if new.evidence_id is not null and new.evidence_id is distinct from old.evidence_id
-     and exists (select 1 from pipeline.english_concordance c where c.fact_source_id = new.id) then
+  if new.status = 'stored' and old.status is distinct from 'stored'
+     and exists (select 1 from pipeline.english_concordance c where c.fact_source_id = new.fact_source_id) then
     begin
       perform security.provider_english_concordance_apply_v1(new.provider_id);
     exception when others then
       insert into pipeline.admin_control_events(area, action, target, detail, actor)
-      values ('policies', 'concordance_apply_failed', new.provider_id::text, jsonb_build_object('fact_source_id', new.id, 'error', left(sqlerrm, 300), 'via', 'CF-247 s1053'), null);
+      values ('policies', 'concordance_apply_failed', new.provider_id::text, jsonb_build_object('fact_source_id', new.fact_source_id, 'error', left(sqlerrm, 300), 'via', 'CF-247 s1053'), null);
     end;
   end if;
   return new;
 end $function$;
-comment on function security.english_concordance_on_store_tg() is 'CF-247 s1053: when the page of a published English equivalence table gets a new stored copy, applies the table to that university''s courses (security.provider_english_concordance_apply_v1). A failure is logged and never stops the page record.';
+comment on function security.english_concordance_on_store_tg() is 'CF-247 s1053: when the governed fetch stores the page of a published English equivalence table (pipeline.elr_central_fetches status stored), applies the table to that university''s courses (security.provider_english_concordance_apply_v1). A failure is logged and never stops the fetch record.';
 revoke all on function security.english_concordance_on_store_tg() from public, anon, authenticated;
-create or replace trigger english_concordance_on_store after update of evidence_id on pipeline.provider_fact_sources
+create or replace trigger english_concordance_on_store after update of status on pipeline.elr_central_fetches
   for each row execute function security.english_concordance_on_store_tg();
 
 -- 4. Newcastle's Vice-Chancellor's International Academic Merit Scholarship: the postgraduate entry GPA its 2027 conditions state (clause 3.1.2)
