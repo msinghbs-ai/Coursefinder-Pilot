@@ -175,7 +175,7 @@ export function htmlCountryHeadingTables(html: string, refs: EntryCountryRef[], 
 // followed by at least TWO distinct explicitly printed programme-level rows.
 // NCEA 2/3 is a printed qualification context, not a guessed grade or level.
 // Plain text and HTML use the same strict block adapter; no network, OCR or AI.
-const BLOCK_LEVEL = /^(?:certificate(?:\s*\(level\s*[234567]\))?(?:\s+(?:academic|vocational))?|certificate\s*\/\s*diploma\s+level|diploma(?:\s*\(level\s*[45678]\))?(?:\s+(?:academic|vocational))?|degree\s+level|bachelor(?:'?s)?(?:\s+degree|\s+level)?|undergraduate(?:\s+degree|\s+level)?|postgraduate(?:\s+(?:certificate|diploma|degree))?|master(?:'?s)?(?:\s+degree)?|foundation(?:\s+level)?|associate\s+degree)$/i;
+const BLOCK_LEVEL = /^(?:certificate(?:\s*\(level\s*[234567]\))?(?:\s+(?:academic|vocational))?|certificate\s*\/\s*diploma\s+level|diploma\s*\/\s*certificate|diploma(?:\s*\(level\s*[45678]\))?(?:\s+(?:academic|vocational))?|degree\s+level|bachelor(?:'?s)?(?:\s+degree|\s+level)?|undergraduate(?:\s+degree|\s+level)?|postgraduate(?:\s+(?:certificate|diploma|degree))?|master(?:'?s)?(?:\s+degree)?|foundation(?:\s+level)?|associate\s+degree)$/i;
 const BLOCK_CUTOFF = /^(?:english(?:\s+language)?(?:\s+requirement)?s?|how\s+to\s+apply|international\s+high\s+school\s+qualifications|postgraduate\s+entry\s+requirements|academic\s+entry\s+requirements|view\s+entry\s+requirements|download\s+pdf|contact\s+us)$/i;
 function semanticBlockLines(html: string): string[] {
   const source = String(html || "")
