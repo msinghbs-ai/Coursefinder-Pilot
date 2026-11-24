@@ -21,7 +21,7 @@ begin
                     and (coalesce(security.toolset_setting('pipeline', 'entry.countries'), '["AU","NZ"]'::jsonb) ? k.iso_alpha2::text
                       or (k.iso_alpha2 = 'CA'
                           and coalesce(security.toolset_setting('pipeline', 'entry.providers'), '[]'::jsonb) ? p_provider::text
-                          and exists (select 1 from pipeline.entry_matrix_sources src where src.provider_id = p_provider)))$new$;
+                          and exists (select 1 from pipeline.entry_matrix_sources src where src.provider_id = p_provider))))$new$;
   if (length(v_def)-length(replace(v_def,v_old,'')))/length(v_old) <> 1 then
     raise exception 's1041 CA gate country anchor absent or duplicated';
   end if;
