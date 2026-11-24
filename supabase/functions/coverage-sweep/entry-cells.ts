@@ -68,11 +68,11 @@ const MINIMUMS: { re: RegExp; scale: CellMinimum["scale"]; value: boolean }[] = 
   { re: /\bGPA\s*(?:of\s*)?(?:at least\s*)?(\d(?:\.\d{1,2})?)(?:\s*(?:out of|\/)\s*\d(?:\.\d)?)?/i, scale: "gpa", value: true },
   { re: /\b(\d{1,2}(?:\.\d{1,2})?)\s*GPA\b/i, scale: "gpa", value: true },
   { re: /\bATAR\s*(?:of\s*)?(\d{2,3}(?:\.\d{1,2})?)/i, scale: "rank", value: true },
-  { re: /\b(?:(?:an?\s+)?(?:overall\s+|minimum\s+|average\s+|aggregate\s+|final\s+)*(?:grade|mark|pass|average|score|result|percentage)\s+(?:average\s+)?(?:of\s+)?)?(?:at least\s+)?(\d{1,3}(?:\.\d{1,2})?)\s?%(?:\s+(?:average|overall|aggregate))?/i, scale: "percentage", value: true },
+  { re: /\b(?:(?:an?\s+)?(?:overall\s+|minimum\s+|average\s+|aggregate\s+|final\s+)*(?:grade|mark|pass|average|score|result|percentage)\s+(?:average\s+)?(?:of\s+)?)?(?:at least\s+)?(\d{1,3}(?:\.\d{1,2})?)\s?(?:%|per\s?cent\b)(?:\s+(?:average|overall|aggregate))?/i, scale: "percentage", value: true },
   { re: /\b(?:(?:a\s+)?(?:minimum\s+|overall\s+|total\s+)*score\s+of\s+|(?:minimum\s+of\s+)?)(\d{1,2}(?:\.\d)?)\s+points?\b/i, scale: "points", value: true },
   { re: /\b(?:a\s+)?(?:minimum\s+|overall\s+|total\s+)*score\s+of\s+(\d{1,3}(?:\.\d{1,2})?)\b/i, scale: "points", value: true },
-  { re: /\b(?:an?\s+)?(?:minimum\s+|overall\s+|average\s+|final\s+)*grade\s+(?:average\s+)?of\s+(\d{1,2}(?:\.\d{1,2})?)\b(?!\s?%)/i, scale: "aggregate", value: true },
-  { re: /\b(?:an?\s+)?(?:minimum\s+|overall\s+)*average\s+(?:grade\s+)?of\s+(\d{1,2}(?:\.\d{1,2})?)\b(?!\s?%)/i, scale: "aggregate", value: true },
+  { re: /\b(?:an?\s+)?(?:minimum\s+|overall\s+|average\s+|final\s+)*grade\s+(?:average\s+)?of\s+(\d{1,2}(?:\.\d{1,2})?)\b(?!\s?(?:%|per\s?cent\b))/i, scale: "aggregate", value: true },
+  { re: /\b(?:an?\s+)?(?:minimum\s+|overall\s+)*average\s+(?:grade\s+)?of\s+(\d{1,2}(?:\.\d{1,2})?)\b(?!\s?(?:%|per\s?cent\b))/i, scale: "aggregate", value: true },
   { re: /\b(?:minimum\s+of\s+(?:a\s+)?|grade\s+(?:average\s+)?of\s+)?([A-E][+-]?)\s+(?:grade\s+)?average\b/, scale: "letter", value: false },
 ];
 export function entryCellMinimum(text: string): CellMinimum | null {
