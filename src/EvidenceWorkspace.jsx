@@ -138,9 +138,14 @@ function EvidenceDrawer({id,onClose,onOpen,onError,navigate}){
   useEffect(()=>{const k=e=>e.key==='Escape'&&onClose();addEventListener('keydown',k);return()=>removeEventListener('keydown',k)},[onClose])
   useEffect(()=>{let live=true;setData(null);setBusy(true);api.evidenceSummary(id).then(x=>{if(live)setData(x||{})}).catch(e=>onError(e.message)).finally(()=>live&&setBusy(false));return()=>{live=false}},[id])
   const[viewer,setViewer]=useState(null)
+  // UI/UX Unification v1.2 (Platform Admin brief 24 Nov 2026 12:42): the saved snapshot opens inline as soon as the panel does, and a value it supplied
+  // can be found in the page text, so a person checks a quote without leaving the panel. A failed or empty preview is said quietly; View page still works.
+  const[pv,setPv]=useState({state:'idle',page:null}),[pvMode,setPvMode]=useState('page'),[quote,setQuote]=useState('')
+  useEffect(()=>{setPv({state:'idle',page:null});setPvMode('page');setQuote('')},[id])
+  useEffect(()=>{if(!data||data.error||!data.file?.available)return;let live=true;setPv({state:'loading',page:null});api.evidenceAccess(id,'preview').then(x=>{if(!live)return;setPv(typeof x?.content==='string'?{state:'ready',page:x}:{state:'none',page:null})}).catch(()=>live&&setPv({state:'none',page:null}));return()=>{live=false}},[id,data?.id,data?.file?.available])
   // v2.15.294 (Platform Admin, 19 Oct 2026 22:13: "tried opening view page and error Preview_not_allowed"): saved web pages come back
   // unpacked as text and open in a sandboxed frame here (no scripts, no forms); Download saves the unpacked file.
-  async function access(mode){setAccessBusy(mode);try{const x=await api.evidenceAccess(id,mode);if(typeof x?.content==='string'){if(mode==='download'){const b=new Blob([x.content],{type:`${x.mime_type||'text/plain'};charset=utf-8`}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=x.file_name||'page.html';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}else setViewer(x);return}if(!x?.url)throw new Error('The link to the saved file was not returned.');window.open(x.url,'_blank','noopener,noreferrer')}catch(e){onError(e.message)}finally{setAccessBusy('')}}
+  async function access(mode){if(mode==='preview'&&pv.state==='ready'){setViewer(pv.page);return};setAccessBusy(mode);try{const x=await api.evidenceAccess(id,mode);if(typeof x?.content==='string'){if(mode==='download'){const b=new Blob([x.content],{type:`${x.mime_type||'text/plain'};charset=utf-8`}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=x.file_name||'page.html';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}else setViewer(x);return}if(!x?.url)throw new Error('The link to the saved file was not returned.');window.open(x.url,'_blank','noopener,noreferrer')}catch(e){onError(e.message)}finally{setAccessBusy('')}}
   const d=data||{},course=d.course||null,accepted=d.accepted||null,supplied=d.supplied||{},items=rowsOf(supplied),suppliedTotal=Number(supplied.total||0),copies=d.copies||null,file=d.file||{},job=d.job||null
   const pageUrl=safeUrl(d.page_url),earlier=Number(copies?.earlier||0),later=Number(copies?.later||0),reviews=Number(d.reviews_open||0),how=fetchedVia(d.fetched_via)
   const newest=copies?.newest_id&&onOpen?<button className="ev-sum-link" onClick={()=>onOpen(copies.newest_id)}>Open the newest copy →</button>:null
@@ -156,6 +161,8 @@ function EvidenceDrawer({id,onClose,onOpen,onError,navigate}){
         {d.captured_at&&<p className="ev-sum-meta">Read on {dateOnly(d.captured_at)}{how?`, ${how}`:''}</p>}
       </section>
 
+      <div className="ev-meta" data-ev-meta>{[['Layer',d.layer],['Status',d.status],['Freshness',d.freshness_state],['Format',formatOf(file.mime_type,d.evidence_type)],['Size',file.size_bytes!=null?fmtBytes(file.size_bytes):null],['Origin',String(file.storage_path||'').startsWith('aer-artifacts/')?'AER snapshot':null]].filter(([,v])=>v!=null&&v!=='').map(([k,v])=><span key={k} className="ev-meta-chip" data-ev-meta-item={k.toLowerCase()}><small>{k}</small>{['Format','Size','Origin'].includes(k)?v:human(v)}</span>)}</div>
+
       {!course?<div className="ev-sum-result" data-ev-result="unlinked"><span>Not linked to a course</span></div>
         :accepted?.basis?<div className="ev-sum-result" data-ev-result="accepted"><span>Accepted as this course's page ({basisLabel(accepted.basis)})</span>{accepted.in_use?<StatusChip value="active" label="In use now"/>:suppliedTotal>0?<><StatusChip value="active" label="Older copy · its values are in use"/>{newest}</>:<><StatusChip value="superseded" label="Replaced by a newer copy"/>{newest}</>}</div>
         :accepted&&!accepted.in_use&&copies?.newest_id?<div className="ev-sum-result" data-ev-result="replaced"><StatusChip value="superseded" label="Replaced by a newer copy"/>{newest}</div>:null}
@@ -167,11 +174,32 @@ function EvidenceDrawer({id,onClose,onOpen,onError,navigate}){
 
       <div className="ev-sum-actions"><button className="m-secondary" disabled={!file.available||Boolean(accessBusy)} onClick={()=>access('preview')}><FileSearch size={14}/>{accessBusy==='preview'?'Opening…':'View page'}</button><button className="m-secondary" disabled={!file.available||Boolean(accessBusy)} onClick={()=>access('download')}><Download size={14}/>{accessBusy==='download'?'Opening…':'Download'}</button>{!file.available&&<small>The saved file is no longer held.</small>}</div>
 
+      {file.available&&<EvidencePreview pv={pv} mode={pvMode} setMode={setPvMode} quote={quote} setQuote={setQuote} items={items} pageUrl={pageUrl}/>}
+
       {!accepted?.in_use&&suppliedTotal>0&&later>0&&<p className="ev-sum-line" data-ev-values-here>The page was read again later; the values in use still come from this copy, so it is kept.</p>}
 
       {tech.length>0&&<details className="ev-sum-tech"><summary>Technical details</summary><dl>{tech.map(([k,v,c])=><div key={k}><dt>{k}</dt><dd className={c||''}>{String(v)}</dd></div>)}</dl></details>}
     </div>}
   </aside>{viewer&&<PageViewer page={viewer} pageUrl={pageUrl} onClose={()=>setViewer(null)}/>}</>
+}
+
+// The readable text of a saved page (scripts and styles dropped; parsed without running anything) and the place a quote sits in it.
+export function pageText(page){const c=String(page?.content||'');if(page?.kind!=='html')return c;try{const doc=new DOMParser().parseFromString(c,'text/html');doc.querySelectorAll('script,style,noscript,template').forEach(n=>n.remove());return(doc.body?.textContent||'').replace(/[ \t\u00a0]+/g,' ').replace(/\n\s*\n+/g,'\n').trim()}catch{return c}}
+export function findQuote(text,quote){const q=String(quote||'').trim();if(!q)return-1;const i=text.toLowerCase().indexOf(q.toLowerCase());return i}
+function EvidencePreview({pv,mode,setMode,quote,setQuote,items,pageUrl}){
+  const mark=useRef(null),text=useMemo(()=>pv.state==='ready'?pageText(pv.page):'',[pv.state,pv.page]),at=findQuote(text,quote),shown=text.length>60000?text.slice(0,60000):text
+  useEffect(()=>{if(mode==='text'&&at>=0&&mark.current)mark.current.scrollIntoView?.({block:'center'})},[mode,at,quote])
+  const quotes=items.filter(x=>x.value&&String(x.value).trim().length>=2).slice(0,12)
+  if(pv.state==='idle'||pv.state==='loading')return <section className="ev-preview" data-ev-preview="loading"><small>Opening the saved page…</small></section>
+  if(pv.state==='none')return <section className="ev-preview" data-ev-preview="none"><small>No inline preview for this file. Use View page or Download.</small></section>
+  const html=pv.page.kind==='html'
+  return <section className="ev-preview" data-ev-preview="ready" aria-label="Saved page preview">
+    <div className="ev-preview-head"><div role="tablist" aria-label="Preview mode"><button type="button" role="tab" aria-selected={mode==='page'} className={mode==='page'?'active':''} onClick={()=>setMode('page')} data-ev-preview-mode="page">Page</button><button type="button" role="tab" aria-selected={mode==='text'} className={mode==='text'?'active':''} onClick={()=>setMode('text')} data-ev-preview-mode="text">Text</button></div>{pv.page.truncated&&<small>Shown in part (the file is very large).</small>}</div>
+    {quotes.length>0&&<div className="ev-quotes" data-ev-quotes><small>Find a value in the page:</small>{quotes.map((x,i)=><button type="button" key={`${x.field}-${i}`} className={String(x.value)===quote?'active':''} onClick={()=>{setQuote(String(x.value));setMode('text')}} data-ev-quote={x.field}>{x.field}</button>)}</div>}
+    {quote&&<p className="ev-quote-state" data-ev-quote-state={at>=0?'found':'missing'}>{at>=0?'Found in the saved page text.':'Not found as written in the saved page text (the page may show it in a different form).'}</p>}
+    {mode==='page'?(html?<iframe className="ev-preview-frame" title="Saved page preview" sandbox="" referrerPolicy="no-referrer" srcDoc={viewDoc(pv.page.content,pageUrl)}/>:<pre className="ev-preview-text">{pv.page.content}</pre>)
+      :<pre className="ev-preview-text" data-ev-preview-text>{at>=0&&at<shown.length?<>{shown.slice(0,at)}<mark ref={mark}>{shown.slice(at,at+String(quote).trim().length)}</mark>{shown.slice(at+String(quote).trim().length)}</>:shown}</pre>}
+  </section>
 }
 
 // The saved page as it was read. HTML is shown in a frame with every sandbox restriction on (no scripts, forms, pop-ups or same-origin

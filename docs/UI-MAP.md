@@ -7,7 +7,7 @@ Every live admin route and top-level tab comes from the menu (`src/nav-map.js`);
 
 **Rule (Platform Admin 16 Nov 2026):** a PR that moves, renames or folds UI controls updates the inline screen help text and regenerates this document in the same release. Every release bump regenerates it with the test register sync, and it is mirrored to `coursefinder-admin` `docs/UI-MAP.md`. Spec `cf-247-s557-ui-map-contract` fails the build when this document and the source disagree. What each screen shows and does, in words, is in the admin `docs/platform/UI-CATALOGUE.md` and the in-app Guides.
 
-**Counts:** 22 pages · 58 tabs (a page without tabs counts as one) · 27 sub-tab or view bars · 231 folds · 47 drawers and dialogs · 39 old addresses.
+**Counts:** 22 pages · 58 tabs (a page without tabs counts as one) · 28 sub-tab or view bars · 231 folds · 47 drawers and dialogs · 39 old addresses.
 
 Roles (rank): 1 Viewer · 2 Counsellor · 3 Curator · 4 Pipeline Operator · 5 PIM Admin · 6 Platform Admin.
 
@@ -652,6 +652,7 @@ Page key `evidence` · opens for Curator and above · no tabs
 - **Screen:** `EvidenceWorkspace` (EvidenceWorkspace.jsx)
 - **Sub-tabs and view bars:**
   - Audit trail: Dispatcher runs · Boost qualifications · Layer 4 decisions — EvidenceAuditTrail.jsx
+  - Preview mode: Page · Text — EvidenceWorkspace.jsx
 - **Folds:**
   - Technical details (details) — EvidenceWorkspace.jsx
 - **Drawers and dialogs:**
