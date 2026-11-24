@@ -37,7 +37,7 @@ declare
     || E'             and exists (select 1 from catalogue.providers p join ref.countries c on c.id = p.country_id where p.id = p_provider_id and c.iso_alpha2 = ''CA''));';
 begin
   if position('s1044 (24 Nov 2026)' in v_def) > 0 then return; end if;
-  if position('s981 (23 Nov 2026)' in v_def) = 0 then raise exception 'guard: security.fc_sch_held_v1 is not the s981 definition this change edits'; end if;
+  if position('s981 (23 Nov 2026, IQ-00555)' in v_def) = 0 then raise exception 'guard: security.fc_sch_held_v1 is not the s981 definition this change edits'; end if;
   if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 then raise exception 'guard: the eligibility line must appear exactly once'; end if;
   execute replace(v_def, v_old, v_new);
 end $e$;
