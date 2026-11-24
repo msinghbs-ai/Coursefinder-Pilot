@@ -96,3 +96,47 @@ begin
   raise exception 's1065 active cron ceiling breached';
  end if;
 end $post$;
+
+
+-- s1064 NZ stored-HTML recovery: re-read ONLY the three failed source copies
+-- whose held_unparsed reason the existing deterministic reader can now address.
+-- Never replay an approved, person-claimed, ambiguous, new-edition, or AU run.
+-- Existing public.admin_entry_matrix_reread preserves previous_results and changes
+-- proposed rows/pending items only; canonical active rows and manual locks stay put.
+do $nz_recovery$
+declare v_ids uuid[];
+        v_result jsonb;
+begin
+  select array_agg(s.id order by s.id) into v_ids
+  from pipeline.entry_matrix_sources s
+  join catalogue.providers p on p.id=s.provider_id
+  join ref.countries k on k.id=p.country_id and k.iso_alpha2='NZ'
+  join lateral (
+    select r.id,r.state,r.error,r.review_item_id
+    from pipeline.entry_matrix_runs r where r.source_id=s.id
+    order by (r.content_hash is not distinct from s.content_hash) desc,r.created_at desc,r.id desc limit 1
+  ) r on true
+  left join pipeline.layer4_review_items i on i.id=r.review_item_id
+  where s.id in (
+    'd74fcba4-a492-4cde-a1f0-70a398e6bfda'::uuid, -- Otago Polytechnic
+    'f06a01dd-d77e-48bc-b646-e669e22daffd'::uuid, -- Wintec
+    '8b020b17-cb26-4d91-90c1-498062465a4a'::uuid -- VUW
+  )
+  and s.status='read' and s.evidence_id is not null and s.content_hash is not null
+  and r.state='failed' and r.error like 'held_unparsed:%'
+  and (i.id is null or (i.status='pending' and i.claimed_at is null and i.assigned_to is null))
+  and not exists (
+    select 1 from pipeline.entry_matrix_runs r2
+    join pipeline.layer4_review_items li on li.id=r2.review_item_id
+    where r2.source_id=s.id and (li.status='approved' or li.claimed_at is not null or li.assigned_to is not null)
+  );
+  if coalesce(cardinality(v_ids),0)>0 then
+    v_result := public.admin_entry_matrix_reread(v_ids,'s1064 NZ stored HTML country-section deterministic reader; retry only unparsed Otago, Wintec, VUW');
+    if not coalesce((v_result->>'ok')::boolean,false) then
+      raise exception 's1064 NZ guarded stored reread failed: %',v_result;
+    end if;
+    raise notice 's1064 NZ stored-source reread queued: %',v_result;
+  else
+    raise notice 's1064 NZ stored-source reread: no safely eligible run; existing holds retained';
+  end if;
+end $nz_recovery$;
