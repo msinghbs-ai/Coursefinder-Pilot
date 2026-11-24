@@ -9,7 +9,7 @@ const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8');
 test('s992: listing page read directly first; direct copy used only when it gives items; scraper fallback unchanged', () => {
   expect(w).toContain('// was v1.0.35 (23 Nov 2026, CF-247 s992');  // v1.0.36 from s1017 keeps the s992 note
   expect(w).toContain('let pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000), true);');
-  expect(w).toContain('if (pg.via === "direct" && pg.status === "read" && scholarshipListing(pg.html, pg.finalUrl || url, r.hosts || [], maxItems).length + awardSections(pg.html, pg.finalUrl || url).length === 0)');
+  expect(w).toContain('if (pg.via === "direct" && pg.status === "read" && scholarshipListing(pg.html, pg.finalUrl || url, r.hosts || [], maxItems).length + awardSections(pg.html, pg.finalUrl || url, labelOpts).length === 0)');
   expect(w).toContain('pg = await readSch(url, r.provider_id, wsNum("scholarship.catalogue_render_wait_ms", 5000), false);');
   expect(w).toContain('if (!(await useFc("sch_scrape", providerId, url, true))) return none("waiting_scraper");');
 });

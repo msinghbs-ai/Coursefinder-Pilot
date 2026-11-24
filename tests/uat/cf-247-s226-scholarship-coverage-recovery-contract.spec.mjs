@@ -197,7 +197,9 @@ test('worker v0.59.0 wiring: sources, deferred maps, section and redirect reads,
   // every scholarship worker setting the worker reads is registered by the migration and returned by svc_worker_settings_v1
   const keys = [...new Set([...worker.matchAll(/wsNum\("(scholarship\.[a-z_]+)"/g)].map((x) => x[1]))]
   expect(keys.length).toBeGreaterThanOrEqual(9)
-  for (const k of keys) expect(m, k).toContain(`('pipeline', '${k}', `)
+  // a key a later change registers is checked in that change's migration (s1037: scholarship.label_sections_on)
+  const LATER = { 'scholarship.label_sections_on': fs.readFileSync('supabase/migrations/20261124160000_cf247_s1037_label_tier_award_sections.sql', 'utf8') }
+  for (const k of keys) expect(LATER[k] || m, k).toContain(`('pipeline', '${k}', `)
   expect(m).toContain("or (s.toolset_key = 'pipeline' and s.key like 'scholarship.%'));")
 })
 

@@ -5,6 +5,9 @@
 //                      2027": ten awards, most without their own page) becomes one item per award, keyed by the award code;
 //      sectionHtml     the copy of an umbrella page the reader keeps for one award: the page with the other awards' rows removed, so
 //                      the shared eligibility text (Residency: International) stays and no other award's value is read;
+//   F5b labelSections  (s1037) an umbrella page whose awards carry no code and sit under group headings: awards named by a heading, by a bold label
+//                      under a group heading (Charles Darwin) or by tier blocks under one heading (Lincoln flagship); finer than the heading split (s1035),
+//                      so it comes first; items keyed S-<slug>, read as award sections like a coded award;
 //   F6 nextPage        the next page of a paginated catalogue (rel="next", a "Next" link, page=N, or startRank/numRanks in the query or
 //                      in the fragment of a script catalogue such as UNSW's HDR finder); statedTotal reads a printed result total;
 //                      pagingState says complete only when the pagination ended (no next page, the stated total reached, or an empty page);
@@ -12,7 +15,7 @@
 //                      a listing, a search page): the old address is not a scholarship page any more.
 // Nothing here fetches, spends or decides admission.
 import { htmlToText } from "./extract.ts";
-import { headingAwardSections, headingSectionHtml } from "./scholarship.ts";  // s1035: heading-based awards
+import { headingAwardSections, headingSectionHtml, headingSlug, HEADING_AWARD_PREFIX } from "./scholarship.ts";  // s1035: heading-based awards
 
 export type MapOutcome = "mapped" | "empty" | "deferred";
 // methods as the worker records them: "map_search(72)", "map:403", "map:scholarship_share", "map:credits_refused", ...
@@ -44,7 +47,7 @@ function blocks(main: string): { html: string; start: number }[] {
   return out;
 }
 
-export function awardSections(html: string, baseUrl: string): AwardSection[] {
+export function awardSections(html: string, baseUrl: string, opts?: { labels?: boolean }): AwardSection[] {
   const main = mainOf(html);
   const seen = new Map<string, AwardSection>();
   for (const b of blocks(main)) {
@@ -65,13 +68,15 @@ export function awardSections(html: string, baseUrl: string): AwardSection[] {
   }
   // an umbrella lists several awards; one coded award on a page is that award's own page
   // s1035: no coded awards on the page: an umbrella that prints its awards under headings is split by heading (scholarship.ts)
+  // s1037: with the setting on, awards named by a heading, a bold label or a tier block come first (they are finer than the heading split below)
+  if (seen.size < 2 && opts?.labels) { const l = labelSections(html, baseUrl); if (l.length) return l }
   if (seen.size < 2) return headingAwardSections(html).map((h) => ({ key: h.key, codes: h.codes, name: h.name, value_text: h.value_text, url: null }));
   return [...seen.values()];
 }
 
 // The copy kept for one award of an umbrella page: the other awards' blocks removed, the shared text kept. Null when the award is not there.
-export function sectionHtml(html: string, code: string): string | null {
-  if (/^S-/i.test(code)) return headingSectionHtml(html, code);  // s1035
+export function sectionHtml(html: string, code: string, opts?: { labels?: boolean }): string | null {
+  if (/^S-/i.test(code)) return (opts?.labels ? labelSectionHtml(html, code) : null) ?? headingSectionHtml(html, code);  // s1037: with the setting on the label section first, then the s1035 heading section
   const main = mainOf(html);
   const bs = blocks(main);
   const mine = bs.filter((b) => new RegExp(`\\b${code}\\b`).test(htmlToText(b.html)));
@@ -138,4 +143,132 @@ export function redirectOutcome(requested: string, finalUrl: string | null | und
   const norm = (u: URL) => (u.hostname.replace(/^www\./, "") + u.pathname.replace(/\/+$/, "")).toLowerCase();
   if (norm(a) === norm(b)) return "same";
   return AWAY.test(b.pathname) ? "redirected_away" : "moved";
+}
+
+// ---- F5b label-and-tier award sections (s1032, Platform Admin 24 Nov 2026) ---------------------------------------------------------------
+// Pages that print their awards without codes. Three shapes, one rule: a page is cut into blocks (a heading, a label printed wholly in bold, or
+// a paragraph / list item / table cell of text); an award label is a heading of level 2 or lower, or a bold label, that names an award
+// (scholarship, award, bursary, grant, fellowship, prize, rebate, waiver) and is not a call to action or a bare category ("Other Scholarships");
+// a label with a deeper label directly under it is a group, not an award (Charles Darwin: the h2 "CDU Scholarships" over bold award labels;
+// Lincoln: the h3 "Other Scholarships" over h4 awards). An award's section runs to the next label or the next heading that closes it. Inside
+// one award, two or more blocks that begin with an amount, a percentage or "Automatic" are tiers (Lincoln flagship: NZ$2,500, NZ$3,000, ...),
+// and each tier is its own award named "<award> - <tier>". The page must give at least two awards, two of them with a stated value.
+// Nothing here fetches, spends or decides admission; the extractor and the admission rules read each section as they read any award.
+const LABEL_AWARD = /\b(scholarships?|awards?|bursar(?:y|ies)|grants?|fellowships?|prizes?|rebates?|waivers?)\b/i;
+const LABEL_NOUN = "(?:scholarships?|awards?|bursar(?:y|ies)|grants?|prizes?)";
+const LABEL_GENERIC = new RegExp(`^(?:(?:other|general|international|domestic|university|all|our|current|available|new|existing|key|major|more|further|additional|government|external|research|equity|merit)\\s+)*${LABEL_NOUN}(?:\\s+(?:and|&)\\s+${LABEL_NOUN})?$`, "i");
+const LABEL_CTA = /^(?:apply|how to|how do|tips|find|search|view|see|read|contact|terms|conditions|frequently|faq|important|key dates|about|why|do you|what|who |when |where |ready to|have you|looking for|check|scholarship application|\d+ tips)/i;
+const LABEL_VALUE = /(?:[A-Z]{0,3}\$\s?\d|\d\s?%|\b(?:AUD|NZD|USD)\b|\btuition\b|\bfees?\b|\bfull\b|\bhalf\b|\bup to\b)/;
+const LABEL_TIER = /^(?:up to\s+|a\s+|an\s+)?(?:[A-Z]{0,3}\$|(?:NZD|AUD|USD|CAD|GBP)\s?)\s?\d|^\d{1,3}(?:\.\d+)?\s?%|^automatic\b/i;
+const BLOCK_TAGS = new Set(["p", "div", "li", "ul", "ol", "tr", "td", "th", "dt", "dd", "br", "section", "article", "table", "thead", "tbody", "header", "footer", "aside", "form", "blockquote", "hr", "figure", "figcaption", "details", "summary"]);
+type Seg = { k: "h" | "b" | "t"; level: number; text: string; links: string[] };
+export type LabelSection = AwardSection & { group: string; body: string[]; intro: string };
+
+const decodeEntities = (t: string) => t
+  .replace(/&nbsp;|&#160;|&#xa0;/gi, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;|&#39;|&#x27;/g, "'")
+  .replace(/&#8217;|&rsquo;/g, "\u2019").replace(/&#8211;|&ndash;/g, "\u2013").replace(/&#8212;|&mdash;/g, "\u2014")
+  .replace(/&#(\d+);/g, (_, n) => { try { return String.fromCodePoint(Number(n)) } catch { return " " } });
+
+// the page as an ordered list of blocks: a heading (with its level), a block printed wholly in bold (a label), or text; links stay with their block
+function segments(main: string): Seg[] {
+  const out: Seg[] = [];
+  const src = main.replace(/<!--[\s\S]*?-->/g, " ").replace(/<(script|style|noscript|svg|template)\b[\s\S]*?<\/\1>/gi, " ");
+  let buf = "", bold = 0, plain = 0, boldDepth = 0, head = 0, links: string[] = [];
+  const flush = () => {
+    const text = buf.replace(/\s+/g, " ").trim();
+    if (text) out.push({ k: head ? "h" : (bold > 0 && bold >= 0.9 * (bold + plain) && text.length <= 160 ? "b" : "t"), level: head, text, links });
+    buf = ""; bold = 0; plain = 0; links = [];
+  };
+  for (const m of src.matchAll(/<(\/?)([a-z][a-z0-9]*)\b([^>]*)>|([^<]+)/gi)) {
+    if (m[4] !== undefined) {
+      const t = decodeEntities(m[4]);
+      buf += t;
+      const n = t.replace(/\s+/g, "").length;
+      if (boldDepth > 0 || head) bold += n; else plain += n;
+      continue;
+    }
+    const close = m[1] === "/", tag = m[2].toLowerCase();
+    if (/^h[1-6]$/.test(tag)) { flush(); head = close ? 0 : Number(tag[1]); continue }
+    if (tag === "strong" || tag === "b") { boldDepth = Math.max(0, boldDepth + (close ? -1 : 1)); continue }
+    if (tag === "a" && !close) { const h = m[3].match(/href\s*=\s*["']([^"']+)["']/i); if (h) links.push(decodeEntities(h[1])); continue }
+    if (BLOCK_TAGS.has(tag)) flush();
+  }
+  flush();
+  return out;
+}
+
+const cleanLabel = (t: string) => t.replace(/[\s*:\u2013\u2014-]+$/g, "").replace(/\s+/g, " ").trim();
+const labelOk = (t: string) => t.length >= 6 && t.length <= 160 && LABEL_AWARD.test(t) && !LABEL_CTA.test(t) && !/\?$/.test(t) && !LABEL_GENERIC.test(cleanLabel(t));
+// a stable section key: "S-" and the award's name as an upper-case slug (the key scheme of the heading splitter, s1035, which the database already
+// accepts in the listing-member and admit functions); a name seen twice on one page gets "-2", "-3" ...
+function sectionKey(name: string, taken: Set<string>): string {
+  const base = (HEADING_AWARD_PREFIX + (headingSlug(name) || "award").toUpperCase()).slice(0, 56).replace(/-+$/, "");
+  let key = base, n = 2;
+  while (taken.has(key)) key = `${base}-${n++}`;
+  taken.add(key);
+  return key;
+}
+const pickUrl = (links: string[], baseUrl: string): string | null => {
+  for (const href of links) {
+    try { const u = new URL(href.replace(/&amp;/g, "&"), baseUrl); u.hash = "";
+      if (/^https?:$/.test(u.protocol) && !/\.(pdf|docx?)(\?|$)/i.test(u.pathname) && !/login|apply|sc_search|mailto/i.test(u.href) && !/\/scholarships?\/?$/i.test(u.pathname) && u.href.replace(/\/$/, "") !== baseUrl.split("#")[0].replace(/\/$/, "")) return u.href } catch { /* */ }
+  }
+  return null;
+};
+
+export function labelSections(html: string, baseUrl: string): LabelSection[] {
+  const segs = segments(mainOf(html));
+  type Cand = { i: number; rank: number; name: string };
+  const cands: Cand[] = [];
+  segs.forEach((s, i) => { if (((s.k === "h" && s.level >= 2) || s.k === "b") && labelOk(s.text)) cands.push({ i, rank: s.k === "h" ? s.level : 7, name: cleanLabel(s.text) }) });
+  const isCand = new Set(cands.map((c) => c.i));
+  const intro = segs.slice(0, cands.length ? cands[0].i : 0).filter((x) => x.k === "t").map((x) => x.text).join(" ").slice(0, 1500);  // the text ahead of the first award is shared by every award
+  const taken = new Set<string>(), out: LabelSection[] = [];
+  cands.forEach((c) => {
+    // a group: a deeper award label sits under it before the next heading at its own level or above (a bare category such as "Other
+    // Scholarships" is never an award itself, so only headings, not award labels, close the scan)
+    if (c.rank < 7) {
+      let group = false;
+      for (let k = c.i + 1; k < segs.length; k++) {
+        if (segs[k].k === "h" && segs[k].level <= c.rank) break;
+        if (isCand.has(k) && cands.find((x) => x.i === k)!.rank > c.rank) { group = true; break }
+      }
+      if (group) return;
+    }
+    let end = segs.length;
+    for (let k = c.i + 1; k < segs.length; k++) {
+      if (isCand.has(k) || (segs[k].k === "h" && (c.rank === 7 || segs[k].level <= c.rank))) { end = k; break }
+    }
+    // the nearest heading above that is not this award (the group the award sits under)
+    let group = "";
+    for (let k = c.i - 1; k >= 0; k--) if (segs[k].k === "h" && segs[k].level >= 1 && (c.rank === 7 || segs[k].level < c.rank)) { group = cleanLabel(segs[k].text); break }
+    const body = segs.slice(c.i + 1, end), links = [...segs[c.i].links, ...body.flatMap((b) => b.links)];
+    const tierAt = body.map((b, i) => (b.k === "t" && LABEL_TIER.test(b.text) ? i : -1)).filter((i) => i >= 0);
+    if (tierAt.length >= 2) {
+      const lead = body.slice(0, tierAt[0]);
+      tierAt.forEach((at, ti) => {
+        const blk = body.slice(at, ti + 1 < tierAt.length ? tierAt[ti + 1] : body.length);
+        const first = blk[0].text.split(/\.\s|\.$/)[0];  // the tier's own label: its first sentence
+        const tier = first.length > 90 ? first.slice(0, 90).replace(/\s+\S*$/, "") : first;
+        const name = `${c.name} - ${cleanLabel(tier)}`;
+        out.push({ key: sectionKey(name, taken), codes: [], name, value_text: blk[0].text.slice(0, 300), url: pickUrl(blk.flatMap((b) => b.links), baseUrl), group: group || c.name, body: [...lead, ...blk].map((b) => b.text), intro });
+      });
+      return;
+    }
+    const valueSeg = body.find((b) => LABEL_VALUE.test(b.text)) || body[0];
+    out.push({ key: sectionKey(c.name, taken), codes: [], name: c.name, value_text: (valueSeg?.text || "").slice(0, 300), url: pickUrl(links, baseUrl), group, body: body.map((b) => b.text), intro });
+  });
+  for (const s of out) s.codes = [s.key];
+  // an umbrella lists several awards, at least two of them with a stated value; anything less is a page about one award or a list of links
+  const valued = out.filter((s) => LABEL_VALUE.test(s.name) || LABEL_VALUE.test(s.body.join(" ")));
+  return out.length >= 2 && valued.length >= 2 ? out : [];
+}
+
+// the copy kept for one label section: the award's name, the group it sits under and its own text; the other awards are left out
+function labelSectionHtml(html: string, code: string): string | null {
+  const s = labelSections(html, "https://x.invalid/").find((x) => x.key === code);
+  if (!s) return null;
+  const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const h1 = (html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return `<html><head><title>${esc(s.name)} | ${code}</title></head><body><h1>${esc(s.name)}</h1>${h1 ? `<p>${esc(decodeEntities(h1))}</p>` : ""}${s.group && s.group !== s.name ? `<h2>${esc(s.group)}</h2>` : ""}<main>${s.intro ? `<p>${esc(s.intro)}</p>` : ""}${s.body.map((t) => `<p>${esc(t)}</p>`).join("")}</main></body></html>`;
 }
