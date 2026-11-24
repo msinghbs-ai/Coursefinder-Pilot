@@ -15,6 +15,7 @@ import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,Metric,StatusChip,fmtDate,fmtNumber}from'./ui-kit'
 import{CheckLine,descriptionRules}from'./DescriptionEditAdmit'
 import{checkDescription,ruleCandidates}from'./lib/description-check.js'
+import Layer4LockedBulk from'./Layer4LockedBulk' // s1034: Periodic Audit - Locked Field Update, bulk Yes (Approve & Keep Lock)
 import'./human-edits.css'
 import{targetCountries,useLookups}from'./lib/lookups.js' // s930: countries from the database
 
@@ -45,6 +46,7 @@ export default function HumanEditsAudit({tab,rank,onError}){
       <Metric label="Due for 6-month re-review" value={fmtNumber(c.due??0)} tone={Number(c.due)?'warning':'success'} detail="180 days or more since the edit or acknowledgement"/>
     </section>
     <RuleTuning items={items}/>
+    <details className="he-periodic" data-he-periodic open><summary><strong>Periodic Audit – Locked Field Update</strong> <small>locked fees and intakes whose source now differs</small></summary><Layer4LockedBulk rank={rank}/></details>
     <div className="he-bar">
       <div className="he-pills" role="group" aria-label="Show">{HE_FILTERS.map(([k,l])=><button key={k} type="button" className={filter===k?'on':''} aria-pressed={filter===k} onClick={()=>setFilter(k)} data-he-filter={k}>{l}{k==='unacknowledged'&&Number(c.unacknowledged)?<span className="he-badge" data-he-badge="unacknowledged">{fmtNumber(c.unacknowledged)}</span>:null}{k==='due'&&Number(c.due)?<span className="he-badge" data-he-badge="due">{fmtNumber(c.due)}</span>:null}</button>)}</div>
       <select value={entity} onChange={e=>setEntity(e.target.value)} aria-label="Description" data-he-entity><option value="">University and course</option><option value="provider">University descriptions</option><option value="course">Course descriptions</option></select>

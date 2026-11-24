@@ -7,7 +7,7 @@ Every live admin route and top-level tab comes from the menu (`src/nav-map.js`);
 
 **Rule (Platform Admin 16 Nov 2026):** a PR that moves, renames or folds UI controls updates the inline screen help text and regenerates this document in the same release. Every release bump regenerates it with the test register sync, and it is mirrored to `coursefinder-admin` `docs/UI-MAP.md`. Spec `cf-247-s557-ui-map-contract` fails the build when this document and the source disagree. What each screen shows and does, in words, is in the admin `docs/platform/UI-CATALOGUE.md` and the in-app Guides.
 
-**Counts:** 22 pages · 58 tabs (a page without tabs counts as one) · 27 sub-tab or view bars · 228 folds · 47 drawers and dialogs · 39 old addresses.
+**Counts:** 22 pages · 58 tabs (a page without tabs counts as one) · 27 sub-tab or view bars · 230 folds · 47 drawers and dialogs · 39 old addresses.
 
 Roles (rank): 1 Viewer · 2 Counsellor · 3 Curator · 4 Pipeline Operator · 5 PIM Admin · 6 Platform Admin.
 
@@ -557,6 +557,7 @@ Tab key `mine` · Pipeline Operator and above
 
 - **Screen:** `HumanEditsAudit` (HumanEditsAudit.jsx)
 - **Folds:**
+  - Periodic Audit – Locked Field Update (details) — HumanEditsAudit.jsx
   - Rule-tuning candidates (details) — HumanEditsAudit.jsx
 
 #### Human Edits & Periodic Audit › All Human Edits (Admin Governance) — `#human-edits-audit?tab=all`
@@ -565,6 +566,7 @@ Tab key `all` · Platform Admin and above
 
 - **Screen:** `HumanEditsAudit` (HumanEditsAudit.jsx)
 - **Folds:**
+  - Periodic Audit – Locked Field Update (details) — HumanEditsAudit.jsx
   - Rule-tuning candidates (details) — HumanEditsAudit.jsx
 
 ## Operations
