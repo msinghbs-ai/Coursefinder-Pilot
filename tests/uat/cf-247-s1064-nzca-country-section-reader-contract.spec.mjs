@@ -1,0 +1,80 @@
+// Guards: Platform Admin 24 Nov 2026 S3-AER NZ/CA P0; F-AER.08, source-grounded
+// qualification/level/country, $0 deterministic first; no inferred minima, AU writes,
+// separate reader, manual-lock bypass, or Consumer API G3 changes.
+// Source-shaped reproductions of Otago Polytechnic and Wintec's printed level
+// blocks. Stored-copy run read-back is required; this fixture is not source proof.
+import { test, expect } from '@playwright/test'
+import path from 'node:path'
+import os from 'node:os'
+import { execFileSync } from 'node:child_process'
+
+async function load(name) {
+  const output = path.join(os.tmpdir(), 's1064-' + name + '-' + process.pid + '.mjs')
+  execFileSync('node_modules/.bin/esbuild', ['supabase/functions/coverage-sweep/entry-html-table.ts',
+    '--bundle','--platform=node','--format=esm','--outfile=' + output,'--log-level=error'])
+  return import(output)
+}
+const COUNTRIES = [
+  { a2: 'AU', name: 'Australia' }, { a2: 'AR', name: 'Argentina' },
+  { a2: 'IN', name: 'India' }, { a2: 'BD', name: 'Bangladesh' },
+  { a2: 'NP', name: 'Nepal' }, { a2: 'CN', name: 'China' }
+]
+test('Otago Polytechnic: country, NCEA and degree divs; no invented grade or country', async () => {
+  const ht = await load('otago')
+  const html = [
+    '<h1>Entry requirements for international students</h1>',
+    '<h2>Equivalent academic entry requirements by country</h2>',
+    '<section><div>Australia</div><div>NCEA Level 2</div><div>Certificate/Diploma Level</div>',
+    '<div>Successful completion of Year 12</div>',
+    '<div>NCEA Level 3</div><div>Degree Level</div>',
+    '<div>Successful completion of Year 12, AND ATAR score of 65 or above</div></section>',
+    '<section><div>Bangladesh</div><div>NCEA Level 2</div><div>Certificate/Diploma Level</div>',
+    '<div>Higher Secondary Certificate</div>',
+    '<div>NCEA Level 3</div><div>Degree Level</div>',
+    '<div>Successful completion of Higher Secondary Certificate with a GPA of 3.5 or higher</div></section>'
+  ].join('')
+  const r = ht.entryHtmlTableRead(html, COUNTRIES, [], {}, { minRows: 5 })
+  expect(r).not.toBeNull()
+  expect(r.tables).toHaveLength(2)
+  expect(r.tables.every(t => t.level_from === 'row')).toBe(true)
+  expect(r.answer.rows).toHaveLength(4)
+  expect(new Set(r.answer.rows.map(x => x.country_code))).toEqual(new Set(['AU','BD']))
+  const au = r.answer.rows.filter(x => x.country_code === 'AU')
+  expect(au.find(x => x.grade_scale === 'rank')?.min_value).toBe(65)
+  expect(au.find(x => x.min_value == null)?.min_grade).toBeNull()
+  expect(r.answer.rows.find(x => x.country_code === 'BD' && x.grade_scale === 'gpa')?.min_value).toBe(3.5)
+  expect(ht.entryHtmlTableCompleteness(r).status).toBe('complete')
+  for (const x of r.answer.rows) {
+    expect(x.conditions.reader).toBe('html-table-v1')
+    expect(r.text.includes(x.quote)).toBe(true)
+  }
+})
+test('Wintec: heading and printed country-level requirement pairs outside tables', async () => {
+  const ht = await load('wintec')
+  const html = [
+    '<h1>International academic entry requirements</h1>',
+    '<h2>Argentina</h2><p>Certificate (level 4)</p><p>Título de Técnico Auxiliar.</p>',
+    '<p>Diploma (level 5)</p><p>Título de Bachiller/Bachillerato, or Trayecto Técnico Profesional.</p>',
+    '<p>Degree level</p><p>One year of successful undergraduate-level study at a recognised tertiary institution.</p>',
+    '<h2>Australia</h2><p>Certificate (level 4) | Depends on state/territory.</p>',
+    '<p>Diploma (level 5) | Depends on state/territory.</p>',
+    '<p>Degree level | Successful completion of Year 12 Certificate and ATAR of 74 or higher.</p>'
+  ].join('')
+  const r = ht.entryHtmlTableRead(html, COUNTRIES, [], {}, { minRows: 5 })
+  expect(r).not.toBeNull()
+  expect(r.tables).toHaveLength(2)
+  expect(r.answer.rows).toHaveLength(6)
+  expect(r.answer.rows.filter(x => x.country_code === 'AR')).toHaveLength(3)
+  expect(r.answer.rows.filter(x => x.country_code === 'AU')).toHaveLength(3)
+  expect(r.answer.rows.find(x => x.country_code === 'AU' && x.grade_scale === 'rank')?.min_value).toBe(74)
+})
+test('fails closed: only one level, unknown country, prose context or English-only grades', async () => {
+  const ht = await load('negative')
+  const pairs = '<div>Degree level</div><div>ATAR score of 74 or higher</div>'
+  expect(ht.entryHtmlTableRead('<h2>Australia</h2>' + pairs, COUNTRIES)).toBeNull()
+  expect(ht.entryHtmlTableRead('<h2>Unknownland</h2>' + pairs + '<p>Certificate (level 4)</p><p>Year 12</p>', COUNTRIES)).toBeNull()
+  expect(ht.entryHtmlTableRead('<h2>Academic entry for Australia</h2>' + pairs + '<p>Certificate (level 4)</p><p>Year 12</p>', COUNTRIES)).toBeNull()
+  expect(ht.entryHtmlTableRead('<h2>Australia</h2><p>English language requirements</p>' + pairs + '<p>Diploma (level 5)</p><p>IELTS 6.0</p>', COUNTRIES)).toBeNull()
+  const html = '<script><h2>Australia</h2><p>Degree level</p><p>ATAR 65</p></script><h2>Argentina</h2><p>Certificate (level 4)</p><p>Year 12</p>'
+  expect(ht.entryHtmlTableRead(html, COUNTRIES)).toBeNull()
+})
