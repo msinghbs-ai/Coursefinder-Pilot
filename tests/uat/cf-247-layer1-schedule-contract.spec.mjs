@@ -9,7 +9,7 @@ test('Layer 1 schedule choice is Platform Admin only and logged; ranking years r
   expect(m).toContain("'layer1_schedule_set'")
   expect(m).toContain("p_schedule <> 'manual'")
   expect(m).not.toMatch(/update pipeline\.layer1_source_operations set auto_ingest/i)
-  const ui = fs.readFileSync('src/layer1-operations-entry.jsx', 'utf8')
+  const ui = fs.readFileSync('src/ui-v1/Layer1RegisterView.jsx', 'utf8')
   expect(ui).toContain("supabase.rpc('admin_layer1_schedule'")
   expect(ui).toContain('data-l1-schedule')
   expect(ui).toContain('const top=new Date().getFullYear()+2')

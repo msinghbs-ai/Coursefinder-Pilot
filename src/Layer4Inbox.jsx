@@ -21,7 +21,7 @@ import{supabase}from'./lib/supabase'
 import{hrefFor,roleName}from'./nav-map'
 import{Button,Empty,Loading,Metric,StatusChip,fmtDate,fmtNumber}from'./ui-kit'
 import'./layer4-inbox.css'
-import{ReviewReadinessLine}from'./AerCoverage'
+import{ReviewReadinessLine}from'./ui-v1/AerCoverageView'
 import{GroupBar,GroupList,recordNavigation}from'./Layer4Groups' // CF-247 mandate 16:32 §7: the three choices
 import{ItemLifecycle}from'./Layer4ItemLifecycle' // CF-247 decision 12:24: action lifecycle, times and acknowledgement on every card
 import{layer4DeepLinkCursor}from'./layer4-deep-link'
@@ -262,6 +262,9 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh,holdLabel='',hold
   const hide=c=>noText||(editKind&&editing&&(c.key==='approve'||c.key==='reject'))
   const editBtn=editKind&&!editing?<button type="button" disabled={rank<4} title={rank<4?`Needs ${roleName(4)} (rank 4) or above`:'Edit the text before admitting it, or approve it as read'} onClick={()=>{setOpen(null);setEditing(true)}} data-l4-choice="edit_approve">Edit &amp; Approve</button>:null
   const which=open?(open.aerReread?'resubmit':['reject','refuse','no_page','closed','not_scholarship','report_not_changed','archive','archive_course','reject_evidence'].includes(open.key)?'no':['reread','release','rebuild','retry','search_again'].includes(open.key)?'resubmit':'other'):''
+  // s1075: a hook's long detail sections sit behind one compact Technical detail toggle; the summary stays open on the card
+  const hookSection=list=>list.map((x,n)=><details key={x.key||n} data-l4-section={x.key} open={x.key==='summary'||undefined}><summary>{x.title||String(x.key||'').replace(/_/g,' ')}</summary>
+        {x.body&&typeof x.body==='object'?(Array.isArray(x.body)?<HookValue v={x.body}/>:<dl className="l4i-dl">{Object.entries(x.body).map(([a,b])=><React.Fragment key={a}><dt>{a.replace(/_/g,' ')}</dt><dd><HookValue v={b} label={a}/></dd></React.Fragment>)}</dl>):<p className="l4i-why"><small>{String(x.body??'')}</small></p>}</details>)
   return <article ref={box} className={`l4i-item${it.late?' late':''}`} data-l4-item={it.kind} data-l4-ref={it.ref}>
     {/* Z1 entity (§5.2): module, provider, subject, code, created date and age; the field in plain words. The reference is under Technical detail. */}
     <header data-l4-zone="entity"><StatusChip value={it.kind} tone={it.late?'warning':'info'} label={cdCourse?DESC_PART.course:it.kind==='provider_description'?DESC_PART.university:k.label}/>{showProvider&&it.provider&&<strong className="l4i-prov">{it.provider}</strong>}{it.subject&&<span className="l4i-subj">{it.subject}</span>}{d.course_code&&<span className="l4i-code" title={d.code_label==="Course code"?"Course code":"CRICOS code"} data-l4-code>{d.code_label||"CRICOS"} {d.course_code}</span>}<small>{fmtDate(it.created_at)} · {days(it.created_at)} days</small></header>
@@ -283,8 +286,8 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh,holdLabel='',hold
     </div>}
     {aerItem&&<AerRows aer={aer} rank={rank} ticking={open?.input==='rows'} ticked={ticked} tick={tick}/>}
     {hooked&&(!hd?<Loading compact/>:hd.error?<p className="l4i-err" role="alert">{hd.error}</p>:Array.isArray(hd.sections)&&hd.sections.length>0&&<div className="l4i-hook" data-l4-hook-detail>
-      {hd.sections.map((x,n)=><details key={x.key||n} data-l4-section={x.key} open={x.key==='summary'||undefined}><summary>{x.title||String(x.key||'').replace(/_/g,' ')}</summary>
-        {x.body&&typeof x.body==='object'?(Array.isArray(x.body)?<HookValue v={x.body}/>:<dl className="l4i-dl">{Object.entries(x.body).map(([a,b])=><React.Fragment key={a}><dt>{a.replace(/_/g,' ')}</dt><dd><HookValue v={b} label={a}/></dd></React.Fragment>)}</dl>):<p className="l4i-why"><small>{String(x.body??'')}</small></p>}</details>)}</div>)}
+      {hookSection(hd.sections.filter(x=>x.key==='summary'))}
+      {hd.sections.some(x=>x.key!=='summary')&&<details className="l4z-fold l4z-tech l4i-more" data-l4-fold="more-detail"><summary>Technical detail ({hd.sections.filter(x=>x.key!=='summary').length} more section{hd.sections.filter(x=>x.key!=='summary').length===1?'':'s'})</summary>{hookSection(hd.sections.filter(x=>x.key!=='summary'))}</details>}</div>)}
     {it.kind==='provider_description'&&<div className="l4z-desc" data-l4-description>{/* CF-247 P1 (Platform Admin 2 Nov 2026 10:28): the proposed description, each sentence with the page's own words */}
       <dl className="l4i-dl l4z-pair"><dt>Proposed value</dt><dd data-l4-description-text><strong>{d.proposed?.description}</strong></dd><dt>Live value now</dt><dd data-l4-live>{d.before?.description||'— none held'}</dd></dl>
       <ol className="l4i-sample">{(Array.isArray(d.proposed?.sentences)?d.proposed.sentences:[]).map((x,i)=><li key={i}>{x.text}<br/><small>Page: <q>{x.quote}</q></small></li>)}</ol>

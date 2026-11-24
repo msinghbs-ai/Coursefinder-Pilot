@@ -34,8 +34,8 @@ test('mocked browser: a university\'s Coverage panel tells the journey of its la
   await page.locator('[data-cov-row="vu-1"]').click()
   const runs = page.locator('[data-provider-runs]')
   await expect(runs).toContainText('Find scholarships runs')
-  await expect(runs.locator('.sj-sentence').first()).toContainText('2 new pages to check (1 refused, 1 skipped by a rule)')
-  await expect(runs.locator('.sj-sentence').first()).toContainText('1 scholarship cannot be published yet')
+  await expect(runs.locator('.ui-sj-sentence').first()).toContainText('2 new pages to check (1 refused, 1 skipped by a rule)')
+  await expect(runs.locator('.ui-sj-sentence').first()).toContainText('1 scholarship cannot be published yet')
   await runs.getByRole('button', { name: /Find scholarships now: 2 providers/ }).click()
   const j = runs.locator('[data-journey-provider="cdu"]')
   await expect(j.locator('[data-journey-publish]')).toContainText('Australia Award Scholarships')
@@ -63,5 +63,5 @@ test('mocked browser: a finished task in Jobs is named with its title and univer
 test('source: the Task manager shows the journey for scholarship tasks; Coverage shows the runs', () => {
   expect(read('src/AdminTasks.jsx')).toContain('<ScholarshipJourney jobId={job.id}/>')
   expect(read('src/ScholarshipCoverage.jsx')).toContain('<ProviderRuns providerId={providerId}/>')
-  expect(read('src/ScholarshipJourney.jsx')).toContain("supabase.rpc('admin_scholarship_job_journey',{p_job:jobId})")
+  expect(read('src/ui-v1/ScholarshipJourneyView.jsx')).toContain("supabase.rpc('admin_scholarship_job_journey',{p_job:jobId})")
 })

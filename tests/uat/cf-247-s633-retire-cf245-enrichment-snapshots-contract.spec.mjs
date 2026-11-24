@@ -10,8 +10,8 @@ test('the two CF-245 targets are switched off and their objects marked retiring;
   expect(M).toContain("where target_code in ('coursefinder-cf245-enrichment-coverage-snapshot', 'coursefinder-cf245-enrichment-hourly-admin-cache') and enabled;")
   expect(M).toContain("set status = 'retiring', retire_after = current_date + 14, updated_at = now(),")
   expect(M).toContain("raise exception 'post-check: a target with a reader was switched off'")
-  expect(fs.readFileSync('src/LinkRefresh.jsx', 'utf8')).toContain("supabase.rpc('admin_link_refresh_read')")
-  expect(fs.readFileSync('src/FieldCoverage.jsx', 'utf8')).toContain('title="Stalled fields"')
+  expect(fs.readFileSync('src/ui-v1/LinkRefreshView.jsx', 'utf8')).toContain("supabase.rpc('admin_link_refresh_read')")
+  expect(fs.readFileSync('src/ui-v1/FieldCoverageView.jsx', 'utf8')).toContain('title="Stalled fields"')
 })
 
 test('nothing is dropped or deleted by the migration', () => {

@@ -1,8 +1,9 @@
+import './ui-kit.css'
 import React,{useEffect,useMemo,useState}from'react'
 import{AlertTriangle,ChevronLeft,ChevronRight,CircleGauge,Layers,ListChecks,RefreshCw,Table2}from'lucide-react'
-import{adminRead}from'./lib/supabase'
-import{fmtNumber,fmtDate,fmtDateTime,fmtPercent,fmtShare}from'./lib/format.js'
-import{Metric,Button}from'./ui-kit'
+import{adminRead}from'../lib/supabase'
+import{fmtNumber,fmtDate,fmtDateTime,fmtPercent,fmtShare}from'../lib/format.js'
+import{Metric,Button}from'./kit.jsx'
 
 // CF-247 complete coverage: every active course is accounted for, attribute by attribute (Decision 213: every country,
 // filtered by country and by university; the hourly build ranks provider tiers within each country).
@@ -11,25 +12,25 @@ import{Metric,Button}from'./ui-kit'
 // (migration 20260929190000_cf247_coverage_completeness_states).
 // Pipeline stages use one blue ordinal ramp (validated light, ordinal: steps 250/350/450/550/700; = --cf-seq-1..5).
 export const COVERAGE_STAGES=[
-  {key:'admitted',label:'Admitted',states:['admitted'],color:'#0d366b'},
+  {key:'admitted',label:'Admitted',states:['admitted'],color:'var(--color-ramp-1)'},
   // v2.15.303: the fill queue (standing Fill the gaps queue and Enrich fields tasks) is work in progress too
-  {key:'progress',label:'Found or queued, awaiting admission or review',states:['candidate','in_review','awaiting_l3','in_queue'],color:'#1c5cab'},
-  {key:'read',label:'Page read, not published',states:['not_on_page'],color:'#2a78d6'},
-  {key:'found',label:'Page found or site blocked',states:['page_found','blocked'],color:'#5598e7'},
-  {key:'unreached',label:'Course page not found yet, or no reader yet',states:['site_known','no_website','missing_l1','no_reader'],color:'#86b6ef'},
+  {key:'progress',label:'Found or queued, awaiting admission or review',states:['candidate','in_review','awaiting_l3','in_queue'],color:'var(--color-ramp-2)'},
+  {key:'read',label:'Page read, not published',states:['not_on_page'],color:'var(--color-ramp-3)'},
+  {key:'found',label:'Page found or site blocked',states:['page_found','blocked'],color:'var(--color-ramp-4)'},
+  {key:'unreached',label:'Course page not found yet, or no reader yet',states:['site_known','no_website','missing_l1','no_reader'],color:'var(--color-ramp-5)'},
 ]
 // The nine completeness states (Design Reference §3). `built` marks the states the hourly build produces today;
 // the others are always shown, as 0, so a gap is visible rather than hidden.
 export const COMPLETENESS_STATES=[
-  {key:'present',label:'Present',hint:'An admitted value is held',color:'var(--cf-green-700)',built:true},
-  {key:'source_null',label:'Source says nothing',hint:'The source was read and does not publish this',color:'var(--cf-slate-400)',built:true},
-  {key:'ambiguous',label:'Ambiguous',hint:'A value was found and awaits a decision (Layer 3 or Layer 4)',color:'var(--cf-amber-500)',built:true},
-  {key:'not_yet_enriched',label:'Not yet enriched',hint:'The source has not been read yet',color:'var(--cf-slate-200)',built:true},
-  {key:'stale',label:'Stale',hint:'Held, but past its refresh cycle',color:'var(--cf-orange-500)'},
-  {key:'rejected',label:'Rejected',hint:'A found value was rejected',color:'var(--cf-red-600)'},
-  {key:'suppressed',label:'Suppressed',hint:'Held but withheld from publication',color:'var(--cf-violet-400)'},
-  {key:'not_applicable',label:'Not applicable',hint:'Does not apply to this course',color:'var(--cf-slate-300)'},
-  {key:'zero',label:'Zero',hint:'The source states zero (for example no fee)',color:'var(--cf-blue-300)'},
+  {key:'present',label:'Present',hint:'An admitted value is held',color:'var(--color-success)',built:true},
+  {key:'source_null',label:'Source says nothing',hint:'The source was read and does not publish this',color:'var(--color-text-muted)',built:true},
+  {key:'ambiguous',label:'Ambiguous',hint:'A value was found and awaits a decision (Layer 3 or Layer 4)',color:'var(--color-warning)',built:true},
+  {key:'not_yet_enriched',label:'Not yet enriched',hint:'The source has not been read yet',color:'var(--color-border)',built:true},
+  {key:'stale',label:'Stale',hint:'Held, but past its refresh cycle',color:'var(--color-warning)'},
+  {key:'rejected',label:'Rejected',hint:'A found value was rejected',color:'var(--color-danger)'},
+  {key:'suppressed',label:'Suppressed',hint:'Held but withheld from publication',color:'var(--color-info)'},
+  {key:'not_applicable',label:'Not applicable',hint:'Does not apply to this course',color:'var(--color-border-strong)'},
+  {key:'zero',label:'Zero',hint:'The source states zero (for example no fee)',color:'var(--color-ramp-4)'},
 ]
 const CSTATE=Object.fromEntries(COMPLETENESS_STATES.map(s=>[s.key,s]))
 const STATE_LABEL={admitted:'Admitted',candidate:'Found on verified page (awaiting admission)',in_review:'In human review (Layer 4)',awaiting_l3:'Awaiting AI check (Layer 3)',not_on_page:'Page read, not published',
@@ -56,14 +57,14 @@ const PAGE=50
 // v2.15.210 (Platform Admin, 6 Oct 2026): the 80% coverage target is measured per field, not once for the whole catalogue.
 export const COVERAGE_TARGET=80
 export const TARGET_FIELDS=[['intakes','Intakes / start dates'],['english','English requirements'],['fee','Provider tuition (fee year)']]
-export const FIELD_SOURCES=[['adapter','Adapter','var(--cf-blue-700)'],['central','Central page','var(--cf-green-700)'],['reader','Page reader','var(--cf-violet-400)'],['hand','Entered by hand','var(--cf-amber-500)'],['other','Other source','var(--cf-slate-400)']]
+export const FIELD_SOURCES=[['adapter','Adapter','var(--color-primary-hover)'],['central','Central page','var(--color-success)'],['reader','Page reader','var(--color-info)'],['hand','Entered by hand','var(--color-warning)'],['other','Other source','var(--color-text-muted)']]
 
 // CF-247 W34 (Platform Admin 30 Oct 2026 06:53): the totals come from a snapshot rebuilt after each hourly build (job
 // course-coverage-snapshot). Say when it was built and last checked, and mark it stale; course lists opened from here stay live.
 export function SnapshotNote({snapshot}){
   if(!snapshot)return null
   const live=snapshot.source==='live'
-  return <p className={`cc-snapshot${snapshot.stale?' is-stale':''}`} data-coverage-snapshot={live?'live':'snapshot'} data-stale={snapshot.stale?'true':'false'}>
+  return <p className={`ui-cc-snapshot${snapshot.stale?' is-stale':''}`} data-coverage-snapshot={live?'live':'snapshot'} data-stale={snapshot.stale?'true':'false'}>
     {live?'Totals counted just now (no snapshot yet).':`Totals from the snapshot built ${fmtDateTime(snapshot.generated_at)}, last checked against the hourly build ${fmtDateTime(snapshot.checked_at)}.`} Course lists opened from these totals are always live.
     {snapshot.stale&&<strong data-snapshot-stale> Stale: not checked for more than {fmtNumber(snapshot.stale_after_minutes)} minutes, so these numbers may be behind.</strong>}
   </p>
@@ -101,28 +102,28 @@ export function CoverageView({view='all',onScope,belowFilters}={}){
   const choose=p=>{setOffset(0);setPick(p)}
   const maxBand=Math.max(1,...(score?.by_admitted||[]).map(b=>Number(b.courses||0)))
 
-  return <div className="cc-wrap">
+  return <div className="ui-cc-wrap">
     {/* v2.15.131 (cc-counts-consistency): say what is counted here, as other screens count different sets. */}
-    <p className="cc-scope" data-count-scope>Counts here cover <strong>{fmtNumber(data?.courses||0)} active courses</strong> {provider?`at ${provider.name}`:country?`in ${COUNTRY_NAME[country]||country}`:'in every country'}, recounted every hour. Layer 1 values come from each country's register (CRICOS in Australia, NZQA in New Zealand).</p>
+    <p className="ui-cc-scope" data-count-scope>Counts here cover <strong>{fmtNumber(data?.courses||0)} active courses</strong> {provider?`at ${provider.name}`:country?`in ${COUNTRY_NAME[country]||country}`:'in every country'}, recounted every hour. Layer 1 values come from each country's register (CRICOS in Australia, NZQA in New Zealand).</p>
     <SnapshotNote snapshot={data?.snapshot}/>
-    <section className="cf-filterbar cc-where" aria-label="Country and university">
-      <label><span>Country</span><select className="fv-filter" value={country} onChange={e=>{setCountry(e.target.value);setProvider(null);setPq('')}} aria-label="Coverage country">
+    <section className="ui-filterbar ui-cc-where" aria-label="Country and university">
+      <label><span>Country</span><select className="ui-filterbar" value={country} onChange={e=>{setCountry(e.target.value);setProvider(null);setPq('')}} aria-label="Coverage country">
         <option value="">All countries</option>{(data?.countries||[]).map(c=><option key={c.code} value={c.code}>{COUNTRY_NAME[c.code]||c.code} ({fmtNumber(c.courses)})</option>)}</select></label>
-      <div className="cc-provider"><span>University or provider</span>{provider?<span className="cc-chosen" data-provider-filter><strong>{provider.name}</strong><button type="button" className="m-link-button" onClick={()=>{setProvider(null);setPq('')}}>Clear</button></span>
-        :<><input className="au-search" type="search" value={pq} onChange={e=>setPq(e.target.value)} placeholder="Type 2+ letters…" aria-label="Find a university or provider"/>
-          {found.length>0&&<ul className="cc-found" role="listbox">{found.map(f=><li key={f.id}><button type="button" onClick={()=>{setProvider({id:f.id,name:f.name});setFound([])}}>{f.name} <small>{f.country} · {fmtNumber(f.courses)} courses</small></button></li>)}</ul>}</>}</div>
+      <div className="ui-cc-provider"><span>University or provider</span>{provider?<span className="ui-cc-chosen" data-provider-filter><strong>{provider.name}</strong><button type="button" className="ui-link" onClick={()=>{setProvider(null);setPq('')}}>Clear</button></span>
+        :<><input className="ui-au-search" type="search" value={pq} onChange={e=>setPq(e.target.value)} placeholder="Type 2+ letters…" aria-label="Find a university or provider"/>
+          {found.length>0&&<ul className="ui-cc-found" role="listbox">{found.map(f=><li key={f.id}><button type="button" onClick={()=>{setProvider({id:f.id,name:f.name});setFound([])}}>{f.name} <small>{f.country} · {fmtNumber(f.courses)} courses</small></button></li>)}</ul>}</>}</div>
     </section>
-    <section className="cf-filterbar" aria-label="Provider tier">
+    <section className="ui-filterbar" aria-label="Provider tier">
       <span>Provider tier</span>
       {TIERS.map(([k,l])=><button key={k||'all'} className={tier===k?'active':''} onClick={()=>setTier(k)}>{l}</button>)}
-      <Button compact className="cf-icon-btn cc-refresh" title="Refresh" aria-label="Refresh" onClick={load} disabled={busy}><RefreshCw size={14}/></Button>
+      <Button compact className="ui-btn ui-btn-sm ui-cc-refresh" title="Refresh" aria-label="Refresh" onClick={load} disabled={busy}><RefreshCw size={14}/></Button>
     </section>
-    {error&&<div className="dq-alert"><AlertTriangle size={16}/><span>{error}</span></div>}
+    {error&&<div className="ui-dq-alert"><AlertTriangle size={16}/><span>{error}</span></div>}
     {/* v2.15.303: every field by country, the standing queue and the cross-check follow the same country and university */}
     {typeof belowFilters==='function'?belowFilters({country,provider}):belowFilters}
 
     {view!=='attributes'&&<>
-    <section className="cf-metric-grid cc-score" aria-label="Course completeness">
+    <section className="ui-metrics ui-cc-score" aria-label="Course completeness">
       <Metric icon={CircleGauge} tone="info" label="Course completeness score" value={score?fmtPercent(score.completeness):'—'}
         detail={score?`Average share of a course's ${fmtNumber(score.attributes||7)} attributes that are admitted`:'Rebuilt hourly'}/>
       <Metric icon={ListChecks} tone="success" label="Accounted for" value={score?fmtPercent(score.accounted_pct):'—'}
@@ -133,99 +134,99 @@ export function CoverageView({view='all',onScope,belowFilters}={}){
     </section>
     </>}
     {view!=='courses'&&<>
-    <section className="cf-metric-grid cc-kpis">
+    <section className="ui-metrics ui-cc-kpis">
       {l2.map(a=>{const n=Number(a.states?.admitted||0),t=Number(a.total||0);return <Metric key={a.attribute} label={ATTR[a.attribute].label} value={fmtShare(n,t)} detail={`${fmtNumber(n)} of ${fmtNumber(t)} admitted`}/>})}
     </section>
     </>}
 
     {view!=='courses'&&<>
-    <section className="cc-panel" data-field-target>
+    <section className="ui-cc-panel" data-field-target>
       <header><div><h2><CircleGauge size={14}/> Coverage against the {COVERAGE_TARGET}% target, by field</h2><p>Intakes, English and fees are each measured on their own: the share of active courses that hold an admitted value. The coloured part shows who supplied it; the line marks {COVERAGE_TARGET}%.</p></div>
         <small>{data?.field_sources_at?`Updated ${fmtDateTime(data.field_sources_at)} · rebuilt hourly`:''}</small></header>
-      <div className="cc-legend">{FIELD_SOURCES.map(([k,l,c])=><span key={k}><i style={{background:c}}/>{l}</span>)}</div>
-      <div className="cc-bars">
-        {busy&&!data?<div className="dq-skeleton domain"/>:fieldRows.map(f=><div className="cc-bar-row" key={f.key}>
-          <div className="cc-bar-label"><strong>{f.label}</strong><small>{f.pct==null?'No courses':f.pct>=COVERAGE_TARGET?'Target met':`${fmtNumber(f.gap)} courses short of target`}</small></div>
-          <div className="cc-target-wrap"><div className="cc-bar" role="img" aria-label={`${f.label}: ${f.pct==null?'no courses':fmtPercent(f.pct)} held. ${FIELD_SOURCES.map(([k,l])=>`${l} ${fmtNumber(f.by[k]||0)}`).join(', ')}`}>
+      <div className="ui-cc-legend">{FIELD_SOURCES.map(([k,l,c])=><span key={k}><i style={{background:c}}/>{l}</span>)}</div>
+      <div className="ui-cc-bars">
+        {busy&&!data?<div className="ui-dq-skeleton ui-domain"/>:fieldRows.map(f=><div className="ui-cc-bar-row" key={f.key}>
+          <div className="ui-cc-bar-label"><strong>{f.label}</strong><small>{f.pct==null?'No courses':f.pct>=COVERAGE_TARGET?'Target met':`${fmtNumber(f.gap)} courses short of target`}</small></div>
+          <div className="ui-cc-target-wrap"><div className="ui-cc-bar" role="img" aria-label={`${f.label}: ${f.pct==null?'no courses':fmtPercent(f.pct)} held. ${FIELD_SOURCES.map(([k,l])=>`${l} ${fmtNumber(f.by[k]||0)}`).join(', ')}`}>
             {FIELD_SOURCES.map(([k,l,c])=>{const n=f.by[k]||0;if(!n||!f.total)return null;return <span key={k} title={`${l}: ${fmtNumber(n)} courses`} style={{width:`${n/f.total*100}%`,background:c}}/>})}</div>
-            <i className="cc-target" style={{left:`${COVERAGE_TARGET}%`}} title={`${COVERAGE_TARGET}% target`}/></div>
-          <div className="cc-bar-value">{f.pct==null?'—':fmtPercent(f.pct)}</div>
+            <i className="ui-cc-target" style={{left:`${COVERAGE_TARGET}%`}} title={`${COVERAGE_TARGET}% target`}/></div>
+          <div className="ui-cc-bar-value">{f.pct==null?'—':fmtPercent(f.pct)}</div>
         </div>)}
       </div>
-      <div className="dq-table-wrap"><table className="dq-table cc-table"><thead><tr><th>Field</th>{FIELD_SOURCES.map(([k,l])=><th key={k} className="num">{l}</th>)}<th className="num">Held</th><th className="num">Missing</th><th className="num">To reach {COVERAGE_TARGET}%</th></tr></thead>
-        <tbody>{fieldRows.map(f=><tr key={f.key}><td><strong>{f.label}</strong></td>{FIELD_SOURCES.map(([k])=><td key={k} className="num">{f.by[k]?fmtNumber(f.by[k]):<span className="cc-zero">–</span>}</td>)}
-          <td className="num"><strong>{fmtNumber(f.held)}</strong> <small>{f.pct==null?'':fmtPercent(f.pct)}</small></td><td className="num">{fmtNumber(f.by.missing||0)}</td><td className="num">{f.gap?`${fmtNumber(f.gap)} more`:'Met'}</td></tr>)}</tbody></table></div>
+      <div className="ui-tablewrap"><table className="ui-table ui-table"><thead><tr><th>Field</th>{FIELD_SOURCES.map(([k,l])=><th key={k} className="ui-num">{l}</th>)}<th className="ui-num">Held</th><th className="ui-num">Missing</th><th className="ui-num">To reach {COVERAGE_TARGET}%</th></tr></thead>
+        <tbody>{fieldRows.map(f=><tr key={f.key}><td><strong>{f.label}</strong></td>{FIELD_SOURCES.map(([k])=><td key={k} className="ui-num">{f.by[k]?fmtNumber(f.by[k]):<span className="ui-cc-zero">–</span>}</td>)}
+          <td className="ui-num"><strong>{fmtNumber(f.held)}</strong> <small>{f.pct==null?'':fmtPercent(f.pct)}</small></td><td className="ui-num">{fmtNumber(f.by.missing||0)}</td><td className="ui-num">{f.gap?`${fmtNumber(f.gap)} more`:'Met'}</td></tr>)}</tbody></table></div>
     </section>
     </>}
 
     {view!=='courses'&&<>
-    <section className="cc-panel">
+    <section className="ui-cc-panel">
       <header><div><h2><Table2 size={14}/> Completeness by attribute</h2><p>Every course, one completeness state per attribute. Select a count to list those courses. States the hourly build does not record yet show as –.</p></div>
         <small>{score?.computed_at?`Updated ${fmtDateTime(score.computed_at)} · rebuilt hourly`:''}</small></header>
-      <div className="cc-legend">{COMPLETENESS_STATES.filter(s=>s.built).map(s=><span key={s.key} title={s.hint}><i style={{background:s.color}}/>{s.label}</span>)}</div>
-      <div className="cc-bars" onMouseLeave={()=>setTip(null)}>
-        {busy&&!data?<div className="dq-skeleton domain"/>:cstates.map(a=>{const total=Number(a.total||0);return <div className="cc-bar-row" key={a.attribute}>
-          <div className="cc-bar-label"><strong>{ATTR[a.attribute]?.label||a.attribute}</strong><small>{ATTR[a.attribute]?.layer}</small></div>
-          <div className="cc-bar" role="img" aria-label={`${ATTR[a.attribute]?.label}: ${COMPLETENESS_STATES.map(s=>`${s.label} ${fmtNumber(a.states?.[s.key]||0)}`).join(', ')}`}>
+      <div className="ui-cc-legend">{COMPLETENESS_STATES.filter(s=>s.built).map(s=><span key={s.key} title={s.hint}><i style={{background:s.color}}/>{s.label}</span>)}</div>
+      <div className="ui-cc-bars" onMouseLeave={()=>setTip(null)}>
+        {busy&&!data?<div className="ui-dq-skeleton ui-domain"/>:cstates.map(a=>{const total=Number(a.total||0);return <div className="ui-cc-bar-row" key={a.attribute}>
+          <div className="ui-cc-bar-label"><strong>{ATTR[a.attribute]?.label||a.attribute}</strong><small>{ATTR[a.attribute]?.layer}</small></div>
+          <div className="ui-cc-bar" role="img" aria-label={`${ATTR[a.attribute]?.label}: ${COMPLETENESS_STATES.map(s=>`${s.label} ${fmtNumber(a.states?.[s.key]||0)}`).join(', ')}`}>
             {COMPLETENESS_STATES.map(s=>{const n=Number(a.states?.[s.key]||0);if(!n)return null;return <span key={s.key} style={{width:`${n/total*100}%`,background:s.color}}
               onMouseMove={e=>setTip({x:e.clientX,y:e.clientY,attr:ATTR[a.attribute]?.label,stage:s.label,n,total})}/>})}
           </div>
-          <div className="cc-bar-value">{fmtShare(Number(a.states?.present||0),total)}</div>
+          <div className="ui-cc-bar-value">{fmtShare(Number(a.states?.present||0),total)}</div>
         </div>})}
       </div>
-      <div className="dq-table-wrap"><table className="dq-table cc-table cc-states"><thead><tr><th>Attribute</th>{COMPLETENESS_STATES.map(s=><th key={s.key} className="num" title={s.built?s.hint:`${s.hint}. Not recorded by the hourly build yet.`}>{s.label}</th>)}<th className="num">Total</th></tr></thead>
+      <div className="ui-tablewrap"><table className="ui-table ui-table ui-cc-states"><thead><tr><th>Attribute</th>{COMPLETENESS_STATES.map(s=><th key={s.key} className="ui-num" title={s.built?s.hint:`${s.hint}. Not recorded by the hourly build yet.`}>{s.label}</th>)}<th className="ui-num">Total</th></tr></thead>
         <tbody>{cstates.map(a=><tr key={a.attribute}><td><strong>{ATTR[a.attribute]?.label||a.attribute}</strong><small>{ATTR[a.attribute]?.layer}</small></td>
-          {COMPLETENESS_STATES.map(s=>{const n=Number(a.states?.[s.key]||0);return <td key={s.key} className="num">{n?<button className={`cc-count ${pick?.attribute===a.attribute&&pick?.cstate===s.key?'active':''}`} onClick={()=>choose({attribute:a.attribute,cstate:s.key})}>{fmtNumber(n)}</button>:<span className="cc-zero">–</span>}</td>})}
-          <td className="num"><strong>{fmtNumber(a.total)}</strong></td></tr>)}</tbody></table></div>
+          {COMPLETENESS_STATES.map(s=>{const n=Number(a.states?.[s.key]||0);return <td key={s.key} className="ui-num">{n?<button className={`ui-cc-count ${pick?.attribute===a.attribute&&pick?.cstate===s.key?'active':''}`} onClick={()=>choose({attribute:a.attribute,cstate:s.key})}>{fmtNumber(n)}</button>:<span className="ui-cc-zero">–</span>}</td>})}
+          <td className="ui-num"><strong>{fmtNumber(a.total)}</strong></td></tr>)}</tbody></table></div>
     </section>
     </>}
 
     {/* v2.16.42: Courses by attributes admitted (7 hardcoded attributes) moved to Coverage now as Courses by fields admitted, 0 of N to N of N (CoverageTelemetry.jsx) */}
 
     {view!=='courses'&&<>
-    <section className="cc-panel">
+    <section className="ui-cc-panel">
       <header><div><h2>Coverage by pipeline stage</h2><p>Where each attribute is in the pipeline. The panel above says whether a course has a value; this one says how far the work to get it has gone. Hover a segment for counts; select a count in the table to list the courses.</p></div>
         <small>{data?.computed_at?`Updated ${fmtDateTime(data.computed_at)} · rebuilt hourly`:''}</small></header>
-      <div className="cc-legend">{COVERAGE_STAGES.map(s=><span key={s.key}><i style={{background:s.color}}/>{s.label}</span>)}</div>
-      <div className="cc-bars" onMouseLeave={()=>setTip(null)}>
-        {busy&&!data?<div className="dq-skeleton domain"/>:attrs.map(a=>{
+      <div className="ui-cc-legend">{COVERAGE_STAGES.map(s=><span key={s.key}><i style={{background:s.color}}/>{s.label}</span>)}</div>
+      <div className="ui-cc-bars" onMouseLeave={()=>setTip(null)}>
+        {busy&&!data?<div className="ui-dq-skeleton ui-domain"/>:attrs.map(a=>{
           const total=Number(a.total||0)
-          return <div className="cc-bar-row" key={a.attribute}>
-            <div className="cc-bar-label"><strong>{ATTR[a.attribute]?.label||a.attribute}</strong><small>{ATTR[a.attribute]?.layer}</small></div>
-            <div className="cc-bar" role="img" aria-label={`${ATTR[a.attribute]?.label}: ${COVERAGE_STAGES.map(s=>`${s.label} ${stageCount(a,s)}`).join(', ')}`}>
+          return <div className="ui-cc-bar-row" key={a.attribute}>
+            <div className="ui-cc-bar-label"><strong>{ATTR[a.attribute]?.label||a.attribute}</strong><small>{ATTR[a.attribute]?.layer}</small></div>
+            <div className="ui-cc-bar" role="img" aria-label={`${ATTR[a.attribute]?.label}: ${COVERAGE_STAGES.map(s=>`${s.label} ${stageCount(a,s)}`).join(', ')}`}>
               {COVERAGE_STAGES.map(s=>{const n=stageCount(a,s);if(!n)return null;return <span key={s.key} style={{width:`${n/total*100}%`,background:s.color}}
                 onMouseMove={e=>setTip({x:e.clientX,y:e.clientY,attr:ATTR[a.attribute]?.label,stage:s.label,n,total})}/>})}
             </div>
-            <div className="cc-bar-value">{fmtShare(Number(a.states?.admitted||0),total)}</div>
+            <div className="ui-cc-bar-value">{fmtShare(Number(a.states?.admitted||0),total)}</div>
           </div>})}
       </div>
-      {tip&&<div className="cc-tip" style={{left:tip.x+12,top:tip.y+12}}><strong>{tip.attr}</strong><span>{tip.stage}</span><b>{fmtNumber(tip.n)} courses · {fmtShare(tip.n,tip.total)}</b></div>}
-      <div className="dq-table-wrap"><table className="dq-table cc-table"><thead><tr><th>Attribute</th>{STATE_ORDER.map(s=><th key={s} className="num" title={STATE_LABEL[s]}>{STATE_SHORT[s]||STATE_LABEL[s]}</th>)}<th className="num">Total</th></tr></thead>
+      {tip&&<div className="ui-cc-tip" style={{left:tip.x+12,top:tip.y+12}}><strong>{tip.attr}</strong><span>{tip.stage}</span><b>{fmtNumber(tip.n)} courses · {fmtShare(tip.n,tip.total)}</b></div>}
+      <div className="ui-tablewrap"><table className="ui-table ui-table"><thead><tr><th>Attribute</th>{STATE_ORDER.map(s=><th key={s} className="ui-num" title={STATE_LABEL[s]}>{STATE_SHORT[s]||STATE_LABEL[s]}</th>)}<th className="ui-num">Total</th></tr></thead>
         <tbody>{attrs.map(a=><tr key={a.attribute}><td><strong>{ATTR[a.attribute]?.label||a.attribute}</strong><small>{ATTR[a.attribute]?.layer}</small></td>
-          {STATE_ORDER.map(s=>{const n=Number(a.states?.[s]||0);return <td key={s} className="num">{n?<button className={`cc-count ${pick?.attribute===a.attribute&&pick?.state===s?'active':''}`} onClick={()=>choose({attribute:a.attribute,state:s})}>{fmtNumber(n)}</button>:<span className="cc-zero">–</span>}</td>})}
-          <td className="num"><strong>{fmtNumber(a.total)}</strong></td></tr>)}</tbody></table></div>
+          {STATE_ORDER.map(s=>{const n=Number(a.states?.[s]||0);return <td key={s} className="ui-num">{n?<button className={`ui-cc-count ${pick?.attribute===a.attribute&&pick?.state===s?'active':''}`} onClick={()=>choose({attribute:a.attribute,state:s})}>{fmtNumber(n)}</button>:<span className="ui-cc-zero">–</span>}</td>})}
+          <td className="ui-num"><strong>{fmtNumber(a.total)}</strong></td></tr>)}</tbody></table></div>
     </section>
     </>}
 
     {view!=='courses'&&<>
-    {pick&&<section className="cc-panel">
+    {pick&&<section className="ui-cc-panel">
       <header><div><h2>{ATTR[pick.attribute]?.label} · {pickLabel}</h2><p>{fmtNumber(list?.total)} courses{tier?` · ${TIERS.find(t=>t[0]===tier)?.[1]}`:''}</p></div><Button compact onClick={()=>setPick(null)}>Close</Button></header>
-      {listBusy?<div className="dq-skeleton-list">{Array.from({length:5}).map((_,i)=><div className="dq-skeleton row" key={i}/>)}</div>:
-      <div className="dq-table-wrap"><table className="dq-table"><thead><tr><th>Course</th><th>CRICOS</th><th>Provider</th><th>Tier</th><th className="num">Course completeness</th></tr></thead><tbody>
-        {(list?.items||[]).map(r=><tr key={r.course_id}><td><button className="dq-entity-link" onClick={()=>{location.hash=`#courses?id=${encodeURIComponent(r.course_id)}`}}><strong>{r.title}</strong></button></td><td>{r.cricos||'—'}</td><td>{r.provider_name}</td><td>{TIERS.find(t=>t[0]===r.tier)?.[1]}</td><td className="num">{fmtPercent(r.completeness)}</td></tr>)}
+      {listBusy?<div className="ui-dq-skeleton-list">{Array.from({length:5}).map((_,i)=><div className="ui-dq-skeleton ui-row" key={i}/>)}</div>:
+      <div className="ui-tablewrap"><table className="ui-table"><thead><tr><th>Course</th><th>CRICOS</th><th>Provider</th><th>Tier</th><th className="ui-num">Course completeness</th></tr></thead><tbody>
+        {(list?.items||[]).map(r=><tr key={r.course_id}><td><button className="ui-dq-entity-link" onClick={()=>{location.hash=`#courses?id=${encodeURIComponent(r.course_id)}`}}><strong>{r.title}</strong></button></td><td>{r.cricos||'—'}</td><td>{r.provider_name}</td><td>{TIERS.find(t=>t[0]===r.tier)?.[1]}</td><td className="ui-num">{fmtPercent(r.completeness)}</td></tr>)}
       </tbody></table></div>}
-      <footer className="dq-pager"><button disabled={offset===0||listBusy} onClick={()=>setOffset(Math.max(0,offset-PAGE))}><ChevronLeft size={15}/>Previous</button><span>{fmtNumber(Math.min(offset+1,list?.total||0))}–{fmtNumber(Math.min(offset+PAGE,list?.total||0))} of {fmtNumber(list?.total)}</span><button disabled={offset+PAGE>=(list?.total||0)||listBusy} onClick={()=>setOffset(offset+PAGE)}>Next<ChevronRight size={15}/></button></footer>
+      <footer className="ui-dq-pager"><button disabled={offset===0||listBusy} onClick={()=>setOffset(Math.max(0,offset-PAGE))}><ChevronLeft size={15}/>Previous</button><span>{fmtNumber(Math.min(offset+1,list?.total||0))}–{fmtNumber(Math.min(offset+PAGE,list?.total||0))} of {fmtNumber(list?.total)}</span><button disabled={offset+PAGE>=(list?.total||0)||listBusy} onClick={()=>setOffset(offset+PAGE)}>Next<ChevronRight size={15}/></button></footer>
     </section>}
     </>}
 
     {view!=='attributes'&&<>
-    <section className="cc-panel">
+    <section className="ui-cc-panel">
       <header><div><h2>Daily trend</h2><p>Course completeness score and admitted share per Layer 2 attribute, one row per day (kept from 29 Sep 2026){tier?'. The score columns are for all providers.':'.'}</p></div></header>
       {/* v2.15.341 (UI audit Phase 0): the count read 0 from 20 to 24 Oct 2026 because three attributes nothing reads yet (deadline, academic entry, description) joined the matrix on 20 Oct and were counted as missing; from 24 Oct a course is fully complete when every attribute the platform can read is admitted. The completeness score still counts the unread attributes. */}
-      <p className="cc-note" data-fully-complete-note>Fully complete counts the attributes the platform can read. The 20–24 Oct rows show 0 because three attributes with no reader yet (application deadline, academic entry requirements, description) were added on 20 Oct and counted as missing until 24 Oct; the completeness score still counts them.</p>
-      <div className="dq-table-wrap"><table className="dq-table cc-table"><thead><tr><th>Date</th><th className="num">Completeness</th><th className="num">Accounted for</th><th className="num">Fully complete</th>{l2.map(a=><th key={a.attribute}>{ATTR[a.attribute].label}</th>)}</tr></thead>
+      <p className="ui-cc-note" data-fully-complete-note>Fully complete counts the attributes the platform can read. The 20–24 Oct rows show 0 because three attributes with no reader yet (application deadline, academic entry requirements, description) were added on 20 Oct and counted as missing until 24 Oct; the completeness score still counts them.</p>
+      <div className="ui-tablewrap"><table className="ui-table ui-table"><thead><tr><th>Date</th><th className="ui-num">Completeness</th><th className="ui-num">Accounted for</th><th className="ui-num">Fully complete</th>{l2.map(a=><th key={a.attribute}>{ATTR[a.attribute].label}</th>)}</tr></thead>
         <tbody>{trend.slice().reverse().map(([d,row])=>{const sc=scoreByDate[d];return <tr key={d}><td><strong>{fmtDate(d)}</strong></td>
-          <td className="num">{sc?fmtPercent(sc.completeness):'—'}</td><td className="num">{sc?fmtPercent(sc.accounted_pct):'—'}</td><td className="num">{sc?fmtNumber(sc.fully_complete):'—'}</td>
+          <td className="ui-num">{sc?fmtPercent(sc.completeness):'—'}</td><td className="ui-num">{sc?fmtPercent(sc.accounted_pct):'—'}</td><td className="ui-num">{sc?fmtNumber(sc.fully_complete):'—'}</td>
           {l2.map(a=>{const r=row[a.attribute];return <td key={a.attribute}>{r?<><strong>{fmtShare(Number(r.admitted||0),Number(r.total||0))}</strong><small>{fmtNumber(r.admitted||0)} courses</small></>:'—'}</td>})}</tr>})}</tbody></table></div>
     </section>
     </>}

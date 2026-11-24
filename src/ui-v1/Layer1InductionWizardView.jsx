@@ -1,3 +1,4 @@
+import './ui-kit.css'
 // CF-247 Parallel Wave 2 (Platform Admin 17 Nov 2026 17:59; decisions 18:10): the six-step country and register induction wizard that
 // Layer 1 › Sources › + Add source opens. A draft is saved at each step (public.admin_layer1_induction_save), so it can be left and continued.
 //   1 Country and scheme  2 Source, connector and licence (REQ-68)  3 Field and category mapping (AI Auto-Map when the mapper is deployed)
@@ -5,12 +6,11 @@
 //   6 Activation: the Platform Admin, with a reason. The source is created paused and stays paused; nothing runs from here.
 // Drafting is Curator and above (Platform Admin 17 Nov 2026 20:45); activation is the Platform Admin's. The server checks every step again.
 import React,{useCallback,useEffect,useMemo,useState}from'react'
-import{Button,StatusChip,EmptyInline,fmtDateTime,fmtNumber}from'./ui-kit'
-import{supabase}from'./lib/supabase'
-import{plainError}from'./lib/errors'
-import{parseSample}from'./lib/sample-parse.js'
-import'./layer1-induction.css'
-import Layer1BaselinePreview from'./Layer1BaselinePreview'
+import{Button,StatusChip,EmptyInline,fmtDateTime,fmtNumber}from'./kit.jsx'
+import{supabase}from'../lib/supabase'
+import{plainError}from'../lib/errors'
+import{parseSample}from'../lib/sample-parse.js'
+import Layer1BaselinePreview from'./Layer1BaselinePreviewView'
 
 export const STEPS=[['scheme','Country & scheme'],['source','Source & licence'],['mapping','Field mapping'],['cadence','Cadence & retention'],['dry_run','Dry-run preview'],['activate','Activation']]
 export const MAPPER='layer1-ai-induction-mapper'
@@ -29,15 +29,15 @@ export function SchemeRegister({country,rpc,onDone}){
   const save=async()=>{setBusy(true);setErr('');setMsg('');try{const{data,error}=await rpc('admin_registration_scheme_register_v1',{p_args:{...v,country_code:country}});if(error)throw error
     setMsg(data?.created?`${v.scheme} registered for ${country} as planned.`:`${v.scheme} was already registered for ${country}; nothing changed.`);setV(x=>({...x,scheme:'',label:'',authority:''}));await onDone?.()}
     catch(e){setErr(e?.message||String(e))}finally{setBusy(false)}}
-  if(!open)return <button type="button" className="l1i-link" onClick={()=>setOpen(true)} data-l1i-scheme-register-open>+ Register a scheme for {country}</button>
-  return <fieldset className="l1i-scheme-register wide" data-l1i-scheme-register><legend>Register a scheme for {country}</legend>
+  if(!open)return <button type="button" className="ui-l1i-link" onClick={()=>setOpen(true)} data-l1i-scheme-register-open>+ Register a scheme for {country}</button>
+  return <fieldset className="ui-l1i-scheme-register wide" data-l1i-scheme-register><legend>Register a scheme for {country}</legend>
     <label>Scheme code<input value={v.scheme} onChange={e=>setV(x=>({...x,scheme:e.target.value.toLowerCase()}))} maxLength={40} placeholder="for example de_hrk" data-l1i-scheme-code/></label>
     <label>Kind<select value={v.kind} onChange={e=>setV(x=>({...x,kind:e.target.value}))} data-l1i-scheme-kind>{Object.entries(KIND).map(([k,l])=><option key={k} value={k}>{l}</option>)}</select></label>
     <label>Label<input value={v.label} onChange={e=>setV(x=>({...x,label:e.target.value}))} maxLength={120} placeholder="for example HRK Higher Education Compass" data-l1i-scheme-label/></label>
     <label>Authority<input value={v.authority} onChange={e=>setV(x=>({...x,authority:e.target.value}))} maxLength={160} placeholder="Who keeps the register" data-l1i-scheme-authority/></label>
     <label className="wide">Reason (kept in the control log)<input value={v.reason} onChange={e=>setV(x=>({...x,reason:e.target.value}))} maxLength={300} data-l1i-scheme-reason/></label>
     <div className="wide"><Button compact variant="primary" disabled={!ok||busy} onClick={save} data-l1i-scheme-save>{busy?'Registering…':'Register as planned'}</Button> <Button compact onClick={()=>setOpen(false)}>Close</Button></div>
-    {msg&&<p className="l1i-note" role="status">{msg}</p>}{err&&<p className="l1i-warn" role="alert">{err}</p>}
+    {msg&&<p className="ui-l1i-note" role="status">{msg}</p>}{err&&<p className="ui-l1i-warn" role="alert">{err}</p>}
   </fieldset>}
 
 export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=null,invoke=null}){
@@ -98,12 +98,12 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
   async function cancelDraft(){const why=window.prompt('Cancel this draft? It is kept, marked cancelled.\n\nReason (kept in the control log):');if(!why||why.trim().length<4)return
     const{error}=await rpc('admin_layer1_induction_cancel',{p_id:id,p_reason:why.trim()});if(error){setErr(plainError(error));return}onCancel?.()}
   if(rank<3)return <EmptyInline text="Adding a source opens for Curator and above."/>
-  if(!o)return err?<EmptyInline text={err}/>:<p className="sl-sub">Loading…</p>
+  if(!o)return err?<EmptyInline text={err}/>:<p className="ui-sl-sub">Loading…</p>
   const dr=item?.dry_run
   const done=k=>k==='activate'?Boolean(steps.activated):Boolean(steps[k])
   const body=[
     // 1
-    <div className="l1i-grid" key="s1" data-l1i-step="scheme">
+    <div className="ui-l1i-grid" key="s1" data-l1i-step="scheme">
       <label>Country<select value={f.country_code} onChange={e=>setF(x=>({...x,country_code:e.target.value,scheme:'',scheme_kind:'',field_scheme:''}))} disabled={closed} data-l1i-country><option value="">Choose…</option>{o.countries.map(c=><option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}</select></label>
       <label>Registration scheme<select value={f.scheme?`${f.scheme}|${f.scheme_kind}`:''} onChange={e=>{const[a,b]=e.target.value.split('|');setF(x=>({...x,scheme:a||'',scheme_kind:b||''}))}} disabled={closed||!schemes.length} data-l1i-scheme><option value="">Choose…</option>{schemes.filter(s=>s.kind!=='field_of_study').map(s=><option key={s.scheme+s.kind} value={`${s.scheme}|${s.kind}`}>{s.label||s.scheme} · {KIND[s.kind]||s.kind}</option>)}</select></label>
       <label>Native field-of-study scheme<select value={f.field_scheme} onChange={set('field_scheme')} disabled={closed||!schemes.length} data-l1i-field-scheme><option value="">None or not known</option>{schemes.filter(s=>s.kind==='field_of_study').map(s=><option key={s.scheme} value={s.scheme}>{s.label||s.scheme}</option>)}</select></label>
@@ -111,11 +111,11 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
         <small>{(o.record_types||[]).find(t=>t.key===f.target_record_type)?.help||'What each row of this source becomes. The AI mapper builds the parser spec for this type.'}</small></label>
       {/* v2.16.37 (Platform Admin 18 Nov 2026 10:31, 12:21): what an apply run of this source will create, and the API v3 fields it fills */}
       {f.target_record_type&&<Layer1BaselinePreview type={f.target_record_type} countryName={(o.countries||[]).find(c=>c.code===f.country_code)?.name||f.country_code}/>}
-      {f.country_code&&!schemes.length&&<p className="l1i-warn" data-l1i-no-scheme>No registration scheme is registered for {f.country_code} yet. {rank>=6?'Register it below (it is added as planned), then choose it here.':'A Platform Admin registers it here first (it is added as planned); then this source can be set up.'}</p>}
+      {f.country_code&&!schemes.length&&<p className="ui-l1i-warn" data-l1i-no-scheme>No registration scheme is registered for {f.country_code} yet. {rank>=6?'Register it below (it is added as planned), then choose it here.':'A Platform Admin registers it here first (it is added as planned); then this source can be set up.'}</p>}
       {f.country_code&&!closed&&rank>=6&&<SchemeRegister country={f.country_code} rpc={rpc} onDone={async()=>{await open(id)}}/>}
     </div>,
     // 2
-    <div className="l1i-grid" key="s2" data-l1i-step="source">
+    <div className="ui-l1i-grid" key="s2" data-l1i-step="source">
       <label className="wide">Name<input value={f.source_label} onChange={set('source_label')} disabled={closed} placeholder="For example: QQI course register" data-l1i-label/></label>
       <label className="wide">Source address (https)<input type="url" value={f.source_url} onChange={set('source_url')} disabled={closed} placeholder="https://" data-l1i-url/></label>
       <label>Authority that publishes it<input value={f.authority_name} onChange={set('authority_name')} disabled={closed}/></label>
@@ -131,66 +131,66 @@ export default function Layer1InductionWizard({rank=0,onDone,onCancel,client=nul
     </div>,
     // 3
     <div key="s3" data-l1i-step="mapping">
-      <div className="l1i-bar"><p className="sl-sub">Map each source field to the platform field it fills and its enrichment category. Leave a field unmapped to ignore it.</p>
-        <span className="l1i-actions"><Button compact disabled={closed||!mapper||!f.target_record_type||busy!==''} title={mapper?undefined:'AI Auto-Map switches on when the mapper is deployed'} onClick={autoMap} data-l1i-automap>{busy==='map'?'Mapping…':'AI Auto-Map'}</Button>
+      <div className="ui-l1i-bar"><p className="ui-sl-sub">Map each source field to the platform field it fills and its enrichment category. Leave a field unmapped to ignore it.</p>
+        <span className="ui-l1i-actions"><Button compact disabled={closed||!mapper||!f.target_record_type||busy!==''} title={mapper?undefined:'AI Auto-Map switches on when the mapper is deployed'} onClick={autoMap} data-l1i-automap>{busy==='map'?'Mapping…':'AI Auto-Map'}</Button>
           <StatusChip tone={mapper?'success':'neutral'} label={mapper?'AI mapper ready':mapper===null?'Checking the AI mapper…':'AI mapper not deployed yet: map by hand'}/>
           <Button compact disabled={closed} onClick={()=>setMaps(m=>[...m,{source_field:'',target_field:'',category_key:'',by:'manual'}])} data-l1i-add-map>Add a field</Button></span></div>
-      {maps.length?<div className="l1i-scroll"><table className="cf-table"><thead><tr><th>Source field</th><th>Sample</th><th>Platform field</th><th>Enrichment category</th><th>By</th><th></th></tr></thead>
+      {maps.length?<div className="ui-l1i-scroll"><table className="ui-table"><thead><tr><th>Source field</th><th>Sample</th><th>Platform field</th><th>Enrichment category</th><th>By</th><th></th></tr></thead>
         <tbody>{maps.map((m,i)=>{const ci=f.sample?.columns?.indexOf(m.source_field)??-1;const ex=ci>=0?(f.sample.rows.find(r=>r[ci])||[])[ci]:''
-          return <tr key={i} data-l1i-map={m.source_field}><td><input value={m.source_field} onChange={e=>setMap(i,{source_field:e.target.value})} disabled={closed} aria-label="Source field"/></td><td className="l1i-ex">{String(ex||'—').slice(0,60)}</td>
+          return <tr key={i} data-l1i-map={m.source_field}><td><input value={m.source_field} onChange={e=>setMap(i,{source_field:e.target.value})} disabled={closed} aria-label="Source field"/></td><td className="ui-l1i-ex">{String(ex||'—').slice(0,60)}</td>
             <td><select value={m.target_field||''} onChange={e=>{const t=fieldList.find(x=>x.field===e.target.value);setMap(i,{target_field:e.target.value,category_key:t?t.category_key:m.category_key})}} disabled={closed} aria-label="Platform field"><option value="">Not mapped</option>{(o.categories||[]).map(c=><optgroup key={c.key} label={c.label}>{c.fields.map(x=><option key={x.field} value={x.field}>{x.label}</option>)}</optgroup>)}</select></td>
             <td><select value={m.category_key||''} onChange={e=>setMap(i,{category_key:e.target.value})} disabled={closed} aria-label="Enrichment category"><option value="">None</option>{(o.categories||[]).map(c=><option key={c.key} value={c.key}>{c.label}</option>)}</select></td>
             <td>{m.by==='ai'?`AI${m.confidence!=null?` ${Math.round(Number(m.confidence)*100)}%`:''}`:m.by==='ai_adjusted'?'AI, adjusted':'By hand'}</td>
             <td><Button compact disabled={closed} onClick={()=>setMaps(x=>x.filter((_,j)=>j!==i))} aria-label={`Remove ${m.source_field||'field'}`}>Remove</Button></td></tr>})}</tbody></table></div>
         :<EmptyInline text="No fields yet. Upload a sample in step 2 to list its columns, or add a field by hand."/>}
-      <div className="l1i-spec" data-l1i-parser-spec={f.parser_spec?'present':'none'}>
+      <div className="ui-l1i-spec" data-l1i-parser-spec={f.parser_spec?'present':'none'}>
         <h4>Parser spec for {(o.record_types||[]).find(t=>t.key===f.target_record_type)?.label||'the target record type'}</h4>
         {f.parser_spec?<>
-          <p className="sl-sub">Proposed by the AI mapper. Target: <strong>{f.parser_spec.target_table||'not stated'}</strong>. {f.parser_validation?(f.parser_validation.ok?'Validated against the sample.':`Not valid yet: ${(f.parser_validation.errors||[]).join('; ')||'see the spec'}.`):'Validation was not reported.'} On activation it becomes the AI-built parser of this source.</p>
-          <ul className="l1i-routing" data-l1i-routing>{(o.categories||[]).map(c=>{const k=maps.filter(m=>m.category_key===c.key).length;return k?<li key={c.key}><strong>{c.label}</strong>: {fmtNumber(k)} {k===1?'field':'fields'}</li>:null})}</ul>
-          <pre className="l1i-json" tabIndex={0} aria-label="Parser spec (JSON)">{JSON.stringify(f.parser_spec,null,2)}</pre>
+          <p className="ui-sl-sub">Proposed by the AI mapper. Target: <strong>{f.parser_spec.target_table||'not stated'}</strong>. {f.parser_validation?(f.parser_validation.ok?'Validated against the sample.':`Not valid yet: ${(f.parser_validation.errors||[]).join('; ')||'see the spec'}.`):'Validation was not reported.'} On activation it becomes the AI-built parser of this source.</p>
+          <ul className="ui-l1i-routing" data-l1i-routing>{(o.categories||[]).map(c=>{const k=maps.filter(m=>m.category_key===c.key).length;return k?<li key={c.key}><strong>{c.label}</strong>: {fmtNumber(k)} {k===1?'field':'fields'}</li>:null})}</ul>
+          <pre className="ui-l1i-json" tabIndex={0} aria-label="Parser spec (JSON)">{JSON.stringify(f.parser_spec,null,2)}</pre>
           <Button compact disabled={closed} onClick={()=>setF(x=>({...x,parser_spec:null,parser_validation:null}))} data-l1i-spec-discard>Discard the spec</Button></>
-          :<p className="sl-sub">{mapper?'Press AI Auto-Map to have the parser spec, target table and category routing proposed for this record type.':'The parser spec is proposed by the AI mapper, which is not deployed yet. Without one the source is saved with no parser and waits for a reader.'}</p>}
+          :<p className="ui-sl-sub">{mapper?'Press AI Auto-Map to have the parser spec, target table and category routing proposed for this record type.':'The parser spec is proposed by the AI mapper, which is not deployed yet. Without one the source is saved with no parser and waits for a reader.'}</p>}
       </div>
     </div>,
     // 4
-    <div className="l1i-grid" key="s4" data-l1i-step="cadence">
+    <div className="ui-l1i-grid" key="s4" data-l1i-step="cadence">
       <label>Cadence<select value={f.cadence} onChange={set('cadence')} disabled={closed} data-l1i-cadence><option value="">Choose…</option>{o.cadences.map(k=><option key={k} value={k}>{CADENCE[k]||k}</option>)}</select></label>
-      <label className="l1i-check"><input type="checkbox" checked={Boolean(f.edition_archiving)} onChange={set('edition_archiving')} disabled={closed}/> Keep each accepted edition (edition archiving)</label>
+      <label className="ui-l1i-check"><input type="checkbox" checked={Boolean(f.edition_archiving)} onChange={set('edition_archiving')} disabled={closed}/> Keep each accepted edition (edition archiving)</label>
       <label>Staging kept (days)<input type="number" min="30" max="3650" value={f.staging_keep_days??''} onChange={set('staging_keep_days')} disabled={closed} placeholder={`Platform period: ${o.retention_defaults?.staging_keep_days??90} days`} data-l1i-staging-days/>
         <small>How long applied staging rows of this source are kept (30 to 3,650 days). Leave empty to follow the platform period of {o.retention_defaults?.staging_keep_days??90} days.</small></label>
-      <p className="sl-sub wide" data-l1i-retention-note>On activation this period is set for the source on Storage &amp; retention, where the nightly housekeeping reads it. Pruning is {o.retention_defaults?.staging_prune_on?'on':'off (the nightly run only reports what would go)'}. Accepted editions and stored evidence are never pruned; hashes of removed staging rows are kept {o.retention_defaults?.raw_hash_keep_years??7} years.</p>
+      <p className="ui-sl-sub wide" data-l1i-retention-note>On activation this period is set for the source on Storage &amp; retention, where the nightly housekeeping reads it. Pruning is {o.retention_defaults?.staging_prune_on?'on':'off (the nightly run only reports what would go)'}. Accepted editions and stored evidence are never pruned; hashes of removed staging rows are kept {o.retention_defaults?.raw_hash_keep_years??7} years.</p>
       <label className="wide">Notes<input value={f.notes} onChange={set('notes')} disabled={closed}/></label>
     </div>,
     // 5
     <div key="s5" data-l1i-step="dry_run">
-      <p className="sl-sub">A dry run reads the first {fmtNumber(o.dry_run_rows)} rows through the source&rsquo;s reader and changes nothing. A campus postcode below {Math.round(Number(o.postcode_min_share)*100)}% in one locality is counted as an escalation to Layer 4.</p>
-      {dr?<div className="l1i-metrics" data-l1i-dry-run={dr.status}>{[['Rows read',dr.rows_read],['Would insert',dr.inserts],['Would update',dr.updates],['Departures',dr.departures],[`Postcodes under ${Math.round(Number(o.postcode_min_share)*100)}%`,dr.postcode_escalations]].map(([l,v])=><div key={l}><small>{l}</small><strong>{fmtNumber(v||0)}</strong></div>)}
+      <p className="ui-sl-sub">A dry run reads the first {fmtNumber(o.dry_run_rows)} rows through the source&rsquo;s reader and changes nothing. A campus postcode below {Math.round(Number(o.postcode_min_share)*100)}% in one locality is counted as an escalation to Layer 4.</p>
+      {dr?<div className="ui-l1i-metrics" data-l1i-dry-run={dr.status}>{[['Rows read',dr.rows_read],['Would insert',dr.inserts],['Would update',dr.updates],['Departures',dr.departures],[`Postcodes under ${Math.round(Number(o.postcode_min_share)*100)}%`,dr.postcode_escalations]].map(([l,v])=><div key={l}><small>{l}</small><strong>{fmtNumber(v||0)}</strong></div>)}
           <div><small>Result</small><StatusChip tone={dr.status==='passed'?'success':'danger'} label={dr.status==='passed'?'Passed':'Failed'}/></div>
-          <p className="sl-sub wide">{dr.reader?`Reader: ${dr.reader}. `:''}Recorded {fmtDateTime(dr.recorded_at)}.{dr.message?` ${dr.message}`:''}</p></div>
-        :<div className="l1i-wait" data-l1i-dry-run="waiting_for_reader"><StatusChip tone="warning" label={f.parser_spec?'Ready for a dry run':'Waiting for a reader'}/><p>{f.parser_spec?'This draft has an AI-built parser spec (step 3). Run a dry run to read the first rows of the source file with it; nothing is written.':'This source has no parser spec yet, so there is nothing to preview: use AI Auto-Map in step 3 with a sample of the file. You can still activate it: it is saved paused and stays paused until its reader is built and a dry run passes.'}</p></div>}
-      <div className="l1i-actions"><Button compact disabled={!id||closed||!f.parser_spec||busy!==''} onClick={dryRun} data-l1i-dry-run-start>{busy==='dry'?'Running…':'Run dry run'}</Button>
+          <p className="ui-sl-sub wide">{dr.reader?`Reader: ${dr.reader}. `:''}Recorded {fmtDateTime(dr.recorded_at)}.{dr.message?` ${dr.message}`:''}</p></div>
+        :<div className="ui-l1i-wait" data-l1i-dry-run="waiting_for_reader"><StatusChip tone="warning" label={f.parser_spec?'Ready for a dry run':'Waiting for a reader'}/><p>{f.parser_spec?'This draft has an AI-built parser spec (step 3). Run a dry run to read the first rows of the source file with it; nothing is written.':'This source has no parser spec yet, so there is nothing to preview: use AI Auto-Map in step 3 with a sample of the file. You can still activate it: it is saved paused and stays paused until its reader is built and a dry run passes.'}</p></div>}
+      <div className="ui-l1i-actions"><Button compact disabled={!id||closed||!f.parser_spec||busy!==''} onClick={dryRun} data-l1i-dry-run-start>{busy==='dry'?'Running…':'Run dry run'}</Button>
         <Button compact disabled={!id||busy!==''} onClick={()=>open(id)} data-l1i-dry-refresh>Check again</Button></div>
-      {f.parser_spec&&f.connector_type!=='html_pages'&&!/\.(csv|xlsx|json)(\?|$)/i.test(f.source_url||'')?<p className="sl-sub" data-l1i-dry-file-note>The dry run reads a CSV, XLSX or JSON file, or a table on a web page when the connector is Web pages. If the source address is a landing page, enter the address of the file itself in step 2.</p>:null}
+      {f.parser_spec&&f.connector_type!=='html_pages'&&!/\.(csv|xlsx|json)(\?|$)/i.test(f.source_url||'')?<p className="ui-sl-sub" data-l1i-dry-file-note>The dry run reads a CSV, XLSX or JSON file, or a table on a web page when the connector is Web pages. If the source address is a landing page, enter the address of the file itself in step 2.</p>:null}
     </div>,
     // 6
     <div key="s6" data-l1i-step="activate">
-      <ul className="l1i-check-list">{STEPS.slice(0,5).map(([k,l],i)=><li key={k}><StatusChip tone={done(k)?'success':k==='dry_run'?'warning':'danger'} label={done(k)?'Done':k==='dry_run'?(steps.dry_run_state==='failed'?'Failed':'Waiting for a reader'):'Not finished'}/> Step {i+1}: {l}</li>)}</ul>
-      {f.terms_status==='pending'&&<p className="l1i-warn">Terms of use are pending (REQ-68): the source can be loaded but its data is not republished until the terms are approved.</p>}
-      {closed?<p className="sl-sub" data-l1i-closed>This induction is {item.status}{item.activated_at?` (${fmtDateTime(item.activated_at)})`:''}. {item.activation_reason||item.status_reason||''}</p>
-        :<div className="l1i-grid"><label className="wide">Reason for activation (kept in the control log)<input value={reason} onChange={e=>setReason(e.target.value)} disabled={rank<6} placeholder="For example: QQI register approved for Ireland" data-l1i-reason/></label>
-          <p className="sl-sub wide">Activation is the Platform Admin&rsquo;s. It creates the source <strong>paused</strong>; nothing is loaded until the source is resumed on its row.</p></div>}
+      <ul className="ui-l1i-check-list">{STEPS.slice(0,5).map(([k,l],i)=><li key={k}><StatusChip tone={done(k)?'success':k==='dry_run'?'warning':'danger'} label={done(k)?'Done':k==='dry_run'?(steps.dry_run_state==='failed'?'Failed':'Waiting for a reader'):'Not finished'}/> Step {i+1}: {l}</li>)}</ul>
+      {f.terms_status==='pending'&&<p className="ui-l1i-warn">Terms of use are pending (REQ-68): the source can be loaded but its data is not republished until the terms are approved.</p>}
+      {closed?<p className="ui-sl-sub" data-l1i-closed>This induction is {item.status}{item.activated_at?` (${fmtDateTime(item.activated_at)})`:''}. {item.activation_reason||item.status_reason||''}</p>
+        :<div className="ui-l1i-grid"><label className="wide">Reason for activation (kept in the control log)<input value={reason} onChange={e=>setReason(e.target.value)} disabled={rank<6} placeholder="For example: QQI register approved for Ireland" data-l1i-reason/></label>
+          <p className="ui-sl-sub wide">Activation is the Platform Admin&rsquo;s. It creates the source <strong>paused</strong>; nothing is loaded until the source is resumed on its row.</p></div>}
     </div>]
-  return <section className="l1i" data-l1-induction-wizard aria-label="Add a source">
-    <div className="l1i-head"><h3>Add a source</h3>
-      {!id&&drafts.filter(d=>d.status==='draft').length>0&&<label className="l1i-drafts">Continue a draft<select value="" onChange={e=>e.target.value&&open(e.target.value)} data-l1i-drafts><option value="">Choose…</option>{drafts.filter(d=>d.status==='draft').map(d=><option key={d.id} value={d.id}>{d.country_code} · {d.label||'Unnamed'} · {fmtDateTime(d.updated_at)}</option>)}</select></label>}</div>
-    <ol className="l1i-steps" role="tablist" aria-label="Steps">{STEPS.map(([k,l],i)=><li key={k}><button type="button" role="tab" aria-selected={step===i} className={`l1i-step${step===i?' is-on':''}${done(k)?' is-done':''}`} onClick={()=>setStep(i)} data-l1i-tab={k}><span>{i+1}</span>{l}</button></li>)}</ol>
-    {err&&<p className="l1i-warn" role="alert" data-l1i-error>{err}</p>}
-    {note&&<p className="l1i-note" role="status" data-l1i-note>{note}</p>}
-    <div className="l1i-body">{body[step]}</div>
-    <div className="l1i-foot">
-      <span className="l1i-actions"><Button compact onClick={onCancel} disabled={busy!==''}>Close</Button>{id&&!closed&&<Button compact onClick={cancelDraft} disabled={busy!==''} data-l1i-cancel-draft>Cancel draft</Button>}</span>
-      <span className="l1i-actions">{step>0&&<Button compact onClick={()=>setStep(step-1)} disabled={busy!==''}>Back</Button>}
+  return <section className="ui-l1i" data-l1-induction-wizard aria-label="Add a source">
+    <div className="ui-l1i-head"><h3>Add a source</h3>
+      {!id&&drafts.filter(d=>d.status==='draft').length>0&&<label className="ui-l1i-drafts">Continue a draft<select value="" onChange={e=>e.target.value&&open(e.target.value)} data-l1i-drafts><option value="">Choose…</option>{drafts.filter(d=>d.status==='draft').map(d=><option key={d.id} value={d.id}>{d.country_code} · {d.label||'Unnamed'} · {fmtDateTime(d.updated_at)}</option>)}</select></label>}</div>
+    <ol className="ui-l1i-steps" role="tablist" aria-label="Steps">{STEPS.map(([k,l],i)=><li key={k}><button type="button" role="tab" aria-selected={step===i} className={`ui-l1i-step${step===i?' ui-is-on':''}${done(k)?' is-done':''}`} onClick={()=>setStep(i)} data-l1i-tab={k}><span>{i+1}</span>{l}</button></li>)}</ol>
+    {err&&<p className="ui-l1i-warn" role="alert" data-l1i-error>{err}</p>}
+    {note&&<p className="ui-l1i-note" role="status" data-l1i-note>{note}</p>}
+    <div className="ui-l1i-body">{body[step]}</div>
+    <div className="ui-l1i-foot">
+      <span className="ui-l1i-actions"><Button compact onClick={onCancel} disabled={busy!==''}>Close</Button>{id&&!closed&&<Button compact onClick={cancelDraft} disabled={busy!==''} data-l1i-cancel-draft>Cancel draft</Button>}</span>
+      <span className="ui-l1i-actions">{step>0&&<Button compact onClick={()=>setStep(step-1)} disabled={busy!==''}>Back</Button>}
         {step<5&&!closed&&<Button compact variant="primary" disabled={busy!==''||!f.country_code} onClick={()=>save(step+1)} data-l1i-next>{busy==='save'?'Saving…':'Save & continue'}</Button>}
         {step<5&&closed&&<Button compact onClick={()=>setStep(step+1)}>Next</Button>}
         {step===5&&!closed&&<Button compact variant="primary" disabled={busy!==''||rank<6||reason.trim().length<4} title={rank<6?'Needs Platform Admin':undefined} onClick={activate} data-l1i-activate>{busy==='activate'?'Activating…':'Activate (saved paused)'}</Button>}</span>

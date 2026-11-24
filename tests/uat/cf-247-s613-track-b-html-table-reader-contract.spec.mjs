@@ -1,5 +1,5 @@
 // Guards: Wave 2 Track B page reader (Platform Admin 18 Nov 2026 08:19): a deterministic HTML table extractor (no script, no network) feeds the same row pipeline as CSV, XLSX and JSON for format html_table, in the wizard's sample (step 3, AI Auto-Map) and the declarative runner's dry run (step 5), which writes nothing; empty and malformed tables are handled
-// CF-247 S613. supabase/functions/_shared/cf247-html-table.js; _shared/cf247-layer1-read.ts (html_table); layer1-ai-induction-mapper 1.2.0; layer1-declarative-runner 1.0.1; src/lib/sample-parse.js; src/Layer1InductionWizard.jsx.
+// CF-247 S613. supabase/functions/_shared/cf247-html-table.js; _shared/cf247-layer1-read.ts (html_table); layer1-ai-induction-mapper 1.2.0; layer1-declarative-runner 1.0.1; src/lib/sample-parse.js; src/ui-v1/Layer1InductionWizardView.jsx.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { extractHtmlTables, htmlTableRows, pickHtmlTable, decodeEntities } from '../../supabase/functions/_shared/cf247-html-table.js'
@@ -83,7 +83,7 @@ test('the reader, mapper, runner and wizard use the extractor for html_table; th
   expect(runner).toContain('"svc_layer1_declarative_stage_v1", { p_run_id: run, p_rows: rows.slice(i, i + cfg.chunk), p_write: false }')
   const html = read('supabase/functions/_shared/cf247-html-table.js')
   expect(html).not.toMatch(/\bfetch\(|eval\(|new Function|import\(/)
-  const wizard = read('src/Layer1InductionWizard.jsx')
+  const wizard = read('src/ui-v1/Layer1InductionWizardView.jsx')
   expect(wizard).toContain("...(f.sample?.table_index!=null?{source:{table_index:f.sample.table_index,header_row:f.sample.header_row}}:{})")
   expect(wizard).toContain('accept=".csv,.tsv,.txt,.json,.html,.htm,text/csv,application/json,text/html"')
 })

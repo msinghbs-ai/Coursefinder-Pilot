@@ -7,7 +7,7 @@ Every live admin route and top-level tab comes from the menu (`src/nav-map.js`);
 
 **Rule (Platform Admin 16 Nov 2026):** a PR that moves, renames or folds UI controls updates the inline screen help text and regenerates this document in the same release. Every release bump regenerates it with the test register sync, and it is mirrored to `coursefinder-admin` `docs/UI-MAP.md`. Spec `cf-247-s557-ui-map-contract` fails the build when this document and the source disagree. What each screen shows and does, in words, is in the admin `docs/platform/UI-CATALOGUE.md` and the in-app Guides.
 
-**Counts:** 22 pages · 58 tabs (a page without tabs counts as one) · 28 sub-tab or view bars · 232 folds · 46 drawers and dialogs · 39 old addresses.
+**Counts:** 22 pages · 58 tabs (a page without tabs counts as one) · 27 sub-tab or view bars · 229 folds · 46 drawers and dialogs · 39 old addresses.
 
 Roles (rank): 1 Viewer · 2 Counsellor · 3 Curator · 4 Pipeline Operator · 5 PIM Admin · 6 Platform Admin.
 
@@ -208,7 +208,7 @@ Tab key `coverage` · Curator and above
 - **Screen:** `ScholarshipCoverage` (ScholarshipCoverage.jsx), `ScholarshipExtraction` (ScholarshipExtraction.jsx)
 - **Sub-tabs and view bars:**
   - Which providers: Watch list · All with scholarships · All providers — ScholarshipCoverage.jsx
-  - Which pages: All · New pages · Known pages · Site map and listing — ScholarshipJourney.jsx
+  - Which pages: All · New pages · Known pages · Site map and listing — ui-v1/ScholarshipJourneyView.jsx
   - Which sample pages: All · Where a model disagrees — ScholarshipExtraction.jsx
 - **Folds:**
   - Extraction results (fold, `scholarship-extraction`) — mature-main.jsx
@@ -340,7 +340,7 @@ Page key `reference` · opens for Curator and above · no tabs
 - **Sub-tabs and view bars:**
   - Type: All · Key dates · Reference sources · API field dictionary · Grade scale conversions — mature-main.jsx
 - **Folds:**
-  - What each use means (details) — ReferenceSources.jsx
+  - What each use means (details) — ui-v1/ReferenceSourcesView.jsx
 - **Drawers and dialogs:**
   - `'Key date: ${x.title}'` (drawer) — KeyDates.jsx
 
@@ -354,26 +354,24 @@ Page key `coverage` · opens for Viewer and above · 2 tabs
 
 Tab key `courses` · Viewer and above
 
-- **Screen:** `CoverageTelemetry` (CoverageTelemetry.jsx), `PipelineEta` (PipelineEta.jsx), `CoverageView` (course-coverage.jsx), `LinkRefresh` (LinkRefresh.jsx)
+- **Screen:** `CoverageTelemetry` (ui-v1/CoverageTelemetryView.jsx), `PipelineEta` (ui-v1/PipelineEtaView.jsx), `CoverageView` (ui-v1/CourseCoverageView.jsx), `LinkRefresh` (ui-v1/LinkRefreshView.jsx)
 - **Sub-tabs and view bars:**
-  - Scope: Consolidated · By country · By university — PipelineEta.jsx
+  - Scope: Consolidated · By country · By university — ui-v1/PipelineEtaView.jsx
 
 #### Coverage & completeness › Attributes — `#coverage?tab=attributes`
 
 Tab key `attributes` · Viewer and above
 
 - **Screen:** `CoverageAttributes` (mature-main.jsx)
-- **Sub-tabs and view bars:**
-  - Disposition: Source held · Reader failed · Not discovered · Awaiting Layer 4 · Course-level only · Not published (evidenced) · Not applicable (evidenced) · Active and verified — AerCoverage.jsx
 - **Folds:**
   - By area: providers, courses, campuses and scholarships (details) — mature-main.jsx
-  - Provider descriptions (card, `coverage.provider-descriptions`) — FieldCoverage.jsx
-  - Stalled fields (card, `coverage.stalled`) — FieldCoverage.jsx
-  - Fill the gaps (standing queue) (card, `coverage.gap-queue`) — FieldCoverage.jsx
-  - Every field by country (card, `coverage.fields`) — FieldCoverage.jsx
-  - Cross-check differences (card, `coverage.crosscheck`) — FieldCoverage.jsx
-  - Delivery wording (card, `coverage.delivery-wording`) — FieldCoverage.jsx
-  - Weekly report, week of … (details) — AerCoverage.jsx
+  - Provider descriptions (card, `coverage.provider-descriptions`) — ui-v1/FieldCoverageView.jsx
+  - Stalled fields (card, `coverage.stalled`) — ui-v1/FieldCoverageView.jsx
+  - Fill the gaps (standing queue) (card, `coverage.gap-queue`) — ui-v1/FieldCoverageView.jsx
+  - Every field by country (card, `coverage.fields`) — ui-v1/FieldCoverageView.jsx
+  - Cross-check differences (card, `coverage.crosscheck`) — ui-v1/FieldCoverageView.jsx
+  - Delivery wording (card, `coverage.delivery-wording`) — ui-v1/FieldCoverageView.jsx
+  - Weekly report, week of … (details) — ui-v1/AerCoverageView.jsx
 
 ### Layer 1 Register — `#layer-1-register`
 
@@ -394,13 +392,10 @@ Page key `layer2` · opens for Curator and above · 8 tabs
 
 Tab key `operations` · Curator and above
 
-- **Screen:** `Layer23Operations` (Layer23Operations.jsx), `LaneFunnels` (LaneFunnels.jsx), `IntakeRunValidate` (IntakeRunValidate.jsx), `ProcessResults` (ProcessResults.jsx), `Progress` (Progress.jsx)
+- **Screen:** `Layer23Operations` (ui-v1/Layer23OperationsView.jsx), `LaneFunnels` (LaneFunnels.jsx), `IntakeRunValidate` (IntakeRunValidate.jsx), `ProcessResults` (ProcessResults.jsx), `Progress` (Progress.jsx)
 - **Sub-tabs and view bars:**
   - Progress views: Overview · Journeys — Progress.jsx
 - **Folds:**
-  - Approvals waiting (all universities): … (details) — ProviderOnboarding.jsx
-  - Onboarding settings (details) — ProviderOnboarding.jsx
-  - History (details) — GovernedActions.jsx
   - Approved Australian universities and active course counts (details) — IntakeRunValidate.jsx
   - Eligibility by university (bounded independent scans) (details) — IntakeRunValidate.jsx
   - Eligibility stops and missing evidence (details) — IntakeRunValidate.jsx
@@ -448,14 +443,14 @@ Tab key `universities` · Curator and above
 
 Tab key `enrich` · Curator and above
 
-- **Screen:** `FieldCoverage` (FieldCoverage.jsx), `EnrichFields` (EnrichFields.jsx), `FeeReader` (FeeReader.jsx)
+- **Screen:** `FieldCoverage` (ui-v1/FieldCoverageView.jsx), `EnrichFields` (EnrichFields.jsx), `FeeReader` (FeeReader.jsx)
 - **Folds:**
-  - Provider descriptions (card, `coverage.provider-descriptions`) — FieldCoverage.jsx
-  - Stalled fields (card, `coverage.stalled`) — FieldCoverage.jsx
-  - Fill the gaps (standing queue) (card, `coverage.gap-queue`) — FieldCoverage.jsx
-  - Every field by country (card, `coverage.fields`) — FieldCoverage.jsx
-  - Cross-check differences (card, `coverage.crosscheck`) — FieldCoverage.jsx
-  - Delivery wording (card, `coverage.delivery-wording`) — FieldCoverage.jsx
+  - Provider descriptions (card, `coverage.provider-descriptions`) — ui-v1/FieldCoverageView.jsx
+  - Stalled fields (card, `coverage.stalled`) — ui-v1/FieldCoverageView.jsx
+  - Fill the gaps (standing queue) (card, `coverage.gap-queue`) — ui-v1/FieldCoverageView.jsx
+  - Every field by country (card, `coverage.fields`) — ui-v1/FieldCoverageView.jsx
+  - Cross-check differences (card, `coverage.crosscheck`) — ui-v1/FieldCoverageView.jsx
+  - Delivery wording (card, `coverage.delivery-wording`) — ui-v1/FieldCoverageView.jsx
   - Enrich fields tasks (card, `layer2.enrich.tasks`) — EnrichFields.jsx
   - Course descriptions (card, `layer2.enrich.descriptions`) — EnrichFields.jsx
   - Coverage and telemetry (card, `layer2.enrich.telemetry`) — EnrichFields.jsx
@@ -529,11 +524,11 @@ Tab key `inbox` · Curator and above
 - **Screen:** `Layer4Inbox` (Layer4Inbox.jsx)
 - **Folds:**
   - (i) Hint (details) — Layer4Inbox.jsx
-  - Evidence and course links (details) — Layer4Inbox.jsx
   - Technical detail (details) — Layer4Inbox.jsx
-  - Technical detail (details) — DescriptionEditAdmit.jsx
+  - Evidence and course links (details) — Layer4Inbox.jsx
   - … related item … (details) — Layer4Inbox.jsx
   - Show … (details) — Layer4Inbox.jsx
+  - Technical detail (details) — DescriptionEditAdmit.jsx
   - The page's own words (details) — DescriptionEditAdmit.jsx
   - What the platform holds (details) — Layer4ItemLifecycle.jsx
   - Event history, times and steps (details) — Layer4ItemLifecycle.jsx
@@ -630,7 +625,7 @@ Tab key `jobs` · Pipeline Operator and above
 
 - **Screen:** `JobsWorkspace` (pipeline-ops-entry.jsx)
 - **Sub-tabs and view bars:**
-  - Which pages: All · New pages · Known pages · Site map and listing — ScholarshipJourney.jsx
+  - Which pages: All · New pages · Known pages · Site map and listing — ui-v1/ScholarshipJourneyView.jsx
 - **Folds:**
   - What this task did (details) — AdminTasks.jsx
 
@@ -640,7 +635,7 @@ Tab key `tasks` · Pipeline Operator and above
 
 - **Screen:** `AdminTasks` (AdminTasks.jsx)
 - **Sub-tabs and view bars:**
-  - Which pages: All · New pages · Known pages · Site map and listing — ScholarshipJourney.jsx
+  - Which pages: All · New pages · Known pages · Site map and listing — ui-v1/ScholarshipJourneyView.jsx
 - **Folds:**
   - What this task did (details) — AdminTasks.jsx
 

@@ -43,10 +43,10 @@ test('item 1 (Option A): ranks 4 and 5 keep Schedule and Run now on a register w
     '"Pipeline Operator run of a source without a policy"', '"operator: policy 1 day, next run within a day (legacy edit)"', '"legacy audit row (refresh_policy_action_events)"',
     '"operator run: one queued manual request, not duplicated"', '"after: the tick queues the CRICOS run within 2 days"', '"NZQA next run moved from 6 days to 29 days"',
     '"no policy: verification cadence written as before"', '"no policy created (nothing switched on)"', 'second run: unchanged']) expect(run).toContain(c)
-  const l1 = read('src/layer1-operations-entry.jsx')
-  expect(l1).toContain("{rank>=4&&rank<6&&hasPolicy&&!active&&<button className=\"primary\" data-l1-policy-run onClick={policyRun}")
+  const l1 = read('src/ui-v1/Layer1RegisterView.jsx')
+  expect(l1).toContain("{rank>=4&&rank<6&&hasPolicy&&!active&&<button className=\"ui-l1-primary\" data-l1-policy-run onClick={policyRun}")
   expect(l1).toContain("supabase.rpc('admin_layer1_policy_run_v1',{p_source_id:source.source_id,p_reason:why})")
-  expect(l1).toContain("{!canEdit&&rank>=4&&hasPolicy&&<div className=\"xl-form\" data-l1-policy-schedule>")
+  expect(l1).toContain("{!canEdit&&rank>=4&&hasPolicy&&<div className=\"ui-xl-form\" data-l1-policy-schedule>")
   expect(l1).toContain("if(!v||v==='custom'||v==='manual')return")
 })
 
@@ -69,7 +69,7 @@ test('item 1: Automations no longer shows Refresh schedules; its runtime health 
   expect(resolveTarget('scheduled-jobs', new URLSearchParams({ tab: 'schedules' })).page).toBe('layer1')
   expect(PAGES.jobs.min ?? Math.min(...PAGES.jobs.tabs.map((t) => t.min))).toBe(4) // Pipeline Operator opens the new home; from v2.16.26 a Curator also opens Layer 1 (to prepare drafts), where the schedule control stays rank 4
   expect(PAGES.layer1.min).toBe(3)
-  const l1 = read('src/layer1-operations-entry.jsx')
+  const l1 = read('src/ui-v1/Layer1RegisterView.jsx')
   expect(l1).toContain("const scheduleDays=s=>{const m=String(s?.cadence_interval||'').match(")
   expect(l1).toContain('SCHEDULES.find(([,d])=>d===scheduleDays(s))')
 })

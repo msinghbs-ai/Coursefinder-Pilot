@@ -138,6 +138,7 @@ test.describe('settlement on a phone @responsive', () => {
     const card = page.locator('[data-l4-ref="h1"]')
     await card.scrollIntoViewIfNeeded()                                                      // s931: its detail is read when the card is on screen
     await expect(card.locator('[data-l4-section="summary"]')).toContainText('over the row limit')
+    await card.locator('[data-l4-fold="more-detail"] > summary').click()                    // s1075: the long detail sections sit behind one Technical detail toggle
     await card.locator('[data-l4-section="case"] summary').first().click()
     const caseBox = card.locator('[data-l4-case]')
     await expect(caseBox).toContainText('2 other waiting reads')

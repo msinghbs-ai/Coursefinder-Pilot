@@ -1,0 +1,384 @@
+import './ui-kit.css'
+import React,{useEffect,useMemo,useState}from'react'
+import{StatusChip}from'./kit.jsx'
+import{createRoot}from'react-dom/client'
+import{Activity,AlertTriangle,BarChart3,BookOpen,Building2,CalendarClock,CheckCircle2,ChevronDown,Clock3,Database,ExternalLink,FileCheck2,Globe2,GraduationCap,MoreVertical,Pause,Play,RefreshCw,RotateCcw,Settings2,ShieldCheck,X}from'lucide-react'
+import{api,supabase}from'../lib/supabase'
+import{fmtNumber,fmtDateTime,fmtTime,fmtPercent}from'../lib/format.js'
+import{ExpandList,Pill,XlToolbar,XlField}from'./ExpandListView'
+import Layer1InductionWizard from'./Layer1InductionWizardView'
+
+const ROOT_ID='layer1-operations-root'
+const fmt=v=>v?fmtDateTime(v):'—'
+const n=v=>v===null||v===undefined?'—':fmtNumber(v)
+const pct=v=>v===null||v===undefined?'—':fmtPercent(v)
+const shortHash=v=>v?`${String(v).slice(0,12)}…`:'—'
+const seconds=v=>v===null||v===undefined?'—':`${fmtNumber(v)} s`
+const human=v=>String(v||'').replaceAll('_',' ').replace(/\b\w/g,m=>m.toUpperCase())
+const sourceClass=s=>{const raw=String(s.dataset_class||s.source_class||(/qilt|prisms|statistic|ranking|outcome/i.test(`${s.source_label||''} ${s.authority_name||''}`)?'statistics':'regulatory')).toLowerCase();return raw==='rankings'?'statistics':raw}
+const HEALTH_ORDER=['attention','running','due','paused','healthy']
+const healthOf=s=>{if(s?.qilt_group){const hs=(s.qilt_members||[]).map(healthOf);return HEALTH_ORDER.find(h=>hs.includes(h))||'healthy'}return healthOfOne(s)}
+const healthOfOne=s=>{const run=String(s.latest_run?.status||'').toLowerCase();if(['queued','running'].includes(run))return'running';if(s.paused)return'paused';if(['failed','blocked'].includes(run))return'attention';if(['stale','stuck','unhealthy','never_verified'].includes(String(s.source_health||'').toLowerCase())||['blocked','failed'].includes(String(s.verification_status||'').toLowerCase()))return'attention';if(s.schedule_enabled&&(s.schedule_next_due_at||s.next_ingestion_at)&&new Date(s.schedule_next_due_at||s.next_ingestion_at)<=new Date())return'due';return String(s.source_health||'healthy').toLowerCase()}
+
+// 8 Oct 2026 (Platform Admin): one schedule choice per source. Manual = checked for status only, never loaded automatically.
+const SCHEDULES=[['daily',1],['weekly',7],['monthly',30],['quarterly',91],['yearly',365]]
+// SS-020 follow-up (Decision 269 amendment, 4 Nov 2026): a register with a Layer 1 refresh policy runs on that policy (cadence_interval, read by
+// the refresh scheduler) and its Schedule edits it (admin_layer1_schedule); a register without one runs on its verification cadence, as before.
+const scheduleDays=s=>{const m=String(s?.cadence_interval||'').match(/^(\d+)\s+days?$/);return m?Number(m[1]):Number(s?.verification_cadence_days)}
+const scheduleOf=s=>s?.auto_ingest===false?'manual':(SCHEDULES.find(([,d])=>d===scheduleDays(s))||['custom'])[0]
+const isRankingSource=s=>['QS','THE'].includes(String(s?.source_system||'').toUpperCase())
+const rankingCode=s=>String(s?.source_system||'').toUpperCase()==='THE'?'the_wur':'qs_wur'
+const rankingFamilyLabel=s=>String(s?.source_system||'').toUpperCase()==='THE'?'Times Higher Education World University Rankings':'QS World University Rankings'
+const rankingYearsFor=(system,sources=[])=>{
+ const configured=sources.map(x=>Number(x.edition_year)).filter(Number.isInteger),code=String(system||'').toUpperCase()
+ // 8 Oct 2026: any year from two years ahead back to 2010 can be chosen, not only the editions set up so far
+ const top=new Date().getFullYear()+2,provisioned=code==='THE'||code==='QS'?Array.from({length:top-2009},(_,i)=>top-i):[]
+ return [...new Set([...configured,...provisioned])].sort((a,b)=>b-a)
+}
+const collapseRankingFamilies=rows=>{
+ const plain=rows.filter(x=>!isRankingSource(x)&&x.edition_is_current!==false),groups=new Map()
+ for(const x of rows.filter(isRankingSource)){const k=String(x.source_system).toUpperCase();if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x)}
+ for(const [system,xs] of groups){xs.sort((a,b)=>Number(b.edition_year||0)-Number(a.edition_year||0))
+  // The operational edition is the newest current edition that has been ingested; a newer edition that is not yet
+  // available from the publisher (for example blocked by a challenge) is shown as pending, not as the card's data.
+  const hasData=x=>Number(x.last_expected_count||0)>0||Boolean(x.last_success_at)
+  const current=xs.find(x=>x.edition_is_current!==false&&hasData(x))||xs.find(x=>x.edition_is_current!==false)||xs[0]
+  const pending=xs.filter(x=>Number(x.edition_year||0)>Number(current?.edition_year||0)&&!hasData(x)).map(x=>Number(x.edition_year))
+  if(current)plain.push({...current,source_label:`${rankingFamilyLabel(current)}${current.edition_year?` ${current.edition_year}`:''}`,ranking_family_sources:xs,ranking_supported_years:rankingYearsFor(system,xs),ranking_pending_years:pending,ranking_family:true})}
+ return plain
+}
+
+// Decision 134: the QILT surveys are shown as one QILT card with a tab per survey (each survey keeps its own editions).
+const isQilt=x=>String(x?.dataset_family_code||'').startsWith('au_qilt')||String(x?.source_system||'').toUpperCase()==='QILT'
+const QILT_LABEL='QILT (Quality Indicators for Learning and Teaching)'
+const groupQilt=rows=>{const out=[],groups=new Map();for(const x of rows){if(!isQilt(x)){out.push(x);continue}const k=x.country_code||'AU';if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x)}
+ for(const [k,xs] of groups){xs.sort((a,b)=>String(a.dataset_family_label||'').localeCompare(String(b.dataset_family_label||'')));out.push({...xs[0],source_id:`qilt-${k}`,qilt_group:true,qilt_members:xs,dataset_family_label:QILT_LABEL})}
+ return out}
+const surveyLabel=x=>String(x?.dataset_family_label||x?.source_label||'Survey').replace(/^QILT\s+/,'')
+function NewEditions({source,candidates,rank,onRefresh}){
+ const mine=(candidates||[]).filter(c=>c.family_code&&c.family_code===source.dataset_family_code)
+ const[busy,setBusy]=useState(0),[failure,setFailure]=useState('')
+ if(!mine.length)return null
+ const apply=async c=>{if(!window.confirm(`Apply the new ${c.member_label} edition ${c.edition_year||c.period||''}? It becomes the current edition; the previous edition is kept.`))return;setBusy(c.id);setFailure('');try{await control({action:'apply_edition',candidate_id:c.id});await onRefresh()}catch(e){setFailure(e.message||String(e))}finally{setBusy(0)}}
+ return <div className="ui-l1v2-new-editions" data-cf-new-editions>{mine.map(c=><div key={c.id} className={c.status==='check_failed'?'failed':'found'}><span><b>New edition found: {c.edition_year||c.period||'new file'}</b><small>{c.status==='checked'?`Checked: ${n(c.rows)} records read, nothing written yet`:c.status==='check_failed'?`Check failed: ${c.error||'unknown error'}`:'Found, not yet checked'} · found {fmt(c.found_at)}</small></span>{c.status==='checked'&&rank>=4&&<button onClick={()=>apply(c)} disabled={busy===c.id}>{busy===c.id?'Applying…':'Apply edition'}</button>}</div>)}{failure&&<p className="ui-l1v2-edition-failure" role="alert">{failure}</p>}</div>
+}
+function QiltFamilyCard({group,rank,onRefresh,candidates}){
+ const members=group.qilt_members||[],[tab,setTab]=useState(0),current=members[Math.min(tab,members.length-1)]
+ return <div className="ui-l1v2-family-group" data-cf-qilt-family><div className="ui-l1v2-family-tabs" role="tablist" aria-label="QILT surveys">{members.map((m,i)=><button key={m.source_id} role="tab" aria-selected={i===tab} className={i===tab?'active':''} onClick={()=>setTab(i)}>{surveyLabel(m)}<Badge value={healthOf(m)}/></button>)}</div>{current&&<SourceCard key={current.source_id} source={{...current,family_group_label:QILT_LABEL}} rank={rank} onRefresh={onRefresh} candidates={candidates}/>}</div>
+}
+
+async function readLayer1(){const{data,error}=await supabase.rpc('admin_read',{p_operation:'layer1_operations',p_args:{}});if(error)throw error;return data||{sources:[]}}
+async function command(operation,args){const{data,error}=await supabase.rpc('layer1_admin_command',{p_operation:operation,p_args:args});if(error)throw error;return data}
+const errorText=v=>{if(!v)return'';if(typeof v==='string')return v;if(v instanceof Error)return v.message;try{return v.message||v.error||JSON.stringify(v)}catch{return String(v)}}
+async function control(body){const{data,error}=await supabase.functions.invoke('layer1-operations-control',{body});if(error){let message=errorText(error)||'Layer 1 operation failed';try{const payload=await error.context?.clone()?.json();message=errorText(payload?.error||payload?.message)||message}catch{}throw new Error(message)}if(data?.error)throw new Error(errorText(data.error)||'Layer 1 operation failed');return data}
+
+function Badge({value,className=''}){return <StatusChip value={String(value||'unknown').toLowerCase()} className={className} label={String(value||'unknown').replaceAll('_',' ')}/>}
+function Summary({icon:Icon,label,value,tone}){return <article className={`ui-l1v2-summary ${tone}`}><span><Icon/></span><div><small>{label}</small><b>{value}</b></div></article>}
+function Filter({label,value,onChange,options}){return <label className="ui-l1v2-filter"><small>{label}</small><span><select value={value} onChange={e=>onChange(e.target.value)}>{options.map(x=><option key={x.value} value={x.value}>{x.label}</option>)}</select><ChevronDown/></span></label>}
+
+function EditionHistory({source}){
+ const editions=Array.isArray(source.editions)?source.editions:[]
+ if(!source.dataset_family_code)return null
+ return <section className="wide ui-l1v2-editions"><h4>Edition history & comparison retention</h4><div className="ui-l1v2-edition-summary"><span><b>{source.dataset_family_label||source.source_label}</b><small>{human(source.edition_strategy||'versioned')} dataset · all accepted editions retained</small></span><Badge value={source.edition_key?`current ${source.edition_key}`:'current'}/><span className="ui-l1v2-retained">{editions.length} edition{editions.length===1?'':'s'}</span></div><div className="ui-l1v2-edition-list">{editions.map(e=><div key={e.source_id} className={e.status==='current'?'current':''}><span><b>{e.edition_key||e.edition_year||'Edition'}</b><small>{e.period_start&&e.period_end?`${e.period_start} → ${e.period_end}`:e.source_label}</small></span><span><b>{n(e.observation_count)}</b><small>observations</small></span><span><Badge value={e.status}/><small>{fmt(e.last_verified_at)}</small></span></div>)}</div><div className="ui-l1v2-edition-note"><BarChart3/><span>Historical editions remain immutable comparison inputs. A newer accepted edition becomes Current; the prior edition is retained rather than overwritten.</span><button onClick={()=>{location.hash='#compare'}}>Open Compare</button></div></section>
+}
+
+function Details({source}){
+ const r=source.latest_run||null
+ return <div className="ui-l1v2-details">
+  <section><h4>Current run</h4><dl><div><dt>Status</dt><dd>{r?<Badge value={r.status}/>:<span>No queued run</span>}</dd></div><div><dt>Stage</dt><dd>{r?stageLabel(r.current_stage):'—'}</dd></div><div><dt>Heartbeat</dt><dd>{fmt(r?.heartbeat_at)}</dd></div><div><dt>Queue / position</dt><dd>{n(source.queue_depth)} / {n(r?.queue_position)}</dd></div><div><dt>Runtime</dt><dd>{seconds(r?.runtime_seconds)}</dd></div><div><dt>Next action</dt><dd>{source.next_action||'—'}</dd></div></dl></section>
+  <section><h4>Reconciliation</h4><div className="ui-l1v2-counts"><span>Created<b>{n(r?.created_count)}</b></span><span>Updated<b>{n(r?.updated_count)}</b></span><span>Unchanged<b>{n(r?.unchanged_count)}</b></span><span>Rejected<b>{n(r?.rejected_count)}</b></span><span>Conflicted<b>{n(r?.conflicted_count)}</b></span><span>Failed<b>{n(r?.failed_count)}</b></span></div><dl><div><dt>Expected / previous</dt><dd>{n(source.last_expected_count)} / {n(source.previous_accepted_count)}</dd></div><div><dt>Variance</dt><dd>{pct(source.variance_percent)} · <Badge value={source.variance_decision}/></dd></div></dl></section>
+  <section><h4>Evidence & provenance</h4><dl><div><dt>Source config</dt><dd>v{n(source.source_config_version)}</dd></div><div><dt>Evidence objects</dt><dd>{n(source.evidence_count)}</dd></div><div><dt>Latest Evidence</dt><dd>{fmt(source.latest_evidence_at)}</dd></div><div><dt>Current hash</dt><dd><code>{shortHash(source.last_source_hash)}</code></dd></div><div><dt>Accepted hash</dt><dd><code>{shortHash(source.previous_accepted_hash)}</code></dd></div></dl><div className="ui-l1v2-detail-links"><button onClick={()=>location.hash='#evidence'}><FileCheck2/>Evidence</button><button onClick={()=>location.hash='#jobs'}><Activity/>Jobs & runs</button></div></section>
+  <section><h4>Schedule</h4><dl><div><dt>Scheduled</dt><dd><Badge value={source.schedule_enabled?'enabled':'disabled'}/></dd></div>{source.auto_ingest!==undefined&&<div><dt>Automatic ingestion</dt><dd>{source.auto_ingest?'On: a changed register within the accepted range is applied automatically':'Off: a person starts each ingestion'}</dd></div>}<div><dt>Cadence</dt><dd>{source.cadence_interval||`${source.ingestion_cadence_days||'—'} days`}</dd></div><div><dt>Next due</dt><dd>{fmt(source.schedule_next_due_at||source.next_ingestion_at)}</dd></div><div><dt>Next verification</dt><dd>{fmt(source.next_verification_at)}</dd></div><div><dt>Last scheduler result</dt><dd><Badge value={source.last_schedule_status||'not_run'}/></dd></div></dl></section>
+  <EditionHistory source={source}/>
+  <section className="wide"><h4>Source health</h4><dl><div><dt>Authority</dt><dd>{source.authority_name||'—'}</dd></div>{(source.edition_key||source.edition_year)&&<div><dt>Current edition</dt><dd>{source.edition_key||source.edition_year}</dd></div>}{source.acquisition_mode&&<div><dt>Acquisition</dt><dd>{human(source.acquisition_mode)}</dd></div>}<div><dt>Source URL</dt><dd>{source.source_url?<a href={source.source_url} target="_blank" rel="noreferrer">{source.source_url}<ExternalLink/></a>:'—'}</dd></div><div><dt>Format</dt><dd>{source.expected_format||'—'}</dd></div><div><dt>Last verified</dt><dd>{fmt(source.last_verified_at)}</dd></div><div><dt>Last successful ingestion</dt><dd>{fmt(source.last_success_at)}</dd></div></dl></section>
+ </div>
+}
+
+// Decision 155: live run status. Progress is measured by the run cursor (items done of items in the register),
+// the run is advanced in the background by the database, and the real error text is shown when a run fails.
+const STAGE_LABELS={queued:'Waiting to start',starting_ingestion:'Starting',resuming_ingestion:'Resuming',batch_running:'Processing a batch',batch_completed_resume_pending:'Batch saved, starting the next',retry_waiting:'Waiting to retry',reconciled:'Completed',source_unchanged:'Source unchanged',failed:'Failed',stuck_recovered:'Recovered after stalling',planning:'Comparing with the last applied register',planned:'Changes found, applying them',no_changes_to_apply:'No changes to apply',planned_dry_run:'Changes found (dry run, nothing applied)'}
+const stageLabel=v=>STAGE_LABELS[String(v||'')]||human(v||'Running')
+const ago=(v,now=Date.now())=>{if(!v)return'—';const s=Math.max(0,Math.round((now-new Date(v).getTime())/1000));if(s<60)return`${s}s ago`;const m=Math.round(s/60);if(m<60)return`${m} min ago`;const h=Math.round(m/60);return h<48?`${h} h ago`:fmt(v)}
+const duration=ms=>{if(!Number.isFinite(ms)||ms<0)return'—';const s=Math.round(ms/1000);if(s<60)return`${s}s`;const m=Math.floor(s/60),r=s%60;if(m<60)return r?`${m} min ${r}s`:`${m} min`;return`${Math.floor(m/60)} h ${m%60} min`}
+const runUnit=(source,r)=>r?.result?.live?.unit||(String(source.country_code).toUpperCase()==='NZ'?'providers':String(source.country_code).toUpperCase()==='AU'&&sourceClass(source)==='regulatory'?'courses':human(source.expected_count_kind||'records').toLowerCase())
+export function runProgress(source,r,now=Date.now()){
+ const total=Number(r?.result?.live?.total||r?.expected_count||source?.last_expected_count||0)||null
+ const done=Math.max(0,Number(r?.resume_cursor||0))
+ const start=Math.max(0,Number(r?.result?.start_cursor||0))
+ const pct=total?Math.max(0,Math.min(100,(done/total)*100)):null
+ const minutes=r?.started_at?Math.max(0,(now-new Date(r.started_at).getTime())/60000):0
+ const rate=minutes>0.2&&done>start?(done-start)/minutes:null
+ const remaining=total&&rate?Math.max(0,(total-done)/rate):null
+ const quietMinutes=r?.heartbeat_at?(now-new Date(r.heartbeat_at).getTime())/60000:null
+ return{total,done,start,pct,rate,remaining,quietMinutes,unit:runUnit(source,r)}
+}
+const PlanLine=({plan})=>plan?<div className="ui-l1v2-live-facts ui-l1v2-plan"><span>Register <b>{n(plan.register_total)}</b></span><span><b>{n(plan.new)}</b> new</span><span><b>{n(plan.changed)}</b> changed</span><span><b>{n(plan.unchanged)}</b> unchanged</span><span><b>{n(plan.departed)}</b> departed</span></div>:null
+// Decision 155 step 6: departures are retired at the end of a run; a large departure waits for a Platform Admin.
+function Departures({run,rank,onRefresh}){
+ const d=run?.result?.departures,[busy,setBusy]=useState(false),[error,setError]=useState('')
+ if(!d)return null
+ const approve=async()=>{const reason=window.prompt(`Approve retiring ${d.to_retire} courses that left the register? Enter a reason (at least 5 characters).`);if(!reason||reason.trim().length<5)return;setBusy(true);setError('');try{const{error:e}=await supabase.rpc('layer1_approve_departures',{p_run_id:run.id,p_reason:reason.trim()});if(e)throw e;await onRefresh?.()}catch(e){setError(errorText(e)||'Approval failed')}finally{setBusy(false)}}
+ if(d.status==='held')return <div className="ui-l1v2-live-warn" data-departures="held"><AlertTriangle/><span>{d.message||`${n(d.to_retire)} courses left the register and need approval before they are retired.`}{rank>=6&&<button className="ui-l1-secondary" onClick={approve} disabled={busy}>{busy?'Approving…':'Approve retirement'}</button>}{error&&<small>{error}</small>}</span></div>
+ if(!Number(d.retired)&&!Number(d.reactivated)&&!Number(d.providers_to_review))return null
+ return <div className="ui-l1v2-live-facts ui-l1v2-plan" data-departures="applied"><span><b>{n(d.retired)}</b> retired</span><span><b>{n(d.reactivated)}</b> reactivated</span>{Number(d.providers_to_review)>0&&<span><b>{n(d.providers_to_review)}</b> providers to review (closure or merger)</span>}</div>
+}
+function RunStatus({source,rank,busy,onRetry,onRefresh}){
+ const r=source.latest_run||null,[now,setNow]=useState(Date.now()),status=String(r?.status||'').toLowerCase(),active=['queued','running'].includes(status)
+ useEffect(()=>{if(!active)return;const t=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(t)},[active])
+ if(!r)return null
+ const p=runProgress(source,r,now),retry=r?.result?.retry,live=r?.result?.live
+ if(active)return <div className="ui-l1v2-live" role="status" aria-live="polite" data-run-state={r.current_stage||status}>
+  <div className="ui-l1v2-live-head"><span><Activity/>{stageLabel(r.current_stage||status)}</span><b>{p.pct===null?'—':pct(p.pct)}</b></div>
+  <div className="ui-l1v2-bar"><i style={{width:`${p.pct??0}%`}}/></div>
+  <div className="ui-l1v2-live-facts"><span><b>{n(p.done)}</b> of <b>{n(p.total)}</b> {p.unit}</span>{p.rate&&r.current_stage!=='retry_waiting'&&<span>~{n(Math.round(p.rate))} {p.unit}/min</span>}{p.remaining!==null&&r.current_stage!=='retry_waiting'&&<span>{p.remaining<1?'under a minute left':`about ${Math.round(p.remaining)} min left`}</span>}<span>updated {ago(r.heartbeat_at,now)}</span></div>
+  {live?.cursor_from!==undefined&&r.current_stage==='batch_running'&&<small className="ui-l1v2-live-note">Working on {p.unit} {n(Number(live.cursor_from)+1)}–{n(Math.min(Number(live.cursor_from)+Number(live.batch_size||0),p.total||Infinity))}.</small>}
+  {r.current_stage==='retry_waiting'&&retry&&<div className="ui-l1v2-live-warn"><AlertTriangle/><span>The source had a temporary problem. Retrying automatically {retry.next_at?`at ${fmtTime(retry.next_at)}`:'shortly'} (attempt {retry.attempt} of {retry.max}).<small>{retry.last_error}</small></span></div>}
+  {r.current_stage!=='retry_waiting'&&p.quietMinutes!==null&&p.quietMinutes>3&&<div className="ui-l1v2-live-warn"><Clock3/><span>No update for {Math.round(p.quietMinutes)} min. The background driver restarts quiet runs automatically every minute.</span></div>}
+  <PlanLine plan={r?.result?.plan}/>
+  <small className="ui-l1v2-live-note">Runs in the background. You can close this page; progress is saved after every batch.</small>
+ </div>
+ if(['failed','blocked'].includes(status))return <div className="ui-l1v2-live failed" role="alert" data-run-state="failed">
+  <div className="ui-l1v2-live-head"><span><AlertTriangle/>Last run {status} {ago(r.completed_at||r.heartbeat_at,now)}</span><b>{n(p.done)} of {n(p.total)} {p.unit}</b></div>
+  <p className="ui-l1v2-live-error">{r.error_text||'The run stopped without an error message.'}</p>
+  {rank>=6&&<button className="ui-l1-secondary" onClick={onRetry} disabled={!!busy}><RotateCcw/>{busy==='retry'?'Resuming…':`Resume from ${p.unit==='providers'||p.unit==='courses'?`${p.unit.slice(0,-1)} `:''}${n(p.done+1)}`}</button>}
+ </div>
+ if(['completed','no_change'].includes(status)){const took=r.started_at&&r.completed_at?new Date(r.completed_at)-new Date(r.started_at):NaN
+  return <div className="ui-l1v2-live done" data-run-state={status}><div className="ui-l1v2-live-head"><span><CheckCircle2/>{status==='no_change'?'Source unchanged':'Last run completed'} {ago(r.completed_at,now)}</span><b>{duration(took)}</b></div>
+  <div className="ui-l1v2-live-facts"><span><b>{n(r?.result?.plan?r.result.plan.to_apply:p.total)}</b> {p.unit}{r?.result?.plan?' applied':''}</span><span><b>{n(r.created_count)}</b> new</span><span><b>{n(r.updated_count)}</b> changed</span><span><b>{n(r.unchanged_count)}</b> unchanged</span>{Number(r.conflicted_count)>0&&<span><b>{n(r.conflicted_count)}</b> conflicts</span>}</div><PlanLine plan={r?.result?.plan}/><Departures run={r} rank={rank} onRefresh={onRefresh}/></div>}
+ return null
+}
+
+function SourceCard({source,rank,onRefresh,candidates=[]}){
+ const[busy,setBusy]=useState(''),[error,setError]=useState(''),[details,setDetails]=useState(false),[menu,setMenu]=useState(false),[selectedRankingYear,setSelectedRankingYear]=useState(()=>Number(source.edition_year)||source.ranking_supported_years?.[0]||'')
+ const run=async(action,fn)=>{setBusy(action);setError('');try{await fn();await onRefresh()}catch(e){setError(e.message||String(e))}finally{setBusy('');setMenu(false)}}
+ const validate=()=>run('validate',()=>control({action:'validate',source_id:source.source_id}))
+ const queue=mode=>{const warning=mode==='apply'&&source.variance_decision==='warn';if(warning&&!window.confirm(`This ${source.country_code} source has a record-count variance warning. Confirm that you reviewed it and want to continue.`))return;return run(mode,()=>control({action:'run',source_id:source.source_id,mode,reason:`Layer 1 v2 governed ${mode} requested from operations`,acknowledge_warning:warning,idempotency_key:`run:${source.source_id}:${mode}:${Date.now()}`}))}
+ const togglePause=()=>run('pause',()=>command('set_pause',{source_id:source.source_id,paused:!source.paused,reason:`Layer 1 v2 ${source.paused?'resume':'pause'} source processing`}))
+ const retry=()=>run('retry',()=>control({action:'run',source_id:source.source_id,mode:source.latest_run?.mode||'dry_run',offset:source.latest_run?.resume_cursor||0,retry_of_run_id:source.latest_run?.id,idempotency_key:`retry:${source.latest_run?.id}:${Date.now()}`,reason:'Layer 1 v2 governed retry/resume'}))
+ const recover=()=>run('recover',()=>command('recover_stuck',{source_id:source.source_id,run_id:source.latest_run?.id,reason:'Layer 1 v2 governed stuck-run recovery'}))
+ const openSettings=()=>{location.hash=`#administration?section=layer1-sources&country=${encodeURIComponent(source.country_code||'')}&source_id=${encodeURIComponent(source.source_id||'')}`}
+ const r=source.latest_run||null,status=healthOf(source),klass=sourceClass(source),canRetry=r&&['failed','blocked'].includes(r.status),canRecover=Boolean(r?.stuck&&r?.status==='running'),isRanking=isRankingSource(source),title=source.family_group_label?`${source.family_group_label} · ${surveyLabel(source)}`:(source.dataset_family_label||source.source_label),edition=source.edition_key||source.edition_year,rankingYears=source.ranking_supported_years||[]
+ const Icon=klass==='statistics'?BarChart3:GraduationCap
+ return <article className="ui-l1v2-card" data-country={source.country_code} data-source-id={source.source_id}>
+  <div className="ui-l1v2-card-head"><span className={`ui-l1v2-source-icon ${klass}`}><Icon/></span><div className="ui-l1v2-card-title"><h3>{title}</h3><div><Badge value={klass}/>{edition&&<Badge value={`current ${edition}`}/>} {source.dataset_family_code&&Number(source.retained_edition_count||0)>1&&<Badge value={`${source.retained_edition_count} editions`}/>} {isRanking&&<Badge value={`${source.source_system} ${source.edition_year||''}`}/>}{isRanking&&(source.ranking_pending_years||[]).map(y=><Badge key={y} value={`${y} pending`}/>)}<Badge value={status}/></div></div><div className="ui-l1v2-menu-wrap"><button className="ui-l1v2-icon-button" aria-label={`More actions for ${source.source_label}`} onClick={()=>setMenu(x=>!x)}><MoreVertical/></button>{menu&&<div className="ui-l1v2-menu">{rank>=4&&<button onClick={validate}><ShieldCheck/>Validate source</button>}{rank>=6&&<button onClick={()=>queue('dry_run')}><Play/>Validation dry run</button>}{rank>=6&&<button onClick={togglePause}>{source.paused?<Play/>:<Pause/>}{source.paused?'Resume schedule':'Pause source'}</button>}{canRetry&&<button onClick={retry}><RotateCcw/>Retry / resume</button>}{canRecover&&<button onClick={recover}><AlertTriangle/>Recover stuck run</button>}{isRanking&&rank>=4&&<button onClick={()=>{location.hash=`#administration?section=sources-imports&system=${rankingCode(source)}&year=${encodeURIComponent(selectedRankingYear||source.edition_year||'')}`}}><FileCheck2/>Upload selected edition</button>}{rank>=6&&<button onClick={openSettings}><Settings2/>Source settings</button>}</div>}</div></div>
+  {error&&<div className="ui-l1v2-error" role="alert">{error}</div>}
+  <NewEditions source={source} candidates={candidates} rank={rank} onRefresh={onRefresh}/>
+  {isRanking&&rankingYears.length>0&&<div className="ui-l1v2-ranking-edition"><label><small>Edition</small><select value={selectedRankingYear} onChange={e=>setSelectedRankingYear(Number(e.target.value))}>{rankingYears.map(y=><option key={y} value={y}>{y}{y===rankingYears[0]?' · current':''}</option>)}</select></label><button onClick={()=>{location.hash=`#administration?section=sources-imports&system=${rankingCode(source)}&year=${encodeURIComponent(selectedRankingYear)}`}}><FileCheck2/>Upload {selectedRankingYear}</button><span>One dataset family · historical editions retained</span></div>}
+  <div className="ui-l1v2-card-body">
+   <div className="ui-l1v2-key"><Database/><span><b>{n(source.last_expected_count??r?.expected_count)}</b><small>{human(source.expected_count_kind||'records')}</small></span></div>
+   <div className="ui-l1v2-key"><FileCheck2/><span><b>{n(source.evidence_count)}</b><small>Evidence</small></span></div>
+   <div className="ui-l1v2-runmeta"><span><Clock3/><small>Last run</small><b>{fmt(source.last_success_at||r?.finished_at||r?.started_at)}</b></span><span><CalendarClock/><small>Next run</small><b>{fmt(source.schedule_next_due_at||source.next_ingestion_at)}</b></span></div>
+  </div>
+  <RunStatus source={source} rank={rank} busy={busy} onRetry={retry} onRefresh={onRefresh}/>
+  <div className="ui-l1v2-card-actions">{rank>=6&&!['queued','running'].includes(String(r?.status||'').toLowerCase())&&<button className="ui-l1-secondary" onClick={()=>queue('apply')} disabled={!!busy||source.paused||['blocked','failed'].includes(source.verification_status)}><Play/>{busy==='apply'?'Starting…':'Run now'}</button>}{['queued','running'].includes(String(r?.status||'').toLowerCase())&&<button className="ui-l1-secondary" onClick={()=>location.hash='#jobs'}><Activity/>View run</button>}<button className="ui-l1-primary" onClick={()=>setDetails(x=>!x)}>{details?'Hide details':'Details'}<ChevronDown className={details?'rotated':''}/></button></div>
+  {details&&<Details source={source}/>}
+ </article>
+}
+
+function SourceSettingsCard({source,onRefresh}){
+ const[busy,setBusy]=useState(''),[error,setError]=useState(''),[saved,setSaved]=useState(''),[selectedRankingYear,setSelectedRankingYear]=useState(()=>Number(source.edition_year)||source.ranking_supported_years?.[0]||''),[rankingImports,setRankingImports]=useState([])
+ const[form,setForm]=useState({source_url:source.source_url||'',authority_name:source.authority_name||'',authority_domains:(source.authority_domains||[]).join(', '),expected_format:source.expected_format||'',verification_cadence_days:source.verification_cadence_days||1,ingestion_cadence_days:source.ingestion_cadence_days||7,variance_warn_percent:source.variance_warn_percent||5,variance_block_percent:source.variance_block_percent||20,min_expected_records:source.min_expected_records??'',max_expected_records:source.max_expected_records??'',reason:'Layer 1 v2 governed source configuration update'})
+ const loadRankingImports=async()=>{if(!isRankingSource(source))return;try{const r=await api.rankingImports({limit:50});setRankingImports(r?.items||[])}catch{}}
+ useEffect(()=>{loadRankingImports()},[source.source_id])
+ useEffect(()=>setForm({source_url:source.source_url||'',authority_name:source.authority_name||'',authority_domains:(source.authority_domains||[]).join(', '),expected_format:source.expected_format||'',verification_cadence_days:source.verification_cadence_days||1,ingestion_cadence_days:source.ingestion_cadence_days||7,variance_warn_percent:source.variance_warn_percent||5,variance_block_percent:source.variance_block_percent||20,min_expected_records:source.min_expected_records??'',max_expected_records:source.max_expected_records??'',reason:'Layer 1 v2 governed source configuration update'}),[source.source_id,source.updated_at])
+ const run=async(action,fn)=>{setBusy(action);setError('');setSaved('');try{await fn();await onRefresh();setSaved(action==='save'?'Saved. The next run uses these settings.':'Action completed.')}catch(e){setError(e.message||String(e))}finally{setBusy('')}}
+ const save=()=>run('save',()=>command('save_source',{source_id:source.source_id,source_url:form.source_url,authority_name:form.authority_name,authority_domains:form.authority_domains.split(',').map(x=>x.trim()).filter(Boolean),expected_format:form.expected_format,expected_count_kind:source.expected_count_kind||'records',active:true,paused:source.paused,verification_cadence_days:Number(form.verification_cadence_days),ingestion_cadence_days:Number(form.ingestion_cadence_days),variance_warn_percent:Number(form.variance_warn_percent),variance_block_percent:Number(form.variance_block_percent),min_expected_records:form.min_expected_records===''?null:Number(form.min_expected_records),max_expected_records:form.max_expected_records===''?null:Number(form.max_expected_records),reason:form.reason}))
+ const dryRun=()=>isRanking?run('dry',()=>control({action:'validate',source_id:source.source_id,edition_year:Number(selectedRankingYear)})):run('dry',()=>control({action:'run',source_id:source.source_id,mode:'dry_run',reason:'Layer 1 settings governed validation dry run'}))
+ const validate=()=>run('validate',()=>control({action:'validate',source_id:source.source_id,edition_year:isRanking?Number(selectedRankingYear):undefined}))
+ const uploadRanking=async file=>{if(!file)return;setBusy('upload');setError('');setSaved('');try{const systemCode=rankingCode(source),publisherName=systemCode==='the_wur'?'Times Higher Education':'QS Quacquarelli Symonds';const r=await api.uploadRankingPublisherFile({systemCode,editionYear:Number(selectedRankingYear),publisherName,sourceUrl:source.source_url,methodologyUrl:'',licensingNote:'Authorised publisher file obtained for StudySearch ingestion.',revisionNote:'Layer 1 dataset-family edition upload',file});const importId=r?.import_id;if(importId){await api.rankingPublisherControl({action:'validate',importId});setSaved(`Edition ${selectedRankingYear} Evidence registered and parsed/validated. A Pipeline Job was recorded.`)}else setSaved(r?.duplicate?`Edition ${selectedRankingYear} already registered; existing Evidence retained.`:`Edition ${selectedRankingYear} uploaded and registered as private Evidence.`);await Promise.all([onRefresh(),loadRankingImports()])}catch(e){setError(e.message||String(e))}finally{setBusy('')}}
+ const klass=sourceClass(source),Icon=klass==='statistics'?BarChart3:GraduationCap,isRanking=isRankingSource(source),rankingYears=source.ranking_supported_years||[]
+ return <article className="ui-l1s-card" data-source-id={source.source_id}>
+  <div className="ui-l1s-head"><div className={"ui-l1s-source-icon "+klass}><Icon/></div><div className="ui-l1s-title"><small>{source.country_name} · {source.country_code}</small><h3>{source.source_label}</h3><p>{source.authority_name}</p><div className="ui-l1s-badges"><Badge value={klass}/><Badge value={source.source_health}/><Badge value={source.verification_status}/></div></div><div className="ui-l1s-source-meta"><span><small>Format</small><b>{source.expected_format||'—'}</b></span><span><small>Last verified</small><b>{fmt(source.last_verified_at)}</b></span></div></div>
+  {isRanking&&rankingYears.length>0&&<div className="ui-l1s-ranking-edition"><label><small>Ranking edition</small><select value={selectedRankingYear} onChange={e=>setSelectedRankingYear(Number(e.target.value))}>{rankingYears.map(y=><option key={y} value={y}>{y}{y===rankingYears[0]?' · current':''}</option>)}</select></label><label className="ui-l1s-inline-upload"><FileCheck2/>{busy==='upload'?'Uploading…':`Upload ${selectedRankingYear}`}<input type="file" disabled={!!busy} accept={String(source.source_system).toUpperCase()==='THE'?'.json,.txt,.csv,.xlsx':'.csv,.xlsx'} onChange={async e=>{const file=e.target.files?.[0];await uploadRanking(file);e.target.value=''}}/></label><button onClick={()=>{location.hash=`#administration?section=sources-imports&system=${rankingCode(source)}&year=${encodeURIComponent(selectedRankingYear)}`}}>Advanced import</button><span>{String(source.source_system).toUpperCase()==='THE'?'Native THE JSON/TXT or compact CSV':'Authorised QS CSV/XLSX'} · one family, multi-year Evidence</span>{(()=>{const system=rankingCode(source),imp=rankingImports.find(x=>x.system_code===system&&Number(x.edition_year)===Number(selectedRankingYear));return imp?<b className={"ui-l1s-import-state "+imp.status}>Evidence: {human(imp.status)} · {imp.original_filename}</b>:<b className="ui-l1s-import-state missing">No Evidence registered for {selectedRankingYear}</b>})()}</div>}
+  {error&&<div className="ui-l1v2-error">{error}</div>}{saved&&<div className="ui-l1s-saved"><CheckCircle2/>{saved}</div>}
+  {source.dataset_family_code&&<><div className="ui-l1s-section-label"><BarChart3/><div><b>Edition lifecycle</b><span>Stable dataset family with a Current edition and retained comparison history.</span></div></div><div className="ui-l1s-edition-lifecycle"><span><small>Dataset family</small><b>{source.dataset_family_label}</b></span><span><small>Current edition</small><b>{source.edition_key||source.edition_year||'—'}</b></span><span><small>Strategy</small><b>{human(source.edition_strategy||'versioned')}</b></span><span><small>Retained editions</small><b>{n(source.retained_edition_count||1)}</b></span><p>Newer accepted editions roll forward automatically after parser/source qualification. Prior editions, Evidence and observations are retained for comparison.</p></div></>}
+  <div className="ui-l1s-section-label"><Settings2/><div><b>Source & authority</b><span>Publisher location, identity and parser expectations.</span></div></div>
+  <div className="ui-l1s-form ui-l1s-form-source"><label>Source URL<input value={form.source_url} onChange={e=>setForm({...form,source_url:e.target.value})}/></label><label>Authority name<input value={form.authority_name} onChange={e=>setForm({...form,authority_name:e.target.value})}/></label><label>Approved authority domains<input value={form.authority_domains} onChange={e=>setForm({...form,authority_domains:e.target.value})}/></label><label>Expected format<input value={form.expected_format} onChange={e=>setForm({...form,expected_format:e.target.value})}/></label></div>
+  <div className="ui-l1s-section-label"><CalendarClock/><div><b>Cadence & guardrails</b><span>How each source is checked, how often it is loaded and how big a change is accepted without review.</span></div></div>
+  <div className="ui-l1s-schedule" data-l1-schedule={scheduleOf(source)}><label><small>Schedule</small><select value={scheduleOf(source)} disabled={!!busy} onChange={e=>{const v=e.target.value;if(v==='custom')return;const reason=window.prompt(`Set the schedule of ${source.source_label} to ${v}?\n\nReason (kept in the log):`);if(!reason||reason.trim().length<4)return;run('schedule',async()=>{const{error}=await supabase.rpc('admin_layer1_schedule',{p_source_id:source.source_id,p_schedule:v,p_reason:reason.trim()});if(error)throw error})}}>{scheduleOf(source)==='custom'&&<option value="custom">{scheduleDays(source)?`Every ${scheduleDays(source)} days`:'Not set'}</option>}<option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option><option value="manual">Manual (upload or run by hand)</option></select></label><span>{scheduleOf(source)==='manual'?'Checked monthly for status only; never loaded automatically.':'Checked on this schedule; a changed file within the accepted range is loaded automatically.'}</span></div>
+  <div className="ui-l1s-form ui-l1s-form-guardrails"><label>Verification cadence <span>days</span><input type="number" min="1" value={form.verification_cadence_days} onChange={e=>setForm({...form,verification_cadence_days:e.target.value})}/></label><label>Ingestion cadence <span>days</span><input type="number" min="1" value={form.ingestion_cadence_days} onChange={e=>setForm({...form,ingestion_cadence_days:e.target.value})}/></label><label>Variance warning <span>%</span><input type="number" min="0" max="100" value={form.variance_warn_percent} onChange={e=>setForm({...form,variance_warn_percent:e.target.value})}/></label><label>Variance block <span>%</span><input type="number" min="0" max="100" value={form.variance_block_percent} onChange={e=>setForm({...form,variance_block_percent:e.target.value})}/></label><label>Minimum expected records<input type="number" min="0" value={form.min_expected_records} onChange={e=>setForm({...form,min_expected_records:e.target.value})}/></label><label>Maximum expected records<input type="number" min="0" value={form.max_expected_records} onChange={e=>setForm({...form,max_expected_records:e.target.value})}/></label><label className="wide">Governance reason<input value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})}/></label></div>
+  <div className="ui-l1s-footer"><div className="ui-l1s-maintenance"><ShieldCheck/><div><b>Safe maintenance boundary</b><span>Checks and trial runs never delete accepted data, stored source files or earlier versions.</span></div></div><div className="ui-l1s-actions">{isRanking&&<button onClick={()=>{location.hash=`#administration?section=sources-imports&system=${rankingCode(source)}&year=${encodeURIComponent(selectedRankingYear||source.edition_year||'')}`}}><FileCheck2/>Upload edition</button>}<button onClick={validate} disabled={!!busy}><ShieldCheck/>{busy==='validate'?'Validating…':'Validate'}</button><button onClick={dryRun} disabled={!!busy}><Play/>{busy==='dry'?'Starting…':'Dry run'}</button><button className="ui-l1-primary" onClick={save} disabled={!!busy}><Database/>{busy==='save'?'Saving…':'Save configuration'}</button></div></div>
+ </article>
+}
+
+export function Layer1SourceSettings(){
+ const[context,setContext]=useState(null),[data,setData]=useState({sources:[]}),[busy,setBusy]=useState(false),[error,setError]=useState(''),[country,setCountry]=useState(()=>new URLSearchParams(location.hash.split('?')[1]||'').get('country')||'AU')
+ const load=async()=>{setBusy(true);setError('');try{const[c,d]=await Promise.all([api.context(),readLayer1()]);setContext(c||null);setData(d||{sources:[]})}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
+ useEffect(()=>{load()},[])
+ const rows=data.sources||[],countries=useMemo(()=>[...new Map(rows.map(x=>[x.country_code,{value:x.country_code,label:x.country_name||x.country_code}])).values()],[rows]),filtered=useMemo(()=>collapseRankingFamilies(rows.filter(x=>!country||x.country_code===country)),[rows,country]),rank=Number(context?.role_rank||0)
+ if(rank>0&&rank<6)return <div className="ui-l1s-state"><ShieldCheck/><h3>Platform Admin only</h3><p>Only a Platform Admin can change Layer 1 source settings.</p></div>
+ return <><section className="ui-l1s-shell">
+  <div className="ui-l1s-toolbar"><div className="ui-l1s-toolbar-title"><span><Database/></span><div><small>Layer 1 · Administration</small><h2>Layer 1 source configuration</h2><p>Configure authority URLs, parser metadata, verification guardrails and cadence. Routine ingestion stays in Layer 1 Operations.</p></div></div><div className="ui-l1s-toolbar-actions"><Filter label="Country" value={country} onChange={setCountry} options={[{value:'',label:'All countries'},...countries]}/><button onClick={load} disabled={busy}><RefreshCw/>{busy?'Refreshing…':'Refresh'}</button></div></div>
+  <div className="ui-l1s-context"><div><ShieldCheck/><span><b>Platform Admin configuration</b><small>Each change is kept as a new version and used from the next run.</small></span></div><b>{filtered.length} source{filtered.length===1?'':'s'}</b></div>
+  {error&&<div className="ui-l1v2-error">{error}</div>}
+  <div className="ui-l1s-grid">{filtered.map(s=><SourceSettingsCard key={s.source_id} source={s} onRefresh={load}/>)}{!filtered.length&&<div className="ui-l1v2-empty"><Database/><b>No Layer 1 sources match this country.</b><span>Register or onboard the source before configuring it here.</span></div>}</div>
+ </section></>
+}
+
+export function Layer1Operations({embedded=false}){
+ const[open,setOpen]=useState(embedded),[context,setContext]=useState(null),[data,setData]=useState({sources:[]}),[busy,setBusy]=useState(false),[error,setError]=useState(''),[country,setCountry]=useState('AU'),[dataset,setDataset]=useState('all'),[status,setStatus]=useState('all')
+ const rows=data?.sources||[]
+ const[candidates,setCandidates]=useState([])
+ const load=async()=>{setBusy(true);setError('');try{const[c,d,k]=await Promise.all([api.context(),readLayer1(),supabase.rpc('layer1_statistics_candidates_read').then(r=>r.error?[]:(r.data||[])).catch(()=>[])]);setContext(c||null);setData(d||{sources:[]});setCandidates(Array.isArray(k)?k:[])}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
+ useEffect(()=>{if(embedded){setOpen(true);load();return}const sync=()=>{const route=location.hash.replace(/^#/,'').split('?')[0];if(route==='settings'){location.hash='#layer-1-regulatory';return}if(!['layer-1-regulatory','layer-1-authority','layer-1-operations'].includes(route))return;setOpen(true);load()};addEventListener('hashchange',sync);sync();return()=>removeEventListener('hashchange',sync)},[embedded])
+ useEffect(()=>{if(!open)return;const timer=setInterval(()=>{if(rows.some(s=>['queued','running'].includes(s.latest_run?.status)))load()},4000);return()=>clearInterval(timer)},[open,rows.map(s=>s.latest_run?.status).join('|')])
+ useEffect(()=>{if(!rows.length)return;const codes=new Set(rows.map(x=>x.country_code));if(country&&!codes.has(country))setCountry(rows[0]?.country_code||'')},[rows.length])
+ const rank=Number(context?.role_rank||0)
+ const countries=useMemo(()=>[...new Map(rows.map(x=>[x.country_code,{value:x.country_code,label:x.country_name||x.country_code}])).values()],[rows])
+ const currentRows=useMemo(()=>groupQilt(collapseRankingFamilies(rows)),[rows])
+ const scoped=useMemo(()=>currentRows.filter(x=>(!country||x.country_code===country)&&(dataset==='all'||sourceClass(x)===dataset)&&(status==='all'||healthOf(x)===status)),[currentRows,country,dataset,status])
+ const countryRows=useMemo(()=>currentRows.filter(x=>!country||x.country_code===country),[currentRows,country])
+ const counts=useMemo(()=>({healthy:countryRows.filter(x=>healthOf(x)==='healthy').length,running:countryRows.filter(x=>healthOf(x)==='running').length,attention:countryRows.filter(x=>healthOf(x)==='attention').length,due:countryRows.filter(x=>healthOf(x)==='due').length}),[countryRows])
+ if(!open)return null
+ const close=()=>{if(embedded)return;setOpen(false);location.hash='#dashboard'}
+ return <div className={embedded?'ui-l1v2-page':'ui-l1v2-backdrop'} role={embedded?undefined:'presentation'} onMouseDown={e=>{if(!embedded&&e.target===e.currentTarget)close()}}><section className="ui-l1v2-shell" role={embedded?'region':'dialog'} aria-modal={embedded?undefined:'true'} aria-labelledby={embedded?undefined:'l1v2-title'} aria-label={embedded?'Layer 1 Operations':undefined}><header className="ui-cf-layer-header ui-cf-layer-header-l1" data-layer-header="1"><div>{!embedded&&<><span>Layer 1 · authority & statistics</span><h1 id="l1v2-title">Layer 1 Operations</h1></>}{!embedded&&<p>Official registers, statistics and rankings by country: health, schedule and the files loaded.</p>}</div>{!embedded&&<button onClick={close} aria-label="Close Layer 1"><X/></button>}</header>
+ {rank>0&&rank<3?<main><div className="ui-l1v2-state"><ShieldCheck/><h2>Not authorised</h2><p>Your assigned StudySearch role does not permit Layer 1 operations.</p></div></main>:<main>
+  <div className="ui-l1v2-controls"><div className="ui-l1v2-filters"><Filter label="Country" value={country} onChange={setCountry} options={countries.some(c=>c.value===country)?[...countries]:[{value:country,label:country==="AU"?"Australia":country},...countries]}/><Filter label="Dataset" value={dataset} onChange={setDataset} options={[{value:'all',label:'All'},{value:'regulatory',label:'Regulatory'},{value:'statistics',label:'Statistics'}]}/><Filter label="Status" value={status} onChange={setStatus} options={[{value:'all',label:'All'},{value:'healthy',label:'Healthy'},{value:'running',label:'Running'},{value:'attention',label:'Attention'},{value:'due',label:'Due'},{value:'paused',label:'Paused'}]}/></div><button className="ui-l1v2-refresh" onClick={load} disabled={busy}><RefreshCw/>{busy?'Refreshing…':'Refresh'}</button></div>
+  {error&&<div className="ui-l1v2-error" role="alert">{error}</div>}
+  <div className="ui-l1v2-summary-grid"><Summary icon={ShieldCheck} label="Healthy" value={counts.healthy} tone="healthy"/><Summary icon={Play} label="Running" value={counts.running} tone="running"/><Summary icon={AlertTriangle} label="Attention" value={counts.attention} tone="attention"/><Summary icon={Clock3} label="Due" value={counts.due} tone="due"/></div>
+  <div className="ui-l1v2-section-head"><div><h2>Dataset families</h2><p>{countries.find(x=>x.value===country)?.label||'All countries'} · {dataset==='all'?'All datasets':human(dataset)} · latest edition operational, prior editions retained</p></div><span>{scoped.length} {scoped.length===1?'family':'families'}</span></div>
+  <div className="ui-l1v2-cards">{scoped.map(s=>s.qilt_group?<QiltFamilyCard key={s.source_id} group={s} rank={rank} onRefresh={load} candidates={candidates}/>:<SourceCard key={s.source_id} source={s} rank={rank} onRefresh={load} candidates={candidates}/>)}{!scoped.length&&<div className="ui-l1v2-empty"><Database/><b>No datasets match these filters.</b><span>New country/statistical sources will appear here automatically when registered in Layer 1.</span></div>}</div>
+  <section className="ui-l1v2-alerts"><h2>Operational alerts</h2><div className={counts.attention?'attention':'ok'}>{counts.attention?<AlertTriangle/>:<CheckCircle2/>}<div><b>{counts.attention?`${counts.attention} source${counts.attention===1?'':'s'} require attention.`:`No critical blockers. ${counts.running} source${counts.running===1?'':'s'} currently running.`}</b><span>{counts.attention?'Open the affected dataset details before the next run.':'Nothing in Layer 1 needs action.'}</span></div></div></section>
+ </main>}</section>
+ </div>
+}
+
+// v2.15.246 (Platform Admin bugs 11/10-3, Feature 2): Layer 1 › Sources. One plain list of every register, statistics file and
+// ranking, replacing the Runs cards, the Source settings cards and Manual batch runs. Each row shows pills (country, type,
+// health, last run, schedule); opening a row shows the facts, the live run, what is wrong when it is unhealthy, and the same
+// settings that were on Source settings, editable in place. "+ Add source" opens the six-step induction wizard (Layer1InductionWizard.jsx); the Platform Admin activates, and the source is saved paused.
+const TYPE_LABEL={regulatory:'Register',statistics:'Statistics'}
+const HEALTH_TONE={healthy:'success',running:'info',due:'violet',paused:'neutral',attention:'danger'}
+const HEALTH_LABEL={healthy:'Healthy',running:'Running',due:'Due',paused:'Paused',attention:'Needs attention'}
+const RUN_TONE={completed:'success',no_change:'success',running:'info',queued:'info',failed:'danger',blocked:'danger'}
+const SCHEDULE_LABEL={daily:'Daily',weekly:'Weekly',monthly:'Monthly',quarterly:'Quarterly',yearly:'Yearly',manual:'Manual',custom:'Custom'}
+const isRetired=s=>String(s.source_status||'').toLowerCase()==='retired'
+const healthReason=s=>{const h=healthOf(s);if(h!=='attention')return'';const r=s.latest_run;if(r&&['failed','blocked'].includes(String(r.status).toLowerCase()))return r.error_text||'The last run stopped.';if(String(s.verification_status).toLowerCase()==='failed'||String(s.source_health).toLowerCase()==='unhealthy')return s.verification_message||s.last_error||'The last check failed.';if(!s.last_success_at&&!r)return'Never run.';return s.verification_message||s.last_error||human(s.source_health)}
+const settingsForm=s=>({source_url:s.source_url||'',authority_name:s.authority_name||'',authority_domains:(s.authority_domains||[]).join(', '),expected_format:s.expected_format||'',schedule:scheduleOf(s),verification_cadence_days:s.verification_cadence_days||1,ingestion_cadence_days:s.ingestion_cadence_days||7,variance_warn_percent:s.variance_warn_percent??5,variance_block_percent:s.variance_block_percent??20,min_expected_records:s.min_expected_records??'',max_expected_records:s.max_expected_records??'',reason:''})
+
+// Wave 2 addenda: the parser badge words
+export const PARSER_LABEL={hardcoded:'Hardcoded parser',ai_built:'AI-built parser',none:'No parser yet'}
+const PARSER_TONE={hardcoded:'neutral',ai_built:'violet',none:'warning'}
+const PARSER_HELP={hardcoded:'Read by a reader written in code',ai_built:'Read from a parser spec the AI mapper proposed and a person reviewed',none:'Waits for a reader or a parser spec'}
+function SourceRowBody({source,rank,onRefresh,candidates,parser}){
+ const[busy,setBusy]=useState(''),[error,setError]=useState(''),[saved,setSaved]=useState(''),[form,setForm]=useState(()=>settingsForm(source))
+ useEffect(()=>setForm(settingsForm(source)),[source.source_id,source.updated_at])
+ const act=async(name,fn,done)=>{setBusy(name);setError('');setSaved('');try{await fn();await onRefresh();if(done)setSaved(done)}catch(e){setError(errorText(e)||String(e))}finally{setBusy('')}}
+ const r=source.latest_run||null,active=['queued','running'].includes(String(r?.status||'').toLowerCase()),isRanking=isRankingSource(source),reason=healthReason(source)
+ const runNow=()=>{const warning=source.variance_decision==='warn';if(warning&&!window.confirm(`${source.source_label} has a record-count warning. Confirm you reviewed it and want to run it.`))return;act('run',()=>control({action:'run',source_id:source.source_id,mode:'apply',reason:'Layer 1 › Sources: Run now',acknowledge_warning:warning,idempotency_key:`run:${source.source_id}:apply:${Date.now()}`}),'Run started. Progress shows here and in Scheduled jobs › Jobs.')}
+ // SS-020 follow-up (Option A, Platform Admin direction 4 Nov 2026 10:00 §8): a register with a Layer 1 refresh policy keeps the Pipeline
+ // Operator and PIM Admin controls Refresh schedules gave them: Schedule (not Manual) and Run now, through the same server controls, reason
+ // of at least 5 characters, and audit. The Platform Admin's controls are unchanged.
+ const hasPolicy=Boolean(source.cadence_interval)
+ const askWhy=label=>{const why=window.prompt(`${label}\n\nReason (at least 5 characters, kept in the log):`);return why&&why.trim().length>=5?why.trim():''}
+ const policyRun=()=>{const why=askWhy(`Run ${source.source_label} now?`);if(!why)return;act('run',async()=>{const{error:e}=await supabase.rpc('admin_layer1_policy_run_v1',{p_source_id:source.source_id,p_reason:why});if(e)throw e},'Run requested. It is queued and the schedule is unchanged.')}
+ const policySchedule=v=>{if(!v||v==='custom'||v==='manual')return;const why=askWhy(`Set the schedule of ${source.source_label} to ${SCHEDULE_LABEL[v]}?`);if(!why)return;act('schedule',async()=>{const{error:e}=await supabase.rpc('admin_layer1_schedule',{p_source_id:source.source_id,p_schedule:v,p_reason:why});if(e)throw e},'Schedule saved. The next run moved with it.')}
+ const validate=()=>act('validate',()=>control({action:'validate',source_id:source.source_id}),'Checked.')
+ const pause=()=>{const why=window.prompt(`${source.paused?'Resume':'Pause'} ${source.source_label}?\n\nReason (kept in the log):`);if(!why||why.trim().length<4)return;act('pause',()=>command('set_pause',{source_id:source.source_id,paused:!source.paused,reason:why.trim()}),source.paused?'Resumed.':'Paused.')}
+ const retry=()=>act('retry',()=>control({action:'run',source_id:source.source_id,mode:r?.mode||'apply',offset:r?.resume_cursor||0,retry_of_run_id:r?.id,idempotency_key:`retry:${r?.id}:${Date.now()}`,reason:'Layer 1 › Sources: resume'}),'Resumed.')
+ const recover=()=>act('recover',()=>command('recover_stuck',{source_id:source.source_id,run_id:r?.id,reason:'Layer 1 › Sources: recover a stalled run'}),'Recovered.')
+ const save=()=>{if(form.reason.trim().length<(hasPolicy?5:4)){setError(`Enter a reason of at least ${hasPolicy?5:4} characters (kept in the log).`);return}
+  act('save',async()=>{
+   await command('save_source',{source_id:source.source_id,source_url:form.source_url,authority_name:form.authority_name,authority_domains:form.authority_domains.split(',').map(x=>x.trim()).filter(Boolean),expected_format:form.expected_format,expected_count_kind:source.expected_count_kind||'records',active:true,paused:source.paused,verification_cadence_days:Number(form.verification_cadence_days),ingestion_cadence_days:Number(form.ingestion_cadence_days),variance_warn_percent:Number(form.variance_warn_percent),variance_block_percent:Number(form.variance_block_percent),min_expected_records:form.min_expected_records===''?null:Number(form.min_expected_records),max_expected_records:form.max_expected_records===''?null:Number(form.max_expected_records),reason:form.reason.trim()})
+   if(form.schedule!=='custom'&&form.schedule!==scheduleOf(source)){const{error:e}=await supabase.rpc('admin_layer1_schedule',{p_source_id:source.source_id,p_schedule:form.schedule,p_reason:form.reason.trim()});if(e)throw e}
+  },'Saved. The next run uses these settings.')}
+ // Wave 2 addenda: ask for the parser spec to be inferred again when a reader has flagged that the layout changed (recorded and logged; nothing runs here)
+ const reinfer=()=>{const why=window.prompt('Ask for the parser spec of this source to be inferred again?\n\nReason (kept in the control log):');if(!why||why.trim().length<4)return;act('reinfer',async()=>{const{error:e}=await supabase.rpc('admin_layer1_parser_reinfer_request',{p_source_id:source.source_id,p_reason:why.trim()});if(e)throw e},'Re-infer requested. The AI mapper proposes a new spec; the source keeps its current parser until one is accepted.')}
+ const set=k=>e=>setForm(f=>({...f,[k]:e.target.value})),canEdit=rank>=6
+ const jobsHref=`#scheduled-jobs?tab=jobs&q=${encodeURIComponent(source.source_label||'')}`
+ return <div data-l1-source-body={source.source_id}>
+  {reason&&<div className="ui-xl-note ui-tone-danger" role="alert" data-l1-health-reason><AlertTriangle size={14}/><span><b>Why it needs attention:</b> {reason}</span></div>}
+  <div className="ui-xl-facts">
+   <Pill tone="info" title="Records in the last accepted file">{n(source.last_expected_count??r?.expected_count)} {human(source.expected_count_kind||'records').toLowerCase()}</Pill>
+   <Pill title="Stored source files">{n(source.evidence_count)} evidence</Pill>
+   {source.expected_format&&<Pill title="File format">{source.expected_format}</Pill>}
+   <Pill tone={source.variance_decision==='warn'?'warning':source.variance_decision==='block'?'danger':'neutral'} title="Change in record count against the last accepted file">Change {pct(source.variance_percent)}</Pill>
+   <Pill title="Last checked">Checked {fmt(source.last_verified_at)}</Pill>
+   <Pill title="Last loaded">Loaded {fmt(source.last_success_at)}</Pill>
+   {(source.edition_key||source.edition_year)&&<Pill tone="violet">Edition {source.edition_key||source.edition_year}</Pill>}
+   {source.source_url&&<a className="ui-xl-link" href={source.source_url} target="_blank" rel="noreferrer">Open source <ExternalLink size={12}/></a>}
+   <a className="ui-xl-link" href={jobsHref}>Jobs for this source</a>
+   {source.latest_evidence_at&&<a className="ui-xl-link" href="#evidence">Evidence</a>}
+  </div>
+  {parser&&<div className="ui-xl-facts" data-l1-parser-line>
+   <Pill tone={PARSER_TONE[parser.parser]||'neutral'} title={PARSER_HELP[parser.parser]}>{PARSER_LABEL[parser.parser]||human(parser.parser)}{parser.spec_version?` · spec v${parser.spec_version}`:''}</Pill>
+   {parser.target_record_type&&<Pill title="Target record type">{human(parser.target_record_type)}</Pill>}
+   {parser.drift_flagged_at&&<Pill tone="danger" title={parser.drift_message||undefined}>Layout drift flagged {fmt(parser.drift_flagged_at)}</Pill>}
+   {parser.reinfer_requested_at&&<Pill tone="info" title={parser.reinfer_reason||undefined}>Re-infer requested {fmt(parser.reinfer_requested_at)}</Pill>}
+   {parser.drift_flagged_at&&!parser.reinfer_requested_at&&rank>=4&&<button onClick={reinfer} disabled={!!busy} data-l1-reinfer><RefreshCw size={14}/>{busy==='reinfer'?'Requesting…':'Re-infer Parser Spec'}</button>}
+  </div>}
+  {parser?.drift_flagged_at&&parser.drift_message&&<div className="ui-xl-note ui-tone-danger" role="alert" data-l1-drift><AlertTriangle size={14}/><span><b>Layout drift:</b> {parser.drift_message}{parser.parser==='hardcoded'?' This source is read by code, so its reader also needs a change.':''}</span></div>}
+  <NewEditions source={source} candidates={candidates} rank={rank} onRefresh={onRefresh}/>
+  <RunStatus source={source} rank={rank} busy={busy} onRetry={retry} onRefresh={onRefresh}/>
+  {error&&<div className="ui-xl-note ui-tone-danger" role="alert">{error}</div>}{saved&&<div className="ui-xl-note ui-tone-success" role="status"><CheckCircle2 size={14}/>{saved}</div>}
+  <div className="ui-xl-actions-row">
+   {rank>=6&&!active&&<button className="ui-l1-primary" onClick={runNow} disabled={!!busy||source.paused}><Play size={14}/>{busy==='run'?'Starting…':'Run now'}</button>}
+   {rank>=4&&rank<6&&hasPolicy&&!active&&<button className="ui-l1-primary" data-l1-policy-run onClick={policyRun} disabled={!!busy||source.paused||source.schedule_enabled===false}><Play size={14}/>{busy==='run'?'Starting…':'Run now'}</button>}
+   {active&&<a className="button" href={jobsHref}><Activity size={14}/>View run</a>}
+   {rank>=4&&<button onClick={validate} disabled={!!busy}><ShieldCheck size={14}/>{busy==='validate'?'Checking…':'Check source'}</button>}
+   {rank>=6&&<button onClick={pause} disabled={!!busy}>{source.paused?<Play size={14}/>:<Pause size={14}/>}{source.paused?'Resume':'Pause'}</button>}
+   {r?.stuck&&r?.status==='running'&&rank>=6&&<button onClick={recover} disabled={!!busy}><AlertTriangle size={14}/>Recover stalled run</button>}
+   {isRanking&&rank>=4&&<a className="button" href={`#statistics-rankings?tab=datasets&system=${rankingCode(source)}&year=${encodeURIComponent(source.edition_year||'')}`}><FileCheck2 size={14}/>Upload edition</a>}
+  </div>
+  {!canEdit&&rank>=4&&hasPolicy&&<div className="ui-xl-form" data-l1-policy-schedule><XlField label="Schedule"><select aria-label="Schedule" value={scheduleOf(source)} disabled={!!busy} onChange={e=>policySchedule(e.target.value)}>{['custom','manual'].includes(scheduleOf(source))&&<option value={scheduleOf(source)}>{scheduleOf(source)==='manual'?'Manual (set by the Platform Admin)':`Every ${scheduleDays(source)||'—'} days`}</option>}{['daily','weekly','monthly','quarterly','yearly'].map(k=><option key={k} value={k}>{SCHEDULE_LABEL[k]}</option>)}</select></XlField><small>Changes how often this register runs and moves its next run. Manual and the other settings are the Platform Admin's.</small></div>}
+  {canEdit?<div className="ui-xl-form" data-l1-source-form>
+   <XlField label="Source address" wide><input value={form.source_url} onChange={set('source_url')}/></XlField>
+   <XlField label="Authority"><input value={form.authority_name} onChange={set('authority_name')}/></XlField>
+   <XlField label="Authority domains (comma separated)"><input value={form.authority_domains} onChange={set('authority_domains')}/></XlField>
+   <XlField label="File format"><input value={form.expected_format} onChange={set('expected_format')}/></XlField>
+   <XlField label="Schedule"><select value={form.schedule} onChange={set('schedule')}>{form.schedule==='custom'&&<option value="custom">Every {scheduleDays(source)||'—'} days</option>}{Object.entries(SCHEDULE_LABEL).filter(([k])=>k!=='custom').map(([k,l])=><option key={k} value={k}>{k==='manual'?'Manual (run or upload by hand)':l}</option>)}</select></XlField>
+   <XlField label="Check every (days)"><input type="number" min="1" value={form.verification_cadence_days} onChange={set('verification_cadence_days')}/></XlField>
+   <XlField label="Load every (days)"><input type="number" min="1" value={form.ingestion_cadence_days} onChange={set('ingestion_cadence_days')}/></XlField>
+   <XlField label="Warn when records change by (%)"><input type="number" min="0" max="100" value={form.variance_warn_percent} onChange={set('variance_warn_percent')}/></XlField>
+   <XlField label="Stop when records change by (%)"><input type="number" min="0" max="100" value={form.variance_block_percent} onChange={set('variance_block_percent')}/></XlField>
+   <XlField label="Fewest records expected"><input type="number" min="0" value={form.min_expected_records} onChange={set('min_expected_records')}/></XlField>
+   <XlField label="Most records expected"><input type="number" min="0" value={form.max_expected_records} onChange={set('max_expected_records')}/></XlField>
+   <XlField label="Reason for the change (kept in the log)" wide><input value={form.reason} onChange={set('reason')} placeholder="For example: the authority moved the file"/></XlField>
+   <div className="ui-xl-form-foot"><small>A changed file within these limits is loaded automatically on the schedule. Nothing already accepted is deleted.</small><button className="ui-l1-primary" onClick={save} disabled={!!busy}><Database size={14}/>{busy==='save'?'Saving…':'Save changes'}</button></div>
+  </div>:<p className="ui-xl-muted">Settings can be changed by a Platform Admin.</p>}
+  <EditionHistory source={source}/>
+ </div>
+}
+
+export function Layer1Sources(){
+ const[context,setContext]=useState(null),[data,setData]=useState({sources:[]}),[candidates,setCandidates]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[adding,setAdding]=useState(false),[notice,setNotice]=useState(''),[parsers,setParsers]=useState({})
+ const[q,setQ]=useState(''),[country,setCountry]=useState(''),[type,setType]=useState(''),[health,setHealth]=useState(''),[showRetired,setShowRetired]=useState(false),[open,setOpen]=useState(null)
+ const load=async()=>{setBusy(true);setError('');try{const[c,d,k,ps]=await Promise.all([api.context(),readLayer1(),supabase.rpc('layer1_statistics_candidates_read').then(r=>r.error?[]:(r.data||[])).catch(()=>[]),supabase.rpc('admin_layer1_parser_status').then(r=>r.error?{}:(r.data?.sources||{})).catch(()=>({}))]);setContext(c||null);setData(d||{sources:[]});setCandidates(Array.isArray(k)?k:[]);setParsers(ps||{})}catch(e){setError(errorText(e)||String(e))}finally{setBusy(false)}}
+ useEffect(()=>{load()},[])
+ const rows=data?.sources||[]
+ useEffect(()=>{if(!rows.some(s=>['queued','running'].includes(String(s.latest_run?.status||'').toLowerCase())))return;const t=setInterval(load,5000);return()=>clearInterval(t)},[rows.map(s=>s.latest_run?.status).join('|')])
+ const rank=Number(context?.role_rank||0)
+ const countries=useMemo(()=>[...new Map(rows.map(x=>[x.country_code,{value:x.country_code,label:x.country_name||x.country_code}])).values()].sort((a,b)=>a.label.localeCompare(b.label)),[rows])
+ const all=useMemo(()=>collapseRankingFamilies(rows),[rows])
+ const list=useMemo(()=>{const t=q.trim().toLowerCase();return all.filter(s=>(showRetired||!isRetired(s))&&(!country||s.country_code===country)&&(!type||sourceClass(s)===type)&&(!health||healthOf(s)===health)&&(!t||`${s.source_label} ${s.authority_name} ${s.source_url}`.toLowerCase().includes(t))).sort((a,b)=>HEALTH_ORDER.indexOf(healthOf(a))-HEALTH_ORDER.indexOf(healthOf(b))||String(a.country_code).localeCompare(String(b.country_code))||String(a.source_label).localeCompare(String(b.source_label)))},[all,q,country,type,health,showRetired])
+ const counts=useMemo(()=>{const c={};for(const s of all.filter(x=>!isRetired(x)))c[healthOf(s)]=(c[healthOf(s)]||0)+1;return c},[all])
+ if(rank>0&&rank<3)return <div className="ui-xl-empty">Your role cannot open Layer 1.</div>
+ const columns=[
+  {key:'source',label:'Source',width:'minmax(220px,2.4fr)',render:s=>{const sub=s.authority_name&&s.authority_name.trim().toLowerCase()!==String(s.source_label||'').trim().toLowerCase()?s.authority_name:(s.source_url?String(s.source_url).replace(/^https?:\/\/(www\.)?/,'').replace(/\/.*$/,''):'');return <span className="ui-xl-title"><b>{s.source_label}</b>{sub&&<small>{sub}</small>}</span>}},
+  {key:'country',label:'Country',width:'minmax(70px,.6fr)',render:s=><Pill title={s.country_name}>{s.country_code||'—'}</Pill>},
+  {key:'type',label:'Type',width:'minmax(90px,.8fr)',render:s=><Pill tone={sourceClass(s)==='statistics'?'violet':'info'}>{isRankingSource(s)?'Ranking':TYPE_LABEL[sourceClass(s)]||human(sourceClass(s))}</Pill>},
+  // Wave 2 addenda (Platform Admin 17 Nov 2026 19:09): which parser reads the source, and whether its layout has drifted
+  {key:'parser',label:'Parser',width:'minmax(130px,1fr)',render:s=>{const p=parsers[s.source_id];return p?<span className="ui-xl-stack" data-l1-parser={p.parser}><Pill tone={PARSER_TONE[p.parser]||'neutral'} title={PARSER_HELP[p.parser]}>{PARSER_LABEL[p.parser]||human(p.parser)}</Pill>{p.drift_flagged_at&&<small>Layout drift flagged</small>}</span>:<Pill>—</Pill>}},
+  {key:'health',label:'Health',width:'minmax(120px,1fr)',render:s=>{const h=isRetired(s)?'retired':healthOf(s);return <Pill tone={HEALTH_TONE[h]||'neutral'} title={healthReason(s)||undefined}>{h==='retired'?'Retired':HEALTH_LABEL[h]||human(h)}</Pill>}},
+  {key:'run',label:'Last run',width:'minmax(150px,1.2fr)',render:s=>{const r=s.latest_run;return r?<span className="ui-xl-stack"><Pill tone={RUN_TONE[String(r.status).toLowerCase()]||'neutral'}>{human(r.status==='no_change'?'unchanged':r.status)}</Pill><small>{fmt(r.completed_at||r.started_at||s.last_success_at)}</small></span>:<span className="ui-xl-stack"><Pill>Not run</Pill>{s.last_success_at&&<small>{fmt(s.last_success_at)}</small>}</span>}},
+  {key:'schedule',label:'Schedule',width:'minmax(140px,1.1fr)',render:s=><span className="ui-xl-stack"><Pill tone={scheduleOf(s)==='manual'?'neutral':'info'}>{scheduleOf(s)==='custom'?`Every ${scheduleDays(s)} days`:SCHEDULE_LABEL[scheduleOf(s)]}</Pill><small>{s.paused?'Paused':`Next ${fmt(s.schedule_next_due_at||s.next_ingestion_at)}`}</small></span>},
+ ]
+ const rowsOut=list.map(s=>({...s,__label:s.source_label,__muted:isRetired(s)||s.paused}))
+ return <section className="ui-xl-page" data-l1-sources>
+  <div className="ui-xl-summary">{['attention','running','due','paused','healthy'].map(h=><button key={h} className={health===h?'ui-is-on':''} onClick={()=>setHealth(health===h?'':h)}><Pill tone={HEALTH_TONE[h]}>{HEALTH_LABEL[h]}</Pill><b>{n(counts[h]||0)}</b></button>)}</div>
+  <XlToolbar actions={<><button onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Refreshing…':'Refresh'}</button>{rank>=3&&<button className="ui-l1-primary" onClick={()=>setAdding(x=>!x)} data-l1-add><span aria-hidden>+</span> Add source</button>}</>}>
+   <XlField label="Source"><input type="search" value={q} onChange={e=>setQ(e.target.value)} placeholder="Name, authority or address"/></XlField>
+   <XlField label="Country"><select value={country} onChange={e=>setCountry(e.target.value)}><option value="">All</option>{countries.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}</select></XlField>
+   <XlField label="Type"><select value={type} onChange={e=>setType(e.target.value)}><option value="">All</option><option value="regulatory">Register</option><option value="statistics">Statistics</option></select></XlField>
+   <XlField label="Health"><select value={health} onChange={e=>setHealth(e.target.value)}><option value="">All</option>{Object.entries(HEALTH_LABEL).map(([k,l])=><option key={k} value={k}>{l}</option>)}</select></XlField>
+   <label className="ui-xl-check"><input type="checkbox" checked={showRetired} onChange={e=>setShowRetired(e.target.checked)}/>Show retired</label>
+  </XlToolbar>
+  {error&&<div className="ui-xl-note ui-tone-danger" role="alert">{error}</div>}{notice&&<div className="ui-xl-note ui-tone-success" role="status">{notice}</div>}
+  {/* Wave 2 (Platform Admin 17 Nov 2026 17:59): + Add source opens the six-step induction wizard; activation stays the Platform Admin's */}{adding&&<Layer1InductionWizard rank={rank} onCancel={()=>setAdding(false)} onDone={()=>{load()}}/>}
+  {busy&&!rows.length?<div className="ui-xl-empty">Loading sources…</div>:<ExpandList columns={columns} rows={rowsOut} rowKey={s=>s.source_id} openKey={open} onOpen={setOpen} dataAttr="data-l1-source" renderBody={s=><SourceRowBody source={s} rank={rank} onRefresh={load} candidates={candidates} parser={parsers[s.source_id]}/>}/>}
+  <p className="ui-xl-muted">{n(list.length)} of {n(all.filter(x=>showRetired||!isRetired(x)).length)} sources. Each runs on its own schedule and is rerun only when it is due and its file has changed.</p>
+ </section>
+}
+
+const root=document.getElementById(ROOT_ID)
+if(root)createRoot(root).render(<Layer1Operations/>)

@@ -229,7 +229,7 @@ test('pure functions: About link discovery on own hosts, quotes checked against 
 })
 
 test('screens: the Inbox shows the description with its quotes; Coverage shows the metrics and the dead-letter retry', () => {
-  const inbox = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8'), cov = fs.readFileSync('src/FieldCoverage.jsx', 'utf8')
+  const inbox = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8'), cov = fs.readFileSync('src/ui-v1/FieldCoverageView.jsx', 'utf8')
   expect(inbox).toContain("{it.kind==='provider_description'&&<div className=\"l4z-desc\" data-l4-description>")
   expect(cov).toContain("supabase.rpc('admin_provider_descriptions',{p_action:'metrics'")
   expect(cov).toContain('<ProviderDescriptions country={country} rank={rank} onError={onError}/>')

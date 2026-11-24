@@ -26,7 +26,7 @@ test('source shape: page sizes are screen lengths, filters return to the first p
   expect(main).toContain("const notices=layerNo&&!(pageKey==='layer2'&&tab&&tab!=='operations')")
   // already aligned on v2.15.444: All layers is paged on the server, Layer 1 rows open one at a time
   expect(read('src/pipeline-ops-entry.jsx')).toContain("adminRead('pipeline_sources_page',{limit:PAGE_SIZE,offset,")
-  expect(read('src/layer1-operations-entry.jsx')).toContain('openKey={open} onOpen={setOpen} dataAttr="data-l1-source"')
+  expect(read('src/ui-v1/Layer1RegisterView.jsx')).toContain('openKey={open} onOpen={setOpen} dataAttr="data-l1-source"')
   // parked: the Inbox belongs to another branch in flight
   expect(read('src/Layer4Inbox.jsx').match(/SS-020/g) || []).toHaveLength(1) // step 4 adds only the review readiness line
 })

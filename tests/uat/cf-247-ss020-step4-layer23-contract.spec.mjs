@@ -28,7 +28,7 @@ test('LEGACY: Progress and Build adapter addresses open their new homes, with th
 })
 
 test('source: no control drawn twice; same reads; the Inbox change is one header line', () => {
-  const fc = read('src/FieldCoverage.jsx')
+  const fc = read('src/ui-v1/FieldCoverageView.jsx')
   // v2.16.42 (Platform Admin 18 Nov 2026 12:19): the Stalled fields counters left Attributes; Enrich fields keeps the controls
   expect(fc).not.toContain('<StalledFields scope={scope} readOnly')
   expect(fc).toContain('<StalledFields scope={scope} focus={field} onChanged={load} onError={onError}/>')
@@ -38,7 +38,7 @@ test('source: no control drawn twice; same reads; the Inbox change is one header
   expect(main).toContain('<Progress part="services" onError={err}/>')
   expect(main).toContain('<ScholarshipSettings rank={rank} onError={err}/>')
   expect(read('src/ScholarshipCoverage.jsx')).toContain('data-scholarship-controls-moved')
-  expect(read('src/AerCoverage.jsx')).toContain('export function ReviewReadinessLine()')
+  expect(read('src/ui-v1/AerCoverageView.jsx')).toContain('export function ReviewReadinessLine()')
   expect(read('src/Layer4Inbox.jsx').match(/SS-020/g)).toHaveLength(1)
 })
 

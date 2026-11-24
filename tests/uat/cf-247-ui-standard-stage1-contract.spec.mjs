@@ -14,6 +14,7 @@ test('any table (here Layer 2/3 › Operations) gets resize handles; a drag wide
   await expect(table.locator('[data-col-resize]').first()).toBeAttached()
   const th = table.locator('thead th').nth(1)
   const before = await th.evaluate(e => e.getBoundingClientRect().width)
+  await table.locator('[data-col-resize]').nth(1).scrollIntoViewIfNeeded() // s1075: the ported Operations page is taller, so the table starts below the first screen
   const box = await table.locator('[data-col-resize]').nth(1).boundingBox()
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.down(); await page.mouse.move(box.x + 100, box.y + box.height / 2, { steps: 5 }); await page.mouse.up()

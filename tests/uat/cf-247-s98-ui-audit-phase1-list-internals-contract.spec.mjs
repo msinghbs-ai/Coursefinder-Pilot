@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 const ui = fs.readFileSync('src/mature-main.jsx', 'utf8')
 const pc = fs.readFileSync('src/ProviderContactsWorkspace.jsx', 'utf8')
-const refs = fs.readFileSync('src/ReferenceSources.jsx', 'utf8')
+const refs = fs.readFileSync('src/ui-v1/ReferenceSourcesView.jsx', 'utf8')
 const health = fs.readFileSync('src/ui-v1/PlatformHealthView.jsx', 'utf8')
 const queues = fs.readFileSync('src/QueueWatch.jsx', 'utf8')
 const autos = fs.readFileSync('src/ui-v1/AutomationsView.jsx', 'utf8')

@@ -6,8 +6,8 @@ import fs from 'node:fs'
 // and a cross-check that never overwrites. Choices: "Stored pages + AI, small reads", "When page changes, or 60 days",
 // "All on Coverage; queue for readable ones".
 const m = fs.readFileSync('supabase/migrations-archive/20261021110000_cf247_field_register_gap_queue.sql', 'utf8')
-const ui = fs.readFileSync('src/FieldCoverage.jsx', 'utf8')
-const cov = fs.readFileSync('src/course-coverage.jsx', 'utf8')
+const ui = fs.readFileSync('src/ui-v1/FieldCoverageView.jsx', 'utf8')
+const cov = fs.readFileSync('src/ui-v1/CourseCoverageView.jsx', 'utf8')
 
 test('field register holds every course and provider field with a target', () => {
   for (const f of ['official_url', 'level', 'field_of_study', 'duration', 'delivery', 'campus', 'campus_city', 'international', 'provider_tuition',
@@ -64,7 +64,7 @@ test('stalled fields: daily history, rules from settings, health check, actions,
   const sops = fs.readFileSync('src/guide/sops.js', 'utf8')
   const guide = fs.readFileSync('src/guide/platformGuide.js', 'utf8')
   const health = fs.readFileSync('src/ui-v1/PlatformHealthView.jsx', 'utf8')
-  const ui2 = fs.readFileSync('src/FieldCoverage.jsx', 'utf8')
+  const ui2 = fs.readFileSync('src/ui-v1/FieldCoverageView.jsx', 'utf8')
   expect(s).toContain('create table if not exists pipeline.field_coverage_daily')
   for (const k of ['stall.days', 'stall.min_points', 'stall.country_gap_points', 'stall.queue_hours']) expect(s).toContain(`security.pipeline_num_v1('${k}'`)
   expect(s).toContain("if security.platform_health_due_v1('field_stalled',p_force) then")
@@ -84,7 +84,7 @@ test('stalled fields: daily history, rules from settings, health check, actions,
 // v2.15.305 (Platform Admin, 21 Oct 2026 "Keep two, fix reader"): blended is a mix inside one course; on campus or online is a choice
 test('delivery modes: two meanings, university wording first, cross-check closes what no longer differs', () => {
   const d = fs.readFileSync('supabase/migrations-archive/20261021150000_cf247_delivery_modes.sql', 'utf8')
-  const ui3 = fs.readFileSync('src/FieldCoverage.jsx', 'utf8')
+  const ui3 = fs.readFileSync('src/ui-v1/FieldCoverageView.jsx', 'utf8')
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(d).toContain('create table if not exists pipeline.delivery_wording')
   expect(d).toContain("'Face-to-face (includes blended)', 'on_campus'")

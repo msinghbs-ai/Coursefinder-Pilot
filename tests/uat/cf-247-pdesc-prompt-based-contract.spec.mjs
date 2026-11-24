@@ -113,7 +113,7 @@ test('a sentence counts as on the page only when every supporting passage is on 
 })
 
 test('the screens: the prompt card on Models & services › AI, Fill description in the panel, and Run & Validate retired from Enrich fields', () => {
-  const card = read('src/ProviderDescriptionPrompt.jsx'), cov = read('src/FieldCoverage.jsx'), panel = read('src/ProviderFillFields.jsx'), main = read('src/mature-main.jsx')
+  const card = read('src/ProviderDescriptionPrompt.jsx'), cov = read('src/ui-v1/FieldCoverageView.jsx'), panel = read('src/ProviderFillFields.jsx'), main = read('src/mature-main.jsx')
   // v2.16.0 (Platform Admin 13 Nov 2026 19:15, "Keep prompt respective for each service"): the editor opens inside the Provider description service
   expect(read('src/AiModelsServices.jsx')).toContain("const PromptEditor = React.lazy(() => import('./ProviderDescriptionPrompt'))")
   expect(read('src/AiModelsServices.jsx')).toContain("prompt.source === 'pipeline.provider_description_prompts' && admin")

@@ -32,13 +32,13 @@ test.describe('Reference data › Reference sources on a phone @responsive', () 
     const w = await atPhoneWidth(page)
     const t = await mount(page)
     const out = []
-    for (const sel of ['[data-reference-sources]', '[data-reference-sources] .xl-row', '[data-reference-sources] .xl-toolbar']) {
+    for (const sel of ['[data-reference-sources]', '[data-reference-sources] .ui-xl-row', '[data-reference-sources] .ui-xl-toolbar']) {
       const bs = await boxes(page, sel)
       expect(bs.length, `${sel} is on the screen, so this check measures something`).toBeGreaterThanOrEqual(1)
       for (const b of bs) if (b.x < -1 || b.right > w + 1) out.push(`${sel} "${b.label}" ${Math.round(b.x)}..${Math.round(b.right)}`)
     }
     expect(out, 'blocks that leave the screen').toEqual([])
-    await expect(t.locator('.xl-head')).toBeHidden() // columns stack on a phone; each cell carries its own label
+    await expect(t.locator('.ui-xl-head')).toBeHidden() // columns stack on a phone; each cell carries its own label
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
   })
 
@@ -62,7 +62,7 @@ test.describe('Reference data › Reference sources on a phone @responsive', () 
     const form = t.locator('[data-site-form="r1"]')
     await expect(form).toBeVisible()
     const out = []
-    for (const sel of ['[data-site-form="r1"] input:not([type="checkbox"])', '[data-site-form="r1"] select', '[data-site-form="r1"] button', '[data-reference-sources] .xl-body .xl-actions button', '[data-reference-sources] .xl-body a']) {
+    for (const sel of ['[data-site-form="r1"] input:not([type="checkbox"])', '[data-site-form="r1"] select', '[data-site-form="r1"] button', '[data-reference-sources] .ui-xl-body .ui-xl-actions button', '[data-reference-sources] .ui-xl-body a']) {
       for (const b of await boxes(page, sel)) {
         if (b.x < -1 || b.right > w + 1) out.push(`${sel} "${b.label}" ${Math.round(b.x)}..${Math.round(b.right)}`)
         if (sel.includes('button') && Math.min(b.w, b.h) < TAP_MIN) out.push(`${sel} "${b.label}" ${Math.round(b.w)}x${Math.round(b.h)} under ${TAP_MIN} px`)

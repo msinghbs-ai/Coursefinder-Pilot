@@ -11,7 +11,7 @@ import{adminRead,api,supabase,AUTH_LINK_TYPE}from'./lib/supabase'
 import CourseDetailPolish from'./CourseDetailPolish'
 import EnrichFields from'./EnrichFields'
 import FeeReader from'./FeeReader'
-import FieldCoverage from'./FieldCoverage'
+import FieldCoverage from'./ui-v1/FieldCoverageView'
 import EnrichPlan from'./EnrichPlan'
 import{ProviderSummary,PillRow,FactCards,FactCard}from'./DetailSummary'
 import{CompletenessBar,MissingFieldBar,ProviderBulkBar,ProviderProvenancePanel,providerCompleteness,PROVIDER_FIELD_WORDS,PROVIDER_TRACKED_FIELDS}from'./CompletenessBar' // s807 (20 Nov 2026): UnoPim patterns
@@ -79,7 +79,7 @@ const ModelsServices=lazyPage(()=>import('./ModelsServices'))
 // v2.16.0 (Platform Admin 13 Nov 2026 19:14): Models & services › AI is one page of four panes; AiConfig.jsx is retired
 const AiModelsServices=lazyPage(()=>import('./AiModelsServices'))
 const StatisticsDatasets=lazyPage(()=>import('./StatisticsDatasets'))
-const ReferenceSources=lazyPage(()=>import('./ReferenceSources'))
+const ReferenceSources=lazyPage(()=>import('./ui-v1/ReferenceSourcesView'))
 const ReferenceTables=lazyPage(()=>import('./ReferenceTables'))
 const KeyDates=lazyPage(()=>import('./KeyDates'))
 const ComparisonWorkspace=lazyPage(()=>import('./ComparisonWorkspace'))
@@ -90,9 +90,9 @@ const HumanEditsAudit=lazyPage(()=>import('./HumanEditsAudit')) // CF-247 s804/s
 const Automations=lazyPage(()=>import('./ui-v1/AutomationsView.jsx'))
 const SearchCapCard=lazyPage(()=>import('./SearchCapCard'))
 const PipelineSettings=lazyPage(()=>import('./PipelineSettings'))
-const CoverageView=lazyPage(()=>import('./course-coverage'),'CoverageView')
+const CoverageView=lazyPage(()=>import('./ui-v1/CourseCoverageView'),'CoverageView')
 // CF-247 AER Phase B (mandate 2 Nov 2026 §13): academic entry requirements on Coverage & completeness › Attributes, Curator and above
-const AerCoverage=lazyPage(()=>import('./AerCoverage'))
+const AerCoverage=lazyPage(()=>import('./ui-v1/AerCoverageView'))
 const AdaptersWorkspace=lazyPage(()=>import('./AdaptersWorkspace'))
 const IntakeRunValidate=lazyPage(()=>import('./IntakeRunValidate'))
 // CF-247 Fill fields (Platform Admin directive 9-10 Nov 2026): the on-demand description panel on the Provider Catalogue and Provider Detail; it loads when first opened
@@ -104,20 +104,20 @@ const DataDelivery=lazyPage(()=>import('./DataDelivery'))
 const BoostQueue=lazyPage(()=>import('./BoostQueue')) // v2.16.30: Platform health › Queues & yield › Boost queue (Country tier and Priority score, worked out on read)
 const CompletenessReport=lazyPage(()=>import('./CompletenessReport')) // Wave 2: Platform health › Country & category completeness
 const DestinationData=lazyPage(()=>import('./DestinationData')) // v2.16.19 RM0F: Destination data page
-const Layer23Operations=lazyPage(()=>import('./Layer23Operations'))
+const Layer23Operations=lazyPage(()=>import('./ui-v1/Layer23OperationsView'))
 const ScreenUse=lazyPage(()=>import('./ScreenUse'))
 const AdapterBuilderTab=lazyPage(()=>import('./AdapterBuilderTab'))
 const BuildAdapter=lazyPage(()=>import('./BuildAdapter'))
-const LinkRefresh=lazyPage(()=>import('./LinkRefresh'))
-const CoverageTelemetry=lazyPage(()=>import('./CoverageTelemetry')) // v2.16.42: Coverage now
-const PipelineEta=lazyPage(()=>import('./PipelineEta')) // v2.16.54 (s777): Pipeline & field ETA
+const LinkRefresh=lazyPage(()=>import('./ui-v1/LinkRefreshView'))
+const CoverageTelemetry=lazyPage(()=>import('./ui-v1/CoverageTelemetryView')) // v2.16.42: Coverage now
+const PipelineEta=lazyPage(()=>import('./ui-v1/PipelineEtaView')) // v2.16.54 (s777): Pipeline & field ETA
 const ScholarshipLayer=lazyPage(()=>import('./ScholarshipLayer'))
 const Progress=lazyPage(()=>import('./Progress'))
 const AdminTasks=lazyPage(()=>import('./AdminTasks'))
 const PlatformGuide=lazyPage(()=>import('./PlatformGuide'))
 const Sop=lazyPage(()=>import('./Sops'))
 const RoleGuides=lazyPage(()=>import('./RoleGuides'))
-const Layer1Sources=lazyPage(()=>import('./layer1-operations-entry'),'Layer1Sources')
+const Layer1Sources=lazyPage(()=>import('./ui-v1/Layer1RegisterView'),'Layer1Sources')
 // SS-020 follow-up (Decision 269 amendment, Platform Admin 4 Nov 2026 "Rewire, then retire"): Automations › Refresh schedules and one-off runs
 // retired; Layer 1 › Sources' Schedule edits the Layer 1 refresh policies. Its runtime health panel stays on Automations.
 const ScheduledRuntimeHealth=lazyPage(()=>import('./ui-v1/ScheduledRuntimeHealthView.jsx'))

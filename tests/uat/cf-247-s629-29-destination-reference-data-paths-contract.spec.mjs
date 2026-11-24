@@ -1,10 +1,10 @@
 // Guards: 29-destination readiness (Platform Admin 18 Nov 2026 11:28: onboarding every destination needs only data and Layer 1 configuration, never a new migration): a country's registration scheme and subdivisions are registered as data by a Platform Admin with a reason (planned; an existing row is never changed), and the induction wizard's step 1 offers it.
-// CF-247 S629. supabase/migrations-archive/20261118141000_cf247_reference_data_paths_29_destinations.sql; src/Layer1InductionWizard.jsx.
+// CF-247 S629. supabase/migrations-archive/20261118141000_cf247_reference_data_paths_29_destinations.sql; src/ui-v1/Layer1InductionWizardView.jsx.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const M = fs.readFileSync('supabase/migrations-archive/20261118141000_cf247_reference_data_paths_29_destinations.sql', 'utf8')
-const W = fs.readFileSync('src/Layer1InductionWizard.jsx', 'utf8')
+const W = fs.readFileSync('src/ui-v1/Layer1InductionWizardView.jsx', 'utf8')
 
 test('schemes and subdivisions are data: Platform Admin, a reason, added only, logged', () => {
   expect(M).toContain("if coalesce(security.current_role_rank(), 0) < 6 then raise exception 'Platform Admin (rank 6) registers a scheme'")

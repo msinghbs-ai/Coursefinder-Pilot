@@ -13,7 +13,7 @@ test('coverage model, schedule and governed read', () => {
 })
 
 test('Course coverage is reachable from Coverage & completeness and uses the validated ordinal ramp', () => {
-  const v = fs.readFileSync('src/course-coverage.jsx', 'utf8')
+  const v = fs.readFileSync('src/ui-v1/CourseCoverageView.jsx', 'utf8')
   const nav = fs.readFileSync('src/nav-map.js', 'utf8')
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
   // v2.15.107: Course coverage is the first tab of Coverage & completeness, inside the app shell; the old address still opens it.
@@ -27,5 +27,5 @@ test('Course coverage is reachable from Coverage & completeness and uses the val
   expect(v).toContain("adminRead('course_coverage'")
   expect(v).toContain("adminRead('course_coverage_courses'")
   expect(v).toContain("states:['candidate','in_review','awaiting_l3','in_queue']") // v2.15.303: the fill queue is work in progress
-  for (const c of ['#0d366b', '#1c5cab', '#2a78d6', '#5598e7', '#86b6ef']) expect(v).toContain(c)
+  for (const [i, c] of ['#0d366b', '#1c5cab', '#2a78d6', '#5598e7', '#86b6ef'].entries()) { expect(v).toContain(`var(--color-ramp-${i + 1})`); expect(fs.readFileSync('src/ui-v1/tokens.css', 'utf8')).toContain(`--color-ramp-${i + 1}: ${c}`) } // s1075: the validated ramp lives in tokens.css
 })

@@ -11,7 +11,7 @@ import{CheckCircle2,ExternalLink,Eye,EyeOff,Plus,RefreshCw,Search,ShieldCheck,X}
 import{supabase}from'./lib/supabase'
 import{Button,Loading,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import ScholarshipLayer from'./ScholarshipLayer'
-import{ProviderRuns}from'./ScholarshipJourney'
+import{ProviderRuns}from'./ui-v1/ScholarshipJourneyView'
 import{ProviderScholarshipAction,startProviderScans,useCanRunTasks}from'./ScholarshipActions'
 import{plainError}from'./lib/errors'
 
