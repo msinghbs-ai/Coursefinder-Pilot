@@ -10,7 +10,7 @@ import{Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtNumber
 import Stats15m from'./Stats15m'
 import GapCauses from'./GapCauses'
 import{plainError}from'./lib/errors'
-import{ScreenLink}from'./PlatformHealth'
+import{ScreenLink}from'./ui-v1/PlatformHealthView.jsx'
 
 export const QUEUE_STATES={
   moving:{label:'Moving',tone:'success',help:'Work is waiting and items are finishing.'},

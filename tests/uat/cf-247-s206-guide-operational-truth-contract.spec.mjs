@@ -234,7 +234,7 @@ test('UR-11: a check says which run measured it; no result is never OK; report-t
   const f = checkFreshness([{ checked_at: '2026-11-01T10:58:00Z' }, { checked_at: '2026-11-01T10:18:00Z' }, { checked_at: null }])
   expect([f({ checked_at: '2026-11-01T10:58:00Z' }), f({ checked_at: '2026-11-01T10:18:00Z' }), f({ checked_at: null }), f({})]).toEqual(['current', 'earlier', 'missing', 'missing'])
   expect(FRESHNESS_WORDS.missing).toBe('No result yet')
-  const src = fs.readFileSync('src/PlatformHealth.jsx', 'utf8')
+  const src = fs.readFileSync('src/ui-v1/PlatformHealthView.jsx', 'utf8')
   expect(src).toContain("pending when recorded (the live count is on Layer 4)")
   expect(src).toContain("fresh(c)==='missing'?<StatusChip value=\"missing\"")
   // academic entry requirements have a reader (AER); the coverage label names the measure, not a missing reader (from CF-247 AER Phase B,
@@ -253,7 +253,7 @@ test('UR-12: retirement checks are shown with screen use and beside a retiring a
   expect(use).not.toContain('candidates to retire')
   expect(use).toContain('RETIREMENT_CRITERIA.map')
   expect(JSON.stringify(G.SCREENS.health.read)).not.toContain('candidates to retire')
-  expect(fs.readFileSync('src/Automations.jsx', 'utf8')).toContain("no replacement named yet, so removal needs an approved decision")
+  expect(fs.readFileSync('src/ui-v1/AutomationsView.jsx', 'utf8')).toContain("no replacement named yet, so removal needs an approved decision")
 })
 
 test('UR-16: the register counts come from one pass: the category table and the narrative agree, mixed specs included', () => {

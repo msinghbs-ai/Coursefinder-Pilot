@@ -6,10 +6,10 @@ test.describe('CF-093 Scheduled Tasks runtime health contract',()=>{
  test('uses governed Jobs data without manufacturing missing telemetry',async()=>{
   // SS-020 follow-up (4 Nov 2026): the Refresh schedules section retired; the runtime health panel stays on Scheduled jobs › Automations
   const shell=fs.readFileSync('src/mature-main.jsx','utf8')
-  const runtime=fs.readFileSync('src/ScheduledRuntimeHealth.jsx','utf8')
-  expect(shell).toContain("const ScheduledRuntimeHealth=lazyPage(()=>import('./ScheduledRuntimeHealth'))")
+  const runtime=fs.readFileSync('src/ui-v1/ScheduledRuntimeHealthView.jsx','utf8')
+  expect(shell).toContain("const ScheduledRuntimeHealth=lazyPage(()=>import('./ui-v1/ScheduledRuntimeHealthView.jsx'))")
   expect(shell).toContain('<Automations onError={err}/><ScheduledRuntimeHealth onNavigate={hash=>{location.hash=hash}}/>')
-  expect(runtime).toContain("import'./scheduled-jobs-config.css'")
+  expect(runtime).toContain("import './ui-kit.css'") // s1066: drawn by the v1.1 kit; its stylesheet is the ui-v1 one
   expect(runtime).toContain("const UNKNOWN='Unavailable'")
   expect(runtime).toContain('const queueWait=j=>secondsBetween(j?.created_at,j?.started_at)')
   expect(runtime).toContain('const runDuration=j=>secondsBetween(j?.started_at,j?.completed_at)')

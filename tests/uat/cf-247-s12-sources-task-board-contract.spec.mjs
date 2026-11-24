@@ -105,5 +105,5 @@ test('source: the Task manager shows an error instead of loading for ever; Jobs 
   expect(j).toContain('if(data.run)return <RunDetail run={data.run} job={data.job}/>')
   expect(j).toContain('href={`#evidence?evidence_id=${e.id}`}')
   expect(j).toContain('data-register-run={row.run_id}')
-  expect(read('src/Automations.jsx')).toContain('Not catalogued: no label or owner')
+  expect(read('src/ui-v1/AutomationsView.jsx')).toContain('Not catalogued: no label or owner')
 })

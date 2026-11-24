@@ -8,7 +8,7 @@ const migration='supabase/migrations-archive/20260913102500_cf_093_scheduled_run
 // copy of admin_read — see that file's own comment) and now lives only in
 // the migration that already owns admin_read's live dispatch wiring.
 const dispatchMigration='supabase/migrations-archive/20260914210000_cf_093_admin_dispatcher_tuning_metrics.sql'
-const ui='src/ScheduledRuntimeHealth.jsx'
+const ui='src/ui-v1/ScheduledRuntimeHealthView.jsx'
 
 test('Scheduled Tasks runtime metrics read is rank-4, derived and secret-free',()=>{
   const sql=fs.readFileSync(migration,'utf8')

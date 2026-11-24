@@ -24,8 +24,8 @@ test('the summary and the attention list are worked out from the existing payloa
   expect(items[0].why).toBe('It ran out of time; 5 failures in the last 24 hours.')
   expect(needsAttention({ issues: [] })).toEqual([])
   expect(needsAttention({ issues: [{ severity: 'warning', check_key: 'layer_queues:layer3_reserved', title: '1 Layer 3 work item(s) stuck in reserved/interpreting' }] })).toEqual([])  // retired Layer 3 checks stay out
-  const PH = fs.readFileSync('src/PlatformHealth.jsx', 'utf8')
-  expect(PH).toContain("<details className=\"ph-tech\" data-ph-technical>")
+  const PH = fs.readFileSync('src/ui-v1/PlatformHealthView.jsx', 'utf8')
+  expect(PH).toContain("<details className=\"ui-ph-tech\" data-ph-technical>")
   expect(PH).not.toMatch(/adminRead\('platform_exec|admin_platform_exec/)          // no new read
 })
 
@@ -46,7 +46,7 @@ test('Platform Health opens on the executive view; the technical sections are fo
   await expect(att).toContainText('The hourly scholarship classifier failed on its last run')
   await expect(att).not.toContainText('canceling statement')
   await expect(page.locator('[data-ph-technical]')).not.toHaveAttribute('open', '')
-  await expect(page.locator('.ph-checks')).toBeHidden()
+  await expect(page.locator('.ui-ph-checks')).toBeHidden()
   await page.locator('[data-ph-technical] > summary').click()
-  await expect(page.locator('.ph-checks')).toBeVisible()
+  await expect(page.locator('.ui-ph-checks')).toBeVisible()
 })
