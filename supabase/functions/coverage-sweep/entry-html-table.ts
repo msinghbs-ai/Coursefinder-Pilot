@@ -17,12 +17,12 @@
 // reader (entry-cells.ts entryCellRead), so every row goes through the same checks as the other deterministic readers and a model's answer (entryMatrixParsed).
 // The quotable text is these lines, as for the ruled grid. Pure functions only (no network, no AI, no write).
 import type { EntryCountryRef, EntryQualification } from "./entry.ts";
-import { entryCellRead } from "./entry-cells.ts";
+import { entryCellRead, entryCellLabel, entryCellCountryIndex } from "./entry-cells.ts";
 
 export const ENTRY_HTML_TABLE_READER = "html-table-v1";
 export type HtmlTableOptions = { minRows?: number };
 export type HtmlTableDrop = { reason: string; country: string; quote: string };
-export type HtmlTablePiece = { index: number; level_from: "column" | "heading"; levels: string[]; lines: number; rows: number };
+export type HtmlTablePiece = { index: number; level_from: "column" | "heading" | "row"; levels: string[]; lines: number; rows: number };
 export type HtmlTableRead = { answer: { rows: any[] }; text: string; dropped: HtmlTableDrop[]; tables: HtmlTablePiece[]; skipped: { index: number; reason: string; heading: string }[];
                               stats: Record<string, number> };
 
@@ -121,9 +121,58 @@ export function htmlTableLines(html: string, opt: HtmlTableOptions = {}): { tabl
 }
 
 // The reader: the proven tables' lines, read table by table by the cell reader (one level per table, or the table's level columns); null when no table is proven
+
+// NZ/CA F-AER.08: country headings followed by short, headerless tables (Otago Polytechnic, Wintec).
+// Country identity must be a reference-country heading; the printed first cell must name a study
+// level for every row. No level/grade is inferred from page context and no model is called.
+export function htmlCountryHeadingTables(html: string, refs: EntryCountryRef[], quals: EntryQualification[] = [], aliases: Record<string, string> = {}) {
+  const src = String(html || "");
+  const countryIndex = entryCellCountryIndex(refs, aliases);
+  const tables: { index: number; head: string; levelFrom: "row"; levels: string[]; lines: string[]; rows: number }[] = [];
+  const skipped: { index: number; reason: string; heading: string }[] = [];
+  let end = 0, index = -1;
+  for (const m of src.matchAll(/<table\b[\s\S]*?<\/table>/gi)) {
+    index++;
+    const stretch = src.slice(end, m.index ?? 0);
+    end = (m.index ?? 0) + m[0].length;
+    // A nearby heading must itself be a country. A country mentioned inside a sentence
+    // or a heading preceding a different section is never enough to establish scope.
+    const headings = [...stretch.matchAll(/<(h[2-5]|summary|button)\b[^>]*>([\s\S]*?)<\/\1>/gi)];
+    const heading = headings.length ? text(headings[headings.length - 1][2]) : "";
+    const who = entryCellLabel(heading, countryIndex, quals);
+    if (who.kind !== "country" || !who.country) continue;
+    const { grid } = htmlTableGrid(m[0]);
+    if (grid.length < 2) { skipped.push({ index, reason: "html_country_table_too_small", heading }); continue }
+    const lines: string[] = [], levels: string[] = [];
+    let invalid = false;
+    for (const r of grid) {
+      if (r.length < 2 || r.length > 3) { invalid = true; break }
+      const level = r.length === 3 ? [r[0], r[1]].filter(Boolean).join(" ") : r[0];
+      const requirement = r[r.length - 1]?.trim() || "";
+      // The programme level is printed in the first one or two cells, rather than
+      // being fabricated from the provider's offering or a country-wide default.
+      if (!LEVEL_WORDS.test(level) || !requirement || /\b(?:IELTS|TOEFL|PTE|English language)\b/i.test(level)) {
+        invalid = true; break;
+      }
+      const namedLevel = levelLabel(level);
+      levels.push(namedLevel);
+      lines.push("| Country: " + part(heading) + " | " + namedLevel + ": " + part(requirement) + " |");
+    }
+    if (invalid || lines.length < 2 || new Set(levels.map((s) => s.toLowerCase())).size < 2) {
+      skipped.push({ index, reason: "html_country_table_unproved_level_or_row", heading });
+      continue;
+    }
+    tables.push({ index, head: "Country", levelFrom: "row", levels: [...new Set(levels)], lines, rows: grid.length });
+  }
+  return { tables, skipped };
+}
+
 export function entryHtmlTableRead(html: string, refs: EntryCountryRef[], quals: EntryQualification[] = [], aliases: Record<string, string> = {},
                                    opt: HtmlTableOptions = {}): HtmlTableRead | null {
-  const { tables, skipped } = htmlTableLines(html, opt);
+  const { tables: headed, skipped: plainSkipped } = htmlTableLines(html, opt);
+  const country = htmlCountryHeadingTables(html, refs, quals, aliases);
+  const tables = [...headed, ...country.tables.filter((t) => !headed.some((h) => h.index === t.index))];
+  const skipped = [...plainSkipped.filter((s) => !tables.some((t) => t.index === s.index)), ...country.skipped.filter((s) => !tables.some((t) => t.index === s.index))];
   if (!tables.length) return null;
   const rows: any[] = [], dropped: HtmlTableDrop[] = [], pieces: HtmlTablePiece[] = [], stats: Record<string, number> = {};
   const allLines: string[] = [];
