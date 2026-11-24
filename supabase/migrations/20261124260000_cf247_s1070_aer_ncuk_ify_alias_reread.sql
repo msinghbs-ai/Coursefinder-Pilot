@@ -41,13 +41,22 @@ begin
 end $a$;
 
 do $r$
-declare v jsonb; ids uuid[];
+declare v jsonb; ids uuid[]; n int := 0;  -- fixed: a live admission run can hold the item row for a moment; the re-read is tried up to five times
 begin
   select array_agg(distinct s.source_id) into ids from pipeline.entry_matrix_runs s join pipeline.layer4_review_items li on li.id = s.review_item_id
    where li.status = 'pending' and li.entity_id::text like 'c8a3391d%' and li.claimed_at is null and li.assigned_to is null;
   if ids is null then raise notice 'reread: no unclaimed pending source for the provider'; return; end if;
-  v := public.admin_entry_matrix_reread(ids, 'S2-AER s1070: NCUK IFY long-form alias added; earlier read dropped its rows as unknown_country; read again from the stored copy in place of its waiting item (no Firecrawl)');
-  raise notice 'reread: % sources: %', cardinality(ids), v;
+  loop
+    n := n + 1;
+    begin
+      v := public.admin_entry_matrix_reread(ids, 'S2-AER s1070: NCUK IFY long-form alias added; earlier read dropped its rows as unknown_country; read again from the stored copy in place of its waiting item');
+      raise notice 'reread: % sources: %', cardinality(ids), v;
+      exit;
+    exception when lock_not_available then
+      if n >= 5 then raise; end if;
+      perform pg_sleep(3);  -- fixed: wait for the live admission run to release the item row
+    end;
+  end loop;
 end $r$;
 
 do $c$

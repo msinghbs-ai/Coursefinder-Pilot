@@ -14,6 +14,7 @@ test('one alias of NCUK_IFY, nothing inferred', () => {
 })
 test('the re-read is the governed one, stored copy, no Firecrawl, nothing dropped', () => {
   expect(code).toContain('public.admin_entry_matrix_reread')
+  expect(code).toContain('lock_not_available')
   expect(code).not.toMatch(/firecrawl/i)
   expect(code.replace(/on commit drop/g, '')).not.toMatch(/\b(drop|delete from|truncate)\b/i)
   expect(sql).toMatch(/-- Replaces: nothing/)
