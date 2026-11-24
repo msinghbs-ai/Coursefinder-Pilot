@@ -57,7 +57,16 @@ test('the read goes through the cell reader and the admission checks: only print
   expect(got['minimum grade average of 83%']).toEqual([83, 'percentage'])
   expect(got['minimum grade average of 80%']).toEqual([80, 'percentage'])
   expect(got['minimum overall grade of 12']).toEqual([12, 'aggregate'])
-  expect(r.answer.rows.filter((x) => x.min_value == null && x.grade_scale === 'none').length).toBeGreaterThanOrEqual(4)
-  expect(r.dropped.map((d) => d.reason).filter((x) => x !== 'unknown_country')).toEqual([])
+  // s1073: a pathway sentence with no printed number is listed as dropped (no_minimum_published), never a row with a sentence for a qualification name
+  expect(r.dropped.filter((d) => d.reason === 'no_minimum_published').length).toBe(3)
+  expect(r.answer.rows.every((x) => !/successful completion of a recognised/i.test(x.qualification_name))).toBe(true)
+  expect(r.dropped.map((d) => d.reason).filter((x) => x !== 'unknown_country' && x !== 'no_minimum_published')).toEqual([])
   expect(parsed.dropped).toEqual([])
+})
+
+test('s1072: the column reader runs before the unproven-PDF hold, so an unruled PDF is read before it is held', () => {
+  const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  const early = ix.indexOf('const colEarly = '), hold = ix.indexOf('if (stored.pdf && stored.pdf.status !== "ok" && !grid && !colEarly) {')
+  expect(early > 0 && early < hold).toBe(true)
+  expect(ix).toContain('const colRead = !cellRead && !gridRead && !ruledRead ? colEarly : null;')
 })
