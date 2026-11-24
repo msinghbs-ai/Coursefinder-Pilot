@@ -34,7 +34,7 @@ begin
    where toolset_key = 'pipeline' and key = 'aer.provider_host_aliases' and not (value ? v_entry);
   insert into pipeline.admin_control_events (area, action, target, detail, actor)
   values ('settings', 'migration', 'pipeline.platform_toolset_settings', jsonb_build_object('key', 'aer.provider_host_aliases', 'added', v_entry,
-          'reason', 'Platform Admin 24 Nov 2026 15:16: s30991.pcdn.co approved for Curtin University only (s1045)', 'migration', '20261124190000'), security.system_actor_id());
+          'reason', 'Platform Admin 24 Nov 2026 15:16: s30991.pcdn.co approved for Curtin University only (s1045)', 'migration', '20261124213000'), security.system_actor_id());
 end $c$;
 
 -- 2. primary record on a shared host

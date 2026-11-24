@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const sql = fs.readFileSync('supabase/migrations/20261124190000_cf247_s1045_aer_host_shared_primary_curtin_alias.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations/20261124213000_cf247_s1045_aer_host_shared_primary_curtin_alias.sql', 'utf8')
 const code = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 
 test('primary record: switch setting, strictly-more-courses rule, one md5-guarded anchored edit', () => {
