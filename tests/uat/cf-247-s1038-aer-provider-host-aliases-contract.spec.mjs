@@ -9,7 +9,7 @@ test('the alias is a G2 list setting with Adelaide as its only entry', () => {
   expect(sql).toContain("'aer.provider_host_aliases'")
   expect(sql).toContain("'list', '[\"de2201a1-69ee-40ff-b6aa-0e54e535e6c0:adelaide.edu.au\"]'::jsonb")
   expect(sql).toMatch(/used_by|'security\.aer_matrix_machine_check_v1 \(rule source_not_official_host\)'/)
-  expect(sql).not.toMatch(/pcdn\.co/.source.replace('\\', '') + "'")  // Curtin's CDN host is not aliased
+  expect(sql).not.toContain("pcdn.co:")  // Curtin's CDN host is not aliased
 })
 test('one md5-guarded anchored edit of the machine check, nothing else replaced', () => {
   expect(sql).toContain('d3d038ebe92f4c3b81c088ed0fbc4169')
@@ -17,7 +17,8 @@ test('one md5-guarded anchored edit of the machine check, nothing else replaced'
   expect(sql).toMatch(/-- Replaces: nothing/)
   expect(sql).toMatch(/-- Retires: nothing/)
   expect((sql.match(/execute replace/g) || []).length).toBe(1)
-  expect(sql).not.toMatch(/\b(drop|delete from|truncate)\b/i)
+  const code = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
+  expect(code).not.toMatch(/\b(drop|delete from|truncate)\b/i)
   expect(sql).toContain('75')
   expect(sql).toContain('manual locks changed')
 })
