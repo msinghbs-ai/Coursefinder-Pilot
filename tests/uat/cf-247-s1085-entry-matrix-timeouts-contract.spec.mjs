@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const MIG = fs.readFileSync('supabase/migrations/20261125190000_cf247_s1085_entry_matrix_timeouts_utas_prize_rule.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261125220000_cf247_s1085_entry_matrix_timeouts_utas_prize_rule.sql', 'utf8')
 
 test('s1085: entry_matrices slices go through the route cascade with the run deadline and a 40 s first-model time-out', () => {
   expect(IX).toContain('cascadeFetch(fetch, { models: it.models, deadline: t0 + BUDGET_MS - 25000, service: "entry_matrices", source: "entry_matrix", source_id: it.run_id }')
