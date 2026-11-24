@@ -278,7 +278,19 @@ export function entryHtmlTableRead(html: string, refs: EntryCountryRef[], quals:
     // the cell reader groups lines by their first header and needs every label to give a cell for most levels; one table at a time keeps that true
     const r = entryCellRead(t.lines.join("\n"), refs, quals, aliases, { minLevels: 1, minLines: Math.min(opt.minRows ?? 5, t.lines.length) });
     if (!r) { skipped.push({ index: t.index, reason: "html_table_not_a_country_grid", heading: t.levels.join("; ") }); continue }
-    for (const x of r.answer.rows) rows.push({ ...x, conditions: { ...x.conditions, reader: ENTRY_HTML_TABLE_READER, html_table: t.index } });
+    for (const x of r.answer.rows) {
+      // NZ/CA printed-semantic-block fix: the shared cell minimum reader understands
+      // "ATAR 65" and "ATAR of 65", but an official NZ page prints "ATAR score of 65".
+      // Preserve the literal quote; only fill the numeric rank if those exact printed
+      // words occur in the same country+level cell. No inferred band or AI admission.
+      const printedRank = t.index <= -1000 && (opt.providerCountry === "NZ" || opt.providerCountry === "CA")
+        && x.min_value == null && x.grade_scale === "none"
+        ? /\\bATAR\\s+score\\s+of\\s+(\\d{2,3}(?:\\.\\d{1,2})?)(?:\\s+or\\s+(?:above|higher|better))?\\b/i.exec(String(x.quote || ""))
+        : null;
+      rows.push({ ...x,
+        ...(printedRank ? { min_grade: printedRank[0], min_value: Number(printedRank[1]), grade_scale: "rank" } : {}),
+        conditions: { ...x.conditions, reader: ENTRY_HTML_TABLE_READER, html_table: t.index } });
+    }
     dropped.push(...r.dropped);
     for (const [k, v] of Object.entries(r.stats)) stats[k] = (stats[k] || 0) + v;
     pieces.push({ index: t.index, level_from: t.levelFrom, levels: t.levels, lines: t.lines.length, rows: r.answer.rows.length });
