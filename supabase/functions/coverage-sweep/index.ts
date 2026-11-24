@@ -3114,8 +3114,8 @@ async function handle(req: Request): Promise<Response> {
           // v0.73.0 (F-AER.08, reading.entry_grid_reader_on): a PDF whose tables have no drawn rules but print one aligned course-by-qualification grid per page
           // (UNSW, Sydney, UQ) is proven by alignment (pdf-grid.ts: every value in exactly one column, fail closed) and read cell by cell without the model
           const gridAll = stored.pdf && stored.pdfPages && Number(ws["reading.entry_grid_reader_on"]) >= 1 ? pdfGrids2(stored.pdfPages) : null;
-          const grid = gridAll && gridAll.status === "ok" && gridAll.tables.length > 0 ? gridAll : null;
-          if (stored.pdf && stored.pdf.status !== "ok" && !grid) {
+          const grid = gridAll && gridAll.status === "ok" && gridAll.tables.length > 0 ? gridAll : null;  const colEarly = stored.pdf && !grid && stored.pdfPages && Number(ws["reading.entry_ruled_grid_reader_on"]) >= 1 ? entryPdfColumnsRead(stored.pdfPages, await countryRefs(), (await qualsP)?.on && Array.isArray((await qualsP).qualifications) ? (await qualsP).qualifications : [], Number(ws["reading.entry_country_aliases_on"]) >= 1 ? entryCountryAliases(ws["reading.entry_country_aliases"]) : {}, { minRows: Number(ws["reading.entry_ruled_grid_min_rows"]) || 5 }) : null;  // s1072: the unruled column reader is tried before the PDF is held
+          if (stored.pdf && stored.pdf.status !== "ok" && !grid && !colEarly) {
             await rec({ p_error: `held_unparsed: PDF ${stored.pdf.reason}${gridAll && gridAll.status !== "ok" ? `; grid ${gridAll.reason}` : ""}`.slice(0, 400), p_result: { rows: [], dropped: [], completeness: { status: "unparsed", reason: stored.pdf.reason }, worker: WORKER, prompt_version: ENTRY_PROMPT_VERSION, page_basis: PDF_METHOD, pdf: { status: stored.pdf.status, tables: stored.pdf.tables.length } } });
             tally.held_unparsed = (tally.held_unparsed || 0) + 1; return;
           }
@@ -3220,7 +3220,7 @@ async function handle(req: Request): Promise<Response> {
             parts = [{ parsed: { ...parsed, dropped: [...parsed.dropped, ...ruledRead.dropped, ...pieces] }, nm: { rows: parsed.rows, dropped: [] } }];
           }
           // s1071 (AER v2 proven structure, S1-AER-Claude, Platform Admin 24 Nov 2026 16:15): an unruled PDF column table (ACU) proven from its positioned text is read cell by cell without the model (entry-pdf-columns.ts); same checks as every reader
-          const colRead = !cellRead && !gridRead && !ruledRead && stored.pdfPages && Number(ws["reading.entry_ruled_grid_reader_on"]) >= 1 ? entryPdfColumnsRead(stored.pdfPages, await countryRefs(), quals?.on && Array.isArray(quals.qualifications) ? quals.qualifications : [], parseOpts.countryAliases, { minRows: Number(ws["reading.entry_ruled_grid_min_rows"]) || 5 }) : null;
+          const colRead = !cellRead && !gridRead && !ruledRead ? colEarly : null;  // s1072: read before the hold (above)
           if (colRead) { const parsed = entryMatrixParsed(colRead.answer, colRead.text, Object.assign([] as EntryBandLine[], { forms: [] }) as EntryLineSet, parseOpts); parts = [{ parsed: { ...parsed, dropped: [...parsed.dropped, ...colRead.dropped] }, nm: { rows: parsed.rows, dropped: [] } }] }
           // s1017: while the entry_matrices route has no qualified model, the database leases stored PDFs only (svc_entry_matrix_next det_only); a PDF that no
           // deterministic reader proves is held, never sent to a model

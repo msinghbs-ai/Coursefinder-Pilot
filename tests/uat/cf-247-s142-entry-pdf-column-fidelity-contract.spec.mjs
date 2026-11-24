@@ -102,7 +102,7 @@ test('the worker holds anything not proven before any AI read, for every PDF (no
   expect(ai).toContain('const stored = await storedText(it.storage_path, it.mime, Number(it.pdf_max_pages) || 40, it.completeness_required !== true), page = stored.text;')
   // F-AER.08 (v0.73.0): the one exception is a page proven by alignment (pdf-grid.ts, fail closed: status ok with tables), read without the model
   expect(ai).toContain('const grid = gridAll && gridAll.status === "ok" && gridAll.tables.length > 0 ? gridAll : null;')
-  expect(ai).toContain('if (stored.pdf && stored.pdf.status !== "ok" && !grid) {')
+  expect(ai).toContain('if (stored.pdf && stored.pdf.status !== "ok" && !grid && !colEarly) {')
   expect(ai).toContain('await rec({ p_error: `held_unparsed: PDF ${stored.pdf.reason}')
   // Platform Admin 12 Nov 2026 20:23: a refused PDF's Firecrawl text (text/markdown) is read as text; any other non-PDF copy of a PDF is held
   expect(ai).toContain('if (!stored.pdf && /\\.pdf($|[?#])/i.test(String(it.url || "")) && !/markdown/i.test(String(it.mime || ""))) {')

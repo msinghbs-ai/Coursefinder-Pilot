@@ -65,7 +65,7 @@ test('worker v0.73.0 reads a proven grid only with its switch, before a PDF is h
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(ix).toMatch(/(?:const WORKER = "coverage-sweep-worker-v0\.73\.0"; |\/\/ was v0\.73\.0 )\/\/ v0\.73\.0 \(12 Nov 2026, CF-247 F-AER\.08/)
   expect(ix).toMatch(/Number\(ws\["reading\.entry_grid_reader_on"\]\) >= 1 \? pdfGrids2\(stored\.pdfPages\)/)
-  expect(ix).toMatch(/if \(stored\.pdf && stored\.pdf\.status !== "ok" && !grid\)/)
+  expect(ix).toMatch(/if \(stored\.pdf && stored\.pdf\.status !== "ok" && !grid(?: && !colEarly)?\)/)
   expect(ix).toContain('entryGridHeadingList(ws["reading.entry_grid_headings"])')
   expect(ix).toMatch(/gridRead \? \{ reader: ENTRY_GRID_READER/)
   expect(ix).toMatch(/if \(!cellRead && !gridRead(?: && !ruledRead)?(?: && !colRead)?\) await pool/)
