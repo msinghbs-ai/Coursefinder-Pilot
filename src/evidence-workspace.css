@@ -60,3 +60,40 @@
 .evidence-origin small{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
 .evidence-origin>div{display:flex;flex-wrap:wrap;gap:4px}
 .evidence-origin .active{border-color:var(--cf-border-strong);font-weight:600}
+
+/* UI/UX Unification v1.2: compact metadata strip and the inline saved-page preview in the Evidence panel */
+.ev-meta{display:flex;flex-wrap:wrap;gap:var(--cf-space-2)}
+.ev-meta-chip{display:inline-flex;align-items:baseline;gap:var(--cf-space-1);padding:2px var(--cf-space-2);border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-surface-2);font-size:var(--cf-fs-sm)}
+.ev-meta-chip small{color:var(--cf-muted)}
+.ev-preview{display:grid;gap:var(--cf-space-2);border:1px solid var(--cf-border);border-radius:var(--cf-radius-lg);padding:var(--cf-space-3);background:var(--cf-surface)}
+.ev-preview-head{display:flex;justify-content:space-between;align-items:center;gap:var(--cf-space-2)}
+.ev-preview-head [role=tablist]{display:flex;gap:var(--cf-space-1)}
+.ev-preview button,.ev-quotes button{min-height:32px;padding:0 var(--cf-space-3);border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-surface);cursor:pointer}
+.ev-preview button.active{background:var(--cf-surface-3);border-color:var(--cf-border-strong)}
+.ev-quotes{display:flex;flex-wrap:wrap;align-items:center;gap:var(--cf-space-1)}
+.ev-quote-state{margin:0;font-size:var(--cf-fs-sm);color:var(--cf-muted)}
+.ev-preview-frame{width:100%;height:320px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-surface)}
+.ev-preview-text{margin:0;max-height:320px;overflow:auto;white-space:pre-wrap;word-break:break-word;font-size:var(--cf-fs-sm);border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);padding:var(--cf-space-2);background:var(--cf-surface-2)}
+.ev-preview-text mark{background:var(--cf-warning-soft);outline:1px solid var(--cf-border-strong)}
+.ev-sum>*{min-width:0;max-width:100%}
+.ev-preview{min-width:0;max-width:100%;box-sizing:border-box}
+.ev-preview-head{flex-wrap:wrap}
+.ev-quotes{min-width:0}
+.ev-sum{grid-template-columns:minmax(0,1fr)}
+.evidence-drawer{grid-template-columns:minmax(0,1fr)}
+.evidence-drawer-body{min-width:0}
+.ev-sum-url{min-width:0}
+
+/* UI/UX Unification v1.2: the Evidence screen fits a phone (nothing makes the page scroll sideways) */
+@media(max-width:760px){
+  .evidence-page{min-width:0}
+  .evidence-page>*{min-width:0;max-width:100%}
+  .evidence-origin-grid{grid-template-columns:minmax(0,1fr)}
+  .evidence-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .evidence-search-row{flex-wrap:wrap}
+  .evidence-search{min-width:0;flex:1 1 100%}
+  .evidence-hero{flex-wrap:wrap;gap:var(--cf-space-2)}
+  .evidence-hero-actions{flex-wrap:wrap}
+  .evidence-select{min-width:0}
+  .evidence-select>button{max-width:100%}
+}
