@@ -75,6 +75,39 @@ test('fails closed: per-country tables with no header row, a numeric header, a r
   expect(ht.htmlTableLines(noLevel).skipped[0].reason).toBe('html_table_level_unmapped')
 })
 
+
+test('s1041 NZ: country headings prove two-row and three-column headerless HTML grids without AI', async () => {
+  const ht = await load('supabase/functions/coverage-sweep/entry-html-table.ts', 'ht1041')
+  // Representative structures from the official Wintec and Otago Polytechnic country sections.
+  const wintec = '<h2>Argentina</h2><table><tbody>' +
+    '<tr><td>Certificate (level 4)</td><td>Título de Técnico Auxiliar</td></tr>' +
+    '<tr><td>Diploma (level 5)</td><td>Título de Bachiller/Bachillerato</td></tr>' +
+    '<tr><td>Degree level</td><td>One year of successful undergraduate-level study at a recognised tertiary institution</td></tr>' +
+    '</tbody></table>'
+  const otago = '<h3>Australia</h3><table><tbody>' +
+    '<tr><td>NCEA Level 2</td><td>Certificate/Diploma Level</td><td>Successful completion of Year 12</td></tr>' +
+    '<tr><td>NCEA Level 3</td><td>Degree Level</td><td>Successful completion of Year 12, AND ATAR score of 65 or above</td></tr>' +
+    '</tbody></table>'
+  for (const [html, country, n] of [[wintec, 'AR', 3], [otago, 'AU', 2]]) {
+    const r = ht.entryHtmlTableRead(html, REFS, QUALS, {}, { minRows: 5 })
+    expect(r).not.toBeNull()
+    expect(r.tables).toHaveLength(1)
+    expect(r.tables[0].level_from).toBe('row')
+    expect(r.answer.rows).toHaveLength(n)
+    expect(r.answer.rows.every((x) => x.country_code === country && x.conditions.reader === 'html-table-v1')).toBe(true)
+    expect(ht.entryHtmlTableCompleteness(r).status).toBe('complete')
+  }
+})
+
+test('s1041 NZ: fail closed on prose countries, unknown headings, absent row levels and single-row tables', async () => {
+  const ht = await load('supabase/functions/coverage-sweep/entry-html-table.ts', 'ht1041-negative')
+  const rows = '<table><tr><td>Diploma level</td><td>Year 12</td></tr><tr><td>Degree level</td><td>ATAR of 75</td></tr></table>'
+  expect(ht.entryHtmlTableRead('<h2>Entry requirements for Argentina</h2>' + rows, REFS, QUALS)).toBeNull()
+  expect(ht.entryHtmlTableRead('<h2>Unknownland</h2>' + rows, REFS, QUALS)).toBeNull()
+  expect(ht.entryHtmlTableRead('<h2>Australia</h2><table><tr><td>Entry</td><td>Year 12</td></tr><tr><td>Degree level</td><td>ATAR of 75</td></tr></table>', REFS, QUALS)).toBeNull()
+  expect(ht.entryHtmlTableRead('<h2>Australia</h2><table><tr><td>Degree level</td><td>ATAR of 75</td></tr></table>', REFS, QUALS)).toBeNull()
+})
+
 test('the worker reads a proven HTML table in its own branch and leaves every other path as it was; the lease takes stored HTML', async () => {
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(ix).toContain('import { ENTRY_HTML_TABLE_READER, entryHtmlTableCompleteness, entryHtmlTableRead } from "./entry-html-table.ts";')
