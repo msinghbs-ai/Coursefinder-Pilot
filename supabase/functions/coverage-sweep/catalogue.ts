@@ -12,6 +12,7 @@
 //                      a listing, a search page): the old address is not a scholarship page any more.
 // Nothing here fetches, spends or decides admission.
 import { htmlToText } from "./extract.ts";
+import { headingAwardSections, headingSectionHtml } from "./scholarship.ts";  // s1035: heading-based awards
 
 export type MapOutcome = "mapped" | "empty" | "deferred";
 // methods as the worker records them: "map_search(72)", "map:403", "map:scholarship_share", "map:credits_refused", ...
@@ -63,11 +64,14 @@ export function awardSections(html: string, baseUrl: string): AwardSection[] {
     if (!seen.has(key)) seen.set(key, { key, codes, name, value_text: after, url });
   }
   // an umbrella lists several awards; one coded award on a page is that award's own page
-  return seen.size >= 2 ? [...seen.values()] : [];
+  // s1035: no coded awards on the page: an umbrella that prints its awards under headings is split by heading (scholarship.ts)
+  if (seen.size < 2) return headingAwardSections(html).map((h) => ({ key: h.key, codes: h.codes, name: h.name, value_text: h.value_text, url: null }));
+  return [...seen.values()];
 }
 
 // The copy kept for one award of an umbrella page: the other awards' blocks removed, the shared text kept. Null when the award is not there.
 export function sectionHtml(html: string, code: string): string | null {
+  if (/^S-/i.test(code)) return headingSectionHtml(html, code);  // s1035
   const main = mainOf(html);
   const bs = blocks(main);
   const mine = bs.filter((b) => new RegExp(`\\b${code}\\b`).test(htmlToText(b.html)));
@@ -79,7 +83,7 @@ export function sectionHtml(html: string, code: string): string | null {
 }
 // "#award-puca1025" on a candidate or page address names the award section of an umbrella page
 export function sectionCode(url: string): string | null {
-  const m = url.match(/#award-([a-z]{4}\d{4})$/i);
+  const m = url.match(/#award-([a-z]{4}\d{4}|s-[a-z0-9-]{3,60})$/i);
   return m ? m[1].toUpperCase() : null;
 }
 

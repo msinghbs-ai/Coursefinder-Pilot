@@ -713,3 +713,72 @@ export function scholarshipListing(html: string, baseUrl: string, hosts: string[
   }
   return [...items.values()].slice(0, max);
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// s1035 (CF-247, S2-Scholarship-Readers, Platform Admin 24 Nov 2026 13:08): a heading-based multi-award page. A hub that prints several
+// awards under headings, with no award codes (UNSW style) and no page of their own for each (Lincoln's international page, Charles Darwin's
+// "Scholarships explained"), is split into one award per heading: `awardSection(name)` for the read, `sectioned-v1` for the two-part detail read.
+// Proof, all of it required, else the page gives nothing (fail closed, the listing and link readers continue as before):
+//   - at least two headings of the same level (h2 to h4) that read as an award name (ITEM_WORDS, not a call to action or page furniture);
+//   - each heading is not a link (a linked heading is a page of its own, read through the link) and has at least 120 characters of text under it,
+//     up to the next heading of the same or a higher level, that states an award signal (an amount, a percentage, "eligib", "apply", "deadline");
+//   - the key is the heading words: "S-" and the upper-case slug, so the section address is "<page>#award-s-<slug>".
+export const HEADING_AWARD_PREFIX = "S-";
+export type HeadingAward = { key: string; codes: string[]; name: string; value_text: string; url: null };
+const AWARD_SIGNAL = /(\$\s?\d|\d\s?%|\b(?:eligib|apply|applications?|deadline|closing|tuition|fee (?:reduction|waiver)|stipend|per (?:year|annum))\w*)/i;
+export function headingSlug(name: string) {
+  return String(name || "").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60).replace(/-+$/, "");
+}
+function awardHeadingName(raw: string) {
+  const name = clean(htmlToText(raw)).replace(/\s*(?:›|»|→|>)\s*$/, "").trim();
+  if (name.length < 8 || name.length > 140 || !ITEM_WORDS.test(name) || NOT_ITEM.test(name) || NOT_ITEM2.test(name)) return null;
+  const w = name.split(/\s+/).filter((x) => /^[A-Za-z]/.test(x) && x.length > 3);
+  if (w.length && w.filter((x) => /^[A-Z]/.test(x)).length / w.length < 0.6) return null;  // a name, not a sentence
+  return name;
+}
+type HeadingBlock = { level: number; name: string; slug: string; html: string; text: string; start: number };
+function headingBlocks(html: string): { main: string; blocks: HeadingBlock[]; firstAt: number } {
+  const m = html.match(/<main[\s\S]*?<\/main>/i);
+  const main = (m && m[0].length > 1500 ? m[0] : html).replace(/<(nav|header|footer|script|style|noscript)\b[\s\S]*?<\/\1>/gi, " ");
+  const hs = [...main.matchAll(/<h([1-4])\b[^>]*>([\s\S]*?)<\/h\1>/gi)];
+  const out: HeadingBlock[] = [];
+  hs.forEach((h, i) => {
+    const level = Number(h[1]);
+    if (level < 2) return;
+    let end = main.length;
+    for (let j = i + 1; j < hs.length; j++) if (Number(hs[j][1]) <= level) { end = hs[j].index!; break }
+    if (/<a\b/i.test(h[2])) return;
+    const name = awardHeadingName(h[2]); if (!name) return;
+    const slug = headingSlug(name); if (slug.length < 4) return;
+    const body = main.slice(h.index! + h[0].length, end);
+    const text = clean(htmlToText(body));
+    if (text.length < 120 || !AWARD_SIGNAL.test(text)) return;
+    out.push({ level, name, slug, html: main.slice(h.index!, end), text, start: h.index! });
+  });
+  return { main, blocks: out, firstAt: out.length ? out[0].start : 0 };
+}
+export function headingAwardSections(html: string): HeadingAward[] {
+  const { blocks } = headingBlocks(html);
+  const byLevel = new Map<number, HeadingBlock[]>();
+  for (const b of blocks) byLevel.set(b.level, [...(byLevel.get(b.level) || []), b]);
+  const level = [...byLevel.entries()].filter(([, v]) => v.length >= 2).sort((a, b) => b[1].length - a[1].length || a[0] - b[0])[0];
+  if (!level) return [];
+  const seen = new Map<string, HeadingAward>();
+  for (const b of level[1]) {
+    const key = HEADING_AWARD_PREFIX + b.slug.toUpperCase();
+    if (!seen.has(key)) seen.set(key, { key, codes: [key], name: b.name, value_text: b.text.slice(0, 300), url: null });
+  }
+  return seen.size >= 2 ? [...seen.values()] : [];
+}
+// The copy kept for one heading award: the page's opening text (the eligibility and terms shared by every award, at most 1,500 characters)
+// and that award's own section; the other awards' sections are left out. Null when the page no longer has the heading.
+export function headingSectionHtml(html: string, code: string): string | null {
+  const slug = String(code || "").replace(/^S-/i, "").toLowerCase();
+  const { main, blocks, firstAt } = headingBlocks(html);
+  const mine = blocks.find((b) => b.slug === slug);
+  if (!mine) return null;
+  const sameLevel = blocks.filter((b) => b.level === mine.level);
+  if (sameLevel.length < 2) return null;
+  const intro = clean(htmlToText(main.slice(0, firstAt))).slice(0, 1500);
+  return `<html><head><title>${mine.name} | ${code.toUpperCase()}</title></head><body><main><h1>${mine.name}</h1>${intro ? `<p>${intro}</p>` : ""}${mine.html}</main></body></html>`;
+}
