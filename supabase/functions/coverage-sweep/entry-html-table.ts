@@ -284,7 +284,7 @@ export function entryHtmlTableRead(html: string, refs: EntryCountryRef[], quals:
       // Preserve the literal quote; only fill the numeric rank if those exact printed
       // words occur in the same country+level cell. No inferred band or AI admission.
       const printedRank = t.index <= -1000 && (opt.providerCountry === "NZ" || opt.providerCountry === "CA")
-        && x.min_value == null && x.grade_scale === "none"
+        && (x.grade_scale === "none" || x.grade_scale === "points")
         ? /\bATAR\s+score\s+of\s+(\d{2,3}(?:\.\d{1,2})?)(?:\s+or\s+(?:above|higher|better))?\b/i.exec(String(x.quote || ""))
         : null;
       rows.push({ ...x,
