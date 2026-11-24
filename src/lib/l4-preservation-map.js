@@ -11,7 +11,7 @@ export const PRESERVATION_MAP = {
   'L4-V1': m('K', 'View › Review by rule (default; Advanced filters › View)'), 'L4-V2': m('M', 'Advanced filters (N) [data-l4-other-views]'),
   'L4-V3': m('M', 'Advanced filters › View › By university'), 'L4-V4': m('M', 'Advanced filters › View › By kind'), 'L4-V5': m('M', 'Advanced filters › View › Grid'),
   'L4-V6': m('M', 'Advanced filters › View › Decided'), 'L4-V7': m('M', 'Advanced filters › View › Groups; Decision bucket › Needs information'),
-  'L4-F1': m('M+R', 'Primary row › Module / Field [data-l4-kind]'), 'L4-F2': m('M+R', 'Primary row › Decision bucket; rail groups kept'), 'L4-F3': m('M', 'Primary row › University; Advanced › University list'),
+  'L4-F1': m('M+R', 'Primary row › Module / Field [data-l4-kind]'), 'L4-F2': m('M+R', 'Primary row › Decision bucket; rail groups kept'), 'L4-F3': m('M', 'Primary row › University (the one University box; it filters the whole screen)'),
   'L4-F4': m('K', 'By university kind pills [data-l4-pill]'), 'L4-F5': m('M', 'Advanced filters › AER order [data-l4-aer-ready-first]'), 'L4-F6': m('K', 'Why items are held (Layer4HoldReasons)'),
   'L4-F7': m('K', 'Grid › Kind'), 'L4-F8': m('K', 'Grid › Reason contains'), 'L4-F9': m('K', 'Grid › Search'), 'L4-F10': m('K', 'Grid › Order'),
   'L4-F11': m('M+R', 'Primary row › Destination country (Grid keeps its counted pills)'), 'L4-F12': m('K', 'Grid › Provider type'), 'L4-F13': m('K', 'Grid › Saved views'),

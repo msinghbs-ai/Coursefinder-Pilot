@@ -322,3 +322,7 @@ mark.dea-ban{background:var(--cf-amber-100);color:inherit;padding:0 2px;border-r
 .ui-admin .l4i-more{margin-top:4px}
 .ui-admin .l4i-more>summary{font-size:var(--cf-fs-xs)}
 .ui-admin .l4i-more .l4i-dl dd{max-height:12em;overflow:auto}
+/* s1090: a long page quote sits behind a toggle on the card, and the held-reason list shows its detail the same way */
+.ui-admin .l4i-quote{margin:2px 0}
+.ui-admin .l4i-quote>summary{cursor:pointer;font-size:var(--text-xs);color:var(--color-text-muted);min-height:24px;display:inline-flex;align-items:center}
+.ui-admin .l4i-quote>q,.ui-admin .l4i-quote>small,.ui-admin .l4i-quote>p{display:block;margin-top:4px}

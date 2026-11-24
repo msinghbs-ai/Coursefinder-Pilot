@@ -18,14 +18,12 @@ export function GroupBar({active,onPick,refresh,total}){
   const[s,setS]=useState(null)
   useEffect(()=>{call({action:'summary'}).then(setS).catch(()=>setS(null))},[refresh])
   if(!s||Array.isArray(s)||!s.groups)return null
-  const a=Number(s.groups.A||0),req=s.human_input_requests||{},nreq=Number(req.waiting||0)+Number(req.recovering||0),ungrouped=Math.max(0,Number(total||0)-Number(s.waiting||0)-nreq)
+  const req=s.human_input_requests||{},nreq=Number(req.waiting||0)+Number(req.recovering||0)
   return <div className="l4i-groups" data-l4-groups>
     <div className="l4i-view" role="group" aria-label="What is needed from me">
       {GROUPS.map(([g,l,h])=><button key={g} type="button" className={active===g?'on':''} aria-pressed={active===g} title={h} onClick={()=>onPick(g)} data-l4-group-pick={g}>{l} ({fmtNumber(Number(s.groups[g]||0))})</button>)}
       {nreq>0&&<button type="button" className={`l4i-req${active==='I'?' on':''}`} aria-pressed={active==='I'} title={REQUESTS[2]} onClick={()=>onPick('I')} data-l4-group-pick="I">{REQUESTS[1]} ({fmtNumber(nreq)})</button>}</div>
     <p className="l4i-why" data-l4-group-sum><small>{fmtNumber(Number(s.pending||0))} items waiting, each in one group{nreq?`; ${fmtNumber(nreq)} Human input needed requests are a separate line, not added`:''}.</small></p>
-    <p className="l4i-why" data-l4-grouped-at><small>Grouped {s.grouped_at?.text||'not yet'} by the Layer 4 groups task{Number(s.regrouping)>0?` · ${fmtNumber(Number(s.regrouping))} changed since, shown under Ready for my decision until regrouped`:''}{ungrouped>0?` · ${fmtNumber(ungrouped)} not grouped yet (in By university and By kind)`:''}</small></p>
-    {a>0&&<p className="l4i-why" data-l4-group-a><small>Settled by existing rules: {fmtNumber(a)} · {(s.rules||[]).map(r=>`${fmtNumber(r.n)} by ${r.rule||r.class}`).join(' · ')}</small></p>}
   </div>}
 
 /** One group's items, paged oldest first; renderItem draws the Inbox card. */

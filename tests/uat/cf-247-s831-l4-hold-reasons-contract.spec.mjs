@@ -29,13 +29,15 @@ test('the wrapper keeps the role check and every earlier branch', () => {
   expect(w).toContain('security.layer4_aer_queue_v1(coalesce(p_args')
 })
 
-test('screen: the breakdown names the counts, filters to the audit sample, opens the existing Source quote drawer, and has no bulk approve', () => {
+test('screen: the breakdown names the counts, filters to the audit sample, opens the existing Source quote drawer, and (s1090) lists the two reasons a person decides open, with a bulk bar through the Inbox decide action', () => {
   expect(HOLD).toContain('Why items are held (')
   expect(HOLD).toContain('Show the audit sample')
   expect(HOLD).toContain("hold_reasons:true")
   expect(HOLD).toContain("from'./Layer4Grid'")
-  expect(HOLD).not.toMatch(/Approve the verified batch|bulk approve|admin_layer4_inbox|'decide'/i)
-  expect(INBOX).toContain("kind==='aer_review'&&(view==='university'||view==='kind')&&<Layer4HoldReasons")
+  expect(HOLD).not.toMatch(/Approve the verified batch/i) // s1090: Approve Selected is the Platform Admin's request; each item is decided on its own through the Inbox's decide action
+  expect(HOLD).toContain("p_action:'decide'")
+  expect(HOLD).toContain('data-l4-hold-bulk')
+  expect(INBOX).toContain("kind==='aer_review'&&(view==='university'||view==='kind'||focus)&&<Layer4HoldReasons")
   expect(GRID).toContain('export function Drawer')
   expect(GRID).toContain("target.kind==='aer_review'&&<section data-l4g-rule-checks>")
 })

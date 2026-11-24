@@ -74,7 +74,7 @@ const readSel=()=>{try{return JSON.parse(sessionStorage.getItem(SEL)||'null')}ca
 export default function Layer4Inbox({onError,routeParams}){
   const want=routeParams?.get?.('kind')||'',wantProvider=routeParams?.get?.('provider')||'',wantView=routeParams?.get?.('view')||'',wantRef=routeParams?.get?.('ref')||'',wantAt=routeParams?.get?.('review_at')||'' // v2.15.343: the Dashboard opens the Inbox by kind (?view=kind)
   const[grp,setGrp]=useState(''),[gtick,setGtick]=useState(0)
-  const[sum,setSum]=useState(null),[view,setView]=useState(wantProvider?'university':want&&wantView!=='focus'?'kind':['kind','grid','decided','university','focus'].includes(wantView)?wantView:'focus') /* v2.16.39: ?view=grid and ?view=decided open those views (Evidence links here); s837: the default is focus (Waiting, grouped by rule) */,[kind,setKind]=useState(want),[q,setQ]=useState('')
+  const[sum,setSum]=useState(null),[view,setView]=useState(wantProvider?'university':want&&wantView!=='focus'?'kind':['kind','grid','decided','university','focus'].includes(wantView)?wantView:'focus') /* v2.16.39: ?view=grid and ?view=decided open those views (Evidence links here); s837: the default is focus (Waiting, grouped by rule) */,[kind,setKind]=useState(want),q='' /* s1090: the one University box is on the primary row; the second list search is gone */
   const[unis,setUnis]=useState(null),[offset,setOffset]=useState(0),[pick,setPick]=useState(null),[items,setItems]=useState(null),[note,setNote]=useState('')
   const[cur,setCur]=useState(null),[stack,setStack]=useState([]),restored=useRef(readPos()),hold=useRef(true)
   const linkedPosition=useRef('')
@@ -85,10 +85,10 @@ export default function Layer4Inbox({onError,routeParams}){
   const UPAGE=pageOf(sum,'universities',50),IPAGE=pageOf(sum,'items',200)
   if(sum?.paging?.detail_parallel)lazyMax=Number(sum.paging.detail_parallel)||lazyMax
   const loadSum=()=>rpc('summary').then(setSum).catch(e=>onError?.(e.message))
-  const loadUnis=(o=offset)=>{if(!sum)return;setUnis(null);rpc('universities',{kind,q,limit:UPAGE,offset:o}).then(d=>{setUnis(d);if(view==='university'&&!pick&&d.items?.[0]){const s=sel0.current;sel0.current=null
+  const loadUnis=(o=offset)=>{if(!sum)return;setUnis(null);rpc('universities',{kind,q,limit:UPAGE,offset:o}).then(d=>{setUnis(d);if(view==='university'&&!(d.items||[]).length)setItems({items:[],total:0});if(view==='university'&&!pick&&d.items?.[0]){const s=sel0.current;sel0.current=null
     setPick(wantProvider?(d.items.find(u=>u.provider_id===wantProvider)||{provider_id:wantProvider,name:'University'}):s?.pick?.provider_id?s.pick:d.items[0])}}).catch(e=>onError?.(e.message))}
   const loadItems=(c=cur)=>{if(view==='group'||view==='grid'||view==='focus'){setItems(null);return}if(view==='decided'){setItems(null);rpc('decided',{limit:100}).then(setItems).catch(e=>onError?.(e.message));return}if(view==='kind'&&!kind){setItems(null);return}if(view==='university'&&!pick){setItems(null);return}if(!sum)return;setItems(null)
-    rpc('items',{...(view==='kind'?{kind}:{provider_id:pick.provider_id,...((uk||kind)?{kind:uk||kind}:{})}),limit:IPAGE,...(c||{})}).then(setItems).catch(e=>onError?.(e.message))}
+    rpc('items',{...(view==='kind'?{kind}:{provider_id:pick.provider_id,...((uk||kind)?{kind:uk||kind}:{})}),limit:IPAGE,...(c||{})}).then(setItems).catch(e=>{setItems({items:[],total:0,error:e.message});onError?.(e.message)})}  // s1090: a failed read ends in a message, never an endless Loading
   const choose=(u,k)=>{setPick(u);setUk(k||'');setNote('')}
   useEffect(()=>{loadSum()},[])
   // UR-09 (1 Nov 2026): an address that names another kind or university on this screen opens it, without a reload
@@ -140,10 +140,16 @@ export default function Layer4Inbox({onError,routeParams}){
   const effPart=kind==='provider_description'&&!part&&split?(Number(split.course)>0&&!Number(split.university)?'course':Number(split.university)>0&&!Number(split.course)?'university':''):part
   if(!sum)return <Loading label="Reading what needs a person…"/>
   const bk=sum.by_kind||{},focus=view==='focus',showOthers=others||!focus
+  // s1090: one University filter follows the whole screen: the summary tiles read the chosen university's own counts (its by_kind), the hold reasons and the items follow it too
+  const scope=view==='university'?pick:uni,scoped=!!scope?.provider_id&&scope.by_kind&&typeof scope.by_kind==='object'
+  const scopedN=scoped?(kind?Number(scope.by_kind[kind])||0:Object.values(scope.by_kind).reduce((a,b)=>a+(Number(b)||0),0)):0
+  const nothingText=kind?`No university has a waiting ${(kinds[kind]?.label||kind).toLowerCase()} item.`:'Nothing waits for a person.'
   return <div className="l4i" data-l4-inbox>
     <section className="l4i-tiles">
-      <Metric label="Waiting for a person" value={fmtNumber(sum.total)} detail={`${fmtNumber(sum.universities)} universities`} icon={Inbox}/>
-      <Metric label={`Older than ${sum.target_days} days`} value={fmtNumber(sum.late)} tone={Number(sum.late)?'warning':'success'} detail="Oldest first within each university" icon={AlertTriangle}/>
+      {scoped?<><Metric label={`Waiting at ${scope.name}`} value={fmtNumber(scopedN)} detail={kind?(kinds[kind]?.label||kind):'every queue'} icon={Inbox}/>
+        <Metric label="Oldest waiting" value={scope.oldest?`${fmtNumber(days(scope.oldest))} d`:'—'} tone={scope.oldest&&days(scope.oldest)>Number(sum.target_days)?'warning':'success'} detail={`Target ${fmtNumber(sum.target_days)} days`} icon={AlertTriangle}/></>
+      :<><Metric label="Waiting for a person" value={fmtNumber(sum.total)} detail={`${fmtNumber(sum.universities)} universities`} icon={Inbox}/>
+      <Metric label={`Older than ${sum.target_days} days`} value={fmtNumber(sum.late)} tone={Number(sum.late)?'warning':'success'} detail="Oldest first within each university" icon={AlertTriangle}/></>}
     </section>
     {/* SS-020 step 4 (Decision 269, 3 Nov 2026): review readiness header line, moved from Coverage › Attributes */}
     <ReviewReadinessLine/>
@@ -152,17 +158,17 @@ export default function Layer4Inbox({onError,routeParams}){
     <Layer4PrimaryFilters kinds={kinds} order={order} kind={kind} part={effPart} split={split} total={sum.total} showAll={!focus}
       countOf={k=>focus&&k===kind&&ftotal!=null&&!effPart?ftotal:Number(bk[k]?.n)||0}
       onKind={(k,pt)=>{setKind(k);setPart(pt||'');if(k!=='aer_review')setSrc('');setNote('')}}
-      provider={view==='university'?(pick?{provider_id:pick.provider_id,name:pick.name}:null):uni} onProvider={u=>{if(view==='university'){if(u)choose({provider_id:u.provider_id,name:u.name},'');else setPick(null)}else setUni(u)}}
+      provider={view==='university'?(pick?{provider_id:pick.provider_id,name:pick.name}:null):uni} onProvider={u=>{if(view==='university'){if(u)choose(u,'');else setPick(null)}else setUni(u)}}
       country={dest} onCountry={setDest} source={src} onSource={setSrc}
       bucket={bucket} onBucket={b=>{setBucket(b);if(b==='info'){setGrp('D');setView('group')}else if(view==='group'){setView('focus')}setNote('')}}/>
     <div className="l4i-bar">
-      <Layer4AdvancedFilters open={others} onToggle={()=>setOthers(v=>!v)} view={view} onView={v=>{setView(v);if(v==='group'&&!grp)setGrp('C');setNote('')}} q={q} onQ={setQ}
+      <Layer4AdvancedFilters open={others} onToggle={()=>setOthers(v=>!v)} view={view} onView={v=>{setView(v);if(v==='group'&&!grp)setGrp('C');setNote('')}}
         aerOrder={view==='university'&&uk==='aer_review'&&Number(aerSum?.review_ready)>0} readyFirst={readyFirst} onReadyFirst={setReadyFirst} readyCount={fmtNumber(Number(aerSum?.review_ready)||0)}
-        onClear={k=>{if(k==='view'||k==='all'){setView('focus');setBucket(b=>b==='info'?'all':b)}if(k==='q'||k==='all')setQ('');if(k==='aer'||k==='all')setReadyFirst(true)}}/>
+        onClear={k=>{if(k==='view'||k==='all'){setView('focus');setBucket(b=>b==='info'?'all':b)}if(k==='aer'||k==='all')setReadyFirst(true)}}/>
       <Button compact onClick={()=>{loadSum();loadUnis(offset);loadItems(cur)}}><RefreshCw size={14}/>Refresh</Button>
     </div>
     {note&&<p className="l4i-note" role="status">{note}</p>}
-    {kind==='aer_review'&&(view==='university'||view==='kind')&&<Layer4HoldReasons kinds={kinds} targetDays={sum.target_days} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>}
+    {kind==='aer_review'&&(view==='university'||view==='kind'||focus)&&<Layer4HoldReasons kinds={kinds} targetDays={sum.target_days} providerId={scope?.provider_id||''} country={dest} rank={sum.rank} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>}
     {focus?<Layer4Focus kinds={kinds} kind={kind} part={effPart} providerId={uni?.provider_id||''} country={dest} sourceCountry={kind==='aer_review'?src:''} bucket={bucket} onTotal={setFtotal} rank={sum.rank} onError={onError} onOtherView={v=>{setView(v);setNote('')}} onDecided={r=>{if(!r?.batch)setNote(outcomeText(r));else setNote(`Batch: ${r.admitted} admitted${r.failed?`, ${r.failed} not admitted`:''}.`);loadSum();loadSplit()}}
       renderItem={(it,done,hold,hkey)=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} holdLabel={hold} holdKey={hkey} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
     view==='grid'?<Layer4Grid kinds={kinds} targetDays={sum.target_days} providerId={uni?.provider_id||''} sourceCountry={src} rank={sum.rank} onError={onError} onDecided={r=>{setNote(outcomeText(r));loadSum()}} renderItem={(it,done)=><Item it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider rank={sum.rank} onDone={done} onError={onError} onRefresh={loadSum}/>}/>:
@@ -170,7 +176,7 @@ export default function Layer4Inbox({onError,routeParams}){
     view==='decided'?<Decided items={items} kinds={kinds}/>:view==='kind'&&!kind?<Empty text="Choose a kind above to see its items across every university."/>:
     <div className={view==='university'?'l4i-split':''}>
       {view==='university'&&<aside className="l4i-unis" aria-label="Universities">
-        {!unis?<Loading compact/>:(unis.items||[]).length===0?<Empty text="Nothing waits for a person."/>:<>
+        {!unis?<Loading compact/>:(unis.items||[]).length===0?<Empty text={nothingText}/>:<>
           {/* AER decision 06:58 §2: the name shows every kind; a kind pill shows only that university's waiting items of that kind */}
           <ul>{unis.items.map(u=>{const on=pick?.provider_id===u.provider_id;return <li key={u.provider_id||'platform'} className={on?'on':''} data-l4-uni={u.name}>
             <button type="button" className={`l4i-uni-name${on&&!uk?' on':''}`} onClick={()=>choose(u,'')} data-l4-uni-name={u.name}>
@@ -196,7 +202,8 @@ export default function Layer4Inbox({onError,routeParams}){
           {ready&&Number(aerSum?.review_ready)>(ready.items||[]).length&&<div className="l4i-pager" data-l4-ready-pager><Button compact disabled={readyOff===0} onClick={()=>{const o=Math.max(0,readyOff-Number(ready.limit||25));setReadyOff(o);loadReady(o)}}>Previous</Button>
             <small>{fmtNumber(readyOff+1)}–{fmtNumber(readyOff+(ready.items||[]).length)} of {fmtNumber(aerSum.review_ready)} ready, oldest first</small>
             <Button compact disabled={readyOff+(ready.items||[]).length>=Number(aerSum.review_ready)} onClick={()=>{const o=readyOff+Number(ready.limit||25);setReadyOff(o);loadReady(o)}}>Next</Button></div>}</div>:
-        !items?<Loading compact/>:(items.items||[]).length===0?<Empty text="Nothing left here."/>:
+        view==='university'&&!pick?(!unis?<Loading compact/>:<Empty text={(unis.items||[]).length===0?nothingText:'Choose a university on the left to see its items.'}/>):
+        !items?<Loading compact/>:items.error?<p className="l4i-err" role="alert" data-l4-items-error>{items.error}</p>:(items.items||[]).length===0?<Empty text="Nothing left here."/>:
           <Layer4RuleGroups items={items.items} renderSettle={pv=>settleFor(pv,kinds,r=>{setNote(`Batch: ${r.admitted} settled${r.failed?`, ${r.failed} not settled`:''}.`);loadSum();loadUnis(offset);loadItems(cur)})} render={it=><Item key={`${it.kind}:${it.ref}`} it={it} k={kinds[it.kind]||{label:it.kind,choices:[]}} showProvider={view==='kind'} rank={sum.rank} onDone={decided} onError={onError} onRefresh={()=>{loadSum();loadItems(cur)}}/>}/>}
         {!showReady&&!showCd&&items&&view!=='decided'&&(cur||items.more===true||Number(items.total)>(items.items||[]).length)&&(()=>{const b=Number(items.before||0),n=(items.items||[]).length,t=Number(items.total||0)
           return <div className="l4i-pager" data-l4-pager><Button compact disabled={!cur} onClick={prev} data-l4-prev>Previous</Button>
@@ -290,12 +297,12 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh,holdLabel='',hold
       {hd.sections.some(x=>x.key!=='summary')&&<details className="l4z-fold l4z-tech l4i-more" data-l4-fold="more-detail"><summary>Technical detail ({hd.sections.filter(x=>x.key!=='summary').length} more section{hd.sections.filter(x=>x.key!=='summary').length===1?'':'s'})</summary>{hookSection(hd.sections.filter(x=>x.key!=='summary'))}</details>}</div>)}
     {it.kind==='provider_description'&&<div className="l4z-desc" data-l4-description>{/* CF-247 P1 (Platform Admin 2 Nov 2026 10:28): the proposed description, each sentence with the page's own words */}
       <dl className="l4i-dl l4z-pair"><dt>Proposed value</dt><dd data-l4-description-text><strong>{d.proposed?.description}</strong></dd><dt>Live value now</dt><dd data-l4-live>{d.before?.description||'— none held'}</dd></dl>
-      <ol className="l4i-sample">{(Array.isArray(d.proposed?.sentences)?d.proposed.sentences:[]).map((x,i)=><li key={i}>{x.text}<br/><small>Page: <q>{x.quote}</q></small></li>)}</ol>
+      <ol className="l4i-sample">{(Array.isArray(d.proposed?.sentences)?d.proposed.sentences:[]).map((x,i)=><li key={i}>{x.text}<details className="l4i-quote" data-l4-quote><summary>Page quote</summary><small><q>{x.quote}</q></small></details></li>)}</ol>
     </div>}
     {it.kind==='provider_description'&&isCourseDescription(d)&&<CdWhy d={d}/>}
     {it.kind==='provider_description'&&isCourseDescription(d)&&<ChecksLine d={d}/>}
     {it.kind==='provider_departure'&&d.note&&<p className="l4i-why" data-l4-departure><small>{d.note}</small></p>}
-    {it.kind==='held_scholarship'&&<dl className="l4i-dl">{d.url&&<><dt>Page</dt><dd><a href={d.url} target="_blank" rel="noreferrer">{d.url} <ExternalLink size={11}/></a></dd></>}{it.suggestion&&<><dt>AI re-check</dt><dd>{it.suggestion}</dd></>}{d.audience_quote&&<><dt>Who</dt><dd><q>{d.audience_quote}</q></dd></>}{d.value_quote&&<><dt>Value</dt><dd><q>{d.value_quote}</q></dd></>}</dl>}
+    {it.kind==='held_scholarship'&&<dl className="l4i-dl">{d.url&&<><dt>Page</dt><dd><a href={d.url} target="_blank" rel="noreferrer">{d.url} <ExternalLink size={11}/></a></dd></>}{it.suggestion&&<><dt>AI re-check</dt><dd>{it.suggestion}</dd></>}{(d.audience_quote||d.value_quote)&&<><dt>Page quotes</dt><dd><details className="l4i-quote" data-l4-quote><summary>Who and value quotes</summary>{d.audience_quote&&<p><b>Who:</b> <q>{d.audience_quote}</q></p>}{d.value_quote&&<p><b>Value:</b> <q>{d.value_quote}</q></p>}</details></dd></>}</dl>}
     </div>
     {/* Z3 source (§5.2): the official address, the stored copy and its date */}
     {(d.evidence_id||d.course_id||d.proposed?.source_url)&&!aerItem&&<p className="l4i-evid" data-l4-zone="source" data-l4-evidence><small>
@@ -386,7 +393,7 @@ function AerRows({aer,rank,ticking,ticked,tick}){
     {rank<6&&<p className="l4i-why" data-l4-aer-pa-only><small>AER items are admitted or rejected by the Platform Admin (decision A3). Curators correct active rows in Catalogue › Entry requirements.</small></p>}
     <ul className="l4i-sample l4i-aer-rows" data-l4-aer-rows>{rows.map(r=>{const label=course?[r.kind&&String(r.kind).replace(/_/g,' '),r.description].filter(Boolean).join(': '):[r.course,r.country,r.level,r.qualification].filter(Boolean).join(' · ')
       const min=[r.min_grade,r.scale&&r.scale!=='none'?r.scale:null,r.score!=null?`${r.score} (${r.basis||'no basis'})`:null,r.band?`band ${r.band}`:null].filter(Boolean).join(' · ')
-      const body=<><strong>{label||'—'}</strong>{min&&<small> · {min}</small>}<span className="l4i-aer-status" data-l4-aer-status={isExcluded(r)?'excluded':r.status}>{isExcluded(r)?'Excluded in Layer 4':ROW_STATUS[r.status]||r.status}</span>{other[r.id]&&<span className="l4i-aer-status" data-l4-aer-other={r.id}>About another programme: {other[r.id]}</span>}{flag[r.id]&&<span className="l4i-aer-status" data-l4-aer-flag={r.id}>Cannot be admitted as read: {flag[r.id]}</span>}{r.quote&&<q>{r.quote}</q>}</>
+      const body=<><strong>{label||'—'}</strong>{min&&<small> · {min}</small>}<span className="l4i-aer-status" data-l4-aer-status={isExcluded(r)?'excluded':r.status}>{isExcluded(r)?'Excluded in Layer 4':ROW_STATUS[r.status]||r.status}</span>{other[r.id]&&<span className="l4i-aer-status" data-l4-aer-other={r.id}>About another programme: {other[r.id]}</span>}{flag[r.id]&&<span className="l4i-aer-status" data-l4-aer-flag={r.id}>Cannot be admitted as read: {flag[r.id]}</span>}{r.quote&&<details className="l4i-quote" data-l4-quote><summary>Page quote</summary><q>{r.quote}</q></details>}</>
       return <li key={r.id} data-l4-aer-row={r.id} title={r.status_reason||undefined}>{ticking&&r.status==='proposed'?<label><input type="checkbox" checked={ticked.includes(r.id)} onChange={()=>tick(r.id)} data-l4-aer-tick={r.id} aria-label={`Leave out ${label}`}/> {body}</label>:body}</li>})}</ul>
     {aer.decision&&<p className="l4i-why" data-l4-aer-decision><small>Decided: {aer.decision.action==='edit_and_approve'?'approved except':aer.decision.action} · {aer.decision.reason}{Array.isArray(aer.decision.exclude_row_ids)?` · ${aer.decision.exclude_row_ids.length} row(s) left out`:''}</small></p>}
   </div>

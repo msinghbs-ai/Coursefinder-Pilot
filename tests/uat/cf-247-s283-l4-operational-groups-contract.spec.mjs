@@ -70,7 +70,8 @@ test('one primary disposition per item: the groups sum to the items waiting; req
 
 test('the Inbox shows three choices; group A as counts only; detailed classes stay in the card', () => {
   for (const l of ['Ready for my decision', 'Information needed from me', 'Technical recovery']) expect(ui).toContain(`'${l}'`)
-  expect(ui).toContain('Settled by existing rules:')
+  expect(ui).not.toContain('Settled by existing rules:') // s1090: the engineering lines are off the screen
+  expect(ui).not.toContain('data-l4-grouped-at')
   expect(inbox).toContain("<GroupBar active={view==='group'?grp:''}")
   expect(fn('public.admin_layer4_groups')).toContain("raise exception 'group A is settled by existing rules and has no cards; see its rules in the summary'")
 })
@@ -116,8 +117,8 @@ test.describe('desktop', () => {
     await expect(page.locator('[data-l4-group-pick="I"]')).toContainText('Human input needed requests (201)')
     await expect(page.locator('[data-l4-group-sum]')).toContainText('5,209 items waiting, each in one group; 201 Human input needed requests are a separate line, not added.')
     await expect(page.locator('[data-l4-group-pick="B"]')).toContainText('Technical recovery (639)')
-    await expect(page.locator('[data-l4-group-a]')).toContainText('Settled by existing rules: 307')
-    await expect(page.locator('[data-l4-grouped-at]')).toContainText('Grouped Wed 4 Nov 2026, 5:46 pm AEDT by the Layer 4 groups task · 12 changed since, shown under Ready for my decision until regrouped')
+    await expect(page.locator('[data-l4-group-a]')).toHaveCount(0) // s1090: no engineering log under the group buttons
+    await expect(page.locator('[data-l4-grouped-at]')).toHaveCount(0)
     await page.locator('[data-l4-group-pick="B"]').click()
     const card = page.locator('[data-l4-group-list="B"] [data-l4-item="nothing_ready"]')
     await expect(card.locator('[data-l4-group="B"]')).toContainText('Technical recovery: not yet: the platform is recovering it')

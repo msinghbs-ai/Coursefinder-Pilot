@@ -80,7 +80,7 @@ test('(d) the Filter & Badge Reference covers every filter of the six screens an
   expect(has('Courses', 'State / Region')).toBe(true)                                             // regionLabel(country)
   for (const l of new Set(labelsIn(src('AerWorkspace.jsx')))) expect(has('Entry requirements', l), `Entry requirements filter ${l}`).toBe(true)
   for (const l of ['Module / Field', 'University', 'Destination country', 'Source country', 'Decision bucket']) { expect(src('Layer4PrimaryFilters.jsx')).toContain(`<small>${l}</small>`); expect(has('Layer 4', l), l).toBe(true) }
-  for (const l of ['View', 'University list', 'AER']) { expect(src('Layer4AdvancedFilters.jsx')).toContain(`<small>${l}</small>`); expect(has('Layer 4', l), l).toBe(true) }
+  for (const l of ['View', 'AER']) { expect(src('Layer4AdvancedFilters.jsx')).toContain(`<small>${l}</small>`); expect(has('Layer 4', l), l).toBe(true) }
   for (const l of ['Show policies', 'Document type', 'Stage']) expect(has('English', l), l).toBe(true)
   for (const b of ['In Layer 4 review (N waiting)', 'University-wide rule applies', 'No official website / course URL on file', 'Not stated on institution page']) expect(has('Badges', b), b).toBe(true)
   expect(WORKED_EXAMPLES.map((x) => x.key)).toEqual(['W1', 'W2', 'W3', 'W4'])
