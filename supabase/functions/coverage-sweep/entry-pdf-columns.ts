@@ -1,4 +1,4 @@
-// CF-247 s1050 (S1-AER-Claude; Platform Admin 24 Nov 2026 16:15 AEDT: "ACU PDF: implement deterministic layout extraction"; Standing Authority Charter 23 Nov 2026 item 1:
+// CF-247 s1071 (S1-AER-Claude; Platform Admin 24 Nov 2026 16:15 AEDT: "ACU PDF: implement deterministic layout extraction"; Standing Authority Charter 23 Nov 2026 item 1:
 // proven-structure PDF readers are pre-authorised). Some entry PDFs draw no row rules that pdf.ts (ruled-cells-v1) can prove, yet print a clean column table: a header
 // of words at fixed x positions, one row per country or qualification, each cell several wrapped lines (Australian Catholic University, "Minimum academic entry
 // requirements by country"). This reader proves that layout from the positioned text alone and fails closed:

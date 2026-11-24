@@ -1,5 +1,5 @@
-// Guards: Standing Authority Charter 23 Nov 2026 item 1 (AER v2 proven-structure readers pre-authorised) and Platform Admin 24 Nov 2026 16:15 AEDT ("ACU PDF: implement deterministic layout extraction"); S1-AER-Claude s1050
-// s1050: entry-pdf-columns.ts proves an unruled PDF column table (ACU, minimum academic entry requirements by country) from positioned text alone, fails closed, and reads its cells through entry-cells.ts.
+// Guards: Standing Authority Charter 23 Nov 2026 item 1 (AER v2 proven-structure readers pre-authorised) and Platform Admin 24 Nov 2026 16:15 AEDT ("ACU PDF: implement deterministic layout extraction"); S1-AER-Claude s1071
+// s1071: entry-pdf-columns.ts proves an unruled PDF column table (ACU, minimum academic entry requirements by country) from positioned text alone, fails closed, and reads its cells through entry-cells.ts.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import os from 'node:os'

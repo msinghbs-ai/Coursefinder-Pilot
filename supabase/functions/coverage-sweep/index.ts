@@ -3219,7 +3219,7 @@ async function handle(req: Request): Promise<Response> {
             const pieces = ruled.skipped.map((k) => ({ reason: "ruled_grid_piece_without_course_column", country: k.head, quote: `page ${k.page}: a table piece starting "${k.head}" has no course column` }));
             parts = [{ parsed: { ...parsed, dropped: [...parsed.dropped, ...ruledRead.dropped, ...pieces] }, nm: { rows: parsed.rows, dropped: [] } }];
           }
-          // s1050 (AER v2 proven structure, S1-AER-Claude, Platform Admin 24 Nov 2026 16:15): an unruled PDF column table (ACU) proven from its positioned text is read cell by cell without the model (entry-pdf-columns.ts); same checks as every reader
+          // s1071 (AER v2 proven structure, S1-AER-Claude, Platform Admin 24 Nov 2026 16:15): an unruled PDF column table (ACU) proven from its positioned text is read cell by cell without the model (entry-pdf-columns.ts); same checks as every reader
           const colRead = !cellRead && !gridRead && !ruledRead && stored.pdfPages && Number(ws["reading.entry_ruled_grid_reader_on"]) >= 1 ? entryPdfColumnsRead(stored.pdfPages, await countryRefs(), quals?.on && Array.isArray(quals.qualifications) ? quals.qualifications : [], parseOpts.countryAliases, { minRows: Number(ws["reading.entry_ruled_grid_min_rows"]) || 5 }) : null;
           if (colRead) { const parsed = entryMatrixParsed(colRead.answer, colRead.text, Object.assign([] as EntryBandLine[], { forms: [] }) as EntryLineSet, parseOpts); parts = [{ parsed: { ...parsed, dropped: [...parsed.dropped, ...colRead.dropped] }, nm: { rows: parsed.rows, dropped: [] } }] }
           // s1017: while the entry_matrices route has no qualified model, the database leases stored PDFs only (svc_entry_matrix_next det_only); a PDF that no
