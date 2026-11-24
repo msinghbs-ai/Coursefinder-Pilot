@@ -61,3 +61,10 @@ test('the read goes through the cell reader and the admission checks: only print
   expect(r.dropped.map((d) => d.reason).filter((x) => x !== 'unknown_country')).toEqual([])
   expect(parsed.dropped).toEqual([])
 })
+
+test('s1072: the column reader runs before the unproven-PDF hold, so an unruled PDF is read before it is held', () => {
+  const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  const early = ix.indexOf('const colEarly = '), hold = ix.indexOf('if (stored.pdf && stored.pdf.status !== "ok" && !grid && !colEarly) {')
+  expect(early > 0 && early < hold).toBe(true)
+  expect(ix).toContain('const colRead = !cellRead && !gridRead && !ruledRead ? colEarly : null;')
+})
