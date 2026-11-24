@@ -78,3 +78,29 @@ test('fails closed: only one level, unknown country, prose context or English-on
   const html = '<script><h2>Australia</h2><p>Degree level</p><p>ATAR 65</p></script><h2>Argentina</h2><p>Certificate (level 4)</p><p>Year 12</p>'
   expect(ht.entryHtmlTableRead(html, COUNTRIES)).toBeNull()
 })
+
+test('VUW: explicit undergraduate IB Diploma minimum is global qualification-first, never mapped to an invented country', async () => {
+  const ht = await load('vuw-global')
+  const source = [
+    '<h1>Entry requirements</h1><h2>Undergraduate entry requirements</h2>',
+    '<p>All Bachelors degrees share the same academic entry criteria.</p>',
+    '<h3>Country-specific requirements</h3><label>Select your country</label><select><option>India</option></select>',
+    '<h3>International high school qualifications</h3>',
+    '<ul><li>IB (International Baccalaureate) Diploma: Minimum 24 points</li>',
+    '<li>CAIE: Three GCE A-Level passes at grade C or higher</li></ul>',
+    '<h3>English language requirements</h3><p>IELTS 6.0 overall</p>'
+  ].join('')
+  const QUALS = [{ code: 'IB_DP', aliases: ['international baccalaureate','ib diploma'] }]
+  const r = ht.entryHtmlTableRead(source, COUNTRIES, QUALS)
+  expect(r).not.toBeNull()
+  expect(r.answer.rows).toHaveLength(1)
+  expect(r.answer.rows[0].qualification_name).toContain('Baccalaureate')
+  expect(r.answer.rows[0].country_code).toBe('')
+  expect(r.answer.rows[0].min_value).toBe(24)
+  expect(r.answer.rows[0].grade_scale).toBe('points')
+  expect(r.tables[0].level_from).toBe('heading')
+  expect(ht.entryHtmlTableCompleteness(r).status).toBe('complete')
+  expect(ht.entryHtmlTableRead(source, COUNTRIES, [])).toBeNull()
+  expect(ht.entryHtmlTableRead(source.replace('<h2>Undergraduate entry requirements</h2>', ''), COUNTRIES, QUALS)).toBeNull()
+  expect(ht.entryHtmlTableRead(source.replace('Minimum 24 points', 'Expected around 24 points'), COUNTRIES, QUALS)).toBeNull()
+})
