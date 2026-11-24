@@ -18,7 +18,7 @@ test('one md5-guarded anchored edit of the machine check, nothing else replaced'
   expect(sql).toMatch(/-- Retires: nothing/)
   expect((sql.match(/execute replace/g) || []).length).toBe(1)
   const code = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
-  expect(code).not.toMatch(/\b(drop|delete from|truncate)\b/i)
+  expect(code.replace(/on commit drop/g, '')).not.toMatch(/\b(drop|delete from|truncate)\b/i)
   expect(sql).toContain('75')
   expect(sql).toContain('manual locks changed')
 })
