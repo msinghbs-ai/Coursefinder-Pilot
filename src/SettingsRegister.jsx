@@ -97,10 +97,11 @@ function SectionRows({settings,can,onSave}){
   </>
 }
 
-export default function SettingsRegister({onError}){
+export default function SettingsRegister({onError,onCount}){
   const[d,setD]=useState(null),[failed,setFailed]=useState(''),[q,setQ]=useState(''),[changedOnly,setChangedOnly]=useState(false),[unlocked,setUnlocked]=useState({}),[tab,setTab]=useState(null)
   const load=async()=>{try{const{data,error}=await supabase.rpc('admin_settings_register_read');if(error)throw error;setD(data||{})}catch(e){setFailed(errText(e));onError?.(errText(e))}}
   useEffect(()=>{load()},[])
+  useEffect(()=>{if(d&&onCount)onCount((d.sections||[]).reduce((n,sec)=>n+(sec.settings||[]).length,0))},[d])
   // a Consumer APIs setting is sent with the unlock only when the Platform Admin ticked it for that section; without it the write is refused
   const save=async(key,value,reason,unlock)=>{const{data,error}=await supabase.rpc('admin_toolsets_write',{p_action:'setting',p_args:{toolset:'pipeline',key,value,reason,...(unlock?{unlock:'consumer_api'}:{})}});if(error)throw error
     if(data&&data.ok===false)throw new Error('This Consumer APIs setting is read-only. Tick "Unlock: this is an approved change" first.');await load()}

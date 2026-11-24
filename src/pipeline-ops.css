@@ -20,3 +20,8 @@
 /* v2.15.246 (Fix 1): register run detail: evidence links and the batch table */
 .ops-evidence-list a{border:1px solid var(--ops-line);border-radius:var(--cf-radius-md);background:var(--cf-white);padding:7px 8px;display:flex;justify-content:space-between;gap:8px;align-items:center;color:var(--cf-slate-700);text-decoration:none}.ops-evidence-list a:hover{background:var(--cf-slate-50);border-color:var(--cf-indigo-200)}.ops-evidence-list a span{overflow-wrap:anywhere}
 .ops-table[data-run-batches]{min-width:0}.ops-table[data-run-batches] tbody tr{cursor:default}
+
+/* UI/UX Unification v1.2 Slice 2: the low-level settings sit in a collapsed Advanced System Keys drawer, below the primary controls. */
+.ps-advanced { background: var(--cf-surface); border: 1px solid var(--cf-border); border-radius: var(--cf-radius-md); padding: var(--cf-space-3); margin: var(--cf-space-3) 0; }
+.ps-advanced > summary { cursor: pointer; font-size: 1rem; line-height: 1.4; padding: var(--cf-space-2); min-height: 44px; display: flex; flex-wrap: wrap; align-items: center; gap: var(--cf-space-2); }
+.ps-advanced > summary small { font-weight: 400; color: var(--cf-muted); font-size: 0.875rem; }
