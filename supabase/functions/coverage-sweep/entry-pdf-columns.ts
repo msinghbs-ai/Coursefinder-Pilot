@@ -36,12 +36,12 @@ function pageLines(pg: PdfPage): Line[] {
   return out;
 }
 
-export type PdfColumnTable = { index: number; head: string; levelFrom: "column"; levels: string[]; lines: string[]; rows: number };
+export type PdfColumnTable = { index: number; head: string; levelFrom: "column"; levels: string[]; lines: string[]; rows: number; noMinimum: { label: string; level: string; cell: string }[] };
 
 export function pdfColumnTableLines(pages: PdfPage[], opt: { minRows?: number } = {}): { tables: PdfColumnTable[]; skipped: { index: number; reason: string; heading: string }[] } {
   const minRows = opt.minRows ?? 5;
   const skipped: { index: number; reason: string; heading: string }[] = [];
-  const byHeader = new Map<string, { head: string[]; levels: string[]; lines: string[]; rows: number; index: number }>();
+  const byHeader = new Map<string, { head: string[]; levels: string[]; lines: string[]; rows: number; index: number; noMinimum: { label: string; level: string; cell: string }[] }>();
   let index = -1, failed = false;
   for (const pg of pages) {
     const lines = pageLines(pg);
@@ -50,7 +50,7 @@ export function pdfColumnTableLines(pages: PdfPage[], opt: { minRows?: number } 
       if (!row || !key) { row = null; return }
       const t = byHeader.get(key)!;
       const label = part(row.label);
-      if (label) { t.rows++; row.cells.forEach((c, k) => { const cell = part(c); if (k > 0 && cell) t.lines.push(`| Country or Qualification: ${label.replace(/:/g, " -")} | ${levels[k - 1]}: ${cell} |`) }) }
+      if (label) { t.rows++; row.cells.forEach((c, k) => { const cell = part(c); if (k > 0 && cell) { t.lines.push(`| Country or Qualification: ${label.replace(/:/g, " -")} | ${levels[k - 1]}: ${cell} |`); if (!/\d/.test(cell)) t.noMinimum.push({ label: label.replace(/:/g, " -"), level: levels[k - 1], cell }) } }) }
       row = null;
     };
     for (let n = 0; n < lines.length && !failed; n++) {
@@ -68,7 +68,7 @@ export function pdfColumnTableLines(pages: PdfPage[], opt: { minRows?: number } 
         index++;
         if (bad || cols.slice(1).some((c) => !LEVEL_WORDS.test(c))) { skipped.push({ index, reason: "pdf_columns_header_level_unmapped", heading: cols.join(" | ") }); failed = true; break }
         head = cols; levels = cols.slice(1).map(title); key = cols.join("|").toLowerCase();
-        if (!byHeader.has(key)) byHeader.set(key, { head, levels, lines: [], rows: 0, index });
+        if (!byHeader.has(key)) byHeader.set(key, { head, levels, lines: [], rows: 0, index, noMinimum: [] });
         n = m - 1; prevY = hl[hl.length - 1].y; inBody = true; row = null; continue;
       }
       if (!inBody) continue;
@@ -90,7 +90,7 @@ export function pdfColumnTableLines(pages: PdfPage[], opt: { minRows?: number } 
   const tables: PdfColumnTable[] = [];
   for (const t of byHeader.values()) {
     if (t.rows < minRows) { skipped.push({ index: t.index, reason: "pdf_columns_too_few_rows", heading: t.head.join(" | ") }); continue }
-    tables.push({ index: t.index, head: "Country or Qualification", levelFrom: "column", levels: t.levels, lines: t.lines, rows: t.rows });
+    tables.push({ index: t.index, head: "Country or Qualification", levelFrom: "column", levels: t.levels, lines: t.lines, rows: t.rows, noMinimum: t.noMinimum });
   }
   return { tables, skipped };
 }
@@ -103,10 +103,16 @@ export function entryPdfColumnsRead(pages: PdfPage[], refs: EntryCountryRef[], q
   for (const t of tables) {
     const r = entryCellRead(t.lines.join("\n"), refs, quals, aliases, { minLevels: 1, minLines: Math.min(opt.minRows ?? 5, t.lines.length) });
     if (!r) { skipped.push({ index: t.index, reason: "pdf_columns_not_a_country_grid", heading: t.levels.join("; ") }); continue }
-    for (const x of r.answer.rows) rows.push({ ...x, conditions: { ...x.conditions, reader: ENTRY_PDF_COLUMNS_READER, pdf_columns: t.index } });
+    // s1073: a cell with no printed number is a pathway sentence, not a minimum: it is listed as dropped (no_minimum_published), never kept as a row named by the sentence
+    const pathway = new Set(t.noMinimum.map((n) => `Country or Qualification: ${n.label} | ${n.level}: ${n.cell}`.trim()));
+    let kept = 0;
+    for (const x of r.answer.rows) {
+      if (x.min_value == null && x.grade_scale === "none" && [...pathway].some((q) => String(x.quote || "").startsWith(q.slice(0, Math.min(q.length, 120))))) { dropped.push({ reason: "no_minimum_published", country: x.country_name || x.country_code || "", quote: String(x.quote || "").slice(0, 300) }); continue }
+      rows.push({ ...x, conditions: { ...x.conditions, reader: ENTRY_PDF_COLUMNS_READER, pdf_columns: t.index } }); kept++;
+    }
     dropped.push(...r.dropped);
     for (const [k, v] of Object.entries(r.stats)) stats[k] = (stats[k] || 0) + v;
-    pieces.push({ index: t.index, level_from: "column", levels: t.levels, lines: t.lines.length, rows: r.answer.rows.length });
+    pieces.push({ index: t.index, level_from: "column", levels: t.levels, lines: t.lines.length, rows: kept });
     all.push(...t.lines);
   }
   if (!pieces.length) return null;
