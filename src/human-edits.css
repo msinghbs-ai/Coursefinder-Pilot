@@ -33,3 +33,5 @@
 /* s819: rule-tuning candidates */
 .he-tuning{margin:8px 0;padding:8px 12px;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg)}
 .he-tuning-table{width:100%;border-collapse:collapse;font-size:var(--cf-fs-xs)}.he-tuning-table th,.he-tuning-table td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--cf-slate-200)}
+.he-periodic{margin:var(--cf-space-3) 0;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);padding:var(--cf-space-3)}
+.he-periodic>summary{cursor:pointer}
