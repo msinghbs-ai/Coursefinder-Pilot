@@ -1,4 +1,4 @@
--- CF-247 s1036 (S1-RM-Design, S2-RM-Design brief 24 Nov 2026 14:21 AEDT, item 1: "Explicitly add adelaide.edu.au as an approved legacy domain alias for Adelaide University").
+-- CF-247 s1038 (S1-RM-Design, S2-RM-Design brief 24 Nov 2026 14:21 AEDT, item 1: "Explicitly add adelaide.edu.au as an approved legacy domain alias for Adelaide University").
 -- Measured live 24 Nov 2026 14:15 (rolled-back read-back, head 20261124150000): the machine check of the AER first-read rule (security.aer_matrix_machine_check_v1) refuses
 -- Adelaide University's 40 proposed rows with source_not_official_host: the one stored source is a PDF on adelaide.edu.au, the provider's website is adelaideuni.edu.au.
 -- Of the 94 pending first-read items the same rule also refuses Curtin University (34 rows; its PDF is on a CDN host, s30991.pcdn.co, which is NOT aliased here: not decided).
@@ -19,18 +19,18 @@ begin
     raise exception 'guard: the consumer API is not at its baseline before this change: %', v;
   end if;
 end $g$;
-create temp table s1036_locks on commit drop as select count(*) n from pipeline.manual_locks;
+create temp table s1038_locks on commit drop as select count(*) n from pipeline.manual_locks;
 
 insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, kind, value, unit, sort, reason, section, used_by)
 values ('pipeline', 'aer.provider_host_aliases', 'Entry matrices: provider site aliases',
   'Each entry is "<provider id>:<host>". A stored entry-requirement source on that host (or a subdomain of it) counts as the provider''s own website for the machine admission check, for a provider whose website host differs from the host its documents are on (Adelaide University: adelaideuni.edu.au and adelaide.edu.au). It changes no other check; a host shared with another active provider is still refused.',
   'list', '["de2201a1-69ee-40ff-b6aa-0e54e535e6c0:adelaide.edu.au"]'::jsonb, 'hosts', 924,
-  'Platform Admin 24 Nov 2026 14:21 (S2-RM-Design brief item 1, s1036): adelaide.edu.au is an approved legacy domain of Adelaide University', 'Entry requirements',
+  'Platform Admin 24 Nov 2026 14:21 (S2-RM-Design brief item 1, s1038): adelaide.edu.au is an approved legacy domain of Adelaide University', 'Entry requirements',
   'security.aer_matrix_machine_check_v1 (rule source_not_official_host)')
 on conflict (toolset_key, key) do nothing;
 insert into pipeline.admin_control_events (area, action, target, detail, actor)
 values ('settings', 'migration', 'pipeline.platform_toolset_settings', jsonb_build_object('key', 'aer.provider_host_aliases', 'after', '["de2201a1-69ee-40ff-b6aa-0e54e535e6c0:adelaide.edu.au"]'::jsonb,
-        'reason', 'Platform Admin 24 Nov 2026 14:21: adelaide.edu.au approved for Adelaide University (s1036)', 'migration', '20261124160000'), security.system_actor_id());
+        'reason', 'Platform Admin 24 Nov 2026 14:21: adelaide.edu.au approved for Adelaide University (s1038)', 'migration', '20261124170000'), security.system_actor_id());
 
 do $f$
 declare
@@ -50,7 +50,7 @@ do $p$
 declare v jsonb := security.consumer_api_check_v1(); v_rule text; v_it uuid;
 begin
   if jsonb_array_length(coalesce(v->'drift', '[]'::jsonb)) <> 0 or (v->>'functions')::int <> 75 or (v->>'relations')::int <> 48 then raise exception 'post-check: the consumer API moved: %', v; end if;
-  if (select count(*) from pipeline.manual_locks) <> (select n from s1036_locks) then raise exception 'post-check: manual locks changed'; end if;
+  if (select count(*) from pipeline.manual_locks) <> (select n from s1038_locks) then raise exception 'post-check: manual locks changed'; end if;
   -- Adelaide's pending first read no longer stops at the host rule
   select i.id into v_it from pipeline.layer4_review_items i where i.entity_id = 'de2201a1-69ee-40ff-b6aa-0e54e535e6c0' and i.status = 'pending' and i.field_code = 'entry_matrix_first_run' limit 1;
   if v_it is not null then

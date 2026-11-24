@@ -1,9 +1,9 @@
-// Guards: CF-247 s1036 AER provider host aliases (Platform Admin 24 Nov 2026 14:21, S2-RM-Design brief item 1; Standing Authority Charter): the machine admission host rule reads the list setting
+// Guards: CF-247 s1038 AER provider host aliases (Platform Admin 24 Nov 2026 14:21, S2-RM-Design brief item 1; Standing Authority Charter): the machine admission host rule reads the list setting
 // aer.provider_host_aliases ("<provider id>:<host>"), Adelaide University is the only entry, the edit is md5-guarded and anchored, and no other check or consumer object is touched.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const sql = fs.readFileSync('supabase/migrations/20261124160000_cf247_s1036_aer_provider_host_aliases_adelaide.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations/20261124170000_cf247_s1038_aer_provider_host_aliases_adelaide.sql', 'utf8')
 
 test('the alias is a G2 list setting with Adelaide as its only entry', () => {
   expect(sql).toContain("'aer.provider_host_aliases'")
