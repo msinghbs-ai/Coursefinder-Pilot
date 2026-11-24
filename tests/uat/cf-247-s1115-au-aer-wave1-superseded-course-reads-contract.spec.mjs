@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const sql = fs.readFileSync('supabase/migrations/20261126140000_cf247_s1115_au_aer_wave1_superseded_course_reads_reread.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations/20261126170000_cf247_s1115_au_aer_wave1_superseded_course_reads_reread.sql', 'utf8')
 const code = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 
 test('scope is the newest superseded read with a bound page, no active row, no pending entry item', () => {
