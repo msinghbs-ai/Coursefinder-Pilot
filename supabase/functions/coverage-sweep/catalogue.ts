@@ -161,7 +161,7 @@ const LABEL_CTA = /^(?:apply|how to|how do|tips|find|search|view|see|read|contac
 const LABEL_VALUE = /(?:[A-Z]{0,3}\$\s?\d|\d\s?%|\b(?:AUD|NZD|USD)\b|\btuition\b|\bfees?\b|\bfull\b|\bhalf\b|\bup to\b)/;
 const LABEL_TIER = /^(?:up to\s+|a\s+|an\s+)?(?:[A-Z]{0,3}\$|(?:NZD|AUD|USD|CAD|GBP)\s?)\s?\d|^\d{1,3}(?:\.\d+)?\s?%|^automatic\b/i;
 const BLOCK_TAGS = new Set(["p", "div", "li", "ul", "ol", "tr", "td", "th", "dt", "dd", "br", "section", "article", "table", "thead", "tbody", "header", "footer", "aside", "form", "blockquote", "hr", "figure", "figcaption", "details", "summary"]);
-type Seg = { k: "h" | "b" | "t"; level: number; text: string; links: string[] };
+type Seg = { k: "h" | "b" | "t" | "s"; level: number; text: string; links: string[] };
 export type LabelSection = AwardSection & { group: string; body: string[]; intro: string };
 
 const decodeEntities = (t: string) => t
@@ -173,10 +173,10 @@ const decodeEntities = (t: string) => t
 function segments(main: string): Seg[] {
   const out: Seg[] = [];
   const src = main.replace(/<!--[\s\S]*?-->/g, " ").replace(/<(script|style|noscript|svg|template)\b[\s\S]*?<\/\1>/gi, " ");
-  let buf = "", bold = 0, plain = 0, boldDepth = 0, head = 0, links: string[] = [];
+  let buf = "", bold = 0, plain = 0, boldDepth = 0, head = 0, sum = 0, links: string[] = [];
   const flush = () => {
     const text = buf.replace(/\s+/g, " ").trim();
-    if (text) out.push({ k: head ? "h" : (bold > 0 && bold >= 0.9 * (bold + plain) && text.length <= 160 ? "b" : "t"), level: head, text, links });
+    if (text) out.push({ k: head ? "h" : sum ? "s" : (bold > 0 && bold >= 0.9 * (bold + plain) && text.length <= 160 ? "b" : "t"), level: head, text, links });
     buf = ""; bold = 0; plain = 0; links = [];
   };
   for (const m of src.matchAll(/<(\/?)([a-z][a-z0-9]*)\b([^>]*)>|([^<]+)/gi)) {
@@ -184,11 +184,12 @@ function segments(main: string): Seg[] {
       const t = decodeEntities(m[4]);
       buf += t;
       const n = t.replace(/\s+/g, "").length;
-      if (boldDepth > 0 || head) bold += n; else plain += n;
+      if (boldDepth > 0 || head || sum) bold += n; else plain += n;
       continue;
     }
     const close = m[1] === "/", tag = m[2].toLowerCase();
     if (/^h[1-6]$/.test(tag)) { flush(); head = close ? 0 : Number(tag[1]); continue }
+    if (tag === "summary") { flush(); sum = close ? 0 : 1; continue }  // s1051: an expandable section's toggle (<details><summary>) names the award it holds (Charles Darwin: eight awards)
     if (tag === "strong" || tag === "b") { boldDepth = Math.max(0, boldDepth + (close ? -1 : 1)); continue }
     if (tag === "a" && !close) { const h = m[3].match(/href\s*=\s*["']([^"']+)["']/i); if (h) links.push(decodeEntities(h[1])); continue }
     if (BLOCK_TAGS.has(tag)) flush();
@@ -220,7 +221,10 @@ export function labelSections(html: string, baseUrl: string): LabelSection[] {
   const segs = segments(mainOf(html));
   type Cand = { i: number; rank: number; name: string };
   const cands: Cand[] = [];
-  segs.forEach((s, i) => { if (((s.k === "h" && s.level >= 2) || s.k === "b") && labelOk(s.text)) cands.push({ i, rank: s.k === "h" ? s.level : 7, name: cleanLabel(s.text) }) });
+  // s1051: when the page gives two or more expandable-section toggles that name awards, the toggles are the award labels and a bold label inside
+  // a section ("Type of Award:") is part of that award, not a new one
+  const toggles = segs.filter((s) => s.k === "s" && labelOk(s.text)).length >= 2;
+  segs.forEach((s, i) => { if (((s.k === "h" && s.level >= 2) || (s.k === "s") || (s.k === "b" && !toggles)) && labelOk(s.text)) cands.push({ i, rank: s.k === "h" ? s.level : 7, name: cleanLabel(s.text) }) });
   const isCand = new Set(cands.map((c) => c.i));
   const intro = segs.slice(0, cands.length ? cands[0].i : 0).filter((x) => x.k === "t").map((x) => x.text).join(" ").slice(0, 1500);  // the text ahead of the first award is shared by every award
   const taken = new Set<string>(), out: LabelSection[] = [];
