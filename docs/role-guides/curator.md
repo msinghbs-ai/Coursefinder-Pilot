@@ -1,6 +1,6 @@
 # StudySearch – Curator guide
 
-**Version:** 1.1 (reviewed for platform release v2.16.61)  
+**Version:** 1.1 (reviewed for platform release v2.16.86)  
 **Role:** Curator (rank 3)  
 **Change control:** CF-247  
 **Source:** generated from the Pilot `src/guide/roleGuides.js` and the menu; never edited by hand.
@@ -45,7 +45,7 @@ Keep the catalogue right: decide what waits for a person, correct records by han
 
 ## 5. Where to start
 
-- Layer 4 Review › Review by rule: choose the queue and the largest rule group; work one card at a time.
+- Layer 4 Review › Inbox, Review by rule: choose the queue and the largest rule group; work one card at a time.
 - Layer 1 Register › + Add source › Continue a draft: finish the mapping, then tell a Platform Admin it is ready to activate.
 
 ## 6. Common tasks
