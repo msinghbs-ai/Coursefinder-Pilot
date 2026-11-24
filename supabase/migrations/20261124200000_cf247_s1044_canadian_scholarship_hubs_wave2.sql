@@ -41,7 +41,7 @@ begin
     v_n := v_n + 1;
     if security.fc_sch_held_v1(r.pid, true) then v_held := v_held + 1; end if;
     insert into pipeline.admin_control_events (area, action, target, detail, actor)
-    values ('scholarship_coverage', 'add_listing', r.pid::text, jsonb_build_object('url', r.url, 'reason', 'Platform Admin 24 Nov 2026 15:13: Canadian Wave 2 scholarship hubs (s1044)', 'migration', '20261124190000'), security.system_actor_id());
+    values ('scholarship_coverage', 'add_listing', r.pid::text, jsonb_build_object('url', r.url, 'reason', 'Platform Admin 24 Nov 2026 15:13: Canadian Wave 2 scholarship hubs (s1044)', 'migration', '20261124200000'), security.system_actor_id());
   end loop;
   if v_n <> 11 then raise exception 'guard: % hubs registered, expected 11', v_n; end if;
   raise notice 's1044: % hubs registered and queued; % of them under a provider-level Firecrawl hold (reported, not changed)', v_n, v_held;
