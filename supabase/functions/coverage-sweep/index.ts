@@ -377,8 +377,7 @@ export function centralAiParsed(kind: string, a: any, page: string, parser: stri
   }
   return { parser, periods: Object.entries(found).map(([period, f]) => ({ period, months: [...f.months].sort((p, q) => p - q), years: [...f.years].sort(), quotes: f.quotes })) };
 }
-const BUDGET_MS = 110_000;
-const ENTRY_FIRST_MODEL_TIMEOUT_MS = 40_000;  // fixed: API time-out of the first model on one entry_matrices slice (s1085), so the next model fits in BUDGET_MS
+const BUDGET_MS = 110_000; const ENTRY_FIRST_MODEL_TIMEOUT_MS = 40_000;  // fixed: API time-out of the first model on one entry_matrices slice (s1085), so the next model fits in BUDGET_MS
 // v1.0.19 (s674): the AER v3 evaluation answers in a background task, so one call may wait longer than the 150 s request idle time-out
 const AER_V3_EVAL_BUDGET_MS = 360_000;  // fixed: a background task stays inside the 400 s wall clock of a paid-plan worker, with a margin to record the answers
 const AER_V3_EVAL_CALL_MS = 180_000;  // fixed: API time-out of one evaluation call (Platform Admin 18 Nov 2026 20:53, s674; was 90 s)
@@ -3240,8 +3239,7 @@ async function handle(req: Request): Promise<Response> {
             // v0.51.0: a reply that cannot be read (cut by the call's time-out while it streamed) is named, not taken as an empty answer
             const d = await r.json().catch((e) => ({ unreadable: e instanceof Error ? `${e.name}: ${e.message}` : String(e) }));
             if (!r.ok) throw Error(`HTTP ${r.status}: ${JSON.stringify(d?.error || d).slice(0, 200)}`);
-            // s1085: the cascade may answer with the next qualified model of the route; only the model sent may answer
-            if (d?.model && !String(d.model).startsWith(sentModel(d, it.model))) throw Error(`returned model ${d.model}, not ${sentModel(d, it.model)}`);
+            if (d?.model && !String(d.model).startsWith(sentModel(d, it.model))) throw Error(`returned model ${d.model}, not ${sentModel(d, it.model)}`);  // s1085: pinned to the model the cascade sent
             c1 += Number(d?.usage?.cost || 0);
             const content = String(d?.choices?.[0]?.message?.content || "");
             // v0.50.2: an empty answer says why (the provider's error or finish reason, as OpenRouter returns it); the read is unchanged
