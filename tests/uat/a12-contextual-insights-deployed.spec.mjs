@@ -16,7 +16,7 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
  test('RMIT Provider blade relates QILT PRISMS context and Scholarships without flattening granularity',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);await openCatalogue(page,'#providers','Providers')
   const search=page.locator('.m-searchbox input').first();await search.fill('RMIT University')
-  const row=page.locator('.m-table tbody tr').filter({hasText:'RMIT University (RMIT)'}).first();await expect(row).toBeVisible()
+  const row=page.locator('.ui-table tbody tr').filter({hasText:'RMIT University (RMIT)'}).first();await expect(row).toBeVisible()
   await row.click();const ci=await openMore(page,page.locator('aside.m-drawer-provider [data-provider-more]'),'provider_insights')
   await page.locator('aside.m-drawer-provider [data-ci-fold] > summary').click() // s698: Related insights & funding is folded by default
   expect(Number(ci?.student_outcomes?.total||0)).toBeGreaterThan(0)
@@ -37,7 +37,7 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
  test('Course blade labels Provider outcomes and Provider-scope Scholarships as context not Course truth',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);await openCatalogue(page,'#courses','Courses')
   const search=page.locator('.m-searchbox input').first();await search.fill('Advanced Diploma of Accounting')
-  const row=page.locator('.m-table tbody tr').filter({hasText:'Advanced Diploma of Accounting'}).filter({hasText:'RMIT University (RMIT)'}).first();await expect(row).toBeVisible()
+  const row=page.locator('.ui-table tbody tr').filter({hasText:'Advanced Diploma of Accounting'}).filter({hasText:'RMIT University (RMIT)'}).first();await expect(row).toBeVisible()
   await row.click();const ci=await openMore(page,page.locator('.m-drawer-course [data-course-more]'),'course_insights')
   await page.locator('.m-drawer-course [data-ci-fold] > summary').click() // s698: Related insights & funding is folded by default
   expect(ci?.student_outcomes?.granularity).toBe('provider_context')

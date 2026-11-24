@@ -1126,3 +1126,23 @@ header.ui-cf-layer-header[data-layer-header] button { background:var(--color-sur
 [data-l1-sources] .ui-xl-head { position:static }
 [data-l1-sources] .ui-xl-row { position:relative;z-index:0 }
 [data-l1-sources] .ui-xl-row th { position:static }
+
+/* s1076 (Slice 4): the shared catalogue table (DataTableView). Fluid columns, a sticky heading and first column, drag-to-resize handles, loading rows. */
+.ui-datatable { border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); scrollbar-width: thin; }
+.ui-datatable .ui-table { border-collapse: separate; border-spacing: 0; }
+.ui-datatable .ui-table th { position: sticky; top: 0; z-index: 6; overflow: hidden; text-overflow: ellipsis; font-weight: 800; }
+.ui-datatable .ui-table th > button { border: 0; background: transparent; color: inherit; font: inherit; font-weight: inherit; text-transform: inherit; letter-spacing: inherit; padding: 0; display: flex; align-items: center; gap: 4px; max-width: calc(100% - 6px); overflow: hidden; text-overflow: ellipsis; cursor: pointer; min-height: 24px; }
+.ui-datatable .ui-table th > button:disabled { cursor: default; }
+.ui-datatable .ui-table td { font-size: var(--text-xs); color: var(--color-text); vertical-align: middle; overflow: hidden; text-overflow: ellipsis; background: var(--color-surface); }
+.ui-datatable .ui-table tbody tr { cursor: pointer; }
+.ui-datatable .ui-table tbody tr:hover td { background: var(--color-surface-alt); }
+.ui-datatable .ui-table tbody tr.is-selected td { background: var(--color-primary-soft); }
+.ui-datatable .ui-table tbody tr.ui-skeleton-row, .ui-datatable .ui-table tbody tr.ui-empty-row { cursor: default; }
+.ui-datatable .ui-table tbody tr.ui-skeleton-row:hover td, .ui-datatable .ui-table tbody tr.ui-empty-row:hover td { background: var(--color-surface); }
+.ui-datatable .ui-sticky-col { position: sticky; left: 0; z-index: 4; box-shadow: 1px 0 0 var(--color-border); }
+.ui-datatable .ui-table th.ui-sticky-col { z-index: 9; background: var(--color-surface-alt); }
+.ui-col-resize { position: absolute; top: 0; right: 0; bottom: 0; width: 7px; cursor: col-resize; touch-action: none; z-index: 2; }
+.ui-col-resize::after { content: ''; position: absolute; top: 25%; bottom: 25%; right: 3px; width: 1px; background: var(--color-border); }
+.ui-col-resize:hover::after, .ui-col-resize:active::after { top: 0; bottom: 0; width: 2px; right: 2px; background: var(--color-primary); }
+.ui-col-resize:focus-visible { outline: 2px solid var(--color-focus); outline-offset: -2px; }
+.ui-skeleton-bar { display: block; height: 12px; border-radius: var(--radius-sm); background: var(--color-surface-alt); }

@@ -76,7 +76,7 @@ test.describe('phone width', () => {
     await page.keyboard.press('Escape')
     await expect(page.locator('[data-aer-drawer]')).toHaveCount(0)
     // the sticky first cell opens it too
-    await table(page).locator('tbody tr[data-row="m2"] td.sticky-col').tap()
+    await table(page).locator('tbody tr[data-row="m2"] td.ui-sticky-col').tap()
     await expect(page.locator('[data-aer-drawer="matrix"] [data-aer-quote]')).toContainText('(row 2)')
     expect(errors).toEqual([])
   })

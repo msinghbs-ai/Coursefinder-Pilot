@@ -183,6 +183,6 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-aer-tile="active"]')).toBeVisible()
     const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
     expect(over).toBeLessThanOrEqual(1)
-    await expect(page.locator('[data-aer-view="matrix"] .m-table-wrap')).toBeVisible()
+    await expect(page.locator('[data-aer-view="matrix"] .ui-tablewrap')).toBeVisible()
   })
 })

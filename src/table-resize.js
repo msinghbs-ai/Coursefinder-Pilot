@@ -1,7 +1,7 @@
 // v2.15.227 (Platform Admin, 9 Oct 2026: "modern UI standardised through the app"): every table on every page gets the
 // same column resizing as the catalogue lists. Drag the right edge of a heading to resize (double-click to reset). The
 // first drag fixes the table's current column widths so only the dragged column changes. Widths are remembered per page
-// and table in this browser only. Lists built with DataTable (m-fit-table) keep their own handles; any table can opt out
+// and table in this browser only. Lists built with DataTable (ui-fit-table) keep their own handles; any table can opt out
 // with data-no-resize.
 const KEY = 'cf-tw:'
 const signature = table => [...table.querySelectorAll(':scope > thead > tr:first-child > th')].map(th => (th.textContent || '').trim().toLowerCase()).join('|')
@@ -28,7 +28,7 @@ function unfreeze(table) {
 }
 
 function enhance(table) {
-  if (table.classList.contains('m-fit-table') || table.hasAttribute('data-no-resize')) return
+  if (table.classList.contains('m-fit-table') || table.classList.contains('ui-fit-table') || table.hasAttribute('data-no-resize')) return
   const ths = heads(table)
   if (ths.length < 2) return
   const sig = signature(table)

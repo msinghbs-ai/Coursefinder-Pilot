@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.509 — 24 Nov 2026
+
+- Prepared visible PIM Admin release candidate **v2.17.0** (S1-API-Frontend-Delivery, s1072, s1075, s1077; UI/UX Unification plan v1.2, Slices 3 and 4). Platform health, Scheduled jobs, Coverage, Layer 1 Register, Layer 2/3 Operations, Reference sources, the Scholarship journey, the shared catalogue table and the empty-state pill are on the v1.1 build; Layer 4 queue cards fold a hook's long detail behind one Technical detail toggle. No migration; the consumer API is untouched.
+
 ## 0.1.508 — 23 Nov 2026
 
 - Prepared visible PIM Admin release candidate **v2.16.86** (S2-Build, s977, Platform Admin 22 Nov 2026 22:01 and 22:57). Courses: filtered and sorted lists on the set-based state path (REQ-105 closed); counselling filters for Counsellor and Viewer; Settings › API usage in one compact table; glossary; Provider Contacts Clear / Reset.

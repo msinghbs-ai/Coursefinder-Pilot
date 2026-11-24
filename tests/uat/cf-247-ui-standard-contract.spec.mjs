@@ -22,12 +22,12 @@ test('scholarship list: a long nationality list cannot push columns off screen; 
   const items = Array.from({ length: 5 }).map((_, i) => ({ ...F.scholarshipRow, id: 's' + i, name: 'Scholarship ' + i, nationalities: i === 2 ? many : [], mapped_course_count: i, application_close_date: '2027-03-08', value_label: 'A$5,000' }))
   await override(page, 'scholarships_page', { total: 5, items })
   await page.goto('/#scholarships')
-  const wrap = page.locator('.m-table-wrap').first()
+  const wrap = page.locator('.ui-tablewrap').first()
   await expect(page.locator('tbody tr')).toHaveCount(5)
   await expect.poll(() => wrap.evaluate(e => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(1)
   for (const h of ['Value', 'Courses', 'Closes']) await expect(page.locator('thead th', { hasText: h })).toBeInViewport()
   await expect(page.locator('tbody')).toContainText('Vietnam, India +18 more')
-  const tw = await page.locator('table.m-fit-table').evaluate(e => e.getBoundingClientRect().width)
+  const tw = await page.locator('table.ui-fit-table').evaluate(e => e.getBoundingClientRect().width)
   const ww = await wrap.evaluate(e => e.clientWidth)
   expect(Math.abs(tw - ww)).toBeLessThanOrEqual(2) // fills the card width
 })
@@ -88,7 +88,8 @@ test('source: shared summary kit, tokens only, one table component', () => {
   expect(read('src/detail-summary.css')).not.toMatch(/#[0-9a-f]{3,8}\b/i)
   const main = read('src/mature-main.jsx')
   // v2.15.363: the one table component lives in src/DataTable.jsx (moved unchanged); mature-main and the Entry requirements workspace both use it
-  expect(read('src/DataTable.jsx')).toContain("tableLayout:'fixed'")
+  expect(read('src/ui-v1/DataTableView.jsx')).toContain("tableLayout:'fixed'") // s1076: the one table component moved to the v1.1 build; DataTable.jsx re-exports it
+  expect(read('src/DataTable.jsx')).toContain("export{DataTable,useColumnWidths}")
   expect(main).toContain("import{DataTable as SharedDataTable,FilterSelect}from'./DataTable'")
   expect(main).not.toContain("tableLayout:'fixed'")
   expect(main).not.toContain('<ObjectSections data={data} exclude={[\'contextual_insights\',\'international_contacts\'')

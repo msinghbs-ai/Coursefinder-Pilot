@@ -15,7 +15,7 @@ test.describe('CF-061 QILT PRISMS comparison experience @deployed',()=>{
   await openCatalogue(page,'#providers','Providers')
   const search=page.locator('.m-searchbox input').first()
   await search.fill('Charles Darwin University')
-  const row=page.locator('.m-table tbody tr').filter({hasText:'Charles Darwin University'}).first()
+  const row=page.locator('.ui-table tbody tr').filter({hasText:'Charles Darwin University'}).first()
   await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   await row.click()
   const compare=page.getByTitle('Compare this provider')
@@ -88,7 +88,7 @@ test.describe('CF-061 QILT PRISMS comparison experience @deployed',()=>{
   await openCatalogue(page,'#courses','Courses')
   const search=page.locator('.m-searchbox input').first()
   await search.fill('Advanced Diploma of Accounting')
-  const row=page.locator('.m-table tbody tr').filter({hasText:'Advanced Diploma of Accounting'}).filter({hasText:'RMIT'}).first()
+  const row=page.locator('.ui-table tbody tr').filter({hasText:'Advanced Diploma of Accounting'}).filter({hasText:'RMIT'}).first()
   await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   await row.click()
   // v2.15.226 (9 Oct 2026, slim course read): insights load from admin_read 'course_insights' when "More about this course" is opened.

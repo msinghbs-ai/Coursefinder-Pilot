@@ -1,6 +1,6 @@
 # StudySearch – PIM Operator guide
 
-**Version:** 1.0 (reviewed for platform release v2.16.86)  
+**Version:** 1.0 (reviewed for platform release v2.17.0)  
 **Role:** PIM Operator (rank 5)  
 **Change control:** CF-247  
 **Source:** generated from the Pilot `src/guide/roleGuides.js` and the menu; never edited by hand.

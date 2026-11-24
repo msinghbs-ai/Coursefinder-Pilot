@@ -3,7 +3,7 @@
 // empty states, filter chips, loading rows, section titles and the pager. Look and feel come
 // from ui-kit.css and tokens.css; numbers and dates from lib/format.js.
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ChevronRight, Database, RefreshCw, X } from 'lucide-react'
+import { ArrowLeft, ChevronRight, RefreshCw, X } from 'lucide-react'
 import { fmtNumber } from './lib/format.js'
 
 export { fmtNumber, fmtDate, fmtDateTime, fmtDayMonth, fmtTime, fmtTimeSeconds, fmtMoney, fmtPercent, fmtShare, fmtRelative, fmtBytes } from './lib/format.js'
@@ -48,7 +48,8 @@ export function PanelTitle({icon:Icon,title,subtitle,action}){return <div classN
 export function Pulse({label,value,tone,icon:Icon}){return <div className={`m-pulse tone-${tone}`}><span><Icon size={15}/></span><div><small>{label}</small><strong>{fmtNumber(value)}</strong></div></div>}
 export function SummaryCard({icon:Icon,label,value,tone}){return <div className={`m-summary-card tone-${tone}`}><Icon size={18}/><div><small>{label}</small><strong>{value}</strong></div></div>}
 export function EmptyState({icon:Icon,title,text}){return <div className="m-empty-state"><span><Icon size={24}/></span><h2>{title}</h2><p>{text}</p></div>}
-export function EmptyInline({text}){return <div className="m-empty-inline"><Database size={18}/><span>{text}</span></div>}
+// s1076: the one empty-state pill of the v1.1 build serves every screen
+export{EmptyInline}from'./ui-v1/kit.jsx'
 
 // One pager for every screen. className/withIcons let a screen keep its existing look.
 export function Pager({offset,limit=50,total,onOffset,className='m-pager',withIcons=false}){

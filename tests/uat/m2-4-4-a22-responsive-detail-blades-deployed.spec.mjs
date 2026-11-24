@@ -7,7 +7,7 @@ async function openFirst(page,label,query=''){
   await page.evaluate(next=>{location.hash='#'+next},slug)
   await expect(page.locator('.m-title-wrap h1')).toHaveText(label,{timeout:DETERMINISTIC_UI_TIMEOUT})
   if(query){const search=page.locator('.m-searchbox input');await search.fill(query)}
-  const row=page.locator('.m-table tbody tr').filter({hasNot:page.locator('.m-row-skeleton')}).first()
+  const row=page.locator('.ui-table tbody tr').filter({hasNot:page.locator('.ui-skeleton-bar')}).first()
   await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await row.click()
 }
 test.describe('A22 responsive detail blades @deployed',()=>{

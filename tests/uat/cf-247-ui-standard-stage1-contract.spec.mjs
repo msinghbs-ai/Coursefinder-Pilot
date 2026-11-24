@@ -44,7 +44,7 @@ test('source: one resize helper started once by the shell; tokens only in the st
   expect(main).toContain("useEffect(()=>startTableResize(document.body),[])")
   expect(main).toContain("import'./ui-standard.css'")
   const t = read('src/table-resize.js')
-  expect(t).toContain("table.classList.contains('m-fit-table') || table.hasAttribute('data-no-resize')")
+  expect(t).toContain("table.classList.contains('m-fit-table') || table.classList.contains('ui-fit-table') || table.hasAttribute('data-no-resize')")
   expect(t).toMatch(/try \{ localStorage\.setItem/)
   expect(read('src/ui-standard.css')).not.toMatch(/#[0-9a-f]{3,8}\b/i)
 })

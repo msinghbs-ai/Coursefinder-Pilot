@@ -1,22 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.16.86'
-export const PACKAGE_VERSION='0.1.508'
+export const UI_VERSION='2.17.0'
+export const PACKAGE_VERSION='0.1.509'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'23 Nov 2026',
-  title:'Counselling filters on Courses; API usage in one table',
+  date:'24 Nov 2026',
+  title:'One look across the admin: Coverage, Layer 1, Layer 2/3 and the catalogue table',
   changes:[
-    'Courses: Counsellors and Viewers see seven counselling filters: Destination country, State or region, University / provider (with Clear / Reset), Study level, Field of study, Intake month and year, and Tuition fee and English (fee range, Fee order Lowest to highest or Highest to lowest, an English test with the student\'s score, Has scholarship). Each list narrows to the destination chosen. Operators and Platform Admins keep every filter.',
-    'Settings › API usage: one compact table of the keys, each once, with calls for 7 and 30 days, error rate, 95th percentile, last used and Issue or Rotate. Legacy keys fold under one line; traffic detail and the switch controls fold below.',
-    'Provider detail: View active courses opens Courses filtered to that university. Provider Contacts has Clear / Reset.',
-    'Help › Platform guide › Filters & badges: a glossary of the words on the screens (PRISMS, QILT, THE, QS, ARWU, Publication, Empty reason, the Zoho and Website feeds, Contacts).'
+    'Platform health, Scheduled jobs, Coverage (course, field, telemetry, entry requirements, ETA, link refresh), Layer 1 Register, Layer 2/3 Operations, Reference sources and the Scholarship journey now use the same look as Courses, the Dashboard and the Guides.',
+    'The catalogue table (Courses, Providers, Scholarships and Entry requirements) uses the same look. Column widths you saved carry over.',
+    'Every empty list shows the same empty-state pill.',
+    'Layer 4 Review: a card shows its main facts and keeps a hook\'s long detail behind one "Technical detail" toggle, so a queue reads faster.'
   ],
   bugFixes:[
-    'Courses: a list filtered by state or region and sorted (for example Australia, New South Wales by International fee) opens in under a second instead of 3 to 7 seconds.',
-    'Courses: with a state chosen, the City column names that state\'s campus cities only (a course with campuses in Victoria and South Australia no longer shows Adelaide on a Victoria search).'
+    'Coverage: the notice you dismiss stays dismissed for the visit instead of relying on browser storage.'
   ]
 }
 
