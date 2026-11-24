@@ -262,6 +262,10 @@ export function labelSections(html: string, baseUrl: string): LabelSection[] {
     const valueSeg = body.find((b) => LABEL_VALUE.test(b.text)) || body[0];
     out.push({ key: sectionKey(c.name, taken), codes: [], name: c.name, value_text: (valueSeg?.text || "").slice(0, 300), url: pickUrl(links, baseUrl), group, body: body.map((b) => b.text), intro });
   });
+  // s1052: a link two or more awards share (Charles Darwin: the terms page two awards point to) names no single award, so it is not an award address: those awards keep their section keys
+  const used = new Map<string, number>();
+  for (const s of out) if (s.url) used.set(s.url, (used.get(s.url) || 0) + 1);
+  for (const s of out) if (s.url && (used.get(s.url) || 0) > 1) s.url = null;
   for (const s of out) s.codes = [s.key];
   // an umbrella lists several awards, at least two of them with a stated value; anything less is a page about one award or a list of links
   const valued = out.filter((s) => LABEL_VALUE.test(s.name) || LABEL_VALUE.test(s.body.join(" ")));
