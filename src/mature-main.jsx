@@ -11,7 +11,7 @@ import{adminRead,api,supabase,AUTH_LINK_TYPE}from'./lib/supabase'
 import CourseDetailPolish from'./CourseDetailPolish'
 import EnrichFields from'./EnrichFields'
 import FeeReader from'./FeeReader'
-import FieldCoverage from'./FieldCoverage'
+import FieldCoverage from'./ui-v1/FieldCoverageView'
 import EnrichPlan from'./EnrichPlan'
 import{ProviderSummary,PillRow,FactCards,FactCard}from'./DetailSummary'
 import{CompletenessBar,MissingFieldBar,ProviderBulkBar,ProviderProvenancePanel,providerCompleteness,PROVIDER_FIELD_WORDS,PROVIDER_TRACKED_FIELDS}from'./CompletenessBar' // s807 (20 Nov 2026): UnoPim patterns
@@ -90,9 +90,9 @@ const HumanEditsAudit=lazyPage(()=>import('./HumanEditsAudit')) // CF-247 s804/s
 const Automations=lazyPage(()=>import('./ui-v1/AutomationsView.jsx'))
 const SearchCapCard=lazyPage(()=>import('./SearchCapCard'))
 const PipelineSettings=lazyPage(()=>import('./PipelineSettings'))
-const CoverageView=lazyPage(()=>import('./course-coverage'),'CoverageView')
+const CoverageView=lazyPage(()=>import('./ui-v1/CourseCoverageView'),'CoverageView')
 // CF-247 AER Phase B (mandate 2 Nov 2026 §13): academic entry requirements on Coverage & completeness › Attributes, Curator and above
-const AerCoverage=lazyPage(()=>import('./AerCoverage'))
+const AerCoverage=lazyPage(()=>import('./ui-v1/AerCoverageView'))
 const AdaptersWorkspace=lazyPage(()=>import('./AdaptersWorkspace'))
 const IntakeRunValidate=lazyPage(()=>import('./IntakeRunValidate'))
 // CF-247 Fill fields (Platform Admin directive 9-10 Nov 2026): the on-demand description panel on the Provider Catalogue and Provider Detail; it loads when first opened
@@ -108,9 +108,9 @@ const Layer23Operations=lazyPage(()=>import('./Layer23Operations'))
 const ScreenUse=lazyPage(()=>import('./ScreenUse'))
 const AdapterBuilderTab=lazyPage(()=>import('./AdapterBuilderTab'))
 const BuildAdapter=lazyPage(()=>import('./BuildAdapter'))
-const LinkRefresh=lazyPage(()=>import('./LinkRefresh'))
-const CoverageTelemetry=lazyPage(()=>import('./CoverageTelemetry')) // v2.16.42: Coverage now
-const PipelineEta=lazyPage(()=>import('./PipelineEta')) // v2.16.54 (s777): Pipeline & field ETA
+const LinkRefresh=lazyPage(()=>import('./ui-v1/LinkRefreshView'))
+const CoverageTelemetry=lazyPage(()=>import('./ui-v1/CoverageTelemetryView')) // v2.16.42: Coverage now
+const PipelineEta=lazyPage(()=>import('./ui-v1/PipelineEtaView')) // v2.16.54 (s777): Pipeline & field ETA
 const ScholarshipLayer=lazyPage(()=>import('./ScholarshipLayer'))
 const Progress=lazyPage(()=>import('./Progress'))
 const AdminTasks=lazyPage(()=>import('./AdminTasks'))

@@ -159,7 +159,7 @@ test('fixtures cover every case, on the live definitions, with the migration app
 })
 
 test('operator screens: Enrich fields shows the values read; Layer 4 labels a course description', () => {
-  const ef = fs.readFileSync('src/EnrichFields.jsx', 'utf8'), l4 = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8'), cc = fs.readFileSync('src/course-coverage.jsx', 'utf8')
+  const ef = fs.readFileSync('src/EnrichFields.jsx', 'utf8'), l4 = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8'), cc = fs.readFileSync('src/ui-v1/CourseCoverageView.jsx', 'utf8')
   expect(ef).toContain("if(i.field==='description')return v.text||(v.sentences||[]).map(s=>s.text).join(' ')||'—'")
   expect(ef).toContain("if(i.field==='deadline')return (v.deadlines||[])")
   expect(l4).toContain("label={cdCourse?DESC_PART.course:it.kind==='provider_description'?DESC_PART.university:k.label}") // s931 fix 2

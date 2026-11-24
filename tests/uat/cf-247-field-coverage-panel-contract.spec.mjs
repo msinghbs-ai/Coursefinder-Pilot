@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 test('per-field 80% coverage panel and its hourly snapshot are wired end to end', () => {
-  const ui = fs.readFileSync('src/course-coverage.jsx', 'utf8')
+  const ui = fs.readFileSync('src/ui-v1/CourseCoverageView.jsx', 'utf8')
   expect(ui).toContain('export const COVERAGE_TARGET=80')
   expect(ui).toContain('data-field-target')
   expect(ui).toContain("['intakes','Intakes / start dates'],['english','English requirements'],['fee','Provider tuition (fee year)']")

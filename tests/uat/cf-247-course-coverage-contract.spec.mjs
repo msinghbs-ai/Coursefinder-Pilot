@@ -13,7 +13,7 @@ test('coverage model, schedule and governed read', () => {
 })
 
 test('Course coverage is reachable from Coverage & completeness and uses the validated ordinal ramp', () => {
-  const v = fs.readFileSync('src/course-coverage.jsx', 'utf8')
+  const v = fs.readFileSync('src/ui-v1/CourseCoverageView.jsx', 'utf8')
   const nav = fs.readFileSync('src/nav-map.js', 'utf8')
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
   // v2.15.107: Course coverage is the first tab of Coverage & completeness, inside the app shell; the old address still opens it.

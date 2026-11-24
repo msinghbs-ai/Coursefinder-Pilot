@@ -1,13 +1,14 @@
+import './ui-kit.css'
 // Coverage › Courses › Link refresh (v2.15.133, Decision 201). How often each kind of course link is re-checked, for all
 // countries, one country or one provider (the most specific schedule wins), and which third-party and regulatory
 // portals supply links. The job "Refresh course links" (Automations) applies the schedules every 10 minutes.
 // Read/write: public.admin_link_refresh_read / admin_link_refresh_edit (Pipeline Operator and above change them).
 import React,{useEffect,useState}from'react'
 import{CalendarClock,Check,Plus,RefreshCw,Trash2,X}from'lucide-react'
-import{supabase}from'./lib/supabase'
-import{Button,Loading,SectionTitle,StatusChip}from'./ui-kit'
-import{fmtDateTime,fmtNumber}from'./lib/format.js'
-import{plainError}from'./lib/errors'
+import{supabase}from'../lib/supabase'
+import{Button,Loading,SectionTitle,StatusChip}from'./kit.jsx'
+import{fmtDateTime,fmtNumber}from'../lib/format.js'
+import{plainError}from'../lib/errors'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const KIND={regulator:'Regulator',admission_centre:'Admission centre',government_portal:'Government portal',aggregator:'Course directory'}
@@ -22,24 +23,24 @@ export default function LinkRefresh(){
   const edit=async(action,args,confirmText)=>{if(confirmText&&!window.confirm(confirmText))return;setBusy(true);setErr('')
     try{const{data:d,error}=await supabase.rpc('admin_link_refresh_edit',{p_action:action,p_args:args});if(error)throw error;setData(d);setAdding(false)}
     catch(e){setErr(errText(e))}finally{setBusy(false)}}
-  if(!data)return err?<p className="fr-error" role="alert">{err}</p>:<Loading label="Loading link refresh…"/>
+  if(!data)return err?<p className="ui-fr-error" role="alert">{err}</p>:<Loading label="Loading link refresh…"/>
   const can=Boolean(data.can_edit)&&!busy
-  return <section className="m-panel lr-panel" data-link-refresh>
+  return <section className="ui-card ui-lr-panel" data-link-refresh>
     <SectionTitle icon={CalendarClock} title="Link refresh" subtitle="How often course links are checked again. A schedule for one country or provider replaces the all-countries one for its courses; new countries follow the all-countries schedules."
-      action={<div className="sd-actions"><Button compact onClick={load}><RefreshCw size={14}/>Refresh</Button>{can&&<Button compact onClick={()=>setAdding(a=>!a)}><Plus size={14}/>Add schedule</Button>}</div>}/>
-    {err&&<p className="fr-error" role="alert">{err}</p>}
-    {adding&&<div className="cl-form" data-add-schedule>
-      <label><small>Country</small><select className="fv-input" value={f.country} onChange={e=>setF({...f,country:e.target.value})} aria-label="Country"><option value="">All countries</option>{(data.countries||[]).map(c=><option key={c} value={c}>{c}</option>)}</select></label>
-      <label><small>Link</small><select className="fv-input" value={f.link_type} onChange={e=>setF({...f,link_type:e.target.value})} aria-label="Link type">{(data.types||[]).map(t=><option key={t.code} value={t.code}>{t.label}</option>)}</select></label>
-      <label><small>Every (days)</small><input className="fv-input re-year" inputMode="numeric" value={f.every_days} onChange={e=>setF({...f,every_days:e.target.value.replace(/\D/g,'').slice(0,3)})} aria-label="Every how many days"/></label>
-      <div className="re-foot"><Button compact variant="primary" disabled={busy||!(Number(f.every_days)>=1&&Number(f.every_days)<=365)} onClick={()=>edit('save_policy',f)}><Check size={13}/>Save</Button><Button compact onClick={()=>setAdding(false)}><X size={13}/>Cancel</Button></div>
+      action={<div className="ui-sd-actions"><Button compact onClick={load}><RefreshCw size={14}/>Refresh</Button>{can&&<Button compact onClick={()=>setAdding(a=>!a)}><Plus size={14}/>Add schedule</Button>}</div>}/>
+    {err&&<p className="ui-fr-error" role="alert">{err}</p>}
+    {adding&&<div className="ui-cl-form" data-add-schedule>
+      <label><small>Country</small><select className="ui-fv-input" value={f.country} onChange={e=>setF({...f,country:e.target.value})} aria-label="Country"><option value="">All countries</option>{(data.countries||[]).map(c=><option key={c} value={c}>{c}</option>)}</select></label>
+      <label><small>Link</small><select className="ui-fv-input" value={f.link_type} onChange={e=>setF({...f,link_type:e.target.value})} aria-label="Link type">{(data.types||[]).map(t=><option key={t.code} value={t.code}>{t.label}</option>)}</select></label>
+      <label><small>Every (days)</small><input className="ui-fv-input ui-re-year" inputMode="numeric" value={f.every_days} onChange={e=>setF({...f,every_days:e.target.value.replace(/\D/g,'').slice(0,3)})} aria-label="Every how many days"/></label>
+      <div className="ui-re-foot"><Button compact variant="primary" disabled={busy||!(Number(f.every_days)>=1&&Number(f.every_days)<=365)} onClick={()=>edit('save_policy',f)}><Check size={13}/>Save</Button><Button compact onClick={()=>setAdding(false)}><X size={13}/>Cancel</Button></div>
     </div>}
-    <div className="cf-table-wrap"><table className="cf-table" data-schedules><thead><tr><th>Link</th><th>Applies to</th><th>Every</th><th>On</th><th>Last run</th><th></th></tr></thead>
+    <div className="ui-tablewrap"><table className="ui-table" data-schedules><thead><tr><th>Link</th><th>Applies to</th><th>Every</th><th>On</th><th>Last run</th><th></th></tr></thead>
       <tbody>{(data.policies||[]).map(p=><tr key={p.id}>
         <td>{p.type_label}</td><td>{p.provider||p.country_name||'All countries'}</td>
-        <td>{can?<select className="fv-input" value={p.every_days} onChange={e=>edit('save_policy',{id:p.id,link_type:p.link_type,every_days:e.target.value})} aria-label={`${p.type_label} every`}>{[...new Set([7,14,30,60,90,180,365,p.every_days])].sort((a,b)=>a-b).map(d=><option key={d} value={d}>{d} days</option>)}</select>:`${p.every_days} days`}</td>
+        <td>{can?<select className="ui-fv-input" value={p.every_days} onChange={e=>edit('save_policy',{id:p.id,link_type:p.link_type,every_days:e.target.value})} aria-label={`${p.type_label} every`}>{[...new Set([7,14,30,60,90,180,365,p.every_days])].sort((a,b)=>a-b).map(d=><option key={d} value={d}>{d} days</option>)}</select>:`${p.every_days} days`}</td>
         <td>{can?<input type="checkbox" checked={Boolean(p.active)} onChange={e=>edit('save_policy',{id:p.id,link_type:p.link_type,every_days:p.every_days,active:e.target.checked})} aria-label={`${p.type_label} schedule on`}/>:<StatusChip value={p.active?'on':'off'} tone={p.active?'success':'neutral'} label={p.active?'On':'Off'}/>}</td>
-        <td>{p.last_run_at?<><span>{fmtDateTime(p.last_run_at)}</span><small className="sd-desc">{result(p.last_result)}</small></>:'—'}</td>
+        <td>{p.last_run_at?<><span>{fmtDateTime(p.last_run_at)}</span><small className="ui-sd-desc">{result(p.last_result)}</small></>:'—'}</td>
         <td>{can&&(p.country||p.provider_id)&&<Button compact variant="danger" onClick={()=>edit('remove_policy',{id:p.id},'Remove this schedule? Its courses follow the all-countries schedule again.')} aria-label="Remove schedule"><Trash2 size={13}/></Button>}</td>
       </tr>)}</tbody></table></div>
 

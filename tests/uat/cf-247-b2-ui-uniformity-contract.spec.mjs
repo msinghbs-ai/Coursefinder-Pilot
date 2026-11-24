@@ -40,7 +40,7 @@ test('one component kit and "Layer N" wording', () => {
   for (const c of ['export function StatusChip', 'export function Badge', 'export function LayerBadge', 'export function Button', 'export function Metric', 'export function Empty', 'export function FilterChip', 'export function Loading', 'export function SectionTitle', 'export function statusTone']) expect(kit).toContain(c)
   for (const f of ['src/pipeline-ops-entry.jsx', 'src/platform-maturity-entry.jsx', 'src/EvidenceWorkspace.jsx', 'src/m2-3-intelligence-entry.jsx', 'src/mature-main.jsx']) expect(read(f)).toMatch(/from'\.\/ui-kit'/)
   expect(read('src/ui-v1/ScheduledRuntimeHealthView.jsx')).toMatch(/from'\.\/kit\.jsx'/) // s1072: the v1.1 kit has the same pieces for the ui-v1 screens
-  for (const f of ['src/CourseDetailPolish.jsx', 'src/ui-v1/ScheduledRuntimeHealthView.jsx', 'src/Layer4Intervention.jsx', 'src/course-coverage.jsx']) {
+  for (const f of ['src/CourseDetailPolish.jsx', 'src/ui-v1/ScheduledRuntimeHealthView.jsx', 'src/Layer4Intervention.jsx', 'src/ui-v1/CourseCoverageView.jsx']) {
     expect(read(f)).not.toMatch(/>L[1-4]\b|'L[1-4] |Awaiting L[1-4]|\(L[1-4]\)/)
   }
 })
@@ -52,7 +52,7 @@ test('R12: Course coverage reports completeness states and the completeness scor
   expect(m).toContain("'completeness_states'")
   expect(m).toContain('pipeline.completeness_daily')
   expect(m).toContain('pipeline.course_completeness')
-  const v = read('src/course-coverage.jsx')
+  const v = read('src/ui-v1/CourseCoverageView.jsx')
   expect(v).toContain('Course completeness score')
   expect(v).toContain('Completeness by attribute')
   expect(v).toContain('completeness_state:pick.cstate')

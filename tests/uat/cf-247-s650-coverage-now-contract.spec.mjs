@@ -4,9 +4,9 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 test('screens: the hardcoded score bands, the portal rows and the read-only stalled counters are gone', () => {
-  expect(fs.readFileSync('src/course-coverage.jsx', 'utf8')).not.toContain('<h2>Courses by attributes admitted</h2>')
-  expect(fs.readFileSync('src/LinkRefresh.jsx', 'utf8')).not.toContain('data-portals')
-  expect(fs.readFileSync('src/FieldCoverage.jsx', 'utf8')).not.toContain('<StalledFields scope={scope} readOnly')
+  expect(fs.readFileSync('src/ui-v1/CourseCoverageView.jsx', 'utf8')).not.toContain('<h2>Courses by attributes admitted</h2>')
+  expect(fs.readFileSync('src/ui-v1/LinkRefreshView.jsx', 'utf8')).not.toContain('data-portals')
+  expect(fs.readFileSync('src/ui-v1/FieldCoverageView.jsx', 'utf8')).not.toContain('<StalledFields scope={scope} readOnly')
   expect(fs.readFileSync('src/mature-main.jsx', 'utf8')).toContain('<CoverageTelemetry onError={err}/>{/* v2.16.54 (s777, Platform Admin 19 Nov 2026 15:36): Pipeline & field ETA, consolidated, by country or by university */}<PipelineEta onError={err}/><CoverageView view="courses"/>') // v2.16.54 (s777): Pipeline & field ETA sits between them
 })
 

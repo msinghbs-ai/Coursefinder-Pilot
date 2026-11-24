@@ -4,7 +4,7 @@ import './tokens.css'
 import './ui-kit.css'
 import { RefreshCw } from 'lucide-react'
 import { fmtNumber } from '../lib/format.js'
-export { fmtDate, fmtDateTime, fmtDayMonth, fmtNumber, fmtRelative } from '../lib/format.js'
+export { fmtDate, fmtDateTime, fmtDayMonth, fmtNumber, fmtRelative, fmtTime, fmtTimeSeconds, fmtMoney, fmtPercent, fmtShare, fmtBytes } from '../lib/format.js'
 
 const TONE = { success: 'success', ok: 'success', danger: 'danger', critical: 'danger', error: 'danger', warning: 'warning', warn: 'warning', info: 'neutral', neutral: 'neutral', violet: 'neutral', unknown: 'neutral' }
 const toneOf = t => TONE[t] || 'neutral'
@@ -29,4 +29,5 @@ export function SectionTitle({ icon: Icon, title, subtitle, action, level = 3 })
   return <div className="ui-st"><div className="ui-st-head">{Icon && <span className="ui-st-icon"><Icon size={16} /></span>}<div><H>{title}</H>{subtitle && <p>{subtitle}</p>}</div></div>{action}</div>
 }
 export function Empty({ children, text, icon: Icon }) { return <div className="ui-emptyline">{Icon && <Icon size={17} />}<span>{children ?? text}</span></div> }
+export function EmptyInline({ text }) { return <div className="ui-emptyline"><span>{text}</span></div> }
 export function Loading({ label = 'Loading…', compact = false }) { return <div className={`ui-loading${compact ? ' is-compact' : ''}`}><RefreshCw size={16} /><span>{label}</span></div> }

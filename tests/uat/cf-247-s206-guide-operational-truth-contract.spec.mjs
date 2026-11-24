@@ -239,7 +239,7 @@ test('UR-11: a check says which run measured it; no result is never OK; report-t
   expect(src).toContain("fresh(c)==='missing'?<StatusChip value=\"missing\"")
   // academic entry requirements have a reader (AER); the coverage label names the measure, not a missing reader (from CF-247 AER Phase B,
   // 2 Nov 2026: the measure is the per-provider Academic entry requirements panel on the same page, guarded by s221)
-  expect(fs.readFileSync('src/course-coverage.jsx', 'utf8')).toContain("academic_entry:{label:'Academic entry requirements',layer:'AER programme: measured by provider below (Academic entry requirements)'}")
+  expect(fs.readFileSync('src/ui-v1/CourseCoverageView.jsx', 'utf8')).toContain("academic_entry:{label:'Academic entry requirements',layer:'AER programme: measured by provider below (Academic entry requirements)'}")
   // a rising Layer 4 count names its possible causes, not only "reviewers are behind"
   const l4 = G.SIGNALS.find((x) => x.see.startsWith('Layer 4 waiting count rises'))
   for (const w of ['new arrivals', 'evidence that cannot be opened', 'the same defect repeating', 'another step', 'report time']) expect(l4.means).toContain(w)

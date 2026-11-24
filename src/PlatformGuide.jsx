@@ -7,7 +7,7 @@ import{Archive,ArrowRight,BellRing,BookOpen,CalendarCheck,Compass,Filter,Gauge,I
 import{FILTER_REFERENCE_REVIEWED_FOR,FILTER_SCREENS,filterEntries}from'./guide/filterReference.js' // s931 (Decision 279 §7)
 import{LAYER4_GUIDE}from'./guide/layer4Guide.js'
 import{WORKED_EXAMPLES}from'./guide/workedExamples.js'
-import CoverageNotice from'./CoverageNotice'
+import CoverageNotice from'./ui-v1/CoverageNoticeView'
 import{PAGES,SECTIONS,canOpen,refusedTab,roleName}from'./nav-map'
 import{UI_VERSION,RELEASE}from'./release-manifest'
 import{useLookups}from'./lib/lookups.js' // s930: the coverage line reads the database, never written text

@@ -16,7 +16,7 @@ const FX = 'tests/fixtures/aer-phase-b'
 const fx = (f) => fs.readFileSync(`${FX}/${f}`, 'utf8')
 const fixtures = fx('fixtures.sql'), setup = fx('setup.sql'), run = fx('run.sh')
 const fn = (name) => { const a = m.indexOf(`create or replace function ${name}(`); return m.slice(a, m.indexOf('$function$;', a)) }
-const ui = fs.readFileSync('src/AerCoverage.jsx', 'utf8')
+const ui = fs.readFileSync('src/ui-v1/AerCoverageView.jsx', 'utf8')
 
 const EDITS = [
   ['public.admin_aer(text,jsonb)', '5e58f5d6126b3b2fe026e376a56c7686', '0593747bb6ddd55c785fc445a06eb242'],
@@ -239,7 +239,7 @@ test.describe('mocked browser', () => {
     const calls = []
     await page.route('**/rest/v1/rpc/admin_aer', (route) => { calls.push((route.request().postDataJSON() || {}).p_action); return route.fulfill({ json: COVERAGE }) })
     await page.goto('/#coverage?tab=attributes')
-    await expect(page.locator('.cc-wrap')).toBeVisible()
+    await expect(page.locator('.ui-cc-wrap')).toBeVisible()
     await expect(page.locator('[data-aer-coverage]')).toHaveCount(0)
     expect(calls.filter((c) => c === 'coverage')).toEqual([])
   })

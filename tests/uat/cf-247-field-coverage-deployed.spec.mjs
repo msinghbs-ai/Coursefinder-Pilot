@@ -16,7 +16,7 @@ test.describe('CF-247 per-field coverage panel @deployed', () => {
       const panel = page.locator('[data-field-target]')
       await expect(panel.getByRole('heading', { name: /Coverage against the 80% target, by field/ })).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })
       for (const label of ['Intakes / start dates', 'English requirements', 'Provider tuition (fee year)']) await expect(panel.getByText(label).first()).toBeVisible()
-      await expect(panel.locator('.cc-target')).toHaveCount(3)
+      await expect(panel.locator('.ui-cc-target')).toHaveCount(3)
       await expect(panel.locator('tbody tr')).toHaveCount(3)
       await milestoneScreenshot(page, testInfo, 'cf247-field-coverage-panel')
     } finally { await finish(testInfo, runtime) }

@@ -21,7 +21,7 @@ import{supabase}from'./lib/supabase'
 import{hrefFor,roleName}from'./nav-map'
 import{Button,Empty,Loading,Metric,StatusChip,fmtDate,fmtNumber}from'./ui-kit'
 import'./layer4-inbox.css'
-import{ReviewReadinessLine}from'./AerCoverage'
+import{ReviewReadinessLine}from'./ui-v1/AerCoverageView'
 import{GroupBar,GroupList,recordNavigation}from'./Layer4Groups' // CF-247 mandate 16:32 §7: the three choices
 import{ItemLifecycle}from'./Layer4ItemLifecycle' // CF-247 decision 12:24: action lifecycle, times and acknowledgement on every card
 import{layer4DeepLinkCursor}from'./layer4-deep-link'
