@@ -55,7 +55,7 @@ function UniversityPick({kind,provider,onProvider}){
   if(provider?.provider_id)return <div className="l4p-field"><small>University</small><span className="l4p-chosen" data-l4-uni-chosen={provider.provider_id}><strong>{provider.name}</strong><button type="button" aria-label="Clear the university" onClick={()=>{onProvider(null);setQ('')}} data-l4-uni-clear><X size={13}/></button></span></div>
   return <div className="l4p-field l4p-uni"><small>University</small>
     <label className="l4i-search"><Search size={14}/><input value={q} onFocus={()=>setOpen(true)} onChange={e=>{setQ(e.target.value);setOpen(true)}} placeholder="Find a university…" aria-label="University" data-l4-uni-search/></label>
-    {open&&list.length>0&&<ul className="l4p-pop" data-l4-uni-results>{list.map(u=><li key={u.provider_id}><button type="button" onClick={()=>{onProvider({provider_id:u.provider_id,name:u.name});setOpen(false);setQ('')}} data-l4-uni-pick={u.provider_id}>{u.name}<small> · {u.country||''} · {fmtNumber(u.total||Object.values(u.by_kind||{}).reduce((a,b)=>a+Number(b||0),0))} waiting</small></button></li>)}</ul>}</div>
+    {open&&list.length>0&&<ul className="l4p-pop" data-l4-uni-results>{list.map(u=><li key={u.provider_id}><button type="button" onClick={()=>{onProvider({provider_id:u.provider_id,name:u.name,country:u.country,by_kind:u.by_kind,oldest:u.oldest,late:u.late});setOpen(false);setQ('')}} data-l4-uni-pick={u.provider_id}>{u.name}<small> · {u.country||''} · {fmtNumber(u.total||Object.values(u.by_kind||{}).reduce((a,b)=>a+Number(b||0),0))} waiting</small></button></li>)}</ul>}</div>
 }
 
 /** Source country: entry requirements only (the student's country of prior education), from the countries the entry rows hold. */

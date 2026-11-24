@@ -16,7 +16,6 @@ export const FILTER_REFERENCE = [
   e('Layer 4', 'Decision bucket', 'Ready to decide (a person decides), Needs information (a page, document or value only a person can give), System recovery (the platform re-reads it by itself), All', 'You want only the cards that need your decision today', C, 'L4-F2'),
   // Layer 4 Review — Advanced filters (§5.5)
   e('Layer 4', 'View', 'How the queue is shown: Review by rule, By university, By kind, Grid, Decided, Groups', 'You need a table of rows (Grid) or the last decisions (Decided)', C, 'L4-V2'),
-  e('Layer 4', 'University list', 'By university: the universities whose name contains the words typed', 'You look for one university in the list', C, 'L4-F3'),
   e('Layer 4', 'AER', 'Entry requirements of one university: Ready to decide first, or All waiting', 'You want the reads that are complete first', C, 'L4-F5'),
   e('Layer 4', 'Why items are held', 'Entry requirements: the reasons the machine admission held the reads, with counts', 'You want to see why entry tables wait', C, 'L4-F6'),
   e('Layer 4', 'Kind', 'Grid: the queue shown as rows', 'You work one queue as a table', C, 'L4-F7'),
