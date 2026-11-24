@@ -150,6 +150,7 @@ test.describe('mocked browser', () => {
     await expect(card.locator('[data-l4-choice="reject"]')).toBeEnabled()
     await expect(card.locator('[data-l4-choice="reread_stored"]')).toBeEnabled()
     await expect(card.locator('[data-l4-choice="ai_analyse"]')).toHaveCount(0)
+    await card.locator('[data-l4-fold="more-detail"] > summary').click()                    // s1073: the long detail sections sit behind one Technical detail toggle
     await expect(card.locator('[data-l4-section="recovery"]')).toContainText('Recovery')
     await expect(card.locator('[data-l4-section="recovery"]')).not.toHaveAttribute('open', '')
     await card.locator('[data-l4-section="recovery"] summary').click()
@@ -163,6 +164,8 @@ test.describe('mocked browser', () => {
     await page.goto('/#layer-4-review?view=university')
     await page.locator('[data-l4-uni="UNSW Sydney"] [data-l4-pill="intervention"]').click()
     const card = page.locator('[data-l4-item="intervention"]')
+    await expect(card.locator('[data-l4-section="issue"]')).toHaveCount(1)
+    await card.locator('[data-l4-fold="more-detail"] > summary').click()
     await expect(card.locator('[data-l4-section="issue"]')).toContainText('Issue')
     expect(calls.filter((c) => c.p_action === 'detail').map((c) => c.p_args.items)).toContainEqual([{ kind: 'intervention', ref: '41' }])
     await expect(card.locator('[data-l4-choice="supply"]')).toBeVisible()

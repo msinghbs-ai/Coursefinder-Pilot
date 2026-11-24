@@ -318,3 +318,7 @@ mark.dea-ban{background:var(--cf-amber-100);color:inherit;padding:0 2px;border-r
 .ui-admin .l4g-bulk { border: 1px solid var(--cf-border); border-radius: var(--cf-radius-md); padding: var(--cf-space-3); margin: var(--cf-space-3) 0; background: var(--cf-surface); }
 .ui-admin .l4g-bulk > summary { cursor: pointer; min-height: 32px; display: flex; flex-wrap: wrap; gap: var(--cf-space-2); align-items: center; }
 .ui-admin .l4g-bulk > summary small { color: var(--cf-muted); }
+/* s1073: a hook's long detail sections sit behind one compact Technical detail toggle; long values scroll inside their own box */
+.l4i-more{margin-top:4px}
+.l4i-more>summary{font-size:var(--cf-fs-xs)}
+.l4i-more .l4i-dl dd{max-height:12em;overflow:auto}
