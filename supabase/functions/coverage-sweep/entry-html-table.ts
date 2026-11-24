@@ -20,7 +20,7 @@ import type { EntryCountryRef, EntryQualification } from "./entry.ts";
 import { entryCellRead, entryCellLabel, entryCellCountryIndex } from "./entry-cells.ts";
 
 export const ENTRY_HTML_TABLE_READER = "html-table-v1";
-export type HtmlTableOptions = { minRows?: number };
+export type HtmlTableOptions = { minRows?: number; providerCountry?: string };
 export type HtmlTableDrop = { reason: string; country: string; quote: string };
 export type HtmlTablePiece = { index: number; level_from: "column" | "heading" | "row"; levels: string[]; lines: number; rows: number };
 export type HtmlTableRead = { answer: { rows: any[] }; text: string; dropped: HtmlTableDrop[]; tables: HtmlTablePiece[]; skipped: { index: number; reason: string; heading: string }[];
@@ -261,8 +261,10 @@ export function entryHtmlTableRead(html: string, refs: EntryCountryRef[], quals:
                                    opt: HtmlTableOptions = {}): HtmlTableRead | null {
   const { tables: headed, skipped: plainSkipped } = htmlTableLines(html, opt);
   const country = htmlCountryHeadingTables(html, refs, quals, aliases);
-  const sections = htmlCountrySectionPieces(html, refs, quals, aliases);
-  const globalQualifications = htmlExplicitQualificationPieces(html, quals);
+  // Only NZ and CA AER lanes may use the new semantic-block adapter; AU's reader is byte-for-byte unchanged.
+  const nzca = opt.providerCountry === 'NZ' || opt.providerCountry === 'CA';
+  const sections = nzca ? htmlCountrySectionPieces(html, refs, quals, aliases) : { tables: [] };
+  const globalQualifications = nzca ? htmlExplicitQualificationPieces(html, quals) : { tables: [] };
   const tables = [...headed, ...country.tables.filter((t) => !headed.some((h) => h.index === t.index)), ...sections.tables, ...globalQualifications.tables];
   const skipped = [...plainSkipped.filter((s) => !tables.some((t) => t.index === s.index)), ...country.skipped.filter((s) => !tables.some((t) => t.index === s.index))];
   if (!tables.length) return null;
