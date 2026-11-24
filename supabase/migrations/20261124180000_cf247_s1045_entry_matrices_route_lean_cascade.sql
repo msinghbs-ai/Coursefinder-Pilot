@@ -1,4 +1,4 @@
--- CF-247 s1044 (S1-AER-Claude, Platform Admin brief 24 Nov 2026 15:15 AEDT): switch the entry_matrices route on with the lean-model cascade.
+-- CF-247 s1045 (S1-AER-Claude, Platform Admin brief 24 Nov 2026 15:15 AEDT): switch the entry_matrices route on with the lean-model cascade.
 -- Why: the route has been off since 16 Nov 2026 16:52 (Qwen3 30B 2/50 on the AER v1 prompt), so coverage-sweep holds every table that no $0 reader proves
 --      as held_unparsed (ACU layout PDF, UOW bare-point table). Platform Admin 24 Nov 15:15: enable the lean models, GPT-4.1 mini on escalation.
 -- Honesty: each model is recorded as qualified = provisional (Platform Admin decision, not a benchmark pass). Admission rules, the strict-proof rule
