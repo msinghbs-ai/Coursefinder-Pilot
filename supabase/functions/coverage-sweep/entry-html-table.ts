@@ -233,12 +233,37 @@ export function htmlCountrySectionPieces(html: string, refs: EntryCountryRef[], 
   return { tables, skipped: [] as { index: number; reason: string; heading: string }[] };
 }
 
+
+// s1064: an explicitly printed GLOBAL qualification minimum is not a
+// country-specific result. In the undergraduate academic-entry section only,
+// a source's "IB (International Baccalaureate) Diploma: Minimum 24 points"
+// is a qualification-first fact, gated on the platform's IB_DP reference code.
+// Never use a country's name, an English requirement or an unstated minimum.
+export function htmlExplicitQualificationPieces(html: string, quals: EntryQualification[]) {
+  const tables: { index: number; head: string; levelFrom: "heading"; levels: string[]; lines: string[]; rows: number }[] = [];
+  if (!quals.some((q) => q.code === "IB_DP" && (q.aliases || []).some((a) => /international baccalaureate/i.test(a)))) return { tables };
+  const lines = semanticBlockLines(html);
+  const i = lines.findIndex((t) => /^international high school qualifications$/i.test(t));
+  if (i < 0 || !lines.slice(Math.max(0, i - 90), i).some((t) => /^undergraduate entry requirements$/i.test(t))) return { tables };
+  const region = lines.slice(i + 1, i + 30);
+  const next = region.findIndex((t) => /^(?:english language requirements?|postgraduate entry requirements?)$/i.test(t));
+  const facts = next >= 0 ? region.slice(0, next) : region;
+  const exact = facts.find((t) => /^IB \(International Baccalaureate\) Diploma: Minimum \d{1,3}(?:\.\d+)? points?$/i.test(t));
+  if (!exact) return { tables };
+  const grade = exact.replace(/^IB \(International Baccalaureate\) Diploma:\s*/i, "");
+  tables.push({ index: -2001, head: "Qualification", levelFrom: "heading",
+     levels: ["Undergraduate Degree"],
+     lines: ["| Qualification: IB (International Baccalaureate) Diploma | Undergraduate Degree: " + part(grade) + " |"], rows: 1 });
+  return { tables };
+}
+
 export function entryHtmlTableRead(html: string, refs: EntryCountryRef[], quals: EntryQualification[] = [], aliases: Record<string, string> = {},
                                    opt: HtmlTableOptions = {}): HtmlTableRead | null {
   const { tables: headed, skipped: plainSkipped } = htmlTableLines(html, opt);
   const country = htmlCountryHeadingTables(html, refs, quals, aliases);
   const sections = htmlCountrySectionPieces(html, refs, quals, aliases);
-  const tables = [...headed, ...country.tables.filter((t) => !headed.some((h) => h.index === t.index)), ...sections.tables];
+  const globalQualifications = htmlExplicitQualificationPieces(html, quals);
+  const tables = [...headed, ...country.tables.filter((t) => !headed.some((h) => h.index === t.index)), ...sections.tables, ...globalQualifications.tables];
   const skipped = [...plainSkipped.filter((s) => !tables.some((t) => t.index === s.index)), ...country.skipped.filter((s) => !tables.some((t) => t.index === s.index))];
   if (!tables.length) return null;
   const rows: any[] = [], dropped: HtmlTableDrop[] = [], pieces: HtmlTablePiece[] = [], stats: Record<string, number> = {};
