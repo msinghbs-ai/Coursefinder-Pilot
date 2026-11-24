@@ -22,7 +22,7 @@ on conflict (provider_id, url) do nothing;
 
 insert into pipeline.admin_control_events(area, action, target, detail, actor)
 select 'aer', 'au_source_returned_wave1_register', 'pipeline.entry_matrix_sources',
-       jsonb_build_object('spec', 's1095', 'providers_attempted', 15, 'providers_registered', 5, 'sources_registered', 6,
+       jsonb_build_object('spec', 's1095', 'providers_attempted', 10, 'providers_registered', 5, 'sources_registered', 6,
          'reason', 'AER-FU-04: Admin #1019 returned providers; deeper official sources; no extraction, admission or rule change'),
        auth.uid()
 where not exists (select 1 from pipeline.admin_control_events e where e.area='aer' and e.action='au_source_returned_wave1_register' and e.detail->>'spec'='s1095');
