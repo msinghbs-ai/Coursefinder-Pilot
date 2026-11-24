@@ -1,7 +1,7 @@
 // CF-247 S1-UX s824 to s827 (Platform Admin 20 Nov 2026 10:31, 10:46 and 11:24, chat S1-UX): pure helpers (no React) for the Dashboard KPI cards
 // (s824), the 4-stage pipeline board on Platform Health (s825), the Layer 4 rule groups (s826) and the contextual ? help drawer (s827). The Layer 4
 // hold banner and banned-word removal are S1-RM-Design's (s819-s821, Pilot PR 1411: src/lib/description-check.js).
-// Shared by src/OpsPulse.jsx, src/HelpDrawer.jsx, src/Layer4RuleGroups.jsx, src/Dashboard.jsx, src/PlatformHealth.jsx and the s823-s827 spec.
+// Shared by src/OpsPulse.jsx, src/HelpDrawer.jsx, src/Layer4RuleGroups.jsx, src/PlatformHealth.jsx and the s823-s827 spec.
 // Every figure comes from the stored ops pulse (pipeline.ops_pulse_snapshot, migration 20261120140000, read inside admin_read 'platform_health'):
 // nothing here starts another database read. An unknown figure stays unknown (shown as a dash), never 0.
 import{fmtNumber}from'./format.js'

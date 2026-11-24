@@ -54,3 +54,11 @@ export function searchEntry(type, noun, { query = '', filters = {}, filterLabels
   const href = location.hash || '#'
   return { id: `search:${type}:${JSON.stringify([String(query).trim(), active])}`, kind: 'search', label: noun, detail: bits.join(' · '), href, state: { screen: type, patch: { query, filters, filterLabels } } }
 }
+
+// Search the catalogue (Dashboard, Viewer and Counsellor): the text goes into the Courses list's remembered search, then Courses opens.
+export function rememberCourseSearch(userId, text) {
+  try {
+    const k = rememberedStateKey('course', userId || 'anonymous'), saved = JSON.parse(localStorage.getItem(k) || '{}')
+    localStorage.setItem(k, JSON.stringify({ ...(saved && typeof saved === 'object' ? saved : {}), query: text, filters: {}, filterLabels: {} }))
+  } catch { /* a convenience only */ }
+}

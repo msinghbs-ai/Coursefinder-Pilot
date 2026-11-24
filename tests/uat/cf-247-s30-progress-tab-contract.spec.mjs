@@ -22,7 +22,7 @@ test('migration: hourly snapshot kept 90 days, catalogued job, one read for four
 
 test('retired: Live activity page, Pilot panel, Dashboard health strip, Layers and Recent activity, Task manager Running now', () => {
   expect(fs.existsSync('src/LiveActivity.jsx')).toBe(false)
-  const dash = read('src/Dashboard.jsx')
+  const dash = read('src/ui-v1/DashboardView.jsx')
   for (const gone of ['db-health', 'title="Layers"', 'title="Recent activity"', "adminRead('platform_health')", "adminRead('layer_status_summary')"]) expect(dash).not.toContain(gone)
   const ob = read('src/ProviderOnboarding.jsx')
   expect(ob).not.toContain('export function Pilot(')

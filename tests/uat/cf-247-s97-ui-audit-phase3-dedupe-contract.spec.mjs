@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 const m = fs.readFileSync('supabase/migrations-archive/20261024008000_cf247_ui_audit_phase3_dedupe.sql', 'utf8')
-const dash = fs.readFileSync('src/Dashboard.jsx', 'utf8')
+const dash = fs.readFileSync('src/ui-v1/DashboardView.jsx', 'utf8')
 const pc = fs.readFileSync('src/ProviderContactsWorkspace.jsx', 'utf8')
 const ui = fs.readFileSync('src/mature-main.jsx', 'utf8')
 

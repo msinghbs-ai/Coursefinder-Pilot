@@ -26,7 +26,7 @@ import ScholarshipCoverage,{ScholarshipSettings}from'./ScholarshipCoverage'
 import ScholarshipExtraction from'./ScholarshipExtraction'
 import ListEdit from'./ListEdit'
 import{CsvExport}from'./CsvExport' // CF-247 catalogue CSV export (Platform Admin 16 Nov 2026 22:12)
-import DashboardHome from'./Dashboard'
+import DashboardHome from'./ui-v1/DashboardView.jsx'
 import{recordRecent,routeEntry,searchEntry}from'./lib/recent-activity'
 import ContextualInsights from'./ContextualInsights'
 import ProviderLogo,{ProviderBrand,logoCapability}from'./ProviderLogo'

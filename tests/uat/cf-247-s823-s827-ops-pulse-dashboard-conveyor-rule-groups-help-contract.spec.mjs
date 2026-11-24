@@ -125,8 +125,8 @@ test.describe('mocked browser', () => {
     await mockAdmin(page)
     await withPulse(page)
     await page.goto('/#dashboard')
-    await expect(page.locator('[data-db-pulse] [data-kpi]')).toHaveCount(5)
-    await expect(page.locator('[data-db-pulse] .op-badge svg')).toHaveCount(5)
+    await expect(page.locator('[data-db-pulse] [data-kpi]:not([data-kpi="automations"])')).toHaveCount(5) // s1045: the running-automation card sits beside the five pulse cards
+    await expect(page.locator('[data-db-pulse] [data-kpi]:not([data-kpi="automations"]) .ui-kpi-badge svg')).toHaveCount(5)
     await expect(page.locator('[data-db-pulse] [data-country-bar]')).toHaveCount(3)
     await expect(page.locator('[data-db-failures="0"]')).toContainText('No failure or warning needs a person') // s836: genuine failures only (this answer has no open issue)
   })
