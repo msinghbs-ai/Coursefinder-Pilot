@@ -68,7 +68,7 @@ test('worker v0.73.0 reads a proven grid only with its switch, before a PDF is h
   expect(ix).toMatch(/if \(stored\.pdf && stored\.pdf\.status !== "ok" && !grid\)/)
   expect(ix).toContain('entryGridHeadingList(ws["reading.entry_grid_headings"])')
   expect(ix).toMatch(/gridRead \? \{ reader: ENTRY_GRID_READER/)
-  expect(ix).toMatch(/if \(!cellRead && !gridRead(?: && !ruledRead)?\) await pool/)
+  expect(ix).toMatch(/if \(!cellRead && !gridRead(?: && !ruledRead)?(?: && !colRead)?\) await pool/)
   const ui = fs.readFileSync('src/AerCourseLinks.jsx', 'utf8'), inbox = fs.readFileSync('src/Layer4Inbox.jsx', 'utf8')
   expect(ui).toContain("call('admin_entry_course_link_decide'")
   expect(ui).toContain("call('admin_entry_course_links'")

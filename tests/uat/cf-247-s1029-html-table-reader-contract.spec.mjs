@@ -120,7 +120,7 @@ test('the worker reads a proven HTML table in its own branch and leaves every ot
   expect(ix).toContain('const hp = entryMatrixParsed(htmlRead.answer, htmlRead.text,')
   expect(ix).toContain('if (it.completeness_required === true && hc.status !== "complete") {')
   // the held path for a page no deterministic reader proves is untouched (s1017)
-  expect(ix).toContain('if (!cellRead && !gridRead && !ruledRead && (it.det_only === true || !it.model)) {')
+  expect(ix).toContain('if (!cellRead && !gridRead && !ruledRead && !colRead && (it.det_only === true || !it.model)) {')
   const mig = fs.readFileSync('supabase/migrations/20261124140000_cf247_s1029_aer_html_table_reader.sql', 'utf8')
   expect(mig).toMatch(/^-- Replaces: /m)
   expect(mig).toMatch(/^-- Retires: /m)

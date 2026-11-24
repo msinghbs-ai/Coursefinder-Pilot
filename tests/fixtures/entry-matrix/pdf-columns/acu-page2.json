@@ -1,0 +1,771 @@
+{
+"source": "ACU minimum-academic-entry-requirements-by-country.pdf, entry_matrix_sources 224bc22d, content_hash 4f7b20f888bcaad6d081e6eef479d82893475ef4a740e4e7c8490f2eb869c162",
+"page": 2,
+"note": "excerpt of page 2 exported by entry_inspect (s1049): the Caribbean Advanced Proficiency Examination row is left out and the footer is cut after \"Updated April 2026\"; the stored PDF has 23 pages",
+"pages": [
+{
+"p": 2,
+"width": 595,
+"height": 842,
+"items": [
+{
+"x": 49.3,
+"y": 786.0,
+"w": 73.7,
+"h": 10,
+"s": "QUALIFICATION"
+},
+{
+"x": 153.5,
+"y": 786.0,
+"w": 91.6,
+"h": 10,
+"s": "BACHELOR DEGREE"
+},
+{
+"x": 287.1,
+"y": 786.0,
+"w": 111.0,
+"h": 10,
+"s": "DIPLOMAS OR TERTIARY"
+},
+{
+"x": 420.6,
+"y": 786.0,
+"w": 105.1,
+"h": 10,
+"s": "FOUNDATION STUDIES"
+},
+{
+"x": 287.1,
+"y": 776.0,
+"w": 115.9,
+"h": 10,
+"s": "PREPARATION PROGRAM"
+},
+{
+"x": 420.6,
+"y": 776.0,
+"w": 48.9,
+"h": 10,
+"s": "PROGRAM"
+},
+{
+"x": 287.1,
+"y": 766.0,
+"w": 89.4,
+"h": 10,
+"s": "(HEALTH SCIENCES)"
+},
+{
+"x": 49.3,
+"y": 749.7,
+"w": 40.9,
+"h": 10,
+"s": "European"
+},
+{
+"x": 153.5,
+"y": 749.7,
+"w": 101.6,
+"h": 10,
+"s": "Diplome du Baccalaureate"
+},
+{
+"x": 287.1,
+"y": 749.7,
+"w": 101.6,
+"h": 10,
+"s": "Diplome du Baccalaureate"
+},
+{
+"x": 420.6,
+"y": 749.7,
+"w": 101.6,
+"h": 10,
+"s": "Diplome du Baccalaureate"
+},
+{
+"x": 49.3,
+"y": 739.7,
+"w": 58.3,
+"h": 10,
+"s": "Baccalaureate"
+},
+{
+"x": 153.5,
+"y": 739.7,
+"w": 85.7,
+"h": 10,
+"s": "European Zeugnis der"
+},
+{
+"x": 287.1,
+"y": 739.7,
+"w": 85.7,
+"h": 10,
+"s": "European Zeugnis der"
+},
+{
+"x": 420.6,
+"y": 739.7,
+"w": 87.8,
+"h": 10,
+"s": "European, Zeugnis der"
+},
+{
+"x": 153.5,
+"y": 729.7,
+"w": 106.6,
+"h": 10,
+"s": "Europaischen Reifeprufung"
+},
+{
+"x": 287.1,
+"y": 729.7,
+"w": 106.6,
+"h": 10,
+"s": "Europaischen Reifeprufung"
+},
+{
+"x": 420.6,
+"y": 729.7,
+"w": 108.7,
+"h": 10,
+"s": "Europaischen Reifeprufung,"
+},
+{
+"x": 153.5,
+"y": 719.7,
+"w": 75.1,
+"h": 10,
+"s": "Diploma di Licenze"
+},
+{
+"x": 287.1,
+"y": 719.7,
+"w": 75.1,
+"h": 10,
+"s": "Diploma di Licenze"
+},
+{
+"x": 420.6,
+"y": 719.7,
+"w": 75.1,
+"h": 10,
+"s": "Diploma di Licenze"
+},
+{
+"x": 153.5,
+"y": 709.7,
+"w": 102.5,
+"h": 10,
+"s": "Liceale Europea, Europees"
+},
+{
+"x": 287.1,
+"y": 709.7,
+"w": 102.5,
+"h": 10,
+"s": "Liceale Europea, Europees"
+},
+{
+"x": 420.6,
+"y": 709.7,
+"w": 102.5,
+"h": 10,
+"s": "Liceale Europea, Europees"
+},
+{
+"x": 153.5,
+"y": 699.7,
+"w": 112.6,
+"h": 10,
+"s": "Baccalaureates Diploma with"
+},
+{
+"x": 287.1,
+"y": 699.7,
+"w": 112.6,
+"h": 10,
+"s": "Baccalaureates Diploma with"
+},
+{
+"x": 420.6,
+"y": 699.7,
+"w": 112.6,
+"h": 10,
+"s": "Baccalaureates Diploma with"
+},
+{
+"x": 153.5,
+"y": 689.7,
+"w": 113.4,
+"h": 10,
+"s": "minimum overall grade of 55."
+},
+{
+"x": 287.1,
+"y": 689.7,
+"w": 112.6,
+"h": 10,
+"s": "minimum overall grade of 51."
+},
+{
+"x": 420.6,
+"y": 689.7,
+"w": 114.2,
+"h": 10,
+"s": "minimum overall grade of 48."
+},
+{
+"x": 49.3,
+"y": 673.2,
+"w": 55.4,
+"h": 10,
+"s": "International"
+},
+{
+"x": 153.5,
+"y": 673.2,
+"w": 94.9,
+"h": 10,
+"s": "Successful completion of"
+},
+{
+"x": 287.1,
+"y": 673.2,
+"w": 95.0,
+"h": 10,
+"s": "Successful completion of"
+},
+{
+"x": 420.6,
+"y": 673.2,
+"w": 103.8,
+"h": 10,
+"s": "Completion of Year 1 of the"
+},
+{
+"x": 49.3,
+"y": 663.2,
+"w": 58.3,
+"h": 10,
+"s": "Baccalaureate"
+},
+{
+"x": 153.5,
+"y": 663.2,
+"w": 107.1,
+"h": 10,
+"s": "International Baccalaureate"
+},
+{
+"x": 287.1,
+"y": 663.2,
+"w": 107.1,
+"h": 10,
+"s": "International Baccalaureate"
+},
+{
+"x": 420.6,
+"y": 663.2,
+"w": 107.1,
+"h": 10,
+"s": "International Baccalaureate"
+},
+{
+"x": 153.5,
+"y": 653.2,
+"w": 122.1,
+"h": 10,
+"s": "Diploma with a minimum of 24"
+},
+{
+"x": 287.1,
+"y": 653.2,
+"w": 116.0,
+"h": 10,
+"s": "Diploma with minimum score"
+},
+{
+"x": 420.6,
+"y": 653.2,
+"w": 116.0,
+"h": 10,
+"s": "Diploma with minimum score"
+},
+{
+"x": 153.5,
+"y": 643.2,
+"w": 64.2,
+"h": 10,
+"s": "over six subjects."
+},
+{
+"x": 287.1,
+"y": 643.2,
+"w": 85.7,
+"h": 10,
+"s": "of 22 over six subjects."
+},
+{
+"x": 420.6,
+"y": 643.2,
+"w": 22.5,
+"h": 10,
+"s": "of 18."
+},
+{
+"x": 49.3,
+"y": 625.0,
+"w": 82.7,
+"h": 10,
+"s": "West African Senior"
+},
+{
+"x": 153.5,
+"y": 625.0,
+"w": 124.1,
+"h": 10,
+"s": "Maximum aggregate of 12 in the"
+},
+{
+"x": 287.1,
+"y": 625.0,
+"w": 111.4,
+"h": 10,
+"s": "Maximum aggregate of 20 in"
+},
+{
+"x": 420.6,
+"y": 625.0,
+"w": 111.4,
+"h": 10,
+"s": "Maximum aggregate of 30 in"
+},
+{
+"x": 49.3,
+"y": 615.0,
+"w": 73.2,
+"h": 10,
+"s": "School Certificate"
+},
+{
+"x": 153.5,
+"y": 615.0,
+"w": 63.4,
+"h": 10,
+"s": "best six subjects."
+},
+{
+"x": 287.1,
+"y": 615.0,
+"w": 77.8,
+"h": 10,
+"s": "the best six subjects."
+},
+{
+"x": 420.6,
+"y": 615.0,
+"w": 77.8,
+"h": 10,
+"s": "the best six subjects."
+},
+{
+"x": 49.3,
+"y": 500.3,
+"w": 73.7,
+"h": 10,
+"s": "QUALIFICATION"
+},
+{
+"x": 153.1,
+"y": 500.3,
+"w": 91.6,
+"h": 10,
+"s": "BACHELOR DEGREE"
+},
+{
+"x": 286.9,
+"y": 500.3,
+"w": 111.0,
+"h": 10,
+"s": "DIPLOMAS OR TERTIARY"
+},
+{
+"x": 420.9,
+"y": 500.3,
+"w": 105.1,
+"h": 10,
+"s": "FOUNDATION STUDIES"
+},
+{
+"x": 286.9,
+"y": 490.3,
+"w": 115.9,
+"h": 10,
+"s": "PREPARATION PROGRAM"
+},
+{
+"x": 420.9,
+"y": 490.3,
+"w": 48.9,
+"h": 10,
+"s": "PROGRAM"
+},
+{
+"x": 286.8,
+"y": 480.3,
+"w": 89.4,
+"h": 10,
+"s": "(HEALTH SCIENCES)"
+},
+{
+"x": 49.3,
+"y": 463.6,
+"w": 50.4,
+"h": 10,
+"s": "Afghanistan"
+},
+{
+"x": 153.1,
+"y": 463.6,
+"w": 101.4,
+"h": 10,
+"s": "Successful completion of a"
+},
+{
+"x": 286.8,
+"y": 463.6,
+"w": 113.6,
+"h": 10,
+"s": "Afghanistan Baccalauria with"
+},
+{
+"x": 420.9,
+"y": 463.6,
+"w": 113.6,
+"h": 10,
+"s": "Afghanistan Baccalauria with"
+},
+{
+"x": 153.1,
+"y": 453.6,
+"w": 98.3,
+"h": 10,
+"s": "recognised pre-tertiary or"
+},
+{
+"x": 286.8,
+"y": 453.6,
+"w": 125.2,
+"h": 10,
+"s": "minimum grade average of 83%."
+},
+{
+"x": 420.9,
+"y": 453.6,
+"w": 103.2,
+"h": 10,
+"s": "minimum grade average of"
+},
+{
+"x": 153.1,
+"y": 443.6,
+"w": 78.2,
+"h": 10,
+"s": "foundation program"
+},
+{
+"x": 420.9,
+"y": 443.6,
+"w": 20.4,
+"h": 10,
+"s": "80%."
+},
+{
+"x": 153.1,
+"y": 430.8,
+"w": 13.4,
+"h": 10,
+"s": "OR"
+},
+{
+"x": 153.1,
+"y": 417.9,
+"w": 111.1,
+"h": 10,
+"s": "Successful completion of one"
+},
+{
+"x": 153.1,
+"y": 407.9,
+"w": 108.1,
+"h": 10,
+"s": "year of study at a recognised"
+},
+{
+"x": 153.1,
+"y": 397.9,
+"w": 106.2,
+"h": 10,
+"s": "tertiary or higher education"
+},
+{
+"x": 153.1,
+"y": 387.9,
+"w": 93.4,
+"h": 10,
+"s": "institution is required in"
+},
+{
+"x": 153.1,
+"y": 377.9,
+"w": 112.0,
+"h": 10,
+"s": "addition to the completion of"
+},
+{
+"x": 153.1,
+"y": 367.9,
+"w": 80.4,
+"h": 10,
+"s": "High School Studies."
+},
+{
+"x": 49.3,
+"y": 351.4,
+"w": 32.3,
+"h": 10,
+"s": "Albania"
+},
+{
+"x": 153.1,
+"y": 351.4,
+"w": 101.4,
+"h": 10,
+"s": "Successful completion of a"
+},
+{
+"x": 286.8,
+"y": 351.4,
+"w": 123.0,
+"h": 10,
+"s": "Albanian Certificate of Maturity"
+},
+{
+"x": 420.9,
+"y": 351.4,
+"w": 88.8,
+"h": 10,
+"s": "Albanian Certificate of"
+},
+{
+"x": 153.1,
+"y": 341.4,
+"w": 98.3,
+"h": 10,
+"s": "recognised pre-tertiary or"
+},
+{
+"x": 286.8,
+"y": 341.4,
+"w": 113.0,
+"h": 10,
+"s": "with minimum grade average"
+},
+{
+"x": 420.9,
+"y": 341.4,
+"w": 120.4,
+"h": 10,
+"s": "Maturity with minimum grade"
+},
+{
+"x": 153.1,
+"y": 331.4,
+"w": 78.2,
+"h": 10,
+"s": "foundation program"
+},
+{
+"x": 286.8,
+"y": 331.4,
+"w": 24.3,
+"h": 10,
+"s": "of 8.0."
+},
+{
+"x": 420.9,
+"y": 331.4,
+"w": 55.7,
+"h": 10,
+"s": "average of 7.0."
+},
+{
+"x": 153.1,
+"y": 318.6,
+"w": 13.4,
+"h": 10,
+"s": "OR"
+},
+{
+"x": 153.1,
+"y": 305.7,
+"w": 111.1,
+"h": 10,
+"s": "Successful completion of one"
+},
+{
+"x": 153.1,
+"y": 295.7,
+"w": 108.1,
+"h": 10,
+"s": "year of study at a recognised"
+},
+{
+"x": 153.1,
+"y": 285.7,
+"w": 106.2,
+"h": 10,
+"s": "tertiary or higher education"
+},
+{
+"x": 153.1,
+"y": 275.7,
+"w": 93.4,
+"h": 10,
+"s": "institution is required in"
+},
+{
+"x": 153.1,
+"y": 265.7,
+"w": 112.0,
+"h": 10,
+"s": "addition to the completion of"
+},
+{
+"x": 153.1,
+"y": 255.7,
+"w": 80.4,
+"h": 10,
+"s": "High School Studies."
+},
+{
+"x": 49.3,
+"y": 239.0,
+"w": 30.1,
+"h": 10,
+"s": "Algeria"
+},
+{
+"x": 153.1,
+"y": 239.0,
+"w": 101.4,
+"h": 10,
+"s": "Successful completion of a"
+},
+{
+"x": 286.8,
+"y": 239.0,
+"w": 110.4,
+"h": 10,
+"s": "Algerian Baccalaureate with"
+},
+{
+"x": 420.9,
+"y": 239.0,
+"w": 110.4,
+"h": 10,
+"s": "Algerian Baccalaureate with"
+},
+{
+"x": 153.1,
+"y": 229.0,
+"w": 98.3,
+"h": 10,
+"s": "recognised pre-tertiary or"
+},
+{
+"x": 286.8,
+"y": 229.0,
+"w": 115.3,
+"h": 10,
+"s": "minimum overall grade of 12."
+},
+{
+"x": 420.9,
+"y": 229.0,
+"w": 115.8,
+"h": 10,
+"s": "minimum overall grade of 10."
+},
+{
+"x": 153.1,
+"y": 219.0,
+"w": 78.2,
+"h": 10,
+"s": "foundation program"
+},
+{
+"x": 153.1,
+"y": 206.1,
+"w": 13.4,
+"h": 10,
+"s": "OR"
+},
+{
+"x": 153.1,
+"y": 193.3,
+"w": 111.1,
+"h": 10,
+"s": "Successful completion of one"
+},
+{
+"x": 153.1,
+"y": 183.3,
+"w": 108.1,
+"h": 10,
+"s": "year of study at a recognised"
+},
+{
+"x": 153.1,
+"y": 173.3,
+"w": 106.2,
+"h": 10,
+"s": "tertiary or higher education"
+},
+{
+"x": 153.1,
+"y": 163.3,
+"w": 93.4,
+"h": 10,
+"s": "institution is required in"
+},
+{
+"x": 153.1,
+"y": 153.3,
+"w": 112.0,
+"h": 10,
+"s": "addition to the completion of"
+},
+{
+"x": 153.1,
+"y": 143.3,
+"w": 80.4,
+"h": 10,
+"s": "High School Studies."
+},
+{
+"x": 45.1,
+"y": 128.6,
+"w": 226.7,
+"h": 10,
+"s": "Provider registration codes: CRICOS Reg. 00004G | PRV12008. Updated April 2026"
+}
+],
+"rules": []
+}
+]
+}
