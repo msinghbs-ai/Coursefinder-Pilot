@@ -382,7 +382,7 @@ test.describe('phone @responsive', () => {
     const reset = await page.locator('[data-columns-reset]').boundingBox()
     expect(reset.height).toBeGreaterThanOrEqual(24)
     await page.keyboard.press('Escape')
-    const frame = await page.locator('.m-table-wrap.ccol-frame').evaluate(el => ({ client: el.clientWidth, scroll: el.scrollWidth, x: getComputedStyle(el).overflowX }))
+    const frame = await page.locator('.ui-datatable.ccol-frame').evaluate(el => ({ client: el.clientWidth, scroll: el.scrollWidth, x: getComputedStyle(el).overflowX }))
     expect(frame.client).toBeLessThanOrEqual(w)
     if (frame.scroll > frame.client) expect(['auto', 'scroll']).toContain(frame.x)
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1)

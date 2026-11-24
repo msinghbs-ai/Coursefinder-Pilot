@@ -1,6 +1,6 @@
 # StudySearch – Curator guide
 
-**Version:** 1.1 (reviewed for platform release v2.16.86)  
+**Version:** 1.1 (reviewed for platform release v2.17.0)  
 **Role:** Curator (rank 3)  
 **Change control:** CF-247  
 **Source:** generated from the Pilot `src/guide/roleGuides.js` and the menu; never edited by hand.

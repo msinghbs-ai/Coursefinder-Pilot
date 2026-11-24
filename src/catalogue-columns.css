@@ -30,12 +30,12 @@
 .ccol-link{border:0;background:transparent;padding:0;color:var(--cf-indigo-600);font:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .ccol-cities ul{margin:4px 0 0;padding-left:16px;font-size:var(--cf-fs-2xs);white-space:normal}
 .ccol-adapter{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
-.m-table-wrap.ccol-frame{max-height:calc(100vh - 240px);min-height:320px;overflow:auto;overscroll-behavior:contain}
-.m-table-wrap.ccol-frame td{white-space:normal;overflow-wrap:anywhere}
+.ccol-frame{max-height:calc(100vh - 240px);min-height:320px;overflow:auto;overscroll-behavior:contain}
+.ccol-frame td{white-space:normal;overflow-wrap:anywhere}
 .m-col-resize:focus-visible{outline:2px solid var(--cf-indigo-500);outline-offset:-2px}
 @media (max-width:640px){
   .ccol-panel{position:fixed;left:16px;right:16px;top:72px;width:auto;max-height:calc(100vh - 96px)}
-  .m-table-wrap.ccol-frame{max-height:calc(100vh - 180px)}
+  .ccol-frame{max-height:calc(100vh - 180px)}
 }
 
 /* CF-247 Provider Catalogue columns (directive 9 Nov 2026): the Description column (preview, full text on demand), evidence and source address, quiet text */

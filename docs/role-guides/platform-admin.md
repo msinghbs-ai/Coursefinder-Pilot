@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin guide
 
-**Version:** 1.1 (reviewed for platform release v2.16.86)  
+**Version:** 1.1 (reviewed for platform release v2.17.0)  
 **Role:** Platform Admin (rank 6)  
 **Change control:** CF-247  
 **Source:** generated from the Pilot `src/guide/roleGuides.js` and the menu; never edited by hand.

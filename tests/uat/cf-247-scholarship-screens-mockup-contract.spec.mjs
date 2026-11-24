@@ -54,7 +54,7 @@ test('browser: list shows published scholarships only — no status pills or sta
   await expect(page.locator('tbody td').last().locator('.cf-chip')).toHaveCount(1)
   // v2.15.223: the columns fit the screen (no sideways scroll at 1280 px)
   await page.setViewportSize({ width: 1280, height: 760 })
-  await expect.poll(() => page.locator('.m-table-wrap').first().evaluate(e => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(1)
+  await expect.poll(() => page.locator('.ui-tablewrap').first().evaluate(e => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(1)
   await expect(page.locator('tbody')).toContainText('Vietnam')
   await expect(page.locator('tbody')).toContainText('A$10,000 a year')
 })
