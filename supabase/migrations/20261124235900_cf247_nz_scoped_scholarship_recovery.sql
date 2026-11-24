@@ -17,7 +17,8 @@ declare
        and exists (
          select 1 from pipeline.on_demand_requests r
          where r.id = security.on_demand_request_for_v2(p_provider_id, 'sch_listing')
-           and r.requested_via = 'S3-Scholarship-ChatGPT'
+           and r.requested_via = 'claude_session'
+           and r.reason = 'Admin #937: S3-Scholarship-ChatGPT NZQA listing recovery'
            and r.purpose_groups = array['scholarships']::text[]
            and r.estimate ? 'cap_firecrawl_units'
        )
