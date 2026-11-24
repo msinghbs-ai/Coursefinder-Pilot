@@ -3165,7 +3165,7 @@ async function handle(req: Request): Promise<Response> {
           rawHtmlOf.delete(it.storage_path);
           const htmlRead = typeof rawHtml === "string" && Number(ws["reading.entry_html_table_reader_on"]) >= 1
             ? entryHtmlTableRead(rawHtml, await countryRefs(), quals?.on && Array.isArray(quals.qualifications) ? quals.qualifications : [], parseOpts.countryAliases,
-                                 { minRows: Number(ws["reading.entry_html_table_min_rows"]) || 5 }) : null;
+                                 { minRows: Number(ws["reading.entry_html_table_min_rows"]) || 5, providerCountry: String(it.country || "") }) : null;
           if (htmlRead) {
             const hp = entryMatrixParsed(htmlRead.answer, htmlRead.text, Object.assign([] as EntryBandLine[], { forms: [] }) as EntryLineSet, parseOpts);
             const notRead = htmlRead.skipped.map((k) => ({ reason: k.reason, country: k.heading || `table ${k.index + 1}`, quote: `table ${k.index + 1}: ${k.reason}` }));
