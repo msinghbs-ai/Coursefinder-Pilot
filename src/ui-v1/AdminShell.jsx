@@ -10,8 +10,10 @@ export default function AdminShell({ sections, pages, rank, canOpen, hrefFor, ac
   return <div className={`ui-shell ui-admin${open ? ' is-open' : ''}`} data-ui-admin-shell>
     <header className="ui-topbar">
       <button type="button" className="ui-btn ui-btn-sm ui-nav-toggle" aria-expanded={open} aria-label="Open menu" onClick={() => setOpen(v => !v)}>Menu</button>
-      <a className="ui-brand" href={hrefFor('dashboard')} onClick={e => { e.preventDefault(); setOpen(false); onGo('dashboard') }}>StudySearch</a>
-      {version && <span className="ui-brand-version">PIM Admin v{version}</span>}
+      <div className="ui-brand-block" data-ui-brand>
+        <a className="ui-brand" href={hrefFor('dashboard')} onClick={e => { e.preventDefault(); setOpen(false); onGo('dashboard') }}>StudySearch</a>
+        {version && <span className="ui-brand-version">PIM Admin v{version}</span>}
+      </div>
       <span className="ui-topbar-spacer" />
       <span className="ui-topbar-user" title={email}>{roleLabel}{email ? ` · ${email}` : ''}</span>
       <button type="button" className="ui-btn ui-btn-sm" title="Sign out" onClick={onSignOut}>Sign out</button>

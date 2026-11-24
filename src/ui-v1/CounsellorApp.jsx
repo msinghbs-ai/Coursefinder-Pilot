@@ -9,6 +9,7 @@ import ScholarshipsView from './ScholarshipsView.jsx'
 import GuideView from './GuideView.jsx'
 import { supabase } from '../lib/supabase.js'
 import { createSavedStore } from './saved-store.js'
+import { UI_VERSION } from '../release-manifest.js'
 
 export const COUNSELLOR_NAV = [['courses', 'Courses'], ['providers', 'Universities & Providers'], ['scholarships', 'Scholarships'], ['guide', 'Guide']]
 const routeOf = () => { const m = /^#ui-v1\/([a-z-]+)/.exec(globalThis.location?.hash || ''); return COUNSELLOR_NAV.some(n => n[0] === m?.[1]) ? m[1] : 'courses' }
@@ -22,7 +23,7 @@ export default function CounsellorApp({ userId, screens = SCREENS }) {
   useEffect(() => { const f = () => setRoute(routeOf()); addEventListener('hashchange', f); return () => removeEventListener('hashchange', f) }, [])
   const View = screens[route]
   return <div className="ui-shell">
-    <header className="ui-topbar"><span className="ui-brand">StudySearch</span><span className="ui-topbar-spacer" /><button type="button" className="ui-btn ui-btn-sm" onClick={() => supabase.auth.signOut()}>Sign out</button></header>
+    <header className="ui-topbar"><div className="ui-brand-block" data-ui-brand><span className="ui-brand">StudySearch</span><span className="ui-brand-version">Counsellor v{UI_VERSION}</span></div><span className="ui-topbar-spacer" /><button type="button" className="ui-btn ui-btn-sm" onClick={() => supabase.auth.signOut()}>Sign out</button></header>
     <nav className="ui-nav" aria-label="Main">{COUNSELLOR_NAV.map(([k, l]) => <a key={k} href={`#ui-v1/${k}`} aria-current={k === route ? 'page' : 'false'}>{l}</a>)}</nav>
     <main className="ui-main">{View ? <View saved={saved} userId={userId} /> : <div className="ui-emptystate"><p className="ui-emptystate-title">This screen is being built</p></div>}</main>
   </div>

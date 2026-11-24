@@ -1,6 +1,16 @@
 /* tokens.css — semantic design tokens for the StudySearch PIM mockups (v1.1, 23 Nov 2026).
    Single source of truth. No legacy variables, no !important. */
 :root {
+  /* Admin shell surface (the original dark slate palette: slate 900, 800, 750; indigo 400 accent) */
+  --color-nav-bg: #0f172a;
+  --color-nav-hover: #1e293b;
+  --color-nav-active: #273449;
+  --color-nav-accent: #818cf8;
+  --color-nav-border: #273449;
+  --color-nav-text: #aab5c6;
+  --color-nav-text-strong: #ffffff;
+  --color-nav-muted: #94a3b8;
+  --color-nav-label: #64748b;
   --ui-scrim: rgba(16, 24, 40, 0.38);
   /* colour: surfaces and text */
   --color-bg: #f5f6f8;
