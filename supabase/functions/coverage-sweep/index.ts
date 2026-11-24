@@ -26,7 +26,7 @@ import { pdfGrids2 } from "./pdf-grid.ts";
 import { COURSE_ENTRY_PROMPT_VERSION, courseEntryAnswer, courseEntryMerge, courseEntryPlan, courseEntryRequest, courseEntrySliceRows, courseEntryUser } from "./course-entry.ts";
 import type { CourseSliceOutcome } from "./course-entry.ts";
 import { AER_V2_MODE, AER_V3_CONTRACT, AER_V3_EVAL_MODE, aerV2Answer, aerV2Refs, aerV2Request, aerV2Sha256, aerV2User, aerV2Verify, aerV3Blocks, aerV3Request, aerV3User, aerV3Verify, aerV3QuoteDiag } from "./aer-v2.ts";
-import { PDF_METHOD, pdfPages, pdfTables } from "./pdf.ts";
+import { PDF_METHOD, pdfPages, pdfTables } from "./pdf.ts"; import { entryPdfExport, isPdfCopy } from "./entry-pdf-export.ts";
 import { AER_CHUNK_CONTRACTS, AER_CHUNK_INPUT, AER_CHUNK_MODE, aerChunkRequest, aerChunkTotals, aerChunkVerifier } from "./aer-chunk-smoke.ts";
 import { entryChunkGroups, entryChunkUser, entryChunks } from "./entry-chunks.ts";
 import type { PdfResult } from "./pdf.ts";
@@ -2952,7 +2952,7 @@ async function handle(req: Request): Promise<Response> {
         try {
           if (!r.storage_path) { out.push({ source_id: r.source_id, url: r.url, error: "no stored copy" }); continue }
           const { data, error } = await c.storage.from("evidence").download(r.storage_path); if (error || !data) throw Error(error?.message || "missing");
-          const b = new Uint8Array(await data.arrayBuffer());
+          const b = new Uint8Array(await data.arrayBuffer()); if (isPdfCopy(r.mime, r.storage_path)) { out.push(await entryPdfExport(r as any, b, getDocumentProxy, getResolvedPDFJS, sha256)); continue }  // s1049
           const t = b[0] === 0x1f && b[1] === 0x8b ? await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text() : new TextDecoder().decode(b);
           const pick = (re: RegExp) => (t.match(re) || [])[0] || "";
           const tables = t.match(/<table\b[\s\S]*?<\/table>/gi) || [];
@@ -3165,7 +3165,7 @@ async function handle(req: Request): Promise<Response> {
           rawHtmlOf.delete(it.storage_path);
           const htmlRead = typeof rawHtml === "string" && Number(ws["reading.entry_html_table_reader_on"]) >= 1
             ? entryHtmlTableRead(rawHtml, await countryRefs(), quals?.on && Array.isArray(quals.qualifications) ? quals.qualifications : [], parseOpts.countryAliases,
-                                 { minRows: Number(ws["reading.entry_html_table_min_rows"]) || 5 }) : null;
+                                 { minRows: Number(ws["reading.entry_html_table_min_rows"]) || 5, providerCountry: String(it.country || "") }) : null;
           if (htmlRead) {
             const hp = entryMatrixParsed(htmlRead.answer, htmlRead.text, Object.assign([] as EntryBandLine[], { forms: [] }) as EntryLineSet, parseOpts);
             const notRead = htmlRead.skipped.map((k) => ({ reason: k.reason, country: k.heading || `table ${k.index + 1}`, quote: `table ${k.index + 1}: ${k.reason}` }));

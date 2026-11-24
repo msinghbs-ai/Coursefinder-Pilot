@@ -20,7 +20,7 @@ import type { EntryCountryRef, EntryQualification } from "./entry.ts";
 import { entryCellRead, entryCellLabel, entryCellCountryIndex } from "./entry-cells.ts";
 
 export const ENTRY_HTML_TABLE_READER = "html-table-v1";
-export type HtmlTableOptions = { minRows?: number };
+export type HtmlTableOptions = { minRows?: number; providerCountry?: string };
 export type HtmlTableDrop = { reason: string; country: string; quote: string };
 export type HtmlTablePiece = { index: number; level_from: "column" | "heading" | "row"; levels: string[]; lines: number; rows: number };
 export type HtmlTableRead = { answer: { rows: any[] }; text: string; dropped: HtmlTableDrop[]; tables: HtmlTablePiece[]; skipped: { index: number; reason: string; heading: string }[];
@@ -167,11 +167,109 @@ export function htmlCountryHeadingTables(html: string, refs: EntryCountryRef[], 
   return { tables, skipped };
 }
 
+
+// s1064 F-AER.08: a country heading followed by printed academic level and
+// requirement blocks is a table in the document's structure, even where its HTML
+// uses div/p/accordion components rather than <table>. Preserve the source
+// words and fail closed: a country is one *isolated* reference-country label,
+// followed by at least TWO distinct explicitly printed programme-level rows.
+// NCEA 2/3 is a printed qualification context, not a guessed grade or level.
+// Plain text and HTML use the same strict block adapter; no network, OCR or AI.
+const BLOCK_LEVEL = /^(?:certificate(?:\s*\(level\s*[234567]\))?(?:\s+(?:academic|vocational))?|certificate\s*\/\s*diploma\s+level|diploma\s*\/\s*certificate|diploma(?:\s*\(level\s*[45678]\))?(?:\s+(?:academic|vocational))?|degree\s+level|bachelor(?:'?s)?(?:\s+degree|\s+level)?|undergraduate(?:\s+degree|\s+level)?|postgraduate(?:\s+(?:certificate|diploma|degree))?|master(?:'?s)?(?:\s+degree)?|foundation(?:\s+level)?|associate\s+degree)$/i;
+const BLOCK_CUTOFF = /^(?:english(?:\s+language)?(?:\s+requirement)?s?|how\s+to\s+apply|international\s+high\s+school\s+qualifications|postgraduate\s+entry\s+requirements|academic\s+entry\s+requirements|view\s+entry\s+requirements|download\s+pdf|contact\s+us)$/i;
+function semanticBlockLines(html: string): string[] {
+  const source = String(html || "")
+    .replace(/<(script|style|noscript|svg|template|nav|footer|aside)\b[\s\S]*?<\/\1>/gi, "\n")
+    .replace(/<table\b[\s\S]*?<\/table>/gi, "\n")  // conventional tables belong to htmlTableLines
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/?(?:h[1-6]|p|div|li|section|article|dt|dd|summary|button|tr|td|th)\b[^>]*>/gi, "\n")
+    .replace(/<[^>]*>/g, " ");
+  return source.split(/\n+/).map(text).filter((x) => !!x && x.length <= 1200);
+}
+export function htmlCountrySectionPieces(html: string, refs: EntryCountryRef[], quals: EntryQualification[] = [],
+                                         aliases: Record<string, string> = {}) {
+  const index = entryCellCountryIndex(refs, aliases);
+  const lines = semanticBlockLines(html);
+  // Only country names printed as an actual heading/accordion label establish scope;
+  // a country in a prose paragraph, dropdown option or adjacent qualification does not.
+  const countryHeadings = new Set([...String(html || "").matchAll(/<(h[2-6]|button|summary)\b[^>]*>([\s\S]*?)<\/\1>/gi)]
+    .map((m) => text(m[2])));
+  const tables: { index: number; head: string; levelFrom: "row"; levels: string[]; lines: string[]; rows: number }[] = [];
+  let country = "", level = "", ncea = "", requirement: string[] = [], got: { level: string; value: string }[] = [];
+  let sequence = 0, consumed = 0;
+  const finishLevel = () => {
+    const value = requirement.join(" ").replace(/\s+/g, " ").trim();
+    if (level && value.length >= 6 && value.length <= 1200) got.push({ level, value });
+    level = ""; requirement = [];
+  };
+  const finishCountry = () => {
+    finishLevel();
+    const distinct = new Set(got.map((g) => g.level.toLowerCase()));
+    if (country && got.length >= 2 && distinct.size >= 2 && got.length <= 6) {
+      const cellLines = got.map((g) => "| Country: " + part(country) + " | " + levelLabel(g.level) + ": " + part(g.value) + " |");
+      tables.push({ index: -1000 - sequence++, head: "Country", levelFrom: "row",
+                    levels: [...new Set(got.map((g) => levelLabel(g.level)))], lines: cellLines, rows: got.length });
+    }
+    country = ""; level = ""; ncea = ""; requirement = []; got = []; consumed = 0;
+  };
+  for (const t of lines) {
+    const identity = t.length <= 75 ? entryCellLabel(t, index, quals) : null;
+    if (identity?.kind === "country" && identity.country && countryHeadings.has(t)) {
+      finishCountry(); country = t; continue;
+    }
+    if (!country) continue;
+    // Long, unrelated sections must never borrow the last recognised country.
+    if (++consumed > 60 || BLOCK_CUTOFF.test(t)) { finishCountry(); continue }
+    if (/^NCEA\s+Level\s+[23]$/i.test(t)) { ncea = t; continue }
+    // A printed "Level | Requirement" pair can appear in a single block.
+    const inline = /^(.{4,90}?)\s*(?:\||:)\s*(.{6,1200})$/.exec(t);
+    if (inline && BLOCK_LEVEL.test(inline[1])) {
+      finishLevel(); level = (ncea ? ncea + " " : "") + inline[1];
+      ncea = ""; requirement = [inline[2]]; continue;
+    }
+    if (BLOCK_LEVEL.test(t)) {
+      finishLevel(); level = (ncea ? ncea + " " : "") + t; ncea = ""; continue;
+    }
+    if (level && requirement.join(" ").length < 1150 && !/^(?:apply|enrol|fees|scholarships|intake dates)\b/i.test(t))
+      requirement.push(t);  // OR, qualification names and exact grades remain the provider's printed words
+  }
+  finishCountry();
+  return { tables, skipped: [] as { index: number; reason: string; heading: string }[] };
+}
+
+
+// s1064: an explicitly printed GLOBAL qualification minimum is not a
+// country-specific result. In the undergraduate academic-entry section only,
+// a source's "IB (International Baccalaureate) Diploma: Minimum 24 points"
+// is a qualification-first fact, gated on the platform's IB_DP reference code.
+// Never use a country's name, an English requirement or an unstated minimum.
+export function htmlExplicitQualificationPieces(html: string, quals: EntryQualification[]) {
+  const tables: { index: number; head: string; levelFrom: "heading"; levels: string[]; lines: string[]; rows: number }[] = [];
+  if (!quals.some((q) => q.code === "IB_DP" && (q.aliases || []).some((a) => /international baccalaureate/i.test(a)))) return { tables };
+  const lines = semanticBlockLines(html);
+  const i = lines.findIndex((t) => /^international high school qualifications$/i.test(t));
+  if (i < 0 || !lines.slice(Math.max(0, i - 90), i).some((t) => /^undergraduate entry requirements$/i.test(t))) return { tables };
+  const region = lines.slice(i + 1, i + 30);
+  const next = region.findIndex((t) => /^(?:english language requirements?|postgraduate entry requirements?)$/i.test(t));
+  const facts = next >= 0 ? region.slice(0, next) : region;
+  const exact = facts.find((t) => /^IB \(International Baccalaureate\) Diploma: Minimum \d{1,3}(?:\.\d+)? points?$/i.test(t));
+  if (!exact) return { tables };
+  const grade = exact.replace(/^IB \(International Baccalaureate\) Diploma:\s*/i, "");
+  tables.push({ index: -2001, head: "Qualification", levelFrom: "heading",
+     levels: ["Undergraduate Degree"],
+     lines: ["| Qualification: IB (International Baccalaureate) Diploma | Undergraduate Degree: " + part(grade) + " |"], rows: 1 });
+  return { tables };
+}
+
 export function entryHtmlTableRead(html: string, refs: EntryCountryRef[], quals: EntryQualification[] = [], aliases: Record<string, string> = {},
                                    opt: HtmlTableOptions = {}): HtmlTableRead | null {
   const { tables: headed, skipped: plainSkipped } = htmlTableLines(html, opt);
   const country = htmlCountryHeadingTables(html, refs, quals, aliases);
-  const tables = [...headed, ...country.tables.filter((t) => !headed.some((h) => h.index === t.index))];
+  // Only NZ and CA AER lanes may use the new semantic-block adapter; AU's reader is byte-for-byte unchanged.
+  const nzca = opt.providerCountry === 'NZ' || opt.providerCountry === 'CA';
+  const sections = nzca ? htmlCountrySectionPieces(html, refs, quals, aliases) : { tables: [] };
+  const globalQualifications = nzca ? htmlExplicitQualificationPieces(html, quals) : { tables: [] };
+  const tables = [...headed, ...country.tables.filter((t) => !headed.some((h) => h.index === t.index)), ...sections.tables, ...globalQualifications.tables];
   const skipped = [...plainSkipped.filter((s) => !tables.some((t) => t.index === s.index)), ...country.skipped.filter((s) => !tables.some((t) => t.index === s.index))];
   if (!tables.length) return null;
   const rows: any[] = [], dropped: HtmlTableDrop[] = [], pieces: HtmlTablePiece[] = [], stats: Record<string, number> = {};
@@ -180,7 +278,19 @@ export function entryHtmlTableRead(html: string, refs: EntryCountryRef[], quals:
     // the cell reader groups lines by their first header and needs every label to give a cell for most levels; one table at a time keeps that true
     const r = entryCellRead(t.lines.join("\n"), refs, quals, aliases, { minLevels: 1, minLines: Math.min(opt.minRows ?? 5, t.lines.length) });
     if (!r) { skipped.push({ index: t.index, reason: "html_table_not_a_country_grid", heading: t.levels.join("; ") }); continue }
-    for (const x of r.answer.rows) rows.push({ ...x, conditions: { ...x.conditions, reader: ENTRY_HTML_TABLE_READER, html_table: t.index } });
+    for (const x of r.answer.rows) {
+      // NZ/CA printed-semantic-block fix: the shared cell minimum reader understands
+      // "ATAR 65" and "ATAR of 65", but an official NZ page prints "ATAR score of 65".
+      // Preserve the literal quote; only fill the numeric rank if those exact printed
+      // words occur in the same country+level cell. No inferred band or AI admission.
+      const printedRank = t.index <= -1000 && (opt.providerCountry === "NZ" || opt.providerCountry === "CA")
+        && (x.grade_scale === "none" || x.grade_scale === "points")
+        ? /\bATAR\s+score\s+of\s+(\d{2,3}(?:\.\d{1,2})?)(?:\s+or\s+(?:above|higher|better))?\b/i.exec(String(x.quote || ""))
+        : null;
+      rows.push({ ...x,
+        ...(printedRank ? { min_grade: printedRank[0], min_value: Number(printedRank[1]), grade_scale: "rank" } : {}),
+        conditions: { ...x.conditions, reader: ENTRY_HTML_TABLE_READER, html_table: t.index } });
+    }
     dropped.push(...r.dropped);
     for (const [k, v] of Object.entries(r.stats)) stats[k] = (stats[k] || 0) + v;
     pieces.push({ index: t.index, level_from: t.levelFrom, levels: t.levels, lines: t.lines.length, rows: r.answer.rows.length });
