@@ -39,11 +39,11 @@ test('Otago Polytechnic: country, NCEA and degree divs; no invented grade or cou
   const html = [
     '<h1>Entry requirements for international students</h1>',
     '<h2>Equivalent academic entry requirements by country</h2>',
-    '<section><div>Australia</div><div>NCEA Level 2</div><div>Certificate/Diploma Level</div>',
+    '<section><button>Australia</button><div>NCEA Level 2</div><div>Certificate/Diploma Level</div>',
     '<div>Successful completion of Year 12</div>',
     '<div>NCEA Level 3</div><div>Degree Level</div>',
     '<div>Successful completion of Year 12, AND ATAR score of 65 or above</div></section>',
-    '<section><div>Bangladesh</div><div>NCEA Level 2</div><div>Certificate/Diploma Level</div>',
+    '<section><button>Bangladesh</button><div>NCEA Level 2</div><div>Certificate/Diploma Level</div>',
     '<div>Higher Secondary Certificate</div>',
     '<div>NCEA Level 3</div><div>Degree Level</div>',
     '<div>Successful completion of Higher Secondary Certificate with a GPA of 3.5 or higher</div></section>'
@@ -89,6 +89,7 @@ test('fails closed: only one level, unknown country, prose context or English-on
   expect(ht.entryHtmlTableRead('<h2>Australia</h2>' + pairs, COUNTRIES, [], {}, { providerCountry: 'NZ' })).toBeNull()
   expect(ht.entryHtmlTableRead('<h2>Unknownland</h2>' + pairs + '<p>Certificate (level 4)</p><p>Year 12</p>', COUNTRIES, [], {}, { providerCountry: 'NZ' })).toBeNull()
   expect(ht.entryHtmlTableRead('<h2>Academic entry for Australia</h2>' + pairs + '<p>Certificate (level 4)</p><p>Year 12</p>', COUNTRIES, [], {}, { providerCountry: 'NZ' })).toBeNull()
+  expect(ht.entryHtmlTableRead('<p>Australia</p>' + pairs + '<p>Certificate (level 4)</p><p>Year 12</p>', COUNTRIES, [], {}, { providerCountry: 'NZ' })).toBeNull()
   expect(ht.entryHtmlTableRead('<h2>Australia</h2><p>English language requirements</p>' + pairs + '<p>Diploma (level 5)</p><p>IELTS 6.0</p>', COUNTRIES, [], {}, { providerCountry: 'NZ' })).toBeNull()
   const html = '<script><h2>Australia</h2><p>Degree level</p><p>ATAR 65</p></script><h2>Argentina</h2><p>Certificate (level 4)</p><p>Year 12</p>'
   expect(ht.entryHtmlTableRead(html, COUNTRIES, [], {}, { providerCountry: 'NZ' })).toBeNull()
