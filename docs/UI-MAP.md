@@ -19,7 +19,7 @@ Roles (rank): 1 Viewer · 2 Counsellor · 3 Curator · 4 Pipeline Operator · 5 
 
 Page key `dashboard` · opens for Viewer and above · no tabs
 
-- **Screen:** `DashboardHome` (Dashboard.jsx)
+- **Screen:** `DashboardHome` (ui-v1/DashboardView.jsx)
 
 ## Catalogue
 

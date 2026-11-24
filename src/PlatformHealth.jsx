@@ -32,7 +32,8 @@ export function screenName(href){try{const raw=String(href||'').trim().replace(/
 export function ScreenLink({href,prefix='Go to '}){return <a className="ph-fix" href={href} data-screen-link>{prefix}{screenName(href)}</a>}
 const looksCron=v=>typeof v==='string'&&CRON_RE.test(v.trim())&&/[*\/]/.test(v)
 
-export function isHealthContract(h){return Boolean(h&&typeof h.overall==='string'&&Array.isArray(h.checks))}
+import{isHealthContract,readPlatformHealth}from'./lib/health-read'
+export{isHealthContract,readPlatformHealth}
 export function healthTone(overall){return overall==='ok'?'ok':overall==='warning'?'warning':overall==='critical'?'critical':'unknown'}
 export const HEALTH_WORDS={ok:'All checks passing',warning:'Needs attention',critical:'Something is broken',unknown:'Health checks not available yet'}
 // The page heading says what to do next, so it does not repeat the health dot's sentence (UI audit Phase 1)
@@ -42,7 +43,6 @@ const SEVERITY_TONE={critical:'danger',warning:'warning',info:'info'}
 const CHECK_TONE={ok:'success',warning:'warning',critical:'danger',skipped:'neutral'}
 
 /** Shared read used by the page and the top-bar dot. Resolves to null when the checks are not deployed. */
-export async function readPlatformHealth(){try{const h=await adminRead('platform_health',{});return isHealthContract(h)?h:null}catch{return null}}
 
 function human(v){return String(v??'').replaceAll('_',' ').replace(/^\w/,c=>c.toUpperCase())}
 function scalar(k,v){if(v==null||v==='')return'—';if(typeof v==='number')return fmtNumber(v);if(typeof v==='boolean')return v?'yes':'no';if(/(_at|since|_end)$/.test(k)&&!Number.isNaN(Date.parse(v)))return fmtDateTime(v);if(typeof v==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(v)&&!Number.isNaN(Date.parse(v)))return fmtDateTime(v);if(isRouteFragment(v))return screenName(v);if(looksCron(v))return describeSchedule(v).text;return scrubInternals(String(v))} // v2.15.341: raw ISO stamps become dates, raw errors become plain words

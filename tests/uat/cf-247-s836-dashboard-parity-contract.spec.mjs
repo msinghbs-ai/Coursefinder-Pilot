@@ -7,7 +7,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 import { dashboardFailures } from '../../src/health-exec.js'
 import { spendOf, withBudgetCap } from '../../src/lib/ops-pulse.js'
 
-const SRC = fs.readFileSync('src/Dashboard.jsx', 'utf8'), DB = SRC.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n') // the code, not its history comments
+const SRC = fs.readFileSync('src/ui-v1/DashboardView.jsx', 'utf8'), DB = SRC.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n') // the code, not its history comments
 const MIG = fs.readFileSync('supabase/migrations/20261120145000_cf247_s836_s838_rule_groups_pulse_rates.sql', 'utf8')
 
 test('s836: the legacy sections are removed and the order is role line, pulse cards and failures, then Continue (3)', () => {
@@ -16,8 +16,8 @@ test('s836: the legacy sections are removed and the order is role line, pulse ca
   const body = DB.slice(DB.indexOf('export default function Dashboard('))
   const at = (s) => body.indexOf(s)
   expect(at('<RoleLine')).toBeLessThan(at('<DashboardPulse')); expect(at('<DashboardPulse')).toBeLessThan(at('<ContinueWhereLeft'))
-  expect(DB).toContain('const RECENT_SHOWN=3'); expect(DB).toContain('items=(all||[]).slice(0,RECENT_SHOWN)')
-  expect(DB).toContain('{rank>=4&&<DashboardFailures health={h}/>}')
+  expect(DB).toContain('const RECENT_SHOWN = 3'); expect(DB).toContain('items = (all || []).slice(0, RECENT_SHOWN)')
+  expect(DB).toContain('{rank >= 4 && <DashboardFailures health={h} />}')
 })
 
 test('s836: the daily cap comes from ai_daily_ceiling_usd (pulse fragment, md5-guarded) and from the budgets check when the pulse has none', () => {
@@ -69,9 +69,9 @@ test.describe('mocked browser', () => {
     })
     await page.addInitScript(() => { for (const k of Object.keys(localStorage)) if (/recent/i.test(k)) localStorage.removeItem(k) })
     await page.goto('/#dashboard')
-    await expect(page.locator('[data-db-pulse] [data-kpi]')).toHaveCount(5)
+    await expect(page.locator('[data-db-pulse] [data-kpi]:not([data-kpi="automations"])')).toHaveCount(5) // s1045: the running-automation card sits beside the five pulse cards
     await expect(page.locator('[data-kpi="spend"]')).toContainText('of the US$14.00 daily cap')
-    await expect(page.locator('[data-kpi="spend"] .op-meter')).toHaveCount(1)
+    await expect(page.locator('[data-kpi="spend"] .ui-meter')).toHaveCount(1)
     const fails = page.locator('[data-db-failures]')
     await expect(fails.locator('li')).toHaveCount(5)
     await expect(fails).not.toContainText('Fields below target are moving'); await expect(fails).not.toContainText('Work queues are moving')

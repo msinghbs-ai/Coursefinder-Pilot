@@ -12,7 +12,7 @@ const health = fs.readFileSync('supabase/migrations-archive/20261016070000_cf247
 const del = fs.readFileSync('supabase/migrations-archive/20261016080000_cf247_user_delete.sql', 'utf8')
 const fn = fs.readFileSync('supabase/functions/admin-user-management/index.ts', 'utf8')
 const ui = fs.readFileSync('src/access-roles-entry.jsx', 'utf8')
-const dash = fs.readFileSync('src/Dashboard.jsx', 'utf8')
+const dash = fs.readFileSync('src/ui-v1/DashboardView.jsx', 'utf8')
 const deploy = (fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8') + EDGE_LIST)
 
 test('scholarship reads asked for are not held by the per-university cap; the paused reader is switched on again', () => {

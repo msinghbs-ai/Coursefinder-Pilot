@@ -50,7 +50,7 @@ test('source: no Send back to AI decision, Layer 3 dashboard tile or Layer 3 set
     expect(s, f).not.toContain('Layer3Operations')
     expect(s, f).not.toContain('SendBackToAI')
   }
-  expect(read('src/Dashboard.jsx')).not.toContain('Layer 3 · AI')
+  expect(read('src/ui-v1/DashboardView.jsx')).not.toContain('Layer 3 · AI')
   expect(read('src/PipelineSettings.jsx')).not.toContain('data-settings-section="layer3"')
   expect(read('src/lib/workerErrors.js')).not.toContain('layer3-work-dispatch')
 })
@@ -75,7 +75,7 @@ test.describe('mocked browser', () => {
     await page.goto('/#dashboard')
     // v2.15.266: the Layers tiles are retired; s836 (20 Nov 2026): the Dashboard is the role line, the cards and Continue, none for Layer 3
     await expect(page.locator('[data-db-role]')).toBeVisible()
-    await expect(page.locator('.db-home')).not.toContainText('Layer 3')
+    await expect(page.locator('[data-db-rank]')).not.toContainText('Layer 3')
   })
 })
 
