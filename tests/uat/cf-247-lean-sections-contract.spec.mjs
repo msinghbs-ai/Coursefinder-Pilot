@@ -83,8 +83,10 @@ test('worker mode lean_sections_eval: stored copies only, no AI, no Firecrawl, n
   expect(body).toContain('ai_calls: 0')
   expect(body).not.toMatch(/openrouter|chat\/completions|fcScrape|firecrawl|svc_fc_spend|fetch\(/i)
   // the selector is used by the recall check, (v0.92.0, Phase 1b step 2) by the shadow beside live reads and (v0.94.0, 1b-3) by the
-  // fees and intakes qualification on stored pages, nowhere else: no reader that admits values is sent the selection
-  expect(IX.split('selectSections(').length - 1).toBe(3)
+  // fees and intakes qualification on stored pages; and (s1125, Platform Admin 25 Nov 2026 08:16 AEDT, P0 AER preprocessing) by the course entry read
+  // through entryInputOf only (course-entry.ts courseEntryInput, guarded by s1125): the one reader whose rows still go to a person in Layer 4
+  expect(IX.split('selectSections(').length - 1).toBe(4)
+  expect(IX.split('selectSections(ab, "entry_requirements", SEC_OPT)').length - 1).toBe(1)
   // v1.0.6 (Platform Admin 16 Nov 2026 16:52, AER long pages; guarded by s561): the one exception. The AER v2 reader (benchmark and shadow modes,
   // neither admits values) is sent the entry requirement sections of a page longer than its limit, through longPageWindow only, behind the
   // switch reading.aer_v2_long_page_sections_on (ships 0), and its answer is verified against the whole page.

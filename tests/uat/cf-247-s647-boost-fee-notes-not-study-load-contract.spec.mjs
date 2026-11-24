@@ -50,7 +50,7 @@ test('a fee note is refused as a quote; a real statement next to it still passes
 
 test('the worker skips fee-note-only pages without a model call', () => {
   const IX = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.40"')  // v1.0.38 from s1037  // v1.0.37 from s1029  // v1.0.36 from s1017  // v1.0.35 from s992  // v1.0.34 from s851  // v1.0.25 from s721  // v1.0.19 from s674
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.41"')  // v1.0.38 from s1037  // v1.0.37 from s1029  // v1.0.36 from s1017  // v1.0.35 from s992  // v1.0.34 from s851  // v1.0.25 from s721  // v1.0.19 from s674
   expect(IX).toContain('if (!sec.hits || !sec.text) {  // v1.0.17: a page whose study words are all in fee notes sends nothing, as a page with none')
 })
 

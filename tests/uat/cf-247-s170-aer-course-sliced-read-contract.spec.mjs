@@ -142,7 +142,7 @@ test('worker and settings: the course read uses the plan, the merge and the five
   expect(w).toMatch(/(const WORKER = "coverage-sweep-worker-v0\.53\.0"; |\/\/ was v0\.53\.0 )\/\/ v0\.53\.0 \(29 Oct 2026, CF-247 AER decision W29/)  // W32 (v0.54.0) keeps the W29 line as "was v0.53.0"
   const read = w.slice(w.indexOf('const entryRead = async'), w.indexOf('const fail = (ids: number[], e: unknown)'))
   for (const k of ['enrich.course_entry_slice_chars', 'enrich.course_entry_max_slices', 'enrich.course_entry_slice_overlap_chars', 'enrich.course_entry_max_tokens', 'enrich.course_entry_slice_concurrency']) expect(read).toContain(k)
-  expect(read).toContain('courseEntryPlan(text,')
+  expect(read).toContain('courseEntryPlan(ein.text,')  // s1125: the plan is made over the text sent (the selected sections or the whole text)
   expect(read).toContain('courseEntryMerge(plan.slices, outcomes, plan.page_chars)')
   expect(read).toContain('error: `held_partial: ${m.reason}`.slice(0, 300), cost: m.cost / items.length')
   expect(read).not.toContain('.slice(0, chars)')  // the page is never cut to its limit

@@ -214,3 +214,27 @@ export function courseEntryMerge(slices: CourseSlice[], outcomes: (CourseSliceOu
   if (cut) coverage.quotes_cut = cut;
   return { complete: true as const, reason: null, rows, dropped, coverage, cost };
 }
+
+// CF-247 s1125 (S1-Build, P0 AER preprocessing, Admin #1063, 25 Nov 2026): the meaningful content of a course page is sent, not the whole page.
+// The existing section selector (lean-sections.ts selectSections, lean-sections-v3 over the lean-blocks-v1 [B#] blocks of lean-input.ts leanText)
+// picks the blocks that could hold academic entry requirements: a matching heading brings its section; a matching sentence brings its block,
+// the heading over it and short neighbouring notes (footnotes, "*" conditions); a matching table row brings its whole table and heading; page
+// data lines always travel. When the selection shows a likely signal (the high-recall preflight), the read is sent the selected blocks' own
+// words (no block labels, so the prompt and the quote check are unchanged); otherwise the whole text, as before. Every row is still kept only
+// when its quote is on the text sent, which is the page's own words. One function, used by every course entry read (scheduled, on demand,
+// batch) through entryRead, and by the qualification harness (lean_qualify), so what is qualified is what is sent.
+export const COURSE_ENTRY_INPUT = "course-entry-sections-v1";  // never edited in place once released
+export type EntrySelection = { selector: string; blocks: number; chars: number; plain: string; no_selection: boolean; signal: string };
+export type EntryInputRecord = { basis: string; sent: "sections" | "whole"; why: string | null; page_chars: number; sent_chars: number; selector: string | null; blocks: number | null; of_blocks: number | null };
+export function courseEntryInput(whole: string, sel: EntrySelection | null, o: { on: boolean; ofBlocks?: number | null }): { text: string; input: EntryInputRecord } {
+  const page = String(whole || "");
+  const rec = (sent: "sections" | "whole", why: string | null, text: string): { text: string; input: EntryInputRecord } => ({ text, input: {
+    basis: COURSE_ENTRY_INPUT, sent, why, page_chars: page.length, sent_chars: text.length, selector: sel?.selector ?? null, blocks: sel ? sel.blocks : null, of_blocks: o.ofBlocks ?? null } });
+  if (!o.on) return rec("whole", "sections_off", page);
+  if (!sel) return rec("whole", "not_selected", page);  // too long for the selector, or the selector failed: the page is read whole
+  if (sel.no_selection) return rec("whole", "no_selection", page);
+  if (sel.signal !== "likely") return rec("whole", `signal_${sel.signal}`, page);
+  const text = String(sel.plain || "");
+  if (!text.trim() || text.length >= page.length) return rec("whole", "not_smaller", page);
+  return rec("sections", null, text);
+}
