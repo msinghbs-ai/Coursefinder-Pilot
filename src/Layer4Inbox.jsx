@@ -262,7 +262,7 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh,holdLabel='',hold
   const hide=c=>noText||(editKind&&editing&&(c.key==='approve'||c.key==='reject'))
   const editBtn=editKind&&!editing?<button type="button" disabled={rank<4} title={rank<4?`Needs ${roleName(4)} (rank 4) or above`:'Edit the text before admitting it, or approve it as read'} onClick={()=>{setOpen(null);setEditing(true)}} data-l4-choice="edit_approve">Edit &amp; Approve</button>:null
   const which=open?(open.aerReread?'resubmit':['reject','refuse','no_page','closed','not_scholarship','report_not_changed','archive','archive_course','reject_evidence'].includes(open.key)?'no':['reread','release','rebuild','retry','search_again'].includes(open.key)?'resubmit':'other'):''
-  // s1073: a hook's long detail sections sit behind one compact Technical detail toggle; the summary stays open on the card
+  // s1075: a hook's long detail sections sit behind one compact Technical detail toggle; the summary stays open on the card
   const hookSection=list=>list.map((x,n)=><details key={x.key||n} data-l4-section={x.key} open={x.key==='summary'||undefined}><summary>{x.title||String(x.key||'').replace(/_/g,' ')}</summary>
         {x.body&&typeof x.body==='object'?(Array.isArray(x.body)?<HookValue v={x.body}/>:<dl className="l4i-dl">{Object.entries(x.body).map(([a,b])=><React.Fragment key={a}><dt>{a.replace(/_/g,' ')}</dt><dd><HookValue v={b} label={a}/></dd></React.Fragment>)}</dl>):<p className="l4i-why"><small>{String(x.body??'')}</small></p>}</details>)
   return <article ref={box} className={`l4i-item${it.late?' late':''}`} data-l4-item={it.kind} data-l4-ref={it.ref}>

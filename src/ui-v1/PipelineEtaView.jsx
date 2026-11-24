@@ -47,7 +47,7 @@ export default function PipelineEta({onError}){
     <SectionTitle title="Pipeline & field ETA" subtitle="Each API v3 field: admitted now, still in the pipeline, still needing a source, not published, Wave 2, how fast it is filling and when every achievable course is expected to have it."/>
     <div className="ui-pe-bar">
       <div className="ui-ar-tabs" role="tablist" aria-label="Scope">
-        {[['all','Consolidated'],['country','By country'],['provider','By university']].map(([k,l])=><button key={k} role="tab" aria-selected={scope===k} className={scope===k?'ui-active':''} onClick={()=>setScope(k)} data-pe-scope={k}>{l}</button>)}
+        {[['all','Consolidated'],['country','By country'],['provider','By university']].map(([k,l])=><button key={k} role="tab" aria-selected={scope===k} className={scope===k?'active':''} onClick={()=>setScope(k)} data-pe-scope={k}>{l}</button>)}
       </div>
       {scope==='country'&&<label className="ui-pe-field"><span>Country</span><select value={country} onChange={e=>setCountry(e.target.value)} data-pe-country>
         {Object.entries(COUNTRY).map(([k,l])=><option key={k} value={k}>{l}</option>)}</select></label>}

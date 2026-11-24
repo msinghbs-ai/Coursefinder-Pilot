@@ -7,7 +7,7 @@ const code = m.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')
 const fn = code.slice(code.indexOf('create or replace function public.admin_governed_action'), code.indexOf('revoke all on function public.admin_governed_action'))
 const snap = code.slice(code.indexOf('create or replace function security.governed_aer_close_snapshot_v1'), code.indexOf('revoke all on function security.governed_aer_close_snapshot_v1'))
 const ui = fs.readFileSync('src/GovernedActions.jsx', 'utf8')
-const ops = fs.readFileSync('src/Layer23Operations.jsx', 'utf8')
+const ops = fs.readFileSync('src/ui-v1/Layer23OperationsView.jsx', 'utf8')
 const sops = fs.readFileSync('src/guide/sops.js', 'utf8')
 
 test('Platform Admin only, checked on the server; one allowlisted action; no SQL is taken from the request', () => {

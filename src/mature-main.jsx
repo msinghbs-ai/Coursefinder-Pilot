@@ -104,7 +104,7 @@ const DataDelivery=lazyPage(()=>import('./DataDelivery'))
 const BoostQueue=lazyPage(()=>import('./BoostQueue')) // v2.16.30: Platform health › Queues & yield › Boost queue (Country tier and Priority score, worked out on read)
 const CompletenessReport=lazyPage(()=>import('./CompletenessReport')) // Wave 2: Platform health › Country & category completeness
 const DestinationData=lazyPage(()=>import('./DestinationData')) // v2.16.19 RM0F: Destination data page
-const Layer23Operations=lazyPage(()=>import('./Layer23Operations'))
+const Layer23Operations=lazyPage(()=>import('./ui-v1/Layer23OperationsView'))
 const ScreenUse=lazyPage(()=>import('./ScreenUse'))
 const AdapterBuilderTab=lazyPage(()=>import('./AdapterBuilderTab'))
 const BuildAdapter=lazyPage(()=>import('./BuildAdapter'))
@@ -117,7 +117,7 @@ const AdminTasks=lazyPage(()=>import('./AdminTasks'))
 const PlatformGuide=lazyPage(()=>import('./PlatformGuide'))
 const Sop=lazyPage(()=>import('./Sops'))
 const RoleGuides=lazyPage(()=>import('./RoleGuides'))
-const Layer1Sources=lazyPage(()=>import('./layer1-operations-entry'),'Layer1Sources')
+const Layer1Sources=lazyPage(()=>import('./ui-v1/Layer1RegisterView'),'Layer1Sources')
 // SS-020 follow-up (Decision 269 amendment, Platform Admin 4 Nov 2026 "Rewire, then retire"): Automations › Refresh schedules and one-off runs
 // retired; Layer 1 › Sources' Schedule edits the Layer 1 refresh policies. Its runtime health panel stays on Automations.
 const ScheduledRuntimeHealth=lazyPage(()=>import('./ui-v1/ScheduledRuntimeHealthView.jsx'))

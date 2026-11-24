@@ -9,7 +9,7 @@ import { parseDelimited, parseSample } from '../../src/lib/sample-parse.js'
 const read = (p) => fs.readFileSync(p, 'utf8')
 const m = read('supabase/migrations-archive/20261117193000_cf247_layer1_induction_wizard.sql')
 const code = m.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n')
-const wizard = read('src/Layer1InductionWizard.jsx'), report = read('src/CompletenessReport.jsx'), l1 = read('src/layer1-operations-entry.jsx'), main = read('src/mature-main.jsx')
+const wizard = read('src/ui-v1/Layer1InductionWizardView.jsx'), report = read('src/CompletenessReport.jsx'), l1 = read('src/ui-v1/Layer1RegisterView.jsx'), main = read('src/mature-main.jsx')
 
 test('the migration adds beside what exists: no drop, no consumer API object, no retention policy or job change', () => {
   expect(m).toContain('-- Replaces: the single-form Add a source panel'); expect(m).toContain('-- Retires: nothing.')
@@ -63,7 +63,7 @@ test('a sample is read in the browser: delimited text and JSON give column names
   expect(parseDelimited('a;b\r\n1;2\r\n3;4\r\n5;6', 2)).toEqual({ columns: ['a', 'b'], rows: [['1', '2'], ['3', '4']], total_rows: 3 })
   expect(parseSample('x.json', '{"data":[{"a":1,"b":{"c":2}},{"a":3}]}', 20)).toEqual({ columns: ['a', 'b'], rows: [['1', '{"c":2}'], ['3', '']], total_rows: 2 })
   expect(parseSample('x.csv', '', 20)).toBeNull()
-  expect(wizard).toContain("import{parseSample}from'./lib/sample-parse.js'")
+  expect(wizard).toContain("import{parseSample}from'../lib/sample-parse.js'")
 })
 
 test('Platform health has the report as its own tab for Curator and above', () => {
@@ -139,7 +139,7 @@ test('decisions: one category list is published, retention lives in the retentio
   expect(act).toContain('security.current_role_rank(), 0) < 6'); expect(act).not.toMatch(/current_role_rank\(\), 0\) < [345]/)
   expect(c).not.toContain('admin_layer1_parser_reinfer_request(uuid,text)\', \'') // the re-infer gate is not swapped
   expect(PAGES.layer1.min).toBe(3)
-  expect(l1).toContain('rank>=3&&<button className="primary" onClick={()=>setAdding(x=>!x)} data-l1-add>')
+  expect(l1).toContain('rank>=3&&<button className="ui-l1-primary" onClick={()=>setAdding(x=>!x)} data-l1-add>')
   expect(l1).toContain('parser.drift_flagged_at&&!parser.reinfer_requested_at&&rank>=4&&<button onClick={reinfer}')
   expect(wizard).toContain("if(rank<3)return <EmptyInline text=\"Adding a source opens for Curator and above.\"/>")
   expect(wizard).toContain("disabled={busy!==''||rank<6||reason.trim().length<4}")

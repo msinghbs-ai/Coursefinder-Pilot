@@ -35,5 +35,5 @@ test('register headings scroll with their rows and the toolbar stays above the l
   expect(CSS).toContain('[data-l1-sources] .xl-toolbar{position:relative;z-index:3}')
   expect(CSS).toContain('[data-l1-sources] .xl-row th{position:static}')
   expect(CSS).toContain('[data-l1-sources] .xl-head{position:static}')
-  expect(fs.readFileSync('src/layer1-operations-entry.jsx', 'utf8')).toContain('<section className="xl-page" data-l1-sources>')
+  expect(fs.readFileSync('src/ui-v1/Layer1RegisterView.jsx', 'utf8')).toContain('<section className="ui-xl-page" data-l1-sources>')
 })

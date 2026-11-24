@@ -48,7 +48,7 @@ test('source: Onboarding component, builder approvals, Layer 4 retirements, bann
   expect(ob).toContain("supabase.rpc('admin_provider_onboarding'")
   expect(ob).not.toContain('admin_uni_adapter_control') // admitting stays on Layer 2 › Adapters
   expect(ob).not.toContain('export default function ProviderOnboarding') // v2.15.300
-  expect(read('src/Layer23Operations.jsx')).toContain("supabase.rpc('admin_provider_onboarding',{p_action:'read'")
+  expect(read('src/ui-v1/Layer23OperationsView.jsx')).toContain("supabase.rpc('admin_provider_onboarding',{p_action:'read'")
   const builder = read('src/AdapterBuilderTab.jsx')
   expect(builder).toContain('<FeeSchedules provider={provider}/><ProviderPolicies provider={provider}/>')
   const banner = read('src/CreditBanner.jsx')

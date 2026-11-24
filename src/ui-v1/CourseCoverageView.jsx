@@ -115,7 +115,7 @@ export function CoverageView({view='all',onScope,belowFilters}={}){
     </section>
     <section className="ui-filterbar" aria-label="Provider tier">
       <span>Provider tier</span>
-      {TIERS.map(([k,l])=><button key={k||'all'} className={tier===k?'ui-active':''} onClick={()=>setTier(k)}>{l}</button>)}
+      {TIERS.map(([k,l])=><button key={k||'all'} className={tier===k?'active':''} onClick={()=>setTier(k)}>{l}</button>)}
       <Button compact className="ui-btn ui-btn-sm ui-cc-refresh" title="Refresh" aria-label="Refresh" onClick={load} disabled={busy}><RefreshCw size={14}/></Button>
     </section>
     {error&&<div className="ui-dq-alert"><AlertTriangle size={16}/><span>{error}</span></div>}
@@ -176,7 +176,7 @@ export function CoverageView({view='all',onScope,belowFilters}={}){
       </div>
       <div className="ui-tablewrap"><table className="ui-table ui-table ui-cc-states"><thead><tr><th>Attribute</th>{COMPLETENESS_STATES.map(s=><th key={s.key} className="ui-num" title={s.built?s.hint:`${s.hint}. Not recorded by the hourly build yet.`}>{s.label}</th>)}<th className="ui-num">Total</th></tr></thead>
         <tbody>{cstates.map(a=><tr key={a.attribute}><td><strong>{ATTR[a.attribute]?.label||a.attribute}</strong><small>{ATTR[a.attribute]?.layer}</small></td>
-          {COMPLETENESS_STATES.map(s=>{const n=Number(a.states?.[s.key]||0);return <td key={s.key} className="ui-num">{n?<button className={`ui-cc-count ${pick?.attribute===a.attribute&&pick?.cstate===s.key?'ui-active':''}`} onClick={()=>choose({attribute:a.attribute,cstate:s.key})}>{fmtNumber(n)}</button>:<span className="ui-cc-zero">–</span>}</td>})}
+          {COMPLETENESS_STATES.map(s=>{const n=Number(a.states?.[s.key]||0);return <td key={s.key} className="ui-num">{n?<button className={`ui-cc-count ${pick?.attribute===a.attribute&&pick?.cstate===s.key?'active':''}`} onClick={()=>choose({attribute:a.attribute,cstate:s.key})}>{fmtNumber(n)}</button>:<span className="ui-cc-zero">–</span>}</td>})}
           <td className="ui-num"><strong>{fmtNumber(a.total)}</strong></td></tr>)}</tbody></table></div>
     </section>
     </>}
@@ -203,7 +203,7 @@ export function CoverageView({view='all',onScope,belowFilters}={}){
       {tip&&<div className="ui-cc-tip" style={{left:tip.x+12,top:tip.y+12}}><strong>{tip.attr}</strong><span>{tip.stage}</span><b>{fmtNumber(tip.n)} courses · {fmtShare(tip.n,tip.total)}</b></div>}
       <div className="ui-tablewrap"><table className="ui-table ui-table"><thead><tr><th>Attribute</th>{STATE_ORDER.map(s=><th key={s} className="ui-num" title={STATE_LABEL[s]}>{STATE_SHORT[s]||STATE_LABEL[s]}</th>)}<th className="ui-num">Total</th></tr></thead>
         <tbody>{attrs.map(a=><tr key={a.attribute}><td><strong>{ATTR[a.attribute]?.label||a.attribute}</strong><small>{ATTR[a.attribute]?.layer}</small></td>
-          {STATE_ORDER.map(s=>{const n=Number(a.states?.[s]||0);return <td key={s} className="ui-num">{n?<button className={`ui-cc-count ${pick?.attribute===a.attribute&&pick?.state===s?'ui-active':''}`} onClick={()=>choose({attribute:a.attribute,state:s})}>{fmtNumber(n)}</button>:<span className="ui-cc-zero">–</span>}</td>})}
+          {STATE_ORDER.map(s=>{const n=Number(a.states?.[s]||0);return <td key={s} className="ui-num">{n?<button className={`ui-cc-count ${pick?.attribute===a.attribute&&pick?.state===s?'active':''}`} onClick={()=>choose({attribute:a.attribute,state:s})}>{fmtNumber(n)}</button>:<span className="ui-cc-zero">–</span>}</td>})}
           <td className="ui-num"><strong>{fmtNumber(a.total)}</strong></td></tr>)}</tbody></table></div>
     </section>
     </>}

@@ -8,7 +8,7 @@ test.describe('CF-067 QS THE Layer 1 ranking ingestion contract',()=>{
 
  test('keeps ranking ingestion governed and reachable from Layer 1',async()=>{
   const[ui,shell,version,ctl,etl,m1,m2,m3,m4,m5]=await Promise.all([
-   fs.readFile('src/layer1-operations-entry.jsx','utf8'),
+   fs.readFile('src/ui-v1/Layer1RegisterView.jsx','utf8'),
    fs.readFile('src/mature-main.jsx','utf8'),
    fs.readFile('src/release-history-legacy.js','utf8'),
    fs.readFile('supabase/functions/layer1-operations-control/index.ts','utf8'),

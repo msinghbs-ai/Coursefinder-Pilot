@@ -129,7 +129,7 @@ function CrossCheck({data,scope,rank,onDecided,onError}){
   return <Card id="coverage.crosscheck" title="Cross-check differences" icon={GitCompare}
     subtitle="Each standing run compares the held duration, study level and delivery mode with the latest reading of the course page. A difference is listed here with the page's words; nothing is overwritten. Keep the held value, or take the page value (it is then locked as entered by hand). In Australia the held value is usually the register's."
     meta={<span className="ui-chip ">{fmtNumber(open)} open</span>} data-crosscheck>
-    <div className="ui-filterbar"><span>Field</span>{[['','All'],['duration','Duration'],['level','Study level'],['delivery','Delivery mode']].map(([k,l])=><button key={k||'all'} className={field===k?'ui-active':''} onClick={()=>{setOffset(0);setField(k)}}>{l}{k&&counts[k]?.open?` (${fmtNumber(counts[k].open)})`:''}</button>)}</div>
+    <div className="ui-filterbar"><span>Field</span>{[['','All'],['duration','Duration'],['level','Study level'],['delivery','Delivery mode']].map(([k,l])=><button key={k||'all'} className={field===k?'active':''} onClick={()=>{setOffset(0);setField(k)}}>{l}{k&&counts[k]?.open?` (${fmtNumber(counts[k].open)})`:''}</button>)}</div>
     {items==null?<Loading compact/>:items.length===0?<Empty text="No open differences."/>:<div className="ui-tablewrap"><table className="ui-table"><thead><tr><th>Course</th><th>Field</th><th>Held</th><th>Course page</th><th>Page words</th>{data.can_decide&&<th/>}</tr></thead>
       <tbody>{items.map(r=><tr key={r.id}><td><button className="ui-dq-entity-link" onClick={()=>{location.hash=`#courses?id=${encodeURIComponent(r.course_id)}`}}><strong>{r.course}</strong></button><small>{r.provider} · {r.country}</small></td>
         <td>{LABEL[r.field]||r.field}</td><td>{show(r.held_value)}</td><td><strong>{show(r.page_value)}</strong></td><td><small>{r.quote}</small></td>
@@ -152,7 +152,7 @@ function StalledFields({scope,onChanged,onError,readOnly=false,focus=''}){
   const flat=items.filter(x=>x.reason==='flat').length
   return <Card id="coverage.stalled" title="Stalled fields" icon={AlertTriangle}
     subtitle={`Fields below their target that have gained less than ${d?fmtNumber(d.min_points):1} point in ${d?fmtNumber(d.days):7} days, that trail the best country by ${d?fmtNumber(d.gap_points):30} points or more, or that nothing reads yet. Each shows its main cause, the action that resolves it and the universities missing it most. The same list raises Platform health issues every 3 hours; an issue closes itself when the field moves again.`}
-    meta={<span className={`ui-chip tone-${flat?'warning':'neutral'}`}>{fmtNumber(flat)} not moving · {fmtNumber(items.length)} in all</span>} data-stalled-fields>
+    meta={<span className="ui-chip" data-tone={flat?'warning':'neutral'}>{fmtNumber(flat)} not moving · {fmtNumber(items.length)} in all</span>} data-stalled-fields>
     {!d?<Loading compact/>:items.length===0?<Empty text="No field is stalled."/>:<>
     {!readOnly&&d.can_release&&<p className="ui-fc-actions"><input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Reason (needed to release holds)" aria-label="Reason for releasing holds"/><small className="ui-sd-desc">Release holds and fill: use after a new central page, adapter rule or reader, so courses whose page did not state the field are read again.</small></p>}
     {note&&<p className="ui-sd-desc" role="status">{note}</p>}

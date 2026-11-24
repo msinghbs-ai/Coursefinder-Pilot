@@ -7,7 +7,7 @@ import{buildOnce}from'./support/build-once.mjs'
 test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
   test('country-first operations and Administration configuration stay separated',async()=>{
     const[layer1,shell,versionEntry,index,manifest,current,nav]=await Promise.all([
-      fs.readFile('src/layer1-operations-entry.jsx','utf8'),
+      fs.readFile('src/ui-v1/Layer1RegisterView.jsx','utf8'),
       fs.readFile('src/mature-main.jsx','utf8'),
       fs.readFile('src/release-history-legacy.js','utf8'),
       fs.readFile('index.html','utf8'),
@@ -24,9 +24,9 @@ test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
     expect(layer1).toContain('export function Layer1SourceSettings()')
     expect(layer1).toContain('Layer 1 source configuration')
     expect(layer1).toContain('Safe maintenance boundary')
-    expect(layer1).toContain('return <><style>{STYLES}</style><section className="l1s-shell">')
-    expect(layer1).toContain('className="l1s-grid"')
-    expect(layer1).toContain('className="l1s-card"')
+    expect(layer1).toContain('return <><section className="ui-l1s-shell">')
+    expect(layer1).toContain('className="ui-l1s-grid"')
+    expect(layer1).toContain('className="ui-l1s-card"')
     expect(layer1).toContain('Source & authority')
     expect(layer1).toContain('Cadence & guardrails')
     expect(layer1).not.toContain('Advanced source configuration')

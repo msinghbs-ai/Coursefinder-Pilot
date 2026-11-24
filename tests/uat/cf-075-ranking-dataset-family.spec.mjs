@@ -5,7 +5,7 @@ import{test,expect}from'@playwright/test'
 test.describe('CF-075 compact multi-year ranking datasets',()=>{
  test('collapses ranking cards and preserves edition-aware imports/comparison',async()=>{
   const[layer1,shell,compare,etl,migration]=await Promise.all([
-   fs.readFile('src/layer1-operations-entry.jsx','utf8'),
+   fs.readFile('src/ui-v1/Layer1RegisterView.jsx','utf8'),
    fs.readFile('src/mature-main.jsx','utf8'),
    fs.readFile('src/ComparisonWorkspace.jsx','utf8'),
    fs.readFile('supabase/functions/ranking-layer1-etl/index.ts','utf8'),

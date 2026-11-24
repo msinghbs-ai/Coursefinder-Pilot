@@ -66,7 +66,7 @@ test('Statistics editions: discovery from stable pages, checked before a person 
   expect(ctl).toContain('only a checked edition can be applied')
   expect(read('supabase/functions/qilt-au-etl/index.ts')).toContain('edition file must be on qilt.edu.au')
   expect(read('supabase/functions/prisms-au-etl/index.ts')).toContain('edition file must be an education.gov.au download')
-  const ui=read('src/layer1-operations-entry.jsx')
+  const ui=read('src/ui-v1/Layer1RegisterView.jsx')
   expect(ui).toContain('function QiltFamilyCard(')
   expect(ui).toContain('function NewEditions(')
   expect(ui).toContain("control({action:'apply_edition',candidate_id:c.id})")

@@ -20,5 +20,5 @@ test('Sources: one slim description strip (no repeated title); boxed filter sele
 
 test('plain wording on Layer 1 batch runs and alerts', () => {
   expect(existsSync('src/RegulatorySettings.jsx')).toBe(false) // 18 Oct 2026: unused screen retired (nothing imported it)
-  expect(read('src/layer1-operations-entry.jsx')).toContain('Nothing in Layer 1 needs action.')
+  expect(read('src/ui-v1/Layer1RegisterView.jsx')).toContain('Nothing in Layer 1 needs action.')
 })

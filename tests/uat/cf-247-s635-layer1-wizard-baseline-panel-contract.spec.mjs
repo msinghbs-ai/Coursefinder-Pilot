@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const P = fs.readFileSync('src/Layer1BaselinePreview.jsx', 'utf8')
-const W = fs.readFileSync('src/Layer1InductionWizard.jsx', 'utf8')
+const P = fs.readFileSync('src/ui-v1/Layer1BaselinePreviewView.jsx', 'utf8')
+const W = fs.readFileSync('src/ui-v1/Layer1InductionWizardView.jsx', 'utf8')
 const M = fs.readFileSync('supabase/migrations-archive/20261118124000_cf247_layer1_induction_v3_fields_baseline.sql', 'utf8')
 
 test('every record type the Layer 1 parser targets name has a panel entry', () => {
@@ -18,7 +18,7 @@ test('every record type the Layer 1 parser targets name has a panel entry', () =
 test('the panel only describes: no server call, and it sits on the Country & scheme step after the record type', () => {
   expect(P).not.toMatch(/\b(call|rpc|fetch|supabase)\(/)
   expect(P).toContain('Nothing is published, overwritten or deleted')
-  expect(W).toMatch(/import Layer1BaselinePreview from ?'\.\/Layer1BaselinePreview'/)
+  expect(W).toMatch(/import Layer1BaselinePreview from ?'\.\/Layer1BaselinePreviewView'/)
   expect(W.indexOf('data-l1i-record-type')).toBeLessThan(W.indexOf('<Layer1BaselinePreview'))
 })
 

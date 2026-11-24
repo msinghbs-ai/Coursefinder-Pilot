@@ -113,5 +113,5 @@ export function ReviewReadinessLine(){
   const[r,setR]=useState(null)
   useEffect(()=>{let live=true;const t=setTimeout(()=>{aer('coverage',{page_size:1}).then(d=>{if(live&&d?.readiness)setR(d.readiness)}).catch(()=>{})},0);return()=>{live=false;clearTimeout(t)}},[])
   if(!r)return null
-  return <p className="ui-cc-note l4i-readiness" data-aer-readiness>Entry-requirement review readiness: {READINESS.map(([k,l])=>`${l} ${fmtNumber(r[k]||0)}`).join(' · ')}.</p>
+  return <p className="ui-cc-note ui-aer-readiness" data-aer-readiness>Entry-requirement review readiness: {READINESS.map(([k,l])=>`${l} ${fmtNumber(r[k]||0)}`).join(' · ')}.</p>
 }
