@@ -161,6 +161,8 @@ async function entityPage(operation, args = {}) {
     university_group: args.universityGroup || args.university_group || null,
     sort: args.sort || null,
     direction: args.direction || 'asc',
+    // s1024/s1026 (REQ-110): optional, percentage minimums only; absent = the list is unchanged
+    ...(args.gpa_country ? { gpa_country: args.gpa_country, gpa_percent: args.gpa_percent ?? null, gpa_qualification: args.gpa_qualification || null, gpa_meets: !!args.gpa_meets } : {}),
   })
 }
 

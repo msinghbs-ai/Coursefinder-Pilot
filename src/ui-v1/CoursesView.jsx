@@ -29,33 +29,39 @@ function SaveButton({ saved, onToggle }) {
 
 const snapshotOf = r => ({ title: r.display_title || r.canonical_title, provider: r.provider_name, code: r.display_code?.code || r.course_code, cities: r.cities, level: r.level_name, delivery: r.delivery_mode, du: r.duration_unit, dv: r.duration_value, fee: r.fee_amount, cur: r.fee_currency, field_states: r.field_states })
 
+// REQ-110 args: only when a country is chosen; the server compares percentage minimums only
+const gpaArgs = g => g.country ? { gpa_country: g.country, gpa_percent: g.pct === '' ? null : Number(g.pct), gpa_qualification: g.qual.trim(), gpa_meets: g.meets && g.pct !== '', ...(g.sort ? { sort: 'gpa', direction: 'asc' } : {}) } : {}
+
 export default function CoursesView({ saved, userId }) {
   const lk = useLookups()
   const [q, setQ] = useState(''), [country, setCountry] = useState(''), [level, setLevel] = useState('')
   const [view, setView] = useState('all'), [offset, setOffset] = useState(0)
+  const [g, setG] = useState({ country: '', pct: '', qual: '', meets: false, sort: false })   // REQ-110: the student's result, compared with published percentage minimums
   const [page, setPage] = useState({ items: [], total: 0, limit: 50 }), [err, setErr] = useState(''), [busy, setBusy] = useState(false)
   const [cmp, setCmp] = useState([]), [open, setOpen] = useState(false), [, bump] = useState(0), [detailRow, setDetailRow] = useState(null)
   useEffect(() => saved.subscribe(() => bump(n => n + 1)), [saved])
-  useEffect(() => { setOffset(0) }, [q, country, level])
+  useEffect(() => { setOffset(0) }, [q, country, level, g])
   useEffect(() => {
     if (view !== 'all') return
     let on = true
     const t = setTimeout(() => {
       setBusy(true); setErr('')
-      api.coursePage({ query: q.trim(), country, level, limit: 50, offset, lifecycle: 'active' })
-        .then(p => { if (!on) return; setPage({ items: p?.items || [], total: Number(p?.total || 0), limit: Number(p?.limit || 50) }); saved.sync(p?.items) })
+      api.coursePage({ query: q.trim(), country, level, limit: 50, offset, lifecycle: 'active', ...gpaArgs(g) })
+        .then(p => { if (!on) return; setPage({ items: p?.items || [], total: Number(p?.total || 0), limit: Number(p?.limit || 50), mins: p?.gpa_minimums || null }); saved.sync(p?.items) })
         .catch(() => on && setErr('Courses could not be loaded. Try again in a moment.'))
         .finally(() => on && setBusy(false))
     }, q ? 300 : 0)
     return () => { on = false; clearTimeout(t) }
-  }, [q, country, level, offset, view])
+  }, [q, country, level, offset, view, g])
 
   const savedRows = saved.list()
   const saveErr = saved.error
   const rows = view === 'saved' ? savedRows.map(s => ({ id: s.id, display_title: s.title, provider_name: s.provider, display_code: { code: s.code }, cities: s.cities, level_name: s.level, delivery_mode: s.delivery, duration_unit: s.du, duration_value: s.dv, fee_amount: s.fee, fee_currency: s.cur, field_states: s.field_states })) : page.items
   const toggleCmp = id => setCmp(c => c.includes(id) ? c.filter(x => x !== id) : c.length >= COMPARE_MAX ? c : [...c, id])
   const levels = useMemo(() => (lk.study_levels || []).map(l => [l.code, l.name || l.label || humanise(l.code)]), [lk])
+  const gpaCountries = useMemo(() => (lk.gpa_countries || lk.countries || []).map(c => [c.code, c.name || countryName(lk, c.code)]), [lk])   // the live list; gpa_countries (countries holding percentage minimums) is preferred once the lookups carry it
   const countries = useMemo(() => (lk.countries || []).filter(c => c.target).map(c => [c.code, c.name || countryName(lk, c.code)]), [lk])
+  const gpaOn = !!g.country && g.pct !== ''
   const hasPrev = offset > 0, hasNext = offset + page.limit < page.total
 
   return <>
@@ -64,6 +70,14 @@ export default function CoursesView({ saved, userId }) {
       <div className="ui-field ui-field-wide"><label htmlFor="uiq">Search</label><input id="uiq" className="ui-input" placeholder="Course, code or provider" value={q} onChange={e => setQ(e.target.value)} /></div>
       <div className="ui-field"><label htmlFor="uic">Country</label><select id="uic" className="ui-input" value={country} onChange={e => setCountry(e.target.value)}><option value="">All countries</option>{countries.map(([c, n]) => <option key={c} value={c}>{n}</option>)}</select></div>
       <div className="ui-field"><label htmlFor="uil">Study level</label><select id="uil" className="ui-input" value={level} onChange={e => setLevel(e.target.value)}><option value="">All levels</option>{levels.map(([c, n]) => <option key={c} value={c}>{n}</option>)}</select></div>
+    </section>
+    <section className="ui-filterbar" aria-label="Compare with a student's result" data-gpa-panel>
+      <div className="ui-field"><label htmlFor="uigc">Country of education</label><select id="uigc" className="ui-input" value={g.country} onChange={e => setG({ ...g, country: e.target.value })}><option value="">Not comparing</option>{gpaCountries.map(([c, n]) => <option key={c} value={c}>{n}</option>)}</select></div>
+      <div className="ui-field"><label htmlFor="uigp">Result (%)</label><input id="uigp" className="ui-input" type="number" min="0" max="100" step="0.1" inputMode="decimal" value={g.pct} disabled={!g.country} onChange={e => setG({ ...g, pct: e.target.value === '' ? '' : String(Math.min(100, Math.max(0, Number(e.target.value)))) })} /></div>
+      <div className="ui-field"><label htmlFor="uigq">Qualification (optional)</label><input id="uigq" className="ui-input" placeholder="e.g. CBSE Class XII" value={g.qual} disabled={!g.country} onChange={e => setG({ ...g, qual: e.target.value })} /></div>
+      <label className="ui-check"><input type="checkbox" checked={g.meets} disabled={!gpaOn} onChange={e => setG({ ...g, meets: e.target.checked })} /> Only courses whose minimum I meet</label>
+      <label className="ui-check"><input type="checkbox" checked={g.sort} disabled={!g.country} onChange={e => setG({ ...g, sort: e.target.checked })} /> Sort by lowest entry minimum</label>
+      <div className="ui-note" data-gpa-help>Compares the student's percentage with each course's published percentage entry minimum for that country. CBSE Class X grade points are not compared (minimums are set on Class XII results). A course with no published percentage minimum is listed last and is never shown as meeting it.</div>
     </section>
     {view === 'saved' && <section className="ui-savedbar" aria-label="Compare saved courses"><div><strong>Saved courses</strong><div className="ui-note">Pick up to {COMPARE_MAX} saved courses, then open the side-by-side comparison. Saved courses stay in your list until you remove them.</div></div>
       <div className="ui-filter-actions"><button type="button" className="ui-btn ui-btn-primary" disabled={!cmp.length} onClick={() => setOpen(true)}>Compare selected ({cmp.length})</button><button type="button" className="ui-btn" onClick={() => setCmp([])}>Clear selection</button></div></section>}
@@ -74,7 +88,7 @@ export default function CoursesView({ saved, userId }) {
       </div>
       {err && <div className="ui-alert" role="alert">{err}</div>}
       {saveErr && <div className="ui-alert" role="alert" data-save-error>{saveErr} <button type="button" className="ui-btn ui-btn-sm" onClick={() => saved.clearError()}>Dismiss</button></div>}
-      <table className="ui-grid" data-no-resize><thead><tr><th>Course</th><th>Location</th><th>Level</th><th>Delivery</th><th>Duration</th><th className="ui-num">Tuition</th><th>Completeness</th></tr></thead>
+      <table className="ui-grid" data-no-resize><thead><tr><th>Course</th><th>Location</th><th>Level</th><th>Delivery</th><th>Duration</th><th className="ui-num">Tuition</th>{gpaOn && view === 'all' && <th className="ui-num" data-gpa-col>Entry minimum</th>}<th>Completeness</th></tr></thead>
         <tbody>{rows.length ? rows.map(r => { const rd = readiness(r), on = cmp.includes(r.id); return <tr key={r.id}>
           <td data-primary><div className="ui-cell-head"><div><div className="ui-cell-title"><button type="button" className="ui-btn ui-btn-sm" onClick={() => setDetailRow(r)}>{r.display_title || r.canonical_title}</button></div><div className="ui-cell-sub">{r.provider_name}{(r.display_code?.code || r.course_code) ? ' · ' + (r.display_code?.code || r.course_code) : ''}</div></div>
             <SaveButton saved={saved.has(r.id)} onToggle={() => saved.toggle(r.id, snapshotOf(r))} /></div>
@@ -84,6 +98,7 @@ export default function CoursesView({ saved, userId }) {
           <td data-label="Delivery">{humanise(r.delivery_mode)}</td>
           <td data-label="Duration">{duration(r.duration_value, r.duration_unit)}</td>
           <td data-label="Tuition" className="ui-num">{money(r.fee_amount, r.fee_currency)}</td>
+          {gpaOn && view === 'all' && <td data-label="Entry minimum" className="ui-num" data-gpa-min>{page.mins?.[r.id] != null ? <span className="ui-badge" data-tone={Number(page.mins[r.id]) <= Number(g.pct) ? 'success' : 'neutral'}>{page.mins[r.id]}%{Number(page.mins[r.id]) <= Number(g.pct) ? ' · meets' : ''}</span> : <span className="ui-note">Not published</span>}</td>}
           <td data-label="Completeness"><span className="ui-badge" data-tone={rd.ready >= 8 ? 'success' : rd.ready >= 5 ? 'warning' : 'neutral'} title={rd.missing.length ? 'Missing: ' + rd.missing.join(', ') : 'All ten facts held'}>{rd.ready}/{rd.total} ready</span></td></tr> })
           : <tr><td data-primary>{view === 'saved' ? <div className="ui-emptystate"><p className="ui-emptystate-title">No saved courses yet</p><p className="ui-note">Select ♡ on any course to save it here.</p></div> : <div className="ui-emptystate"><p className="ui-emptystate-title">{busy ? 'Loading courses…' : 'No courses match these filters'}</p></div>}</td></tr>}</tbody></table>
       {view === 'all' && <div className="ui-filter-actions"><button type="button" className="ui-btn" disabled={!hasPrev || busy} onClick={() => setOffset(Math.max(0, offset - page.limit))}>Previous</button><button type="button" className="ui-btn" disabled={!hasNext || busy} onClick={() => setOffset(offset + page.limit)}>Next</button></div>}
