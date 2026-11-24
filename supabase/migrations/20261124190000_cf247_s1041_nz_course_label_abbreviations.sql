@@ -54,7 +54,7 @@ begin
           and s.short_code = any(v_levels)
           and (security.entry_course_title_key_v1(c.canonical_title) = v_nz_key
             or security.entry_course_title_key_v1(c.display_title) = v_nz_key));
-      if cardinality(v_ids) = 1 then v_method := 'nz_award_title'; end if;
+      if cardinality(v_ids) = 1 then v_method := 'title'; end if;
     end if;
   end if;
   if v_method is not null then$nz$;
