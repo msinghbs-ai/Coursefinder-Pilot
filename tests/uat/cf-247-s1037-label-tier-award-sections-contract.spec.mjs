@@ -79,8 +79,8 @@ test('s1037: a page with award codes is split as before, with the setting on or 
   expect(b.map((x) => x.key)).toEqual(a.map((x) => x.key))
 })
 
-test('s1037: worker v1.0.38 reads the setting; migration registers it, widens the merit wording, reads the two hubs now; G2/G3/locks/cron guarded', () => {
-  expect(worker).toContain('const WORKER = "coverage-sweep-worker-v1.0.38";')
+test('s1037: worker v1.0.39 reads the setting; migration registers it, widens the merit wording, reads the two hubs now; G2/G3/locks/cron guarded', () => {
+  expect(worker).toContain('const WORKER = "coverage-sweep-worker-v1.0.39";')
   expect(worker).toContain('const labelOpts = { labels: wsNum("scholarship.label_sections_on", 0) > 0 };')
   expect(worker).toContain('awardSections(pg.html, pg.finalUrl || url, labelOpts).length === 0)')
   expect(worker).toContain('for (const a of awardSections(pg.html, base, labelOpts)) items.set(')
