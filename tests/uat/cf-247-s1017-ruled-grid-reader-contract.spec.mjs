@@ -60,8 +60,8 @@ test('it fails closed: a course with two values under one heading, or a row with
 test('the worker reads with no model only through a deterministic reader, and the database leases only stored PDFs while there is no model', () => {
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(ix).toContain('import { ENTRY_RULED_GRID_READER, ruledGridFromPages } from "./entry-ruled-grid.ts";')
-  expect(ix).toContain('if (!cellRead && !gridRead && !ruledRead && (it.det_only === true || !it.model)) {')
-  expect(ix).toContain('if (!cellRead && !gridRead && !ruledRead) await pool([...slices.keys()],')
+  expect(ix).toContain('if (!cellRead && !gridRead && !ruledRead && !colRead && (it.det_only === true || !it.model)) {')
+  expect(ix).toContain('if (!cellRead && !gridRead && !ruledRead && !colRead) await pool([...slices.keys()],')
   expect(ix).toContain('reading.entry_ruled_grid_reader_on')
   const mig = fs.readFileSync('supabase/migrations/20261124060000_cf247_s1017_ruled_grid_reader_det_only_lease.sql', 'utf8')
   expect(mig).toContain("e0.mime_type = 'application/pdf'")

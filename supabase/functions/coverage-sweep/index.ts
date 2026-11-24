@@ -21,7 +21,7 @@ import type { EntryBandLine, EntryCountryRef, EntryLineSet, EntryManifest } from
 import { ENTRY_CELL_READER, entryCellRead } from "./entry-cells.ts";
 import { ENTRY_GRID_READER, entryGridHeadingList, entryGridRead } from "./entry-grid.ts";
 import { ENTRY_RULED_GRID_READER, ruledGridFromPages } from "./entry-ruled-grid.ts";
-import { ENTRY_HTML_TABLE_READER, entryHtmlTableCompleteness, entryHtmlTableRead } from "./entry-html-table.ts";  // s1029: AER v2 HTML_TABLE proven-structure reader
+import { ENTRY_HTML_TABLE_READER, entryHtmlTableCompleteness, entryHtmlTableRead } from "./entry-html-table.ts"; import { ENTRY_PDF_COLUMNS_READER, entryPdfColumnsRead } from "./entry-pdf-columns.ts";  // s1029: AER v2 HTML_TABLE proven-structure reader
 import { pdfGrids2 } from "./pdf-grid.ts";
 import { COURSE_ENTRY_PROMPT_VERSION, courseEntryAnswer, courseEntryMerge, courseEntryPlan, courseEntryRequest, courseEntrySliceRows, courseEntryUser } from "./course-entry.ts";
 import type { CourseSliceOutcome } from "./course-entry.ts";
@@ -3219,14 +3219,17 @@ async function handle(req: Request): Promise<Response> {
             const pieces = ruled.skipped.map((k) => ({ reason: "ruled_grid_piece_without_course_column", country: k.head, quote: `page ${k.page}: a table piece starting "${k.head}" has no course column` }));
             parts = [{ parsed: { ...parsed, dropped: [...parsed.dropped, ...ruledRead.dropped, ...pieces] }, nm: { rows: parsed.rows, dropped: [] } }];
           }
+          // s1050 (AER v2 proven structure, S1-AER-Claude, Platform Admin 24 Nov 2026 16:15): an unruled PDF column table (ACU) proven from its positioned text is read cell by cell without the model (entry-pdf-columns.ts); same checks as every reader
+          const colRead = !cellRead && !gridRead && !ruledRead && stored.pdfPages && Number(ws["reading.entry_ruled_grid_reader_on"]) >= 1 ? entryPdfColumnsRead(stored.pdfPages, await countryRefs(), quals?.on && Array.isArray(quals.qualifications) ? quals.qualifications : [], parseOpts.countryAliases, { minRows: Number(ws["reading.entry_ruled_grid_min_rows"]) || 5 }) : null;
+          if (colRead) { const parsed = entryMatrixParsed(colRead.answer, colRead.text, Object.assign([] as EntryBandLine[], { forms: [] }) as EntryLineSet, parseOpts); parts = [{ parsed: { ...parsed, dropped: [...parsed.dropped, ...colRead.dropped] }, nm: { rows: parsed.rows, dropped: [] } }] }
           // s1017: while the entry_matrices route has no qualified model, the database leases stored PDFs only (svc_entry_matrix_next det_only); a PDF that no
           // deterministic reader proves is held, never sent to a model
-          if (!cellRead && !gridRead && !ruledRead && (it.det_only === true || !it.model)) {
+          if (!cellRead && !gridRead && !ruledRead && !colRead && (it.det_only === true || !it.model)) {
             await rec({ p_error: `held_unparsed: no deterministic reader proved this table${ruled?.reason ? ` (ruled grid: ${ruled.reason})` : ""}, and the entry_matrices route has no qualified model`.slice(0, 400),
                         p_result: { rows: [], dropped: [], completeness: { status: "unparsed", reason: "no deterministic read; no qualified model" }, worker: WORKER, prompt_version: ENTRY_PROMPT_VERSION, page_basis: PDF_METHOD } });
             tally.held_no_model = (tally.held_no_model || 0) + 1; return;
           }
-          if (!cellRead && !gridRead && !ruledRead) await pool([...slices.keys()], Math.max(1, Math.min(Number(it.slice_concurrency) || 1, 12)), async (i) => {  // fixed: the setting's upper bound (entry.matrix_slice_concurrency)
+          if (!cellRead && !gridRead && !ruledRead && !colRead) await pool([...slices.keys()], Math.max(1, Math.min(Number(it.slice_concurrency) || 1, 12)), async (i) => {  // fixed: the setting's upper bound (entry.matrix_slice_concurrency)
            if (failed) return;
            try {
             if (Date.now() - t0 > BUDGET_MS - 20000) throw Error("time budget");
@@ -3264,13 +3267,13 @@ async function handle(req: Request): Promise<Response> {
           // subject become one subject-prerequisite row, after completeness is checked on the rows as read
           const subj = Number(ws["reading.entry_subject_rows_on"]) >= 1 ? entrySubjectRows(rows) : { rows, merged: 0 };
           rows.splice(0, rows.length, ...subj.rows);
-          const result = { rows, ...(qrows.length ? { qualification_rows: qrows } : {}), dropped, edition, intake_year, slices: cellRead || gridRead || ruledRead ? 0 : slices.length, worker: WORKER,
+          const result = { rows, ...(qrows.length ? { qualification_rows: qrows } : {}), dropped, edition, intake_year, slices: cellRead || gridRead || ruledRead || colRead ? 0 : slices.length, worker: WORKER,
                            ...(cellRead ? { reader: ENTRY_CELL_READER, cell_reader: { ...cellRead.stats, levels: cellRead.levels } } : {}),
                            ...(gridRead ? { reader: ENTRY_GRID_READER, cell_reader: { ...gridRead.stats, tables: grid!.tables.length, method: grid!.method,
                                              columns_unmapped: gridRead.columns.filter((c) => c.kind === "unknown").map((c) => c.head) } } : {}),
                            ...(ruledRead && ruled ? { reader: ENTRY_RULED_GRID_READER, cell_reader: { ...ruledRead.stats, tables: ruled.tables.length, method: ENTRY_RULED_GRID_READER, pieces_skipped: ruled.skipped.length,
                                              columns_unmapped: ruledRead.columns.filter((c) => c.kind === "unknown").map((c) => c.head) } } : {}), prompt_version: ENTRY_PROMPT_VERSION, page_basis: stored.pdf ? PDF_METHOD : ENTRY_TABLE_BASIS, completeness,
-                           ...(subj.merged ? { subject_rows_merged: subj.merged } : {}), ...(globalQ ? { global_qualification: globalQ } : {}),
+                           ...(subj.merged ? { subject_rows_merged: subj.merged } : {}), ...(colRead ? { reader: ENTRY_PDF_COLUMNS_READER, cell_reader: { ...colRead.stats, method: ENTRY_PDF_COLUMNS_READER, tables: colRead.tables, skipped: colRead.skipped } } : {}), ...(globalQ ? { global_qualification: globalQ } : {}),
                            ...(stored.pdf ? { pdf: { tables: stored.pdf.tables.length, rows: stored.pdf.tables.reduce((a, t) => a + t.rows, 0) } } : {}) };
           if (it.completeness_required === true && completeness.status !== "complete") {
             await rec({ p_error: `held_incomplete: ${completeness.reason || completeness.status}`.slice(0, 400), p_result: result, p_cost: c1 });
