@@ -68,5 +68,5 @@ test('discovery page type and worker mode', () => {
   expect(central).toContain('k !== "entry_requirements" && !found.some') // no extra targeted map: no new central_find spend
   expect(w).toContain('if (mode === "entry_ai") {')
   expect(w).toContain('if (d1.status === "robots_disallowed") { await frec({ p_status: "robots_disallowed", p_http: http });')
-  expect(w).toContain('if (d?.model && !String(d.model).startsWith(it.model)) throw Error(`returned model ${d.model}, not ${it.model}`);  // pinned')
+  expect(w).toContain('if (d?.model && !String(d.model).startsWith(sentModel(d, it.model))) throw Error(`returned model ${d.model}, not ${sentModel(d, it.model)}`);')  // s1085: pinned to the model the cascade sent
 })

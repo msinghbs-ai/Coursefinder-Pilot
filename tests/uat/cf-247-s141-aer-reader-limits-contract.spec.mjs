@@ -20,7 +20,7 @@ test('worker v0.49.2 uses them and names a cut-off answer', () => {
   expect(e).toMatch(/export function entryMatrixRequest\(model: string, p: \{ provider: string; url: string; text: string; slice\?: string; cells\?: string(; note\?: string)? \}, maxTokens = 8000\)/)
   expect(e).toContain('return { model, temperature: 0, max_tokens: maxTokens,')
   expect(ai).toContain('entrySlices(page, Number(it.max_rows) || 400, Number(it.slice_chars) || 24000)')
-  expect(ai).toContain('Number(it.max_tokens) || 8000)), signal: AbortSignal.timeout(90000) });')
+  expect(ai).toContain('Number(it.max_tokens) || 8000)), signal: AbortSignal.timeout(ENTRY_FIRST_MODEL_TIMEOUT_MS) });')  // s1085: 40 s first model, then the cascade
   expect(ai).toContain('if (d?.choices?.[0]?.finish_reason === "length") throw Error(`output_truncated:')
   // the quote, scale and completeness checks are unchanged
   expect(ai).toContain('const parsed = entryMatrixParsed(JSON.parse(content), page, stored.lines, parseOpts);')
