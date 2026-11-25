@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { supabase, configured, readContext } from './lib/supabase.js'
+import { supabase, configured, keyInfo, readContext } from './lib/supabase.js'
 import { portalAccess } from './lib/roles.js'
 import SignIn from './screens/SignIn.jsx'
 import SetPassword from './screens/SetPassword.jsx'
@@ -44,7 +44,7 @@ export default function App() {
     return () => removeEventListener('hashchange', onHash)
   }, [])
 
-  if (!configured) return <div className="center-card"><h1>StudySearch Portal</h1><p>The portal is not configured yet. The Supabase address and key are missing from the build.</p></div>
+  if (!configured) return <div className="center-card"><h1>StudySearch Portal</h1><p>{keyInfo.kind === 'secret' ? 'The key built into the portal is a secret key, which must never run in a browser, so it was not used. A Platform Admin needs to set the publishable key instead.' : 'The portal is not configured yet. The Supabase address and publishable key are missing from the build.'}</p></div>
   if (booting) return <div className="center-card"><p>Loading…</p></div>
   if (recovery) return <SetPassword onDone={() => setRecovery(false)} />
   if (!session) return <SignIn />

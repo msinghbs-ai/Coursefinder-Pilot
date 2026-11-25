@@ -1,12 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
+import { cleanEnv, describeKey } from './keyInfo.js'
 
 // Public values, set as Cloudflare build variables. The portal holds only these two public values and no privileged key.
-const url = import.meta.env.VITE_SUPABASE_URL
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+// Pasted values often carry a trailing space, a new line or quote marks; none of those belong in a header, so they are removed (keyInfo.js).
+const clean = cleanEnv
 
-export const configured = Boolean(url && key)
+export const supabaseUrl = clean(import.meta.env.VITE_SUPABASE_URL).replace(/\/+$/, '')
+const rawKey = clean(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY)
 
-export const supabase = createClient(url || 'http://localhost', key || 'missing', {
+export const keyInfo = describeKey(rawKey)
+// A secret key must never run in a browser: it is refused here rather than sent.
+export const configured = Boolean(supabaseUrl && rawKey) && keyInfo.kind !== 'secret'
+
+export const supabase = createClient(supabaseUrl || 'http://localhost', configured ? rawKey : 'missing', {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 })
 
