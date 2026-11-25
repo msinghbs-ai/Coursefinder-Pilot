@@ -21,6 +21,10 @@ on:
         description: "Worker calls at the same time (1 to 12)"
         required: true
         default: "6"
+      provider_ids:
+        description: "Optional scoped comma-separated provider UUIDs (up to 15, Admin #1054)"
+        required: false
+        default: ""
       confirm_project:
         description: "Type the Pilot project ref to confirm"
         required: true
@@ -46,7 +50,9 @@ jobs:
         with:
           node-version: 22
       - name: Read
-        run: node scripts/aer-det-read.mjs "${{ inputs.mode }}" "${{ inputs.pages }}" "${{ inputs.country }}" "${{ inputs.concurrency }}"
+        env:
+          AER_PROVIDER_IDS: ${{ inputs.provider_ids }}
+        run: node scripts/aer-det-read.mjs "${{ inputs.mode }}" "${{ inputs.pages }}" "${{ inputs.country }}" "${{ inputs.concurrency }}" "$AER_PROVIDER_IDS"
       - uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:
