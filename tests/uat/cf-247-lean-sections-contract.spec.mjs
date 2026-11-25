@@ -131,7 +131,7 @@ test('run b migration: run a kept as recorded, its unread cases closed as supers
 })
 
 test('lean-sections-v2 (Phase 1b step 2): entry requirements under "Assumed knowledge", "Advanced standing" and literacy checks are selected; labels with HTML entities match', () => {
-  expect(['lean-sections-v2', 'lean-sections-v3']).toContain(LEAN_SECTIONS)  // v3 keeps v2's headings
+  expect(['lean-sections-v2', 'lean-sections-v3', 'lean-sections-v4']).toContain(LEAN_SECTIONS)  // v3 keeps v2's headings; v4 (s1130) keeps v3's
   const pad = '<p>Intro text for the course page.</p>'.repeat(40)
   for (const [h, v] of [['Assumed knowledge', 'Mathematical Methods (Units 3 and 4, C)'], ['Advanced standing', 'Candidates with a cognate bachelor degree get four units of credit'], ['Language, literacy and numeracy', 'Complete an LLND assessment before enrolment'], ['Who can apply', 'Must be 18 years of age or above']]) {
     const ab = blocks(`<main>${pad}<h2>Overview</h2><p>About the course.</p><h2>${h}</h2><p>${v}</p><h2>Careers</h2><p>Jobs.</p></main>`, '')
@@ -168,7 +168,7 @@ test('Phase 1b step 2 shadow: the enrich read records what the selector would se
 })
 
 test('lean-sections-v3 (1b-3 bundle): an entry score line is an entry requirement wherever it stands (the Swinburne "Guaranteed Entry ATAR" misses)', () => {
-  expect(LEAN_SECTIONS).toBe('lean-sections-v3')
+  expect(['lean-sections-v3', 'lean-sections-v4']).toContain(LEAN_SECTIONS)  // v4 (s1130) keeps the v3 score lines
   const pad = '<p>Intro text for the course page.</p>'.repeat(40)
   for (const line of ['70.0 Guaranteed Entry ATAR or more entry options', 'Lowest selection rank to receive an offer 65.05', 'Minimum ATAR 80']) {
     const ab = blocks(`<main>${pad}<h2>Overview</h2><p>About the course.</p><div class="stat">${line}</div><h2>Careers</h2><p>Jobs.</p></main>`, '')
