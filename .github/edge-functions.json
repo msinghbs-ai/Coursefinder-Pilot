@@ -55,7 +55,6 @@
     "layer2-provider-control": true,
     "layer3-provider-control": true,
     "platform-environment-control": false,
-    "portal-search-embed": false,
     "prisms-au-etl": false,
     "provider-asset-access": true,
     "provider-asset-upload": true,

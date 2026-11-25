@@ -19,8 +19,8 @@
 --      the lane (one statement for all 34,362 ran past the statement time-out in rehearsal); a statement trigger on
 --      search.course_documents queues a course again whenever its semantic text changes (a description or career outcome admitted and
 --      projected), so re-embedding needs no job of its own.
---   4. Edge function portal-search-embed (one-time nonce, allowlisted) and its service reads public.svc_portal_search_embed_next /
---      public.svc_portal_search_embed_record. Course batches run on the existing coverage-lane-dispatch as a new registry lane (no pg_cron job);
+--   4. Worker mode portal_search_embed (coverage-sweep v1.0.46; only the worker calls OpenRouter, Platform Admin 13 Nov 2026) and its
+--      service reads public.svc_portal_search_embed_next / public.svc_portal_search_embed_record. Course batches run on the existing coverage-lane-dispatch as a new registry lane (no pg_cron job);
 --      a typed query is embedded on demand when the search is called and cached for the next call.
 --   5. catalogue.portal_course_search_v1(p_args) and the public entry public.portal_course_search_v1(p_args) (Viewer and above): Stage 1 turns the
 --      words into filters from the live country, state, campus city (and its ABS urban-area postcodes) and study level tables and a budget;
@@ -63,11 +63,11 @@ values
  ('portal_search', 'topic_min_similarity', 'Topic match: least meaning similarity', 'A course counts as a topic match when its meaning similarity to the typed topic is at least this (or its words match).', 'number', '0.35'::jsonb, 0.1, 0.9, 'similarity', 6160, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
  ('portal_search', 'query_cache_hours', 'Typed query meaning: reused for', 'How long a typed query''s meaning vector is reused before it is worked out again.', 'number', '24'::jsonb, 1, 720, 'hours', 6170, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
  ('portal_search', 'query_embed_daily_max', 'Typed queries embedded a day', 'The most new typed queries given a meaning vector in one Melbourne day; beyond it searches rank by words only.', 'number', '5000'::jsonb, 100, 50000, 'queries', 6180, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
- ('portal_search', 'embed_batch', 'Course embedding: courses per batch', 'How many courses one embedding request carries.', 'number', '150'::jsonb, 20, 500, 'courses', 6190, 'Portal search', 'public.svc_portal_search_embed_next; edge function portal-search-embed', 'CF-247 s1153'),
+ ('portal_search', 'embed_batch', 'Course embedding: courses per batch', 'How many courses one embedding request carries.', 'number', '150'::jsonb, 20, 500, 'courses', 6190, 'Portal search', 'public.svc_portal_search_embed_next; coverage-sweep mode portal_search_embed', 'CF-247 s1153'),
  ('portal_search', 'enqueue_chunk', 'Course embedding: courses queued at a time', 'How many courses without a current vector are added to the queue each time it runs low (the backfill is queued in these steps).', 'number', '1500'::jsonb, 100, 10000, 'courses', 6195, 'Portal search', 'security.portal_search_embed_fire_v1', 'CF-247 s1153'),
  ('portal_search', 'embed_daily_ceiling_usd', 'Course and query embedding: daily ceiling', 'The most this service may spend in one Melbourne day; the platform ceiling budgets.ai_daily_ceiling_usd also applies.', 'number', '1'::jsonb, 0.05, 5, 'USD', 6200, 'Portal search', 'public.svc_portal_search_embed_next', 'CF-247 s1153'),
  ('portal_search', 'embed_usd_per_mtok', 'Embedding model price', 'The model''s list price per million input tokens, used to log spend.', 'number', '0.02'::jsonb, 0, 1, 'USD per million tokens', 6210, 'Portal search', 'public.svc_portal_search_embed_record', 'CF-247 s1153: OpenRouter list price 25 Nov 2026'),
- ('portal_search', 'embedding_model', 'Embedding model', 'Model used for course and query vectors (1536 dimensions); changed only with a reason and a full re-embed.', 'text', '"openai/text-embedding-3-small"'::jsonb, null, null, null, 6220, 'Portal search', 'catalogue.portal_course_search_v1; edge function portal-search-embed', 'CF-247 s1153: Platform Admin 25 Nov 2026 (pinned)'),
+ ('portal_search', 'embedding_model', 'Embedding model', 'Model used for course and query vectors (1536 dimensions); changed only with a reason and a full re-embed.', 'text', '"openai/text-embedding-3-small"'::jsonb, null, null, null, 6220, 'Portal search', 'catalogue.portal_course_search_v1; coverage-sweep mode portal_search_embed', 'CF-247 s1153: Platform Admin 25 Nov 2026 (pinned)'),
  ('portal_search', 'visibility_scope', 'Courses searched', 'active: every active course; published: published courses only (set once publishing is live). Inactive, suspended and unknown-status courses are never searched.', 'text', '"active"'::jsonb, null, null, null, 6230, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153: Platform Admin 25 Nov 2026')
 on conflict do nothing;
 
@@ -113,7 +113,7 @@ create or replace trigger portal_search_doc_inserted after insert on search.cour
 create or replace trigger portal_search_doc_updated after update on search.course_documents referencing new table as new_rows
   for each statement execute function security.portal_search_doc_changed_tg();
 
--- 4a. Service reads for edge function portal-search-embed (service role only). A leased job holds its lease in completed_at until it is recorded.
+-- 4a. Service reads for the worker's portal_search_embed mode (service role only). A leased job holds its lease in completed_at until it is recorded.
 create or replace function public.svc_portal_search_embed_next(p_limit integer default null)
 returns jsonb language plpgsql security definer set search_path = '' as $function$
 declare v_profile uuid := (select id from search.profiles where code = 'portal-default');
@@ -183,7 +183,7 @@ begin
   if v_tokens > 0 or v_failed > 0 then
     insert into pipeline.ai_invocations (at, service_code, model, attempt_no, outcome, failure_kind, input_tokens, output_tokens, cost_usd, source, source_id, worker)
     values (now(), 'portal_search_embedding', v_model, 1, case when v_failed > 0 and v_ok + v_q = 0 then 'failed' else 'answered' end,
-            case when v_failed > 0 then 'http' end, v_tokens, 0, v_cost, 'portal-search-embed', null, p_payload->>'worker');
+            case when v_failed > 0 then 'http' end, v_tokens, 0, v_cost, 'coverage-sweep:portal_search_embed', null, p_payload->>'worker');
   end if;
   return jsonb_build_object('recorded', v_ok, 'queries', v_q, 'failed', v_failed, 'tokens', v_tokens, 'cost_usd', v_cost);
 end $function$;
@@ -201,15 +201,13 @@ begin
                   where j.status = 'pending' or (j.status = 'leased' and j.completed_at < now())) then
     return null;
   end if;
-  return pipeline.svc_pilot_submit_nonce('portal-search-embed', jsonb_build_object('mode', 'courses'));
+  return pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'portal_search_embed'));
 end $function$;
-
-insert into pipeline.pilot_nonce_functions (function_name) values ('portal-search-embed') on conflict do nothing;
 
 insert into pipeline.field_execution_registry (lane_code, kind, legacy_job, call_sql, call_md5, schedule, priority, enabled, mode, budget_ms, expected_ms, uses_ai, owner, note)
 values ('portal-search-embed', 'worker_lane', 'portal-search-embed', 'select security.portal_search_embed_fire_v1()', md5('select security.portal_search_embed_fire_v1()'),
         '* * * * *', 50, true, 'live', 2000, 500, true, 'S2-Build',
-        'CF-247 s1153: course meaning vectors for the portal search (edge function portal-search-embed); starts only when jobs wait; no pg_cron job')
+        'CF-247 s1153: course meaning vectors for the portal search (coverage-sweep mode portal_search_embed); starts only when jobs wait; no pg_cron job')
 on conflict (lane_code) do nothing;
 
 -- 5. The search. Stage 1: words to filters (live vocabulary). Stage 2: rank with search.course_candidates_v1. Relaxations are offered, never applied.
@@ -339,7 +337,7 @@ begin
       v_hybrid := true;
     elsif (select count(*) from search.query_embedding_cache c where c.cache_key like 'portal:%' and c.created_at >= v_today::timestamp at time zone 'Australia/Melbourne')
             < security.portal_search_num_v1('query_embed_daily_max', 5000) then
-      perform pipeline.svc_pilot_submit_nonce('portal-search-embed', jsonb_build_object('mode', 'query', 'query_key', v_key, 'text', v_topic));
+      perform pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'portal_search_embed', 'query_key', v_key, 'text', v_topic));
     end if;
     v_words := array(select w from unnest(string_to_array(v_topic, ' ')) w where length(w) >= 2 and plainto_tsquery('english', w)::text <> '');
     v_need := ceil(cardinality(v_words) / 2.0)::int;  -- fixed: at least half the topic words

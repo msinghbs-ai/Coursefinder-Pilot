@@ -1,10 +1,9 @@
-// Guards: Platform Admin 25 Nov 2026 17:13 AEDT (s1153 Portal Release 1 search activation): catalogue.portal_course_search_v1 and public.portal_course_search_v1(p_args) to the as-built contract; portal_search.* settings (G2); text-embedding-3-small vectors under a new portal-default profile so the frozen Zoho ranker (zoho-default) and the website profile get none (G3); backfill and re-embedding through a dispatcher lane and edge function portal-search-embed with no new cron job.
+// Guards: Platform Admin 25 Nov 2026 17:13 AEDT (s1153 Portal Release 1 search activation): catalogue.portal_course_search_v1 and public.portal_course_search_v1(p_args) to the as-built contract; portal_search.* settings (G2); text-embedding-3-small vectors under a new portal-default profile so the frozen Zoho ranker (zoho-default) and the website profile get none (G3); backfill and re-embedding through a dispatcher lane and worker mode portal_search_embed (only the worker calls OpenRouter) with no new cron job.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const sql = fs.readFileSync('supabase/migrations/20261127020000_cf247_s1153_portal_course_search.sql', 'utf8')
-const fn = fs.readFileSync('supabase/functions/portal-search-embed/index.ts', 'utf8')
-const edge = JSON.parse(fs.readFileSync('.github/edge-functions.json', 'utf8')).functions
+const fn = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const screen = fs.readFileSync('portal/src/screens/Courses.jsx', 'utf8')
 
 test('s1153: the public entry point is the one the Courses screen calls, Viewer and above, signed-in only', () => {
@@ -48,18 +47,18 @@ test('s1153: vectors live only under portal-default; the existing fusion functio
 test('s1153: no cron job; a registry lane that starts the edge function only when jobs wait; nonce allowlisted; G3 and locks checked', () => {
   expect(sql).not.toMatch(/cron\.schedule|cron\.unschedule/)
   expect(sql).toContain("values ('portal-search-embed', 'worker_lane', 'portal-search-embed', 'select security.portal_search_embed_fire_v1()', md5('select security.portal_search_embed_fire_v1()'),")
-  expect(sql).toContain("return pipeline.svc_pilot_submit_nonce('portal-search-embed', jsonb_build_object('mode', 'courses'));")
-  expect(sql).toContain("insert into pipeline.pilot_nonce_functions (function_name) values ('portal-search-embed')")
+  expect(sql).toContain("return pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'portal_search_embed'));")
+  expect(sql).not.toContain('pilot_nonce_functions')
   expect(sql).toContain("post-check: the number of active cron jobs changed")
   expect(sql).toContain("post-check: manual locks changed")
   expect(sql).toContain("(v->>'functions')::int <> 75 or (v->>'relations')::int <> 48")
   expect(sql).toContain('create or replace trigger portal_search_doc_updated after update on search.course_documents referencing new table as new_rows')
 })
 
-test('s1153: the edge function is registered, nonce-authenticated, pinned, denies provider data collection and logs spend', () => {
-  expect(edge['portal-search-embed']).toBe(false)
-  expect(fn).toContain('const FN = "portal-search-embed";')
-  expect(fn).toContain('svc_pilot_consume_nonce')
+test('s1153: the worker mode embeds through the one gateway, denies provider data collection and logs spend; no separate edge function', () => {
+  expect(fs.existsSync('supabase/functions/portal-search-embed')).toBe(false)
+  expect(fn).toContain('const WORKER = "coverage-sweep-worker-v1.0.46"; // v1.0.46 (25 Nov 2026, CF-247 s1153')
+  expect(fn).toContain('if (mode === "portal_search_embed") {')
   expect(fn).toContain('https://openrouter.ai/api/v1/embeddings')
   expect(fn).toMatch(/provider: \{ data_collection: "deny" \}/)
   expect(fn).toContain('svc_portal_search_embed_record')
