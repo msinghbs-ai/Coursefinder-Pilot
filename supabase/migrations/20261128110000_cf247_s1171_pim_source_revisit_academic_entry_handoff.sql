@@ -16,7 +16,7 @@
 --   4. Provider scholarships measured: verified when the provider has an active scholarship; the scholarship lane's disposition is the source finding.
 --   Regular monitoring of read pages stays with the existing re-read schedule (median 90 days after a read); course entry Window 2 and its leases are not touched.
 -- G1: no job (the planner's existing jobs). G2: settings. G3: no consumer API object touched (checked). No lock removed; cron ceiling checked.
--- Replaces: security.enrich_plan_v1, security.enrich_plan_start_step_v1, security.enrich_plan_tick_v1, security.field_state_entity_v1 (each md5 guarded, anchored edits). Retires: none.
+-- New table: pipeline.coverage_page_revisits (history beside the reader's table). Replaces: security.enrich_plan_v1, security.enrich_plan_start_step_v1, security.enrich_plan_tick_v1, security.field_state_entity_v1 (each md5 guarded, anchored edits). Retires: none.
 set local lock_timeout = '5s';  -- fixed: lock wait for the column add and function replaces
 set local statement_timeout = '120s';  -- fixed: the guard reads
 
@@ -31,13 +31,17 @@ begin
 end $g$;
 create temp table s1171_locks on commit drop as select count(*) n from pipeline.manual_locks;
 
-alter table pipeline.coverage_course_pages
-  add column if not exists revisits integer not null default 0,
-  add column if not exists attempts_before_revisit integer not null default 0,
-  add column if not exists last_revisit_at timestamptz;
-comment on column pipeline.coverage_course_pages.revisits is 'How many times the page was revisited after its attempt cap (s1171).';
-comment on column pipeline.coverage_course_pages.attempts_before_revisit is 'Read attempts made before the revisits (s1171); cumulative attempts = this + read_attempts.';
-comment on column pipeline.coverage_course_pages.last_revisit_at is 'When the page was last revisited (s1171).';
+-- history beside the reader's hot table (no lock on pipeline.coverage_course_pages for a column add)
+create table if not exists pipeline.coverage_page_revisits (
+  course_id uuid primary key references pipeline.coverage_course_pages(course_id),
+  revisits integer not null default 0,
+  attempts_before_revisit integer not null default 0,
+  last_revisit_at timestamptz,
+  last_reason text);
+comment on table pipeline.coverage_page_revisits is 'PIM (s1171): revisit history of course pages at the reader''s attempt cap; cumulative attempts = attempts_before_revisit + the page''s read_attempts.';
+alter table pipeline.coverage_page_revisits enable row level security;
+revoke all on table pipeline.coverage_page_revisits from public, anon, authenticated;
+grant select on table pipeline.coverage_page_revisits to service_role;
 
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, reason, section, used_by, updated_at)
 values ('pipeline', 'pim.source_revisit_batch', 'PIM: course pages revisited per plan step',
@@ -54,11 +58,12 @@ set search_path = ''
 as $f$
   select g.course_id, coalesce(g.read_at, g.bound_at)
     from pipeline.coverage_course_pages g join catalogue.courses c on c.id = g.course_id and c.lifecycle_status = 'active'
+    left join pipeline.coverage_page_revisits rv on rv.course_id = g.course_id
    where g.provider_id = p_provider and g.status = 'bound' and g.read_attempts >= 3  -- fixed: the reader's own cap (security.coverage_read_eligible_v1)
      and (g.read_status is null or g.read_status in ('fetch_failed', 'needs_render', 'too_thin'))
      and coalesce(g.http_status, 0) not in (401, 403, 407, 429, 451)  -- fixed: access refusals are never retried
      and coalesce(g.leased_until, '-infinity') < now()
-     and coalesce(g.last_revisit_at, g.read_at, g.bound_at) < now() - make_interval(days => security.pipeline_num_v1('gaps.recheck_days', 60)::int * power(2, least(g.revisits, 6))::int)  -- fixed: backoff doubling capped at 2^6
+     and coalesce(rv.last_revisit_at, g.read_at, g.bound_at) < now() - make_interval(days => security.pipeline_num_v1('gaps.recheck_days', 60)::int * power(2, least(coalesce(rv.revisits, 0), 6))::int)  -- fixed: backoff doubling capped at 2^6
      and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = g.provider_id)
 $f$;
 comment on function security.pim_source_revisit_due_v1(uuid) is 'PIM (s1171): a provider''s course pages the bounded revisit may take now.';
@@ -72,11 +77,17 @@ set search_path = ''
 as $f$
 declare v_ids uuid[];
 begin
-  with d as (select x.course_id from security.pim_source_revisit_due_v1(p_provider) x order by x.last_at limit greatest(0, coalesce(p_limit, 0))),
-  u as (update pipeline.coverage_course_pages g
-           set revisits = g.revisits + 1, attempts_before_revisit = g.attempts_before_revisit + g.read_attempts, read_attempts = 2, next_read_at = now(), last_revisit_at = now()
-          from d where g.course_id = d.course_id and coalesce(g.leased_until, '-infinity') < now()
-        returning g.course_id)
+  with d as (select g.course_id, g.read_attempts, g.read_status from pipeline.coverage_course_pages g
+              where g.course_id in (select x.course_id from security.pim_source_revisit_due_v1(p_provider) x order by x.last_at limit greatest(0, coalesce(p_limit, 0)))
+                and coalesce(g.leased_until, '-infinity') < now()
+              for update of g skip locked),
+  h as (insert into pipeline.coverage_page_revisits as rv(course_id, revisits, attempts_before_revisit, last_revisit_at, last_reason)
+        select d.course_id, 1, d.read_attempts, now(), coalesce(d.read_status, 'not_read') from d
+        on conflict (course_id) do update set revisits = rv.revisits + 1, attempts_before_revisit = rv.attempts_before_revisit + excluded.attempts_before_revisit,
+                                              last_revisit_at = excluded.last_revisit_at, last_reason = excluded.last_reason
+        returning rv.course_id),
+  u as (update pipeline.coverage_course_pages g set read_attempts = 2, next_read_at = now()
+          from h where g.course_id = h.course_id returning g.course_id)
   select array_agg(course_id) into v_ids from u;
   if coalesce(array_length(v_ids, 1), 0) > 0 then
     insert into pipeline.admin_control_events(area, action, target, detail, actor)
@@ -166,7 +177,8 @@ begin
     select count(*) into n_due from security.pim_source_revisit_due_v1(pv);
     r := security.pim_source_revisit_v1(pv, 1);
     if (r->>'revisited')::int <> 1 then raise exception 'guard: bounded revisit took % (limit 1)', r; end if;
-    select * into g from pipeline.coverage_course_pages where course_id = ((r->'courses'->>0)::uuid);
+    select pg.read_attempts, pg.next_read_at, rv.revisits, rv.attempts_before_revisit, pg.course_id into g from pipeline.coverage_course_pages pg join pipeline.coverage_page_revisits rv on rv.course_id = pg.course_id
+     where pg.course_id = ((r->'courses'->>0)::uuid);
     if g.read_attempts <> 2 or g.revisits < 1 or g.attempts_before_revisit < 3 or g.next_read_at > now() then raise exception 'guard: revisit state % % %', g.read_attempts, g.revisits, g.attempts_before_revisit; end if;
     if exists (select 1 from security.pim_source_revisit_due_v1(pv) d where d.course_id = g.course_id) then raise exception 'guard: a revisited page is still due (backoff)'; end if;
     raise notice 'sample provider % had % due; one revisited', pv, n_due;
