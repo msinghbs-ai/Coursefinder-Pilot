@@ -21,7 +21,7 @@ test('s1162: the window is the existing setting, and an undefined rule is never 
 
 test('s1162: only a key is added to data_delivery_v1, after an md5 and anchor guard; service role only', () => {
   expect(code).toContain("'1467a69fc8ea311e589af1c2d3be5e6e'")
-  expect(code).toContain("'pim', security.pim_progress_v1(),")
+  expect(code).toContain("''pim'', security.pim_progress_v1(),")
   expect(code).toContain('<> 1 then raise exception')
   expect(code).toContain('revoke all on function security.pim_progress_v1() from public, anon, authenticated')
 })
