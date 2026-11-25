@@ -15,7 +15,8 @@
 --      A$1,000; at most +30%), topic threshold, query cache hours and daily query limit, embedding model, price, batch, daily spend ceiling and
 --      visibility scope (active now; published once publishing is live).
 --   2. Search profile portal-default (channel admin; rrf_k 60 and the website weights).
---   3. Embedding queue wiring: every search document without a current portal vector is queued once; a statement trigger on
+--   3. Embedding queue wiring: every search document without a current portal vector is queued, in steps of portal_search.enqueue_chunk by
+--      the lane (one statement for all 34,362 ran past the statement time-out in rehearsal); a statement trigger on
 --      search.course_documents queues a course again whenever its semantic text changes (a description or career outcome admitted and
 --      projected), so re-embedding needs no job of its own.
 --   4. Edge function portal-search-embed (one-time nonce, allowlisted) and its service reads public.svc_portal_search_embed_next /
@@ -61,6 +62,7 @@ values
  ('portal_search', 'query_cache_hours', 'Typed query meaning: reused for', 'How long a typed query''s meaning vector is reused before it is worked out again.', 'number', '24'::jsonb, 1, 720, 'hours', 6170, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1152'),
  ('portal_search', 'query_embed_daily_max', 'Typed queries embedded a day', 'The most new typed queries given a meaning vector in one Melbourne day; beyond it searches rank by words only.', 'number', '5000'::jsonb, 100, 50000, 'queries', 6180, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1152'),
  ('portal_search', 'embed_batch', 'Course embedding: courses per batch', 'How many courses one embedding request carries.', 'number', '150'::jsonb, 20, 500, 'courses', 6190, 'Portal search', 'public.svc_portal_search_embed_next; edge function portal-search-embed', 'CF-247 s1152'),
+ ('portal_search', 'enqueue_chunk', 'Course embedding: courses queued at a time', 'How many courses without a current vector are added to the queue each time it runs low (the backfill is queued in these steps).', 'number', '1500'::jsonb, 100, 10000, 'courses', 6195, 'Portal search', 'security.portal_search_embed_fire_v1', 'CF-247 s1152'),
  ('portal_search', 'embed_daily_ceiling_usd', 'Course and query embedding: daily ceiling', 'The most this service may spend in one Melbourne day; the platform ceiling budgets.ai_daily_ceiling_usd also applies.', 'number', '1'::jsonb, 0.05, 5, 'USD', 6200, 'Portal search', 'public.svc_portal_search_embed_next', 'CF-247 s1152'),
  ('portal_search', 'embed_usd_per_mtok', 'Embedding model price', 'The model''s list price per million input tokens, used to log spend.', 'number', '0.02'::jsonb, 0, 1, 'USD per million tokens', 6210, 'Portal search', 'public.svc_portal_search_embed_record', 'CF-247 s1152: OpenRouter list price 25 Nov 2026'),
  ('portal_search', 'embedding_model', 'Embedding model', 'Model used for course and query vectors (1536 dimensions); changed only with a reason and a full re-embed.', 'text', '"openai/text-embedding-3-small"'::jsonb, null, null, null, 6220, 'Portal search', 'catalogue.portal_course_search_v1; edge function portal-search-embed', 'CF-247 s1152: Platform Admin 25 Nov 2026 (pinned)'),
@@ -82,7 +84,7 @@ values ('portal-default', 'StudySearch Portal (Counsellor and Viewer search)', '
 on conflict (code) do nothing;
 
 -- 3. Embedding queue. A course is queued when its document has no portal vector for its current semantic text and no open job for it.
-create or replace function security.portal_search_enqueue_v1(p_course_ids uuid[] default null)
+create or replace function security.portal_search_enqueue_v1(p_course_ids uuid[] default null, p_limit integer default null)
 returns integer language plpgsql security definer set search_path = '' as $function$
 declare v_profile uuid := (select id from search.profiles where code = 'portal-default'); v_model text := security.portal_search_text_v1('embedding_model', 'openai/text-embedding-3-small'); v_n integer;
 begin
@@ -92,7 +94,8 @@ begin
     join catalogue.courses c on c.id = d.course_id and c.lifecycle_status = 'active'
    where (p_course_ids is null or d.course_id = any(p_course_ids))
      and not exists (select 1 from search.course_embeddings e where e.course_id = d.course_id and e.profile_id = v_profile and e.model_name = v_model and e.content_hash = d.semantic_content_hash)
-     and not exists (select 1 from search.embedding_jobs j where j.course_id = d.course_id and j.profile_id = v_profile and j.model_name = v_model and j.content_hash = d.semantic_content_hash and j.status in ('pending', 'leased'));
+     and not exists (select 1 from search.embedding_jobs j where j.course_id = d.course_id and j.profile_id = v_profile and j.model_name = v_model and j.content_hash = d.semantic_content_hash and j.status in ('pending', 'leased'))
+   limit p_limit;
   get diagnostics v_n = row_count;
   return v_n;
 end $function$;
@@ -100,7 +103,7 @@ end $function$;
 create or replace function security.portal_search_doc_changed_tg()
 returns trigger language plpgsql security definer set search_path = '' as $function$
 begin
-  perform security.portal_search_enqueue_v1(array(select n.course_id from new_rows n));
+  perform security.portal_search_enqueue_v1(array(select n.course_id from new_rows n), null);
   return null;
 end $function$;
 create or replace trigger portal_search_doc_inserted after insert on search.course_documents referencing new table as new_rows
@@ -183,10 +186,15 @@ begin
   return jsonb_build_object('recorded', v_ok, 'queries', v_q, 'failed', v_failed, 'tokens', v_tokens, 'cost_usd', v_cost);
 end $function$;
 
--- 4b. Lane call: starts the edge function only when course jobs are waiting (no empty calls).
+-- 4b. Lane call: tops the queue up by a bounded chunk (the backfill is queued this way, not in one statement), then starts the edge function
+-- only when course jobs are waiting (no empty calls).
 create or replace function security.portal_search_embed_fire_v1()
 returns bigint language plpgsql security definer set search_path = '' as $function$
 begin
+  if (select count(*) from search.embedding_jobs j join search.profiles p on p.id = j.profile_id and p.code = 'portal-default' where j.status = 'pending')
+       < security.portal_search_num_v1('embed_batch', 150) then
+    perform security.portal_search_enqueue_v1(null, security.portal_search_num_v1('enqueue_chunk', 1500)::int);
+  end if;
   if not exists (select 1 from search.embedding_jobs j join search.profiles p on p.id = j.profile_id and p.code = 'portal-default'
                   where j.status = 'pending' or (j.status = 'leased' and j.completed_at < now())) then
     return null;
@@ -463,8 +471,7 @@ revoke all on function catalogue.portal_course_search_v1(jsonb), catalogue.porta
   from public, anon, authenticated;
 grant execute on function public.svc_portal_search_embed_next(integer), public.svc_portal_search_embed_record(jsonb) to service_role;
 
--- 6. Queue the backfill: every search document of an active course, and a document refresh for active courses that have none yet.
-select security.portal_search_enqueue_v1(null);
+-- 6. A document refresh for active courses that have none yet (the embedding backfill itself is queued by the lane, 4b).
 select search.course_refresh_request_v1(array(select c.id from catalogue.courses c where c.lifecycle_status = 'active'
                                                and not exists (select 1 from search.course_documents d where d.course_id = c.id)),
                                         'CF-247 s1152: portal search needs a document for every active course');
@@ -477,7 +484,7 @@ begin
   end if;
   if (select count(*) from pipeline.manual_locks) <> (select n from s1152_locks) then raise exception 'post-check: manual locks changed'; end if;
   if (select count(*) from cron.job where active) <> (select n from s1152_cron) then raise exception 'post-check: the number of active cron jobs changed'; end if;
-  if (select count(*) from pipeline.platform_toolset_settings where toolset_key = 'portal_search') <> 13 then raise exception 'post-check: the portal_search settings are not all present'; end if;
+  if (select count(*) from pipeline.platform_toolset_settings where toolset_key = 'portal_search') <> 14 then raise exception 'post-check: the portal_search settings are not all present'; end if;
   if not exists (select 1 from search.profiles where code = 'portal-default' and status = 'active') then raise exception 'post-check: profile portal-default missing'; end if;
   if exists (select 1 from search.course_embeddings e join search.profiles p on p.id = e.profile_id where p.code in ('website-default', 'zoho-default')) then
     raise exception 'post-check: a website or Zoho profile holds vectors';
