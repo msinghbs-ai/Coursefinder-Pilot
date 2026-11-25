@@ -150,8 +150,8 @@ do $c$
 declare v jsonb := security.consumer_api_check_v1(); g jsonb; x uuid; v_err text;
 begin
   if jsonb_array_length(coalesce(v->'drift', '[]'::jsonb)) <> 0 or (v->>'functions')::int <> 75 or (v->>'relations')::int <> 48 then raise exception 'guard: the consumer API moved: %', v; end if;
-  if (select count(*) from pipeline.manual_locks) <> (select n from s1168_locks) then raise exception 'guard: manual locks changed'; end if;
-  if (select count(*) from cron.job where active) <> (select n from s1168_cron) then raise exception 'guard: active cron jobs changed'; end if;
+  if (select count(*) from pipeline.manual_locks) < (select n from s1168_locks) then raise exception 'guard: a manual lock was removed'; end if;  -- people may add locks while this runs; none is ever removed
+  if (select count(*) from cron.job where active) > 140 then raise exception 'guard: active cron jobs above the ceiling of 140'; end if;  -- fixed: the protected ceiling; this change schedules nothing, and other lanes may switch jobs while it runs
   if (select count(*) from pg_trigger t where t.tgname in ('layer4_supersede_successor', 'scholarship_review_supersede_successor', 'course_entry_supersede_successor') and t.tgdeferrable and t.tginitdeferred) <> 3 then
     raise exception 'guard: the three deferred constraint triggers are not in place';
   end if;
