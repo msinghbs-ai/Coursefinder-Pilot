@@ -46,7 +46,7 @@ test('existing worker/proposer/sweep are versioned together with md5, no new exe
   expect(migration).toContain("r->>'key' in ('ncea_l2','ca_secondary_completion')")
   expect(migration).toContain("p->>'extractor'='aer-det-v1.5'")
   expect(migration).toContain('6ff2467906e17f76baa8032f392c99e3')
-  expect(migration).toContain('1eec1fef14b7a3eeef28dc33d5f02ef2')
+  expect(migration).toContain('330e281bf013eb6094b6e8932ef73af9')
   expect(migration).toContain("elsif rd.test_key = 'ncea_l2'")
   expect(migration).toContain('security.consumer_api_check_v1()')
   expect(migration).toContain('pipeline.manual_locks')
