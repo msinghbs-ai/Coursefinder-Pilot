@@ -1,0 +1,62 @@
+import React from 'react'
+import { usePortal } from '../lib/portal.jsx'
+
+export const Pill = ({ tone = 'grey', children, dashed }) => <span className={`tag tag-${tone}${dashed ? ' dashed' : ''}`}>{children}</span>
+
+export function PageHead({ title, sub }) {
+  return <div className="page-head"><h1>{title}</h1>{sub && <p className="muted">{sub}</p>}</div>
+}
+
+// "Study in": All plus every destination that has published providers (read live). Kept across screens.
+export function StudyInBar() {
+  const { destinations, studyIn, setStudyIn, loading } = usePortal()
+  return (
+    <div className="studyin" role="group" aria-label="Study in">
+      <strong>Study in</strong>
+      <div className="studyin-pills">
+        <button type="button" className="spill" aria-pressed={studyIn === ''} onClick={() => setStudyIn('')}>All</button>
+        {destinations.map(d => <button key={d.code} type="button" className="spill" aria-pressed={studyIn === d.code} onClick={() => setStudyIn(d.code)}>{d.name}</button>)}
+        {loading && <span className="studyin-note">Loading destinations…</span>}
+      </div>
+      <span className="studyin-note">Kept across Courses, Providers and Scholarships</span>
+    </div>
+  )
+}
+
+export function PillGroup({ label, value, options, onChange }) {
+  return (
+    <div className="field" role="group" aria-label={label}>
+      <span className="field-label">{label}</span>
+      <div className="pillrow">
+        {options.map(o => (
+          <button key={o.value} type="button" className="fpill" aria-pressed={value === o.value} onClick={() => onChange(o.value)}>
+            {o.label}{o.count !== undefined && <span className="fpill-n">{o.count.toLocaleString('en-AU')}</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export const Select = ({ label, value, onChange, children }) => (
+  <label className="field"><span className="field-label">{label}</span><select value={value} onChange={e => onChange(e.target.value)}>{children}</select></label>
+)
+
+export function LoadState({ loading, error, unavailable, onRetry, what }) {
+  if (loading) return <p className="muted" role="status">Loading {what}…</p>
+  if (unavailable) return <div className="notice">This part of the platform is not switched on yet. Nothing is shown until it is.</div>
+  if (error) return <div className="notice bad" role="alert">{error} {onRetry && <button type="button" className="link-inline" onClick={onRetry}>Try again</button>}</div>
+  return null
+}
+
+export function ShowMore({ shown, total, loading, onClick, noun }) {
+  if (shown >= total) return total > 0 ? <p className="muted center">All {total.toLocaleString('en-AU')} {noun} shown.</p> : null
+  return (
+    <div className="more">
+      <p className="muted">{shown.toLocaleString('en-AU')} of {total.toLocaleString('en-AU')} {noun} shown</p>
+      <button type="button" className="btn" disabled={loading} onClick={onClick}>{loading ? 'Loading…' : 'Show more'}</button>
+    </div>
+  )
+}
+
+export const Count = ({ n, children }) => <p className="count"><strong>{Number(n).toLocaleString('en-AU')}</strong> {children}</p>
