@@ -167,13 +167,13 @@ begin
     -- the trigger itself: a direct supersession is refused at commit (forced here, then undone)
     begin
       update pipeline.layer4_review_items set status = 'superseded' where id = x;
-      set constraints layer4_supersede_successor immediate;
+      set constraints pipeline.layer4_supersede_successor immediate;
       raise exception 's1168_not_held';
     exception when others then
       v_err := sqlerrm;
     end;
     if v_err not like 'HELD:NO_SUCCESSOR%' then raise exception 'guard: a direct supersession was not held: %', v_err; end if;
-    set constraints layer4_supersede_successor deferred;
+    set constraints pipeline.layer4_supersede_successor deferred;
     if (select status from pipeline.layer4_review_items where id = x) <> 'pending' then raise exception 'guard: the sample item changed'; end if;
   end if;
   if position('held_no_successor' in pg_get_functiondef('security.aer_det_reread_v1(text,uuid[],text,text)'::regprocedure)) = 0 then raise exception 'guard: the reread is not patched'; end if;
