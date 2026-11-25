@@ -11,7 +11,7 @@
 import { preflight } from "./lean-input.ts";
 import { AER_V3_INPUT, type AerBlock, type AerBlocks } from "./aer-v2.ts";
 
-export const LEAN_SECTIONS = "lean-sections-v4";  // v4 (25 Nov 2026, s1130): entry condition sentences are signals; v3 (14 Nov 2026): entry score lines are signals; v2: wider entry-requirement headings (runs step1c, step1d); v1: runs step1, step1b  // never edited in place once released: a different selection is a new version
+export const LEAN_SECTIONS = "lean-sections-v5";  // v5 (25 Nov 2026, s1135): pathway and conditional admission sentences; v4 (25 Nov 2026, s1130): entry condition sentences are signals; v3 (14 Nov 2026): entry score lines are signals; v2: wider entry-requirement headings (runs step1c, step1d); v1: runs step1, step1b  // never edited in place once released: a different selection is a new version
 export const BLOCK_INPUT = AER_V3_INPUT;           // the one [B#] contract (aer-v2.ts); not redefined here
 
 // headings that name the part of a course page a field lives in (wider than the words a value uses)
@@ -38,7 +38,10 @@ const ENTRY_SCORE = /\b(atar|selection rank|guaranteed entry|lowest (rank|atar|s
 // "entry" or "requirement" (run s1125-entry-cohort-2026-11-25: 9 of 80 earlier answer rows and 2 Layer 4 accepted rows were outside the v3 selection:
 // "Applicants will be required to hold a valid Working with Children Check", "designed exclusively for professionals with 2+ years of work
 // experience", "Graduate with an AUSTRALIAN DEGREE (AQF Level 9)") is an entry requirement signal wherever it stands on the page
-const ENTRY_CONDITION = /\b(applicants? (must|should|will|are|need)|(are|is|be) required to (hold|have|complete|provide|submit|demonstrate|undertake|obtain|pass)|must (hold|have|complete|provide|submit|demonstrate|be (aged|at least|a graduate))|\d\+? (years?|months?) of (relevant |professional |industry |full[- ]time |cumulative |paid |managerial )*(work|professional|industry|managerial|employment|practice)|(relevant |professional |industry |paid )?work(ing)? experience|police (check|clearance)|criminal (record|history) check|working with children|wwcc|ndis (worker )?(screening|check)|auditions?|open to (individuals|applicants|students|people|those) who|designed (exclusively |specifically )?for (professionals|graduates|people|applicants|students)|aqf level \d+|high-level music making)\b/i;
+// v5 (25 Nov 2026, CF-247 s1135, run s1130-entry-cohort-v4-2026-11-25: 4 genuine earlier rows still outside v4): pathway and conditional admission
+// sentences ("You may also be considered if you have", "Applicants may be admitted ... if they have previously successfully completed",
+// "will be considered on the basis of their work and life experience", "Provided you meet the required academic and work-ready criteria")
+const ENTRY_CONDITION = /\b(applicants? (must|should|will|are|need)|(are|is|be) required to (hold|have|complete|provide|submit|demonstrate|undertake|obtain|pass)|must (hold|have|complete|provide|submit|demonstrate|be (aged|at least|a graduate))|\d\+? (years?|months?) of (relevant |professional |industry |full[- ]time |cumulative |paid |managerial )*(work|professional|industry|managerial|employment|practice)|(relevant |professional |industry |paid )?work(ing)? experience|police (check|clearance)|criminal (record|history) check|working with children|wwcc|ndis (worker )?(screening|check)|auditions?|open to (individuals|applicants|students|people|those) who|designed (exclusively |specifically )?for (professionals|graduates|people|applicants|students)|aqf level \d+|high-level music making|may (also )?be (considered|admitted|eligible|accepted|offered)|will be considered (on the basis|for (entry|admission|a place))|considered on the basis of|provided (that )?you (meet|have|hold|satisfy)|(if|who|where) (they|you|applicants) have (previously )?(successfully )?completed)\b/i;
 export function fieldHit(field: string, text: string): "likely" | "unknown" | "no_signal" {
   if (field === "fees") return FEE_TEXT.test(text) ? "likely" : "no_signal";
   if (field === "entry_requirements" && ENTRY_SCORE.test(text) && /\d/.test(text)) return "likely";
