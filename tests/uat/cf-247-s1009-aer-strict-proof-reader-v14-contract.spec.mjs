@@ -23,7 +23,7 @@ test('s1009: the strict-proof pass admits only rows that prove themselves and ke
   expect(sql).toContain("and ma.rule in ('aer-course-partial-v1', 'aer-course-proof-v1')")
 })
 
-test('s1009: reader v1.4 everywhere it is named, and an older held deterministic read gives way to the v1.4 read unless a person, an audit, a lock or an active row holds it', () => {
+test('s1009 historical v1.4 contract retained; current v1.5 reader versioned by S3 Admin 1054, earlier held readers do not bypass protection', () => {
   expect(reader).toContain('export const AER_DET_VERSION = "aer-det-v1.4"')
   expect(sql).toContain("v_ext constant text := 'aer-det-v1.4';")
   expect(sql).toContain("r.proposed_value->>'extractor' is distinct from v_ext")
