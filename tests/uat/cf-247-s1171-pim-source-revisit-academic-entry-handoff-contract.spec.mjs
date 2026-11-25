@@ -28,7 +28,7 @@ test('s1171: the planner hands academic entry to the lane; the tick ends the ste
   expect(code).toContain("''step'', ''academic_entry''")
   expect(code).toContain("''kind'', ''handoff''")
   expect(code).toContain("when s->''ref''->>''kind'' = ''handoff'' then")
-  expect(code).toContain('fetches finished, not rows admitted')
+  expect(MIG).toContain('fetches finished, not rows admitted')
 })
 
 test('s1171: deadline defined in three states with no derived date; provider scholarships measured; guards', () => {
