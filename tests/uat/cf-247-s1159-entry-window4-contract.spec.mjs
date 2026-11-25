@@ -6,7 +6,7 @@ import fs from 'node:fs'
 const MIG = fs.readFileSync('supabase/migrations/20261128220000_cf247_s1159_entry_window4_gate_checked.sql', 'utf8')
 const code = MIG.replace(/--.*$/gm, '')
 
-test('s1159: the window is bounded, proven by the gate's own checks, and unread', () => {
+test('s1159: the window is bounded, proven by the read gate checks, and unread', () => {
   expect(MIG).toContain("and security.coverage_identity_allowed(c.provider_id, g.identity_basis, 'entry_requirements')")
   expect(MIG).toContain("security.course_page_check_v1(c.course_id, coalesce(nullif(g.candidates->>'final_url', ''), g.url), coalesce(nullif(g.candidates->>'page_title', ''), g.candidates->>'h1'), g.identity_basis)->>'verdict') is distinct from 'refuse'")
   expect(MIG).toContain('where cum <= 9000000;')
