@@ -103,11 +103,9 @@ begin
   perform security.portal_search_enqueue_v1(array(select n.course_id from new_rows n));
   return null;
 end $function$;
-drop trigger if exists portal_search_doc_inserted on search.course_documents;  -- fixed: re-runnable trigger definition (this migration's own trigger)
-drop trigger if exists portal_search_doc_updated on search.course_documents;   -- fixed: re-runnable trigger definition (this migration's own trigger)
-create trigger portal_search_doc_inserted after insert on search.course_documents referencing new table as new_rows
+create or replace trigger portal_search_doc_inserted after insert on search.course_documents referencing new table as new_rows
   for each statement execute function security.portal_search_doc_changed_tg();
-create trigger portal_search_doc_updated after update on search.course_documents referencing new table as new_rows
+create or replace trigger portal_search_doc_updated after update on search.course_documents referencing new table as new_rows
   for each statement execute function security.portal_search_doc_changed_tg();
 
 -- 4a. Service reads for edge function portal-search-embed (service role only). A leased job holds its lease in completed_at until it is recorded.
