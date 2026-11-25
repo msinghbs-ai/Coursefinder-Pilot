@@ -168,6 +168,7 @@ export function htmlCountryHeadingTables(html: string, refs: EntryCountryRef[], 
 }
 
 
+// s1080 NZ/CA: recognise explicitly printed graduate certificate/diploma and postgraduate level-number labels; no inferred level, threshold or country.
 // s1064 F-AER.08: a country heading followed by printed academic level and
 // requirement blocks is a table in the document's structure, even where its HTML
 // uses div/p/accordion components rather than <table>. Preserve the source
@@ -175,7 +176,7 @@ export function htmlCountryHeadingTables(html: string, refs: EntryCountryRef[], 
 // followed by at least TWO distinct explicitly printed programme-level rows.
 // NCEA 2/3 is a printed qualification context, not a guessed grade or level.
 // Plain text and HTML use the same strict block adapter; no network, OCR or AI.
-const BLOCK_LEVEL = /^(?:certificate(?:\s*\(level\s*[234567]\))?(?:\s+(?:academic|vocational))?|certificate\s*\/\s*diploma\s+level|diploma\s*\/\s*certificate|diploma(?:\s*\(level\s*[45678]\))?(?:\s+(?:academic|vocational))?|degree\s+level|bachelor(?:'?s)?(?:\s+degree|\s+level)?|undergraduate(?:\s+degree|\s+level)?|postgraduate(?:\s+(?:certificate|diploma|degree))?|master(?:'?s)?(?:\s+degree)?|foundation(?:\s+level)?|associate\s+degree)$/i;
+const BLOCK_LEVEL = /^(?:certificate(?:\s*\(level\s*[234567]\))?(?:\s+(?:academic|vocational))?|certificate\s*\/\s*diploma\s+level|diploma\s*\/\s*certificate|diploma(?:\s*\(level\s*[45678]\))?(?:\s+(?:academic|vocational))?|degree\s+level|bachelor(?:'?s)?(?:\s+degree|\s+level)?|undergraduate(?:\s+degree|\s+level)?|graduate\s+(?:certificate|diploma)(?:\s*\(level\s*[56789]\))?|postgraduate(?:\s+(?:certificate|diploma|degree))?(?:\s*\(level\s*[56789]\))?|master(?:'?s)?(?:\s+degree)?|foundation(?:\s+level)?|associate\s+degree)$/i;
 const BLOCK_CUTOFF = /^(?:english(?:\s+language)?(?:\s+requirement)?s?|how\s+to\s+apply|international\s+high\s+school\s+qualifications|postgraduate\s+entry\s+requirements|academic\s+entry\s+requirements|view\s+entry\s+requirements|download\s+pdf|contact\s+us)$/i;
 function semanticBlockLines(html: string): string[] {
   const source = String(html || "")
