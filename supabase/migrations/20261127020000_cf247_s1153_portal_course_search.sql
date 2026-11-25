@@ -23,7 +23,8 @@
 --      public.svc_portal_search_embed_record. Course batches run on the existing coverage-lane-dispatch as a new registry lane (no pg_cron job);
 --      a typed query is embedded on demand when the search is called and cached for the next call.
 --   5. catalogue.portal_course_search_v1(p_args) and the public entry public.portal_course_search_v1(p_args) (Viewer and above): Stage 1 turns the
---      words into filters from the live country, state, campus city and study level tables and a budget; Stage 2 ranks with
+--      words into filters from the live country, state, campus city (and its ABS urban-area postcodes) and study level tables and a budget;
+--      a course matches the topic when at least half its words are in the course text or, once vectors exist, by meaning; Stage 2 ranks with
 --      search.course_candidates_v1 (hybrid when the query vector is cached, keyword otherwise); fewer than 3 exact matches bring near misses and
 --      relaxations that are never applied until the person chooses them.
 -- Spend: about 9 million tokens for the backfill, about US$0.18, inside the US$5.00 daily cap; the batch read refuses when the day's logged AI
@@ -232,7 +233,7 @@ declare
   v_qcountries text[] := '{}'; v_states text[] := '{}'; v_cities text[] := '{}'; v_city_states text[] := '{}'; v_levels text[] := '{}'; v_city_pcs text[] := '{}';
   v_share numeric := security.portal_search_num_v1('city_postcode_min_share', 0.5);
   v_level_label text; v_loc_label text; v_budget numeric; v_budget_cur text; v_budget_raw text; m text[]; r record;
-  v_topic text; v_tsq text; v_vec extensions.vector; v_key text; v_hybrid boolean := false;
+  v_topic text; v_tsq text; v_words text[] := '{}'; v_need integer := 0; v_profile uuid := (select id from search.profiles where code = 'portal-default'); v_vec extensions.vector; v_key text; v_hybrid boolean := false;
   v_chips jsonb := '[]'::jsonb; v_exact jsonb; v_near jsonb := '[]'::jsonb; v_relax jsonb := '[]'::jsonb; v_total integer; v_ids uuid[];
   v_relax_budget numeric; v_relax_budget_set boolean := false; v_relax_loc text[];
   v_cur_sym text;
@@ -340,11 +341,13 @@ begin
             < security.portal_search_num_v1('query_embed_daily_max', 5000) then
       perform pipeline.svc_pilot_submit_nonce('portal-search-embed', jsonb_build_object('mode', 'query', 'query_key', v_key, 'text', v_topic));
     end if;
-    v_tsq := array_to_string(array(select w from unnest(string_to_array(v_topic, ' ')) w where length(w) >= 2), ' or ');
+    v_words := array(select w from unnest(string_to_array(v_topic, ' ')) w where length(w) >= 2 and plainto_tsquery('english', w)::text <> '');
+    v_need := ceil(cardinality(v_words) / 2.0)::int;  -- fixed: at least half the topic words
+    v_tsq := array_to_string(v_words, ' or ');
   end if;
 
-  -- every course that passes the filters (topic never filters)
-  create temp table if not exists portal_search_pass (course_id uuid primary key, fee numeric, fee_cur text, city_ok boolean, state_ok boolean, budget_ok boolean) on commit drop;
+  -- every course that passes the hard filters, with whether it matches the topic (at least half its words, or by meaning once vectors exist)
+  create temp table if not exists portal_search_pass (course_id uuid primary key, fee numeric, fee_cur text, city_ok boolean, state_ok boolean, budget_ok boolean, topic_ok boolean) on commit drop;
   truncate pg_temp.portal_search_pass;
   insert into pg_temp.portal_search_pass
   select d.course_id, d.provider_annual_tuition_amount, d.provider_annual_tuition_currency,
@@ -352,7 +355,11 @@ begin
                                                where cc.course_id = d.course_id and (lower(trim(ca.city)) = any(v_cities) or ca.postcode = any(v_city_pcs)))
                                     or (not exists (select 1 from catalogue.course_campuses cc where cc.course_id = d.course_id) and (lower(trim(p.primary_city)) = any(v_cities) or p.postcode = any(v_city_pcs))),
          cardinality(v_states) = 0 or d.subdivision_codes && v_states,
-         v_budget is null or (d.provider_annual_tuition_amount is not null and d.provider_annual_tuition_currency = v_budget_cur and d.provider_annual_tuition_amount <= v_budget)
+         v_budget is null or (d.provider_annual_tuition_amount is not null and d.provider_annual_tuition_currency = v_budget_cur and d.provider_annual_tuition_amount <= v_budget),
+         v_topic is null or cardinality(v_words) = 0
+           or (select count(*) from unnest(v_words) w where d.search_tsv @@ plainto_tsquery('english', w)) >= v_need
+           or (v_vec is not null and exists (select 1 from search.course_embeddings e where e.course_id = d.course_id and e.profile_id = v_profile and e.model_name = v_model
+                                              and e.content_hash = d.semantic_content_hash and 1 - (e.embedding operator(extensions.<=>) v_vec) >= v_simmin))
     from search.course_documents d
     join catalogue.courses c on c.id = d.course_id and c.lifecycle_status = 'active' and (v_scope <> 'published' or c.publication_status = 'published')
     join catalogue.providers p on p.id = d.provider_id
@@ -360,7 +367,7 @@ begin
      and (cardinality(v_levels) = 0 or d.study_level_code = any(v_levels))
      and (v_provider is null or d.provider_id = v_provider)
      and (cardinality(v_city_states) = 0 or cardinality(v_cities) = 0 or d.subdivision_codes && v_city_states or not exists (select 1 from catalogue.course_campuses cc where cc.course_id = d.course_id));
-  select count(*) into v_total from pg_temp.portal_search_pass where city_ok and state_ok and budget_ok;
+  select count(*) into v_total from pg_temp.portal_search_pass where city_ok and state_ok and budget_ok and topic_ok;
 
   -- rank: the existing fusion function, then fill with the other passing courses by title
   create temp table if not exists portal_search_rank (course_id uuid primary key, pos integer, fts real, sim real) on commit drop;
@@ -376,7 +383,7 @@ begin
   select array_agg(x.course_id order by x.ord, x.title) into v_ids from (
     select s.course_id, coalesce(rk.pos, 1000000) ord, coalesce(nullif(c.display_title, ''), c.canonical_title) title  -- fixed: unranked after ranked
       from pg_temp.portal_search_pass s join catalogue.courses c on c.id = s.course_id left join pg_temp.portal_search_rank rk on rk.course_id = s.course_id
-     where s.city_ok and s.state_ok and s.budget_ok
+     where s.city_ok and s.state_ok and s.budget_ok and s.topic_ok
      order by 2, 3 limit v_page) x;
   v_exact := catalogue.portal_course_cards_v1(coalesce(v_ids, '{}'), v_cities, v_simmin, jsonb_build_object('postcodes', to_jsonb(v_city_pcs)));
 
@@ -386,35 +393,35 @@ begin
       declare v_fees numeric[]; v_third numeric; v_to numeric; v_n integer; v_all integer;
       begin
         select array_agg(fee order by fee), count(*) into v_fees, v_all from pg_temp.portal_search_pass
-         where city_ok and state_ok and fee is not null and fee_cur = v_budget_cur;
+         where city_ok and state_ok and topic_ok and fee is not null and fee_cur = v_budget_cur;
         if v_all > 0 then
           v_third := v_fees[least(3, v_all)];  -- fixed: the third-cheapest (or the dearest when fewer than three)
           v_to := ceil(v_third * (1 + v_head / 100) / v_round) * v_round;
-          select count(*) into v_n from pg_temp.portal_search_pass where city_ok and state_ok and fee_cur = v_budget_cur and fee <= v_to;
+          select count(*) into v_n from pg_temp.portal_search_pass where city_ok and state_ok and topic_ok and fee_cur = v_budget_cur and fee <= v_to;
           if v_to > v_budget and v_to <= v_budget * (1 + v_maxraise / 100) then
             v_relax := v_relax || jsonb_build_object('key', 'budget', 'to', v_to, 'label', 'Raise the budget to ' || v_cur_sym || to_char(v_to, 'FM999,999,999'), 'would_return', v_n,
               'note', 'The third-cheapest course matching everything else costs ' || v_cur_sym || to_char(v_third, 'FM999,999,999') || ' a year; ' || v_head || '% is added and the total rounded up to the nearest ' || v_cur_sym || to_char(v_round, 'FM999,999') || '.');
           end if;
         end if;
-        select count(*) into v_n from pg_temp.portal_search_pass where city_ok and state_ok;
+        select count(*) into v_n from pg_temp.portal_search_pass where city_ok and state_ok and topic_ok;
         v_relax := v_relax || jsonb_build_object('key', 'budget', 'to', null, 'label', 'Remove the budget', 'would_return', v_n, 'note', null);
         select coalesce(jsonb_agg(jsonb_build_object('misses', 'budget', 'miss_text', v_cur_sym || to_char(x.fee - v_budget, 'FM999,999,999') || ' over budget', 'course', x.card) order by x.fee), '[]'::jsonb)
           into v_near
           from (select s.fee, (catalogue.portal_course_cards_v1(array[s.course_id], v_cities, v_simmin, jsonb_build_object('postcodes', to_jsonb(v_city_pcs))))->0 card
-                  from pg_temp.portal_search_pass s where s.city_ok and s.state_ok and s.fee_cur = v_budget_cur and s.fee > v_budget
+                  from pg_temp.portal_search_pass s where s.city_ok and s.state_ok and s.topic_ok and s.fee_cur = v_budget_cur and s.fee > v_budget
                  order by s.fee limit v_page) x;
       end;
     end if;
     if cardinality(v_cities) > 0 and cardinality(v_city_states) > 0 then
       declare v_n integer;
       begin
-        select count(*) into v_n from pg_temp.portal_search_pass s join search.course_documents d on d.course_id = s.course_id where s.budget_ok and d.subdivision_codes && v_city_states;
+        select count(*) into v_n from pg_temp.portal_search_pass s join search.course_documents d on d.course_id = s.course_id where s.budget_ok and s.topic_ok and d.subdivision_codes && v_city_states;
         v_relax := v_relax || jsonb_build_object('key', 'location', 'to', v_city_states[1],
           'label', 'Widen ' || initcap(v_cities[1]) || ' to ' || (select s.name from ref.subdivisions s where s.code = v_city_states[1]), 'would_return', v_n, 'note', null);
         v_near := v_near || coalesce((select jsonb_agg(jsonb_build_object('misses', 'location', 'miss_text', 'Outside ' || initcap(v_cities[1]), 'course', x.card))
           from (select (catalogue.portal_course_cards_v1(array[s.course_id], '{}', v_simmin, null))->0 card
                   from pg_temp.portal_search_pass s join search.course_documents d on d.course_id = s.course_id
-                 where s.budget_ok and not s.city_ok and d.subdivision_codes && v_city_states limit v_page) x), '[]'::jsonb);
+                 where s.budget_ok and s.topic_ok and not s.city_ok and d.subdivision_codes && v_city_states limit v_page) x), '[]'::jsonb);
       end;
     end if;
   end if;
