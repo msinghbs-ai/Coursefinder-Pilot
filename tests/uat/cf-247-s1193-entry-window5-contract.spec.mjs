@@ -18,7 +18,7 @@ test('s1193: same containment; nothing admitted, scheduled or dropped', () => {
   expect(MIG).toContain("'firecrawl_credits', 0")
   expect(MIG).toContain("array['openrouter']")
   for (const s of ['post-check: % entry items outside Window 5 could be read under an open request', 'post-check: Window 5 is not all queued', 'post-check: the scheduled reader is not held by the cap',
-    'post-check: the entry field is not held by the US$0 cap', 'post-check: the number of active cron jobs changed', 'post-check: manual locks changed', 'post-check: the consumer API moved']) expect(MIG).toContain(s)
+    'post-check: the entry field is not held by the US$0 cap', 'post-check: a cron job was created', 'post-check: more than 140 active cron jobs', 'post-check: manual locks changed', 'post-check: the consumer API moved']) expect(MIG).toContain(s)
   expect(code).not.toMatch(/cron\.schedule|cron\.alter_job|platform_toolset_settings|ai_route_qualifications\s*\(|layer4_review_items\s+set|insert into catalogue\.|\bdelete from\b|truncate /i)
   expect(MIG.split('\n').filter((l) => /^(drop|delete|truncate)\b/i.test(l) || /^alter table .* drop /i.test(l))).toEqual([])
 })

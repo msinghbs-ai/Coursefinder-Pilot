@@ -28,7 +28,7 @@ begin
   end if;
 end $g$;
 create temp table s1193_locks on commit drop as select count(*) n from pipeline.manual_locks;
-create temp table s1193_cron on commit drop as select count(*) n from cron.job where active;
+create temp table s1193_cron on commit drop as select jobname from cron.job;  -- the job names: this change creates none (existing jobs are switched routinely by their own dispatchers while this runs)
 create temp table s1193_c on commit drop as
   select co.id course_id, co.provider_id,
          (select a.chars from pipeline.aer_det_academic_pages a where a.course_id = co.id order by a.read_at desc nulls last limit 1) ch,
@@ -88,7 +88,8 @@ end $act$;
 do $c$
 declare v_api jsonb; v_r jsonb; v_od uuid[]; v_out int;
 begin
-  if (select count(*) from cron.job where active) <> (select n from s1193_cron) then raise exception 'post-check: the number of active cron jobs changed'; end if;
+  if exists (select 1 from cron.job j where not exists (select 1 from s1193_cron b where b.jobname = j.jobname)) then raise exception 'post-check: a cron job was created'; end if;
+  if (select count(*) from cron.job where active) > 140 then raise exception 'post-check: more than 140 active cron jobs'; end if;  -- fixed: the standing cron limit
   if (select count(*) from pipeline.manual_locks) <> (select n from s1193_locks) then raise exception 'post-check: manual locks changed'; end if;
   v_r := security.ai_enrich_routes_v1();
   if not coalesce(v_r->'limit_fields' ? 'entry_requirements', false) then raise exception 'post-check: the entry field is not held by the US$0 cap: %', v_r; end if;
