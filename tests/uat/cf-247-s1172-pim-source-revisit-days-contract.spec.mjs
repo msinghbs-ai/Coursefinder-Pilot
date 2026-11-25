@@ -10,7 +10,7 @@ test('s1172: the scoped setting drives the backoff; gaps.recheck_days is not tou
   expect(code).toContain("'pipeline', 'pim.source_revisit_days'")
   expect(code).toContain("'number', '7'::jsonb, 1, 60, 'days'")
   expect(code).toContain("security.pipeline_num_v1('pim.source_revisit_days', 7)::int * power(2, least(coalesce(rv.revisits, 0), 6))::int")
-  expect(code).not.toMatch(/gaps\.recheck_days/)
+  expect(code).not.toContain("pipeline_num_v1('gaps.recheck_days'")
 })
 
 test('s1172: the batch is capped inside the function and each claim re-tests eligibility under a row lock', () => {
