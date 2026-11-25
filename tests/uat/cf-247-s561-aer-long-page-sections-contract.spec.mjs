@@ -58,7 +58,7 @@ test('switch on, no entry section found: the page stays page_too_long and the wi
 })
 
 test('the worker verifies against the whole page, reads the switch, and the switch starts off', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.44"')  // v1.0.38 from s1037  // v1.0.37 from s1029  // v1.0.36 from s1017  // v1.0.35 from s992  // v1.0.34 from s851  // v1.0.25 from s721  // v1.0.19 from s674
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.45"')  // v1.0.38 from s1037  // v1.0.37 from s1029  // v1.0.36 from s1017  // v1.0.35 from s992  // v1.0.34 from s851  // v1.0.25 from s721  // v1.0.19 from s674
   expect((IX.match(/const longOn = wsNum\("reading\.aer_v2_long_page_sections_on", 0\) === 1;/g) || []).length).toBe(2)
   expect(IX).toContain('const lp = longPageWindow(blocks, pageChars, longOn);')
   expect(IX).toContain('const v = aerV3Verify(a.a, blocks, refs, quoteMax, gapMax);')   // the whole page's blocks, not the selection
