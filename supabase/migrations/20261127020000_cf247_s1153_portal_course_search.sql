@@ -1,4 +1,4 @@
--- CF-247 s1152 (S2-Build; Platform Admin 25 Nov 2026 17:13 AEDT, "Portal Release 1 Search Activation"): plain-English course search for the
+-- CF-247 s1153 (S2-Build; Platform Admin 25 Nov 2026 17:13 AEDT, "Portal Release 1 Search Activation"): plain-English course search for the
 -- StudySearch Portal's Courses screen, built to the contract in coursefinder-admin docs/platform/2026-11-25-studysearch-portal-design-decisions-
 -- and-plan.md ("Release 1 screens as built"), and the course embeddings it ranks with.
 -- Read live before writing (rolled-back read-backs, head 20261127000000):
@@ -41,32 +41,32 @@ begin
     raise exception 'guard: the consumer API is not at its baseline before this change: %', v;
   end if;
 end $g$;
-create temp table s1152_locks on commit drop as select count(*) n from pipeline.manual_locks;
-create temp table s1152_cron on commit drop as select count(*) n from cron.job where active;
+create temp table s1153_locks on commit drop as select count(*) n from pipeline.manual_locks;
+create temp table s1153_cron on commit drop as select count(*) n from cron.job where active;
 
 -- 1. Settings (G2). They show on Settings › Toolsets & limits.
 insert into pipeline.platform_toolsets (key, label, kind, layers, help, sort, reason)
 values ('portal_search', 'StudySearch Portal course search', 'platform', array[0],
         'How the portal''s plain-English course search filters, ranks and relaxes, and the model and budget used to give courses and typed queries their meaning vectors.',
-        61, 'CF-247 s1152: Platform Admin 25 Nov 2026 17:13 (no operational value written into code)')
+        61, 'CF-247 s1153: Platform Admin 25 Nov 2026 17:13 (no operational value written into code)')
 on conflict (key) do nothing;
 
 insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason)
 values
- ('portal_search', 'result_page_size', 'Courses: results per search', 'How many courses one search returns.', 'number', '20'::jsonb, 5, 50, 'courses', 6110, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1152'),
- ('portal_search', 'relax_min_matches', 'Relaxation starts below', 'When fewer courses than this match every filter, near misses and relaxations are offered.', 'number', '3'::jsonb, 1, 10, 'courses', 6120, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1152'),
- ('portal_search', 'relax_budget_headroom_pct', 'Suggested budget: headroom', 'Percentage added to the third-cheapest otherwise matching fee before rounding.', 'number', '5'::jsonb, 0, 25, '%', 6130, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1152'),
- ('portal_search', 'relax_budget_round_to', 'Suggested budget: rounded up to', 'The suggested budget is rounded up to a multiple of this amount.', 'number', '1000'::jsonb, 100, 10000, 'dollars', 6140, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1152'),
- ('portal_search', 'relax_budget_max_raise_pct', 'Suggested budget: largest raise', 'The largest budget raise offered; beyond it only "Remove the budget" is offered.', 'number', '30'::jsonb, 5, 100, '%', 6150, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1152'),
- ('portal_search', 'topic_min_similarity', 'Topic match: least meaning similarity', 'A course counts as a topic match when its meaning similarity to the typed topic is at least this (or its words match).', 'number', '0.35'::jsonb, 0.1, 0.9, 'similarity', 6160, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1152'),
- ('portal_search', 'query_cache_hours', 'Typed query meaning: reused for', 'How long a typed query''s meaning vector is reused before it is worked out again.', 'number', '24'::jsonb, 1, 720, 'hours', 6170, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1152'),
- ('portal_search', 'query_embed_daily_max', 'Typed queries embedded a day', 'The most new typed queries given a meaning vector in one Melbourne day; beyond it searches rank by words only.', 'number', '5000'::jsonb, 100, 50000, 'queries', 6180, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1152'),
- ('portal_search', 'embed_batch', 'Course embedding: courses per batch', 'How many courses one embedding request carries.', 'number', '150'::jsonb, 20, 500, 'courses', 6190, 'Portal search', 'public.svc_portal_search_embed_next; edge function portal-search-embed', 'CF-247 s1152'),
- ('portal_search', 'enqueue_chunk', 'Course embedding: courses queued at a time', 'How many courses without a current vector are added to the queue each time it runs low (the backfill is queued in these steps).', 'number', '1500'::jsonb, 100, 10000, 'courses', 6195, 'Portal search', 'security.portal_search_embed_fire_v1', 'CF-247 s1152'),
- ('portal_search', 'embed_daily_ceiling_usd', 'Course and query embedding: daily ceiling', 'The most this service may spend in one Melbourne day; the platform ceiling budgets.ai_daily_ceiling_usd also applies.', 'number', '1'::jsonb, 0.05, 5, 'USD', 6200, 'Portal search', 'public.svc_portal_search_embed_next', 'CF-247 s1152'),
- ('portal_search', 'embed_usd_per_mtok', 'Embedding model price', 'The model''s list price per million input tokens, used to log spend.', 'number', '0.02'::jsonb, 0, 1, 'USD per million tokens', 6210, 'Portal search', 'public.svc_portal_search_embed_record', 'CF-247 s1152: OpenRouter list price 25 Nov 2026'),
- ('portal_search', 'embedding_model', 'Embedding model', 'Model used for course and query vectors (1536 dimensions); changed only with a reason and a full re-embed.', 'text', '"openai/text-embedding-3-small"'::jsonb, null, null, null, 6220, 'Portal search', 'catalogue.portal_course_search_v1; edge function portal-search-embed', 'CF-247 s1152: Platform Admin 25 Nov 2026 (pinned)'),
- ('portal_search', 'visibility_scope', 'Courses searched', 'active: every active course; published: published courses only (set once publishing is live). Inactive, suspended and unknown-status courses are never searched.', 'text', '"active"'::jsonb, null, null, null, 6230, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1152: Platform Admin 25 Nov 2026')
+ ('portal_search', 'result_page_size', 'Courses: results per search', 'How many courses one search returns.', 'number', '20'::jsonb, 5, 50, 'courses', 6110, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
+ ('portal_search', 'relax_min_matches', 'Relaxation starts below', 'When fewer courses than this match every filter, near misses and relaxations are offered.', 'number', '3'::jsonb, 1, 10, 'courses', 6120, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
+ ('portal_search', 'relax_budget_headroom_pct', 'Suggested budget: headroom', 'Percentage added to the third-cheapest otherwise matching fee before rounding.', 'number', '5'::jsonb, 0, 25, '%', 6130, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
+ ('portal_search', 'relax_budget_round_to', 'Suggested budget: rounded up to', 'The suggested budget is rounded up to a multiple of this amount.', 'number', '1000'::jsonb, 100, 10000, 'dollars', 6140, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
+ ('portal_search', 'relax_budget_max_raise_pct', 'Suggested budget: largest raise', 'The largest budget raise offered; beyond it only "Remove the budget" is offered.', 'number', '30'::jsonb, 5, 100, '%', 6150, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
+ ('portal_search', 'topic_min_similarity', 'Topic match: least meaning similarity', 'A course counts as a topic match when its meaning similarity to the typed topic is at least this (or its words match).', 'number', '0.35'::jsonb, 0.1, 0.9, 'similarity', 6160, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
+ ('portal_search', 'query_cache_hours', 'Typed query meaning: reused for', 'How long a typed query''s meaning vector is reused before it is worked out again.', 'number', '24'::jsonb, 1, 720, 'hours', 6170, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
+ ('portal_search', 'query_embed_daily_max', 'Typed queries embedded a day', 'The most new typed queries given a meaning vector in one Melbourne day; beyond it searches rank by words only.', 'number', '5000'::jsonb, 100, 50000, 'queries', 6180, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
+ ('portal_search', 'embed_batch', 'Course embedding: courses per batch', 'How many courses one embedding request carries.', 'number', '150'::jsonb, 20, 500, 'courses', 6190, 'Portal search', 'public.svc_portal_search_embed_next; edge function portal-search-embed', 'CF-247 s1153'),
+ ('portal_search', 'enqueue_chunk', 'Course embedding: courses queued at a time', 'How many courses without a current vector are added to the queue each time it runs low (the backfill is queued in these steps).', 'number', '1500'::jsonb, 100, 10000, 'courses', 6195, 'Portal search', 'security.portal_search_embed_fire_v1', 'CF-247 s1153'),
+ ('portal_search', 'embed_daily_ceiling_usd', 'Course and query embedding: daily ceiling', 'The most this service may spend in one Melbourne day; the platform ceiling budgets.ai_daily_ceiling_usd also applies.', 'number', '1'::jsonb, 0.05, 5, 'USD', 6200, 'Portal search', 'public.svc_portal_search_embed_next', 'CF-247 s1153'),
+ ('portal_search', 'embed_usd_per_mtok', 'Embedding model price', 'The model''s list price per million input tokens, used to log spend.', 'number', '0.02'::jsonb, 0, 1, 'USD per million tokens', 6210, 'Portal search', 'public.svc_portal_search_embed_record', 'CF-247 s1153: OpenRouter list price 25 Nov 2026'),
+ ('portal_search', 'embedding_model', 'Embedding model', 'Model used for course and query vectors (1536 dimensions); changed only with a reason and a full re-embed.', 'text', '"openai/text-embedding-3-small"'::jsonb, null, null, null, 6220, 'Portal search', 'catalogue.portal_course_search_v1; edge function portal-search-embed', 'CF-247 s1153: Platform Admin 25 Nov 2026 (pinned)'),
+ ('portal_search', 'visibility_scope', 'Courses searched', 'active: every active course; published: published courses only (set once publishing is live). Inactive, suspended and unknown-status courses are never searched.', 'text', '"active"'::jsonb, null, null, null, 6230, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153: Platform Admin 25 Nov 2026')
 on conflict do nothing;
 
 create or replace function security.portal_search_num_v1(p_key text, p_default numeric)
@@ -207,7 +207,7 @@ insert into pipeline.pilot_nonce_functions (function_name) values ('portal-searc
 insert into pipeline.field_execution_registry (lane_code, kind, legacy_job, call_sql, call_md5, schedule, priority, enabled, mode, budget_ms, expected_ms, uses_ai, owner, note)
 values ('portal-search-embed', 'worker_lane', 'portal-search-embed', 'select security.portal_search_embed_fire_v1()', md5('select security.portal_search_embed_fire_v1()'),
         '* * * * *', 50, true, 'live', 2000, 500, true, 'S2-Build',
-        'CF-247 s1152: course meaning vectors for the portal search (edge function portal-search-embed); starts only when jobs wait; no pg_cron job')
+        'CF-247 s1153: course meaning vectors for the portal search (edge function portal-search-embed); starts only when jobs wait; no pg_cron job')
 on conflict (lane_code) do nothing;
 
 -- 5. The search. Stage 1: words to filters (live vocabulary). Stage 2: rank with search.course_candidates_v1. Relaxations are offered, never applied.
@@ -474,7 +474,7 @@ grant execute on function public.svc_portal_search_embed_next(integer), public.s
 -- 6. A document refresh for active courses that have none yet (the embedding backfill itself is queued by the lane, 4b).
 select search.course_refresh_request_v1(array(select c.id from catalogue.courses c where c.lifecycle_status = 'active'
                                                and not exists (select 1 from search.course_documents d where d.course_id = c.id)),
-                                        'CF-247 s1152: portal search needs a document for every active course');
+                                        'CF-247 s1153: portal search needs a document for every active course');
 
 do $p$
 declare v jsonb := security.consumer_api_check_v1();
@@ -482,8 +482,8 @@ begin
   if jsonb_array_length(coalesce(v->'drift', '[]'::jsonb)) <> 0 or (v->>'functions')::int <> 75 or (v->>'relations')::int <> 48 then
     raise exception 'post-check: the consumer API moved: %', v;
   end if;
-  if (select count(*) from pipeline.manual_locks) <> (select n from s1152_locks) then raise exception 'post-check: manual locks changed'; end if;
-  if (select count(*) from cron.job where active) <> (select n from s1152_cron) then raise exception 'post-check: the number of active cron jobs changed'; end if;
+  if (select count(*) from pipeline.manual_locks) <> (select n from s1153_locks) then raise exception 'post-check: manual locks changed'; end if;
+  if (select count(*) from cron.job where active) <> (select n from s1153_cron) then raise exception 'post-check: the number of active cron jobs changed'; end if;
   if (select count(*) from pipeline.platform_toolset_settings where toolset_key = 'portal_search') <> 14 then raise exception 'post-check: the portal_search settings are not all present'; end if;
   if not exists (select 1 from search.profiles where code = 'portal-default' and status = 'active') then raise exception 'post-check: profile portal-default missing'; end if;
   if exists (select 1 from search.course_embeddings e join search.profiles p on p.id = e.profile_id where p.code in ('website-default', 'zoho-default')) then
