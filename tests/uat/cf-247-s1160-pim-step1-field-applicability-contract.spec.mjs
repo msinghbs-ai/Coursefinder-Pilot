@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261127040000_cf247_s1160_pim_step1_field_applicability.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261127120000_cf247_s1160_pim_step1_field_applicability.sql', 'utf8')
 const code = MIG.replace(/--.*$/gm, '')
 
 test('s1160: the register gains grain, rule, rule data and the absence field name, all additive', () => {
