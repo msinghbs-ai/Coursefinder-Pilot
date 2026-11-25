@@ -25,6 +25,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { ArrowDown, ArrowUp, ChevronRight, KeyRound, Plus, RefreshCw, X } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import { lazyLoader } from './lib/chunkReload.js'
 import Card, { rememberOpen } from './Card'
 import { Button, Empty, Loading, fmtDateTime, fmtNumber, fmtRelative, humanLabel } from './ui-kit'
 import { plainError } from './lib/errors'
@@ -388,7 +389,7 @@ function ServiceRow({ s, d, can, admin, act, saveSetting, open, onToggle, onErro
     </div></td></tr>}
   </>
 }
-const PromptEditor = React.lazy(() => import('./ProviderDescriptionPrompt'))
+const PromptEditor = React.lazy(() => lazyLoader(() => import('./ProviderDescriptionPrompt')))
 // A prompt written in the worker: its complete text comes from docs/platform/ai-prompts.json, generated from the worker source and checked in
 // (scripts/ai-prompts-export.mjs; a test fails when it is stale). Read at build time, loaded when a service is opened. Read only.
 let promptFile = null
@@ -408,7 +409,7 @@ function WorkerPrompts({ service, label, textRef, inWorker }) {
 }
 // Platform Admin 13 Nov 2026 22:10: "Scholarship Extraction configuration belongs in Models & Services": AI admission and its settings,
 // qualification on the sample, instructions and a test page, drawn once, here (its results stay on Scholarships › Coverage)
-const ScholarshipConfig = React.lazy(() => import('./ScholarshipExtraction'))
+const ScholarshipConfig = React.lazy(() => lazyLoader(() => import('./ScholarshipExtraction')))
 
 function ServicesPane({ d, can, admin, act, saveSetting, focus, onError }) {
   const groups = serviceGroups(d.services || [])

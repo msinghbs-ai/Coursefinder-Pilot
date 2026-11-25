@@ -6,6 +6,7 @@ import{
   ListChecks,LogOut,Menu,RefreshCw,Search,SearchCheck,Settings2,SlidersHorizontal,Sparkles,
   ShieldCheck,Tags,UsersRound,Workflow,X,Zap,MapPin,Layers3,Clock3,PanelLeftClose,PanelLeftOpen,ExternalLink,HeartPulse,Plug,BrainCircuit,Plus,Pencil,Link2
 }from'lucide-react'
+import{lazyLoader,installChunkReloadGuard}from'./lib/chunkReload.js'
 import{fmtDate,fmtDateTime,fmtMoney,fmtMonthName,fmtPercent,fmtPeriod,fmtShare}from'./lib/format.js'
 import{adminRead,api,supabase,AUTH_LINK_TYPE}from'./lib/supabase'
 import CourseDetailPolish from'./CourseDetailPolish'
@@ -70,10 +71,10 @@ import{useCourseLayout,ColumnsControl,useCourseTableColumns,providerTableColumns
 import{sortSentence,COURSE_SCREEN,PROVIDER_SCREEN,QUALITY_FILTER_OPTIONS,STUDY_LOAD_LABELS,EMPTY_REASON_LABELS}from'./catalogue-columns'
 import './provider-fill-fields.css' // small: the Provider row's tick box and button need it before the lazy panel is opened
 import AdminShell from'./ui-v1/AdminShell.jsx'
-const CounsellorApp=React.lazy(()=>import('./ui-v1/CounsellorApp.jsx')) // s990: the v1.1 Counsellor build (its own tokens and kit; loads only when drawn)
+const CounsellorApp=lazyPage(()=>import('./ui-v1/CounsellorApp.jsx')) // s990: the v1.1 Counsellor build (its own tokens and kit; loads only when drawn)
 // v2.15.217 (code split): screens used only inside one page load on demand. If a screen's file is gone because a newer release was deployed
 // while this tab was open, the page reloads once to pick up the new release instead of showing an error.
-function lazyPage(load,name='default'){return React.lazy(()=>load().then(m=>({default:m[name]})).catch(e=>{let again=false;try{again=sessionStorage.getItem('cf-chunk-reload')!==String(location.pathname+location.hash)}catch{}if(again&&/dynamically imported module|Importing a module script failed|Failed to fetch/i.test(String(e?.message||e))){try{sessionStorage.setItem('cf-chunk-reload',String(location.pathname+location.hash))}catch{}location.reload();return new Promise(()=>{})}throw e}))}
+function lazyPage(load,name='default'){return React.lazy(()=>lazyLoader(load,name))} // s1203: a stale tab after a deploy reloads once (src/lib/chunkReload.js)
 const EvidenceWorkspace=lazyPage(()=>import('./EvidenceWorkspace'))
 const ModelsServices=lazyPage(()=>import('./ModelsServices'))
 // v2.16.0 (Platform Admin 13 Nov 2026 19:14): Models & services › AI is one page of four panes; AiConfig.jsx is retired
@@ -1167,4 +1168,5 @@ function relativeTime(v){const d=new Date(v);if(Number.isNaN(+d))return'unknown'
 function formatScalar(k,v){if(v==null||v==='')return'—';if(typeof v==='boolean')return v?'Yes':'No';if(k.endsWith('_at')||k==='valid_from'||k==='valid_to')return fmtDateTime(v);if(typeof v==='number')return fmtNumber(v);return String(v)}
 function summarise(v){if(Array.isArray(v))return`${v.length} record${v.length===1?'':'s'}`;return`${Object.keys(v||{}).length} fields`}
 
+installChunkReloadGuard() // s1203: a stale tab after a deploy reloads once instead of breaking
 createRoot(document.getElementById('root')).render(<React.StrictMode><App/></React.StrictMode>)

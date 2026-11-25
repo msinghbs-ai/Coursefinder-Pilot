@@ -14,3 +14,12 @@
 /.well-known/security.txt
   Content-Type: text/plain; charset=utf-8
   Cache-Control: public, max-age=3600
+
+# s1203 (Platform Admin via Atlas, 26 Nov 2026): the page is always re-checked, so a reload after a deploy gets the new index.html;
+# the hashed files under /assets/ never change, so they are cached for a year. Fixed rules, set here and not in the Cloudflare dashboard.
+/
+  Cache-Control: no-cache, must-revalidate
+/index.html
+  Cache-Control: no-cache, must-revalidate
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
