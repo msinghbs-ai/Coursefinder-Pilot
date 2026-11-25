@@ -65,3 +65,10 @@ test('s1153: the worker mode embeds through the one gateway, denies provider dat
   expect(sql).toContain("'portal_search_embedding'")
   expect(sql).toContain("security.pipeline_num_v1('budgets.ai_daily_ceiling_usd', 5)")
 })
+
+test('s1153 follow-up: vector writes are batched at 25 (150 timed out once the index passed about 21,000 rows)', () => {
+  const fix = fs.readFileSync('supabase/migrations/20261127130000_cf247_s1153_portal_search_embed_batch.sql', 'utf8')
+  expect(fix).toContain("where toolset_key = 'portal_search' and key = 'embed_batch' and value = to_jsonb(150);")
+  expect(fix).toContain('update pipeline.platform_toolset_settings set value = to_jsonb(25)')
+  expect(fix).toContain("post-check: portal_search.embed_batch is not 25")
+})
