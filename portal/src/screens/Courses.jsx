@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { rpc } from '../lib/api.js'
 import { usePortal } from '../lib/portal.jsx'
 import { useSaved } from '../lib/saved.js'
+import { basket } from '../lib/basket.js'
 import { durationText, money, dateText, stateShort, NOT_RECORDED } from '../lib/format.js'
 import { PageHead, StudyInBar, Pill } from '../components/ui.jsx'
 
@@ -27,6 +28,7 @@ function normaliseRelaxations(r) {
 }
 
 function CourseCard({ c, near, canSave, saved, busy, onToggle }) {
+  const [inBasket, setInBasket] = useState(() => basket.has(c.course_id))
   const place = [stateShort(c.state_code), c.city].filter(Boolean).join(' · ')
   const fee = c.fee && Number(c.fee.per_year) ? money(c.fee.per_year, c.fee.currency) : null
   const intakes = Array.isArray(c.intakes) && c.intakes.length ? c.intakes : c.next_intake ? [c.next_intake] : []
@@ -55,6 +57,7 @@ function CourseCard({ c, near, canSave, saved, busy, onToggle }) {
       </div>
       <div className="actions">
         {canSave && <button type="button" className={`btn${saved ? ' on' : ''}`} aria-pressed={saved} disabled={busy} onClick={() => onToggle(c.course_id, !saved)}>{saved ? '♥ Saved' : '♡ Save'}</button>}
+        {canSave && <button type="button" className={`btn${inBasket ? ' on' : ''}`} aria-pressed={inBasket} onClick={() => { if (inBasket) basket.remove(c.course_id); else basket.add(c); setInBasket(!inBasket) }}>{inBasket ? '✓ In proposal' : '+ Add to proposal'}</button>}
         {c.course_url && <a className="btn" href={c.course_url} target="_blank" rel="noopener noreferrer">Open course</a>}
       </div>
     </article>
@@ -132,6 +135,7 @@ export default function Courses({ params, access }) {
       )}
       {ready && state.error && !state.unavailable && <div className="notice bad" role="alert">{state.error}</div>}
       {saved.message && <div className="notice bad" role="alert">{saved.message} <button type="button" className="link-inline" onClick={saved.clearMessage}>Dismiss</button></div>}
+      {canSave && basket.count() > 0 && <div className="notice" role="status"><strong>{basket.count()} {basket.count() === 1 ? 'course' : 'courses'} picked for a proposal.</strong> <a href="#/proposals/new">Start the proposal</a></div>}
 
       {d && !state.loading && (
         <>
