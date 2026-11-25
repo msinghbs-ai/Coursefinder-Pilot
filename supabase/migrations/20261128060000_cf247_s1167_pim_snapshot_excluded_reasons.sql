@@ -50,7 +50,7 @@ as $f$
   with g as (
     select a.attribute as field,
            case when a.state = 'no_reader' then 'no_reader'
-                when r.applicability_rule = 'countries' and not (r.applicability_param->'countries') ? a.country_code then 'country_not_covered'
+                when r.applicability_rule = 'countries' and not coalesce((r.applicability_param->'countries') ? a.country_code, false) then 'country_not_covered'  -- an unknown country is not covered, as in security.field_applicable_v1
                 when r.applicability_requires = 'international_open' and c.open_to_international is false then 'closed_to_international'
                 when ab.absence_class = 'not_applicable' then 'recorded_not_applicable'
                 when ab.next_eligible_at > now() then 'no_source_revisit_pending'
