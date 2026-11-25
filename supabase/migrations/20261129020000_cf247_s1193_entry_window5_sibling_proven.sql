@@ -3,7 +3,7 @@
 -- 23 Nov 2026 item 2: Tier 2 micro-spend for Tier 1 universities without asking, inside US$5.00 a day).
 -- Platform Admin decision 26 Nov 2026 06:57 AEDT (option 2) and 08:19 AEDT: "After successful verification, evaluate the remaining identity-held cohorts
 -- automatically under the approved rule". s1192 (live 08:39) put the proven sibling page in the AI read gate and AI recorder; the machine admission admitted the
--- first s1191 proposal under it (course 082307B, 2 active rows, read back through website_v2_course).
+-- first s1191 proposal under it (course 082307B, 2 active rows, read back through the website course read).
 -- Found live (rolled back, 26 Nov 2026 08:50 AEDT): 346 AU courses (134 providers) read by the deterministic reader with no admissible row and never AI-read now
 -- pass security.entry_sibling_identity_v1 (which includes the read gate's own page check), 7,740,487 stored characters.
 -- What this does, live on apply, through the audited writers' checks and logs:
