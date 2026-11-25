@@ -2,7 +2,8 @@
 // qualifications a stored course page states in words. No model, no fetch, no write: it takes the page's text and returns readings, each with a verbatim quote that is a substring of that text
 // (checked here, so a reading can never carry words the page does not hold). Readings are recorded beside Layer 4 and enter it only as ordinary course entry reads, which the existing gates
 // (quote on the page, page identity, completeness, manual locks, no-overwrite, audit sample) decide (Decision 276: AER v1 is frozen and the AI reader stays shadow only).
-export const AER_DET_VERSION = "aer-det-v1.4" // v1.4 (23 Nov 2026, s1009, Platform Admin 15:52 AEDT): a maximum or "up to" figure is never read as a minimum; a reading's quote carries the value it gives; a mark in one subject ("65% in English") is not read as an overall minimum. v1.3 (20 Nov 2026, s834, Platform Admin 15:08 AEDT: AER and English are separate): English tests are not read at all (the English requirement has its own pipeline); IB points, A-level grades and Indian board averages are read; "42 level 3 credits" reads 42, never the 3 of "level 3"; Year 12 needs a stated score, mark or percentage; the v1.2 collapsed-row guard is kept (a flattened table line is skipped and a value is never taken across another test or qualification)
+export const AER_DET_VERSION = "aer-det-v1.4" // default stays unchanged for all existing unattended reads
+export const AER_DET_SCOPED_VERSION = "aer-det-v1.5" // opt-in only for named provider batches // v1.4 (23 Nov 2026, s1009, Platform Admin 15:52 AEDT): a maximum or "up to" figure is never read as a minimum; a reading's quote carries the value it gives; a mark in one subject ("65% in English") is not read as an overall minimum. v1.3 (20 Nov 2026, s834, Platform Admin 15:08 AEDT: AER and English are separate): English tests are not read at all (the English requirement has its own pipeline); IB points, A-level grades and Indian board averages are read; "42 level 3 credits" reads 42, never the 3 of "level 3"; Year 12 needs a stated score, mark or percentage; the v1.2 collapsed-row guard is kept (a flattened table line is skipped and a value is never taken across another test or qualification)
 
 export type DetReading = {
   kind: "academic_entry"
@@ -48,7 +49,7 @@ const FAMILIES: [string, RegExp][] = [
   ["gpa", /\b(?:GPA|grade point average)\b/i], ["ncuk", /\bNCUK\b/], ["alevel", /\bA[- ]?levels?\b/i], ["ib", /\bInternational Baccalaureate\b|\bIB Diploma\b|\bIB\b/],
   ["india", /\b(?:CBSE|CISCE|ICSE|ISC|Indian School Certificate|State Board|Senior School Certificate)\b/],
 ]
-const OWN: Record<string, string> = { atar: "atar", year12: "year12", ncea_l3: "ncea", university_entrance: "ue", ib: "ib", alevel: "alevel", india_board: "india", ca_secondary: "ca", bachelor_gpa: "gpa" }
+const OWN: Record<string, string> = { atar: "atar", year12: "year12", ncea_l2: "ncea", ncea_l3: "ncea", university_entrance: "ue", ib: "ib", alevel: "alevel", india_board: "india", ca_secondary: "ca", ca_secondary_completion: "ca", bachelor_gpa: "gpa" }
 function families(s: string): Set<string> { const o = new Set<string>(); for (const [id, re] of FAMILIES) if (re.test(s)) o.add(id); return o }
 const DEGREE = /\b(?:Bachelor|Master|Graduate Certificate|Graduate Diploma|Diploma|Associate Degree|Doctor)\s+of\s+[A-Z][\w&-]*(?:\s+[A-Z&][\w&-]*){0,3}/g
 export function detCollapsed(u: string): boolean {
@@ -77,6 +78,10 @@ function creditCount(q: string): number | null {
 
 const RULES: Rule[] = [
   { key: "atar", re: /\bATAR\b[^.\n]{0,70}?\b(\d{2}(?:\.\d{1,2})?)\b(?!\s*(?:%|per cent|credits))/i, make: (m) => { const v = N(m[1]); return inRange(v, 30, 99.95) && !(v >= 1990 && v <= 2100) ? { atar: v, basis: "ATAR" } : null } },
+  // S3-AER Admin #1054: a stored Toi Ohomai shadow answer quotes "48 credits in NCEA Level 2".
+  // Count the printed credit minimum, never the qualification level or subject's 12 English credits.
+  // This is an academic DOMESTIC source route: existing audience, course identity and admission gates remain unchanged.
+  { key: "ncea_l2", win: true, re: /\b\d{2,3}\s+credits?\s+(?:in|at|towards)\s+NCEA\s+Level\s*2\b/i, make: (_m, q) => { if (ENGLISH_TEST.test(q)) return null; const c = creditCount(q); return c ? { credits: c, basis: "credits" } : null } },
   { key: "ncea_l3", win: true, re: /\b(?:\d{2,3}\s+credits?[^.\n]{0,60}?)?\bNCEA\b[^.\n]{0,40}?\bLevel\s*3\b/i, make: (_m, q) => { if (ENGLISH_TEST.test(q)) return null; const c = creditCount(q); return c ? { credits: c, basis: "credits" } : null } },
   { key: "university_entrance", win: true, re: /\bUniversity Entrance\b/i, make: (_m, q) => { if (ENGLISH_TEST.test(q)) return null; const c = creditCount(q); return c ? { credits: c, basis: "credits" } : null } },
   // Year 12 needs a stated threshold: a score, mark, rank, aggregate, average or percentage with its number (or a grade letter with "or higher"); "Units 3 and 4" and bare mentions of Year 12 give nothing
@@ -91,15 +96,22 @@ const RULES: Rule[] = [
   { key: "alevel", win: true, re: /\bA[- ]?levels?\b[^.\n]{0,60}?\b((?:A\*|[A-E]){2,4})\b/, make: (m) => /^(?:A\*|[A-E]){2,4}$/.test(m[1]) && !/^E+$/.test(m[1]) ? { grades: m[1] } : null },
   { key: "india_board", win: true, re: /\b(?:CBSE|CISCE|ICSE|ISC|Indian School Certificate|Senior School Certificate|State Board)\b[^.\n]{0,100}?\b(\d{2}(?:\.\d)?)\s*(?:%|per ?cent)/i, make: (m) => { const v = N(m[1]); return inRange(v, 40, 100) ? { average_percent: v } : null } },
   { key: "ca_secondary", re: /\b(?:Ontario Secondary School Diploma|OSSD|Grade 12|secondary school diploma|high school diploma|senior matriculation|BC Dogwood|(?<!national )Baccalaur[eé]at)\b[^.\n]{0,200}?\b(\d{2}(?:\.\d)?)\s*(?:%|per cent)/i, make: (m) => { const v = N(m[1]); return inRange(v, 50, 95) ? { average_percent: v } : null } },
+  // Admin #1054: stored North Island College Nursing source prints an exact
+  // transcript-based Grade 12 equivalency, without a numeric overall score.
+  // Never infer a percentage or international country from this qualification.
+  { key: "ca_secondary_completion", win: true, re: /\b(?:academic (?:entry )?requirements|admission requirements)\s*:\s*Grade\s*12\s+or\s+equivalent\b/i, make: () => ({ qualification: "Grade 12 or equivalent" }) },
   { key: "bachelor_gpa", re: /\b(?:bachelor|honours|undergraduate|first degree)\b[^.\n]{0,140}?\b(?:GPA|grade point average|GPA of)\b[^.\n]{0,40}?\b(\d(?:\.\d{1,2})?)\b(?:\s*(?:out of|\/)\s*(\d(?:\.\d)?))?/i, make: (m) => { const v = N(m[1]); const sc = m[2] ? N(m[2]) : null; return inRange(v, 1, 10) && (sc === null || [4, 5, 7, 10].includes(sc)) ? { gpa: v, scale: sc } : null } },
 ]
 
 // every reading on the page text; a reading is kept only when its quote is found in the text unchanged (the quote check) and states the qualification with a value
-export function detRead(text: string): DetReading[] {
+export function detRead(text: string, options: { scoped?: boolean } = {}): DetReading[] {
   const seen = new Set<string>(), out: DetReading[] = []
   for (const u of detUnits(text)) {
     if (detCollapsed(u)) continue  // a flattened table line is skipped, never guessed
     for (const r of RULES) {
+      // Scoped v1.5 is opt-in. Default v1.4 remains byte-for-byte equivalent
+      // for the existing unattended dispatcher and other country owners.
+      if (!options.scoped && (r.key === "ncea_l2" || r.key === "ca_secondary_completion")) continue
       const m = u.match(r.re); if (!m) continue
       const own = OWN[r.key]
       const at = m.index ?? 0
@@ -115,6 +127,9 @@ export function detRead(text: string): DetReading[] {
         value = r.make(m, untilOther(u, at, own))
       }
       if (!value) continue
+      // An upper bound on credits must never be interpreted as a required minimum.
+      // Look immediately before the L2 count because the quote starts at that count.
+      if (r.key === "ncea_l2" && /\b(?:up to(?: a)? maximum(?: of)?|maximum(?: of)?|up to)\s*$/i.test(u.slice(Math.max(0, at - 32), at))) continue
       if (!q || !text.includes(q)) continue  // the quote must be on the page word for word
       // v1.4 (s1009): a maximum or an "up to" figure ("Up to a maximum international ATAR of 99.95") is never a minimum
       if (/\b(?:maximum|up to|max\.)/i.test(q)) continue
