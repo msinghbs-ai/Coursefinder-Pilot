@@ -466,7 +466,7 @@ end $function$;
 revoke all on function public.portal_course_search_v1(jsonb) from public, anon;
 grant execute on function public.portal_course_search_v1(jsonb) to authenticated;
 revoke all on function catalogue.portal_course_search_v1(jsonb), catalogue.portal_course_cards_v1(uuid[], text[], numeric, jsonb),
-                       security.portal_search_num_v1(text, numeric), security.portal_search_text_v1(text, text), security.portal_search_enqueue_v1(uuid[]),
+                       security.portal_search_num_v1(text, numeric), security.portal_search_text_v1(text, text), security.portal_search_enqueue_v1(uuid[], integer),
                        security.portal_search_embed_fire_v1(), public.svc_portal_search_embed_next(integer), public.svc_portal_search_embed_record(jsonb)
   from public, anon, authenticated;
 grant execute on function public.svc_portal_search_embed_next(integer), public.svc_portal_search_embed_record(jsonb) to service_role;
