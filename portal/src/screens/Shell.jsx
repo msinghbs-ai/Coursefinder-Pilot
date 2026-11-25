@@ -6,18 +6,39 @@ import Courses from './Courses.jsx'
 import Providers from './Providers.jsx'
 import Scholarships from './Scholarships.jsx'
 import Saved from './Saved.jsx'
+import Proposals from './Proposals.jsx'
+import ProposalEditor from './ProposalEditor.jsx'
+import ProposalSheet from './ProposalSheet.jsx'
 
-// Release 1 menu. Saved courses belong to a Counsellor (rank 2 and above); a Viewer (rank 1) browses only.
+// Menu. Saved courses and Proposals belong to a Counsellor (rank 2 and above); a Viewer (rank 1) browses only.
 // The database enforces the same rule on every call; this decides what the screen offers.
 const NAV = [
   { to: '/', label: 'Dashboard' },
   { to: '/courses', label: 'Courses' },
+  { to: '/proposals', label: 'Proposals', counsellor: true },
   { to: '/providers', label: 'Universities & Providers' },
   { to: '/scholarships', label: 'Scholarships' },
   { to: '/saved', label: 'Saved courses', counsellor: true },
 ]
 
+const COUNSELLOR_ONLY = what => (
+  <div className="empty"><strong>{what} are for Counsellors.</strong><p className="muted">Your role is Viewer. Ask a Platform Admin for the Counsellor role to save, compare and build proposals.</p><a className="btn" href="#/courses">Back to Courses</a></div>
+)
+
+// /proposals, /proposals/new, /proposals/<id> and /proposals/<id>/sheet
+function proposalRoute(here) {
+  const m = /^\/proposals(?:\/([^/]+))?(?:\/(sheet))?\/?$/.exec(here)
+  return m ? { id: m[1] || '', sheet: m[2] === 'sheet' } : null
+}
+
 function Screen({ here, route, access, name, userId }) {
+  const prop = proposalRoute(here)
+  if (prop) {
+    if (access.kind !== 'counsellor') return COUNSELLOR_ONLY('Proposals')
+    if (!prop.id) return <Proposals />
+    if (prop.sheet) return <ProposalSheet key={prop.id} id={prop.id} />
+    return <ProposalEditor key={prop.id} id={prop.id} params={route.params} />
+  }
   if (here === '/courses') return <Courses params={route.params} access={access} />
   if (here === '/providers') return <Providers />
   if (here === '/scholarships') return <Scholarships />
@@ -50,7 +71,7 @@ export default function Shell({ session, context, access, loading, error, route,
         <aside className="side">
           <div className="brand"><strong>StudySearch</strong><span>StudySearch Portal</span></div>
           <nav aria-label="Portal">
-            {nav.map(n => <a key={n.to} href={`#${n.to}`} aria-current={here === n.to ? 'page' : undefined}>{n.label}</a>)}
+            {nav.map(n => <a key={n.to} href={`#${n.to}`} aria-current={here === n.to || (n.to !== '/' && here.startsWith(`${n.to}/`)) ? 'page' : undefined}>{n.label}</a>)}
           </nav>
         </aside>
         <div className="main">

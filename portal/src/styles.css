@@ -118,3 +118,67 @@ select { font:inherit; padding:.7rem .8rem; border:1px solid var(--line); border
   .cells { grid-template-columns:1fr 1fr } .compare tbody th { width:110px } .card { padding:.9rem }
   .actions .btn { flex:1 1 auto; justify-content:center }
 }
+
+/* Release 2: proposals (s1200 to s1204) */
+textarea { font:inherit; padding:.7rem .8rem; border:1px solid var(--line); border-radius:10px; width:100%; resize:vertical; min-height:44px; color:var(--ink) }
+.seg { display:flex; gap:.5rem; flex-wrap:wrap }
+.spill.dark { color:var(--ink); border-color:var(--line); background:#fff } .spill.dark[aria-pressed='true'] { background:var(--indigo); color:#fff; border-color:var(--indigo) }
+.logo-tile.xs { width:24px; height:24px; font-size:.65rem; border-radius:6px }
+.proposal-card { display:grid; gap:.7rem } .proposal-card-head { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start } .proposal-card h3 a { color:var(--ink); text-decoration:none }
+.course-chips { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:.4rem } .course-chips li { display:inline-flex; align-items:center; gap:.4rem; background:#f7f8fc; border-radius:999px; padding:.2rem .7rem .2rem .3rem; font-size:.85rem }
+.notice.small { padding:.5rem .7rem; margin:0 }
+.editor-head { display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; align-items:flex-start }
+.form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem 1.2rem } .field small { font-size:.8rem }
+.pdf-contents { background:#f7f8fc; border-radius:10px; padding:.8rem 1rem } .plain { list-style:none; margin:.3rem 0; padding:0; display:grid; gap:.25rem }
+.ticks li::before { content:'\2713'; color:var(--teal); font-weight:700; margin-right:.5rem }
+.prop-course { display:grid; gap:.8rem } .prop-course-head { display:flex; gap:.8rem; align-items:flex-start } .prop-course-title { flex:1; min-width:0 } .prop-course-title h3 { overflow-wrap:anywhere }
+.reorder { display:flex; gap:.4rem; flex-wrap:wrap; justify-content:flex-end } .reorder .btn { min-width:44px; justify-content:center }
+.pick-row { display:flex; justify-content:space-between; gap:1rem; align-items:center; border-bottom:1px solid var(--line); padding-bottom:.6rem } .pick-row small { display:block }
+.refresh-found { background:#fff7e0; border:1px solid #f0d890; border-radius:14px; padding:1rem 1.2rem; display:grid; gap:.8rem } .refresh-found h2 { margin:0; color:#8a4a00 }
+.diff { list-style:none; margin:0; padding:0; display:grid; gap:.5rem } .diff li { display:grid; grid-template-columns:150px 1fr auto; gap:.8rem; background:#fff; border-radius:10px; padding:.6rem .8rem; align-items:center }
+.diff-k { font-size:.75rem; letter-spacing:.05em; text-transform:uppercase; color:var(--muted) } .diff-c small { display:block; color:var(--muted) } .diff-v s { color:#9b1c1c } .diff-v strong { color:#0b6b3a }
+.keep-current { display:grid; gap:.6rem }
+.step-row { display:grid; grid-template-columns:auto minmax(0,1fr) 230px; gap:.8rem; align-items:start; border-top:1px solid var(--line); padding-top:.8rem } .step-fields, .step-meta { display:grid; gap:.5rem } .step-meta .btn { justify-self:start }
+.savebar { position:sticky; bottom:0; display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; background:#fff; border:1px solid var(--line); border-radius:14px; padding:.7rem 1rem; box-shadow:0 -4px 14px rgba(27,31,59,.08) }
+@media (max-width:900px) { .form-grid { grid-template-columns:1fr } .step-row { grid-template-columns:auto minmax(0,1fr) } .step-meta { grid-column:2 } .diff li { grid-template-columns:1fr } }
+@media (max-width:640px) { .prop-course-head { flex-wrap:wrap } .reorder { width:100%; justify-content:flex-start } .savebar .actions { width:100%; justify-content:stretch } .savebar .btn { flex:1 1 auto; justify-content:center } .editor-head .actions { width:100% } }
+
+/* Student proposal sheet. On screen it reads as two sheets of paper; printed, only .sheet is drawn. */
+.sheet-wrap { max-width:900px } .sheet-toolbar { display:grid; gap:.6rem }
+.sheet { display:grid; gap:1.4rem } .sheet-page { background:#fff; border:1px solid var(--line); border-radius:14px; padding:2rem; display:grid; gap:1rem; align-content:start; color:#1b1f3b }
+.sheet h1 { font-size:1.7rem; margin:0 } .sheet h2 { font-size:1.05rem; margin:.4rem 0 0 } .sheet h3 { font-size:1rem; margin:0 }
+.sheet-head { display:flex; justify-content:space-between; align-items:baseline; gap:1rem; border-bottom:3px solid var(--indigo); padding-bottom:.6rem } .sheet-brand { font-weight:800; font-size:1.2rem; color:var(--indigo) }
+.sheet-small { font-size:.8rem; color:var(--muted) }
+.sheet-student { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:.6rem; margin:0; background:#f7f8fc; border-radius:10px; padding:.8rem 1rem } .sheet-student div { display:grid; gap:.1rem }
+.sheet dt { font-size:.7rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted) } .sheet dd { margin:0; font-weight:600; overflow-wrap:anywhere } .sheet dd small { display:block; font-weight:400; color:var(--muted) }
+.sheet-message { background:#e6f6f2; border-radius:10px; padding:.8rem 1rem; margin:0; white-space:pre-wrap }
+.sheet-courses { display:grid; grid-template-columns:repeat(var(--n),minmax(0,1fr)); gap:.8rem }
+.sheet-course { border:1px solid var(--line); border-radius:10px; padding:.8rem; display:grid; gap:.6rem; align-content:start } .sheet-course header { display:flex; gap:.5rem; align-items:flex-start; min-height:2.6em }
+.sheet-course dl { margin:0; display:grid; gap:.5rem } .sheet-course dl div { display:grid; gap:.05rem }
+.sheet-num { flex:none; width:26px; height:26px; border-radius:50%; background:var(--indigo); color:#fff; display:grid; place-items:center; font-weight:700; font-size:.85rem }
+.sheet-why { margin:0; font-size:.85rem } .sheet-foot { margin:0; font-size:.8rem; color:var(--muted) }
+.sheet-steps { margin:0; padding-left:1.3rem; display:grid; gap:.7rem } .sheet-steps p { margin:.15rem 0 0; font-size:.9rem; color:var(--muted) }
+.sheet-two { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem } .sheet-two ul { margin:.3rem 0; padding-left:1.1rem; display:grid; gap:.25rem }
+.sheet-counsellor { display:flex; gap:.8rem; align-items:flex-start; border-top:1px solid var(--line); padding-top:.8rem } .sheet-counsellor p { margin:.2rem 0 0 }
+@media (max-width:760px) { .sheet-page { padding:1.1rem } .sheet-courses { grid-template-columns:1fr } .sheet-two { grid-template-columns:1fr } }
+@media print {
+  @page { size:A4; margin:14mm 14mm 16mm; @bottom-right { content:'Page ' counter(page) ' of ' counter(pages); font-size:8pt; color:#5b6078 } }
+  html, body { background:#fff !important }
+  .side, .top, .no-print, .savebar { display:none !important }
+  .shell { display:block !important } .main, .content { max-width:none !important; padding:0 !important; margin:0 !important }
+  .sheet-wrap { max-width:none }
+  .sheet { gap:0 } .sheet-page { border:0; border-radius:0; padding:0; gap:.7rem; font-size:.92rem; break-after:page; page-break-after:always } .sheet-page:last-child { break-after:auto; page-break-after:auto }
+  .sheet-courses { grid-template-columns:repeat(var(--n),minmax(0,1fr)) !important } .sheet-two { grid-template-columns:1fr 1fr !important }
+  .sheet-course, .sheet-steps li, .sheet-counsellor { break-inside:avoid; page-break-inside:avoid }
+  * { -webkit-print-color-adjust:exact; print-color-adjust:exact }
+}
+
+/* Release 2: phone tap targets are at least 44px (Platform Admin phone rule, s121 screens) */
+.backlink { display:inline-flex; align-items:center; min-height:44px }
+@media (max-width:640px) {
+  .btn.small { min-height:44px; padding:.4rem 1rem }
+  .reorder .btn { min-width:44px }
+  .proposal-card h3 a { display:inline-block; padding:.75rem 0 }
+  .proposal-editor .link-inline { min-height:44px }
+  .step-row .check { display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px }
+}

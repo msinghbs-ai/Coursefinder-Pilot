@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useSaved } from '../lib/saved.js'
+import { basket } from '../lib/basket.js'
 import { durationText, durationInYears, money, dateText, initials, stateShort, NOT_RECORDED } from '../lib/format.js'
 import { PageHead, StudyInBar, LoadState, Pill } from '../components/ui.jsx'
 
@@ -24,6 +25,7 @@ export default function Saved() {
   useEffect(() => { setPicked(p => p.filter(id => saved.ids.has(id))) }, [saved.items]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const chosen = saved.items.filter(i => picked.includes(i.course_id))
+  const startProposal = () => { basket.addMany(chosen.length ? chosen : saved.items); location.hash = '#/proposals/new' }
   const flip = id => setPicked(p => p.includes(id) ? p.filter(x => x !== id) : p.length >= max ? p : [...p, id])
   const fees = chosen.map(c => Number(c.fee?.per_year)).filter(n => n > 0)
   const lowest = fees.length > 1 ? Math.min(...fees) : null
@@ -73,6 +75,7 @@ export default function Saved() {
             ))}
           </div>
           {saved.items.length > 1 && <p className="muted small">Tick up to {max} courses to compare them.</p>}
+          {saved.items.length > 0 && <div className="actions"><button type="button" className="btn primary" onClick={startProposal}>{chosen.length ? `Create a proposal from the ${chosen.length} ticked` : 'Create a proposal from my saved courses'}</button></div>}
           {chosen.length > 0 && (
             <>
               <p className="count">Comparing <strong>{chosen.length}</strong> of {max}</p>
