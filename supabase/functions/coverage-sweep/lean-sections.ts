@@ -11,7 +11,7 @@
 import { preflight } from "./lean-input.ts";
 import { AER_V3_INPUT, type AerBlock, type AerBlocks } from "./aer-v2.ts";
 
-export const LEAN_SECTIONS = "lean-sections-v3";  // v3 (14 Nov 2026): entry score lines are signals; v2: wider entry-requirement headings (runs step1c, step1d); v1: runs step1, step1b  // never edited in place once released: a different selection is a new version
+export const LEAN_SECTIONS = "lean-sections-v4";  // v4 (25 Nov 2026, s1130): entry condition sentences are signals; v3 (14 Nov 2026): entry score lines are signals; v2: wider entry-requirement headings (runs step1c, step1d); v1: runs step1, step1b  // never edited in place once released: a different selection is a new version
 export const BLOCK_INPUT = AER_V3_INPUT;           // the one [B#] contract (aer-v2.ts); not redefined here
 
 // headings that name the part of a course page a field lives in (wider than the words a value uses)
@@ -34,9 +34,15 @@ const LABEL_MAX_CHARS = 40;  // fixed: the shape of a label, not an operational 
 // v3 (run phase1b-step1d-curtin-swinburne-2026-11-14: 54 of Swinburne's 62 selector misses): a line that gives an entry score with its number
 // ("70.0 Guaranteed Entry ATAR or more entry options", "Lowest selection rank 65.05") is an entry requirement wherever it stands on the page
 const ENTRY_SCORE = /\b(atar|selection rank|guaranteed entry|lowest (rank|atar|score)|minimum (atar|entry score|selection rank)|entry score|ib (score|diploma))\b/i;
+// v4 (25 Nov 2026, CF-247 s1130, P0 AER preprocessing regression, Admin #1063): a sentence that states a condition of entry without the words
+// "entry" or "requirement" (run s1125-entry-cohort-2026-11-25: 9 of 80 earlier answer rows and 2 Layer 4 accepted rows were outside the v3 selection:
+// "Applicants will be required to hold a valid Working with Children Check", "designed exclusively for professionals with 2+ years of work
+// experience", "Graduate with an AUSTRALIAN DEGREE (AQF Level 9)") is an entry requirement signal wherever it stands on the page
+const ENTRY_CONDITION = /\b(applicants? (must|should|will|are|need)|(are|is|be) required to (hold|have|complete|provide|submit|demonstrate|undertake|obtain|pass)|must (hold|have|complete|provide|submit|demonstrate|be (aged|at least|a graduate))|\d\+? (years?|months?) of (relevant |professional |industry |full[- ]time |cumulative |paid |managerial )*(work|professional|industry|managerial|employment|practice)|(relevant |professional |industry |paid )?work(ing)? experience|police (check|clearance)|criminal (record|history) check|working with children|wwcc|ndis (worker )?(screening|check)|auditions?|open to (individuals|applicants|students|people|those) who|designed (exclusively |specifically )?for (professionals|graduates|people|applicants|students)|aqf level \d+|high-level music making)\b/i;
 export function fieldHit(field: string, text: string): "likely" | "unknown" | "no_signal" {
   if (field === "fees") return FEE_TEXT.test(text) ? "likely" : "no_signal";
   if (field === "entry_requirements" && ENTRY_SCORE.test(text) && /\d/.test(text)) return "likely";
+  if (field === "entry_requirements" && ENTRY_CONDITION.test(text)) return "likely";  // v4
   const p = preflight(field, text);
   return p === "not_measured" ? "no_signal" : p;
 }
@@ -81,7 +87,9 @@ export function selectSections(ab: AerBlocks, field: string, opt: SectionOptions
   return { selector: LEAN_SECTIONS, input: ab.input, field, block_ids: idx.map((k) => `B${B[k].n}`), blocks: idx.length, chars: text.length, text,
     plain: plainOf(idx.map((k) => B[k])), no_selection: pageBlocks.length === 0,
     // v0.92.0: the high-recall preflight on the selection's words, recorded beside the read (shadow); it decides nothing
-    signal: preflight(field, plainOf(idx.map((k) => B[k]))) };
+    // v4 (s1130): for entry requirements a selected block that is an entry score line or an entry condition sentence also makes the selection likely
+    // (course-entry.ts courseEntryInput sends the selection only when it is likely)
+    signal: field === "entry_requirements" && idx.some((k) => B[k].kind !== "data" && fieldHit(field, B[k].text) === "likely") ? "likely" : preflight(field, plainOf(idx.map((k) => B[k]))) };
 }
 
 // v1.0.6 (Platform Admin 16 Nov 2026 16:52, AER long pages): a page longer than the read's limit is never cut. When the long-page switch is on, the
