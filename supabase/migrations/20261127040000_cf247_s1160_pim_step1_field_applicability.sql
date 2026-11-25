@@ -80,13 +80,13 @@ revoke all on function security.field_applicable_v1(text, uuid) from public, ano
 grant execute on function security.field_applicable_v1(text, uuid) to service_role;
 
 do $c$
-declare v jsonb := security.consumer_api_check_v1(); a int; b int; n int;
+declare v jsonb := security.consumer_api_check_v1(); a int; b int; v_cnt int;
 begin
   if jsonb_array_length(coalesce(v->'drift', '[]'::jsonb)) <> 0 or (v->>'functions')::int <> 75 or (v->>'relations')::int <> 48 then raise exception 'guard: the consumer API moved: %', v; end if;
   if (select count(*) from pipeline.manual_locks) <> (select n from s1160_locks) then raise exception 'guard: manual locks changed'; end if;
   if (select count(*) from cron.job where active) <> (select n from s1160_cron) then raise exception 'guard: active cron jobs changed'; end if;
-  select count(*) into n from pipeline.field_register where entity_grain is null or absence_field is null;
-  if n <> 0 then raise exception 'guard: % register rows without grain or absence field', n; end if;
+  select count(*) into v_cnt from pipeline.field_register where entity_grain is null or absence_field is null;
+  if v_cnt <> 0 then raise exception 'guard: % register rows without grain or absence field', v_cnt; end if;
   -- the rule: an Australian course applies, a New Zealand course does not
   select count(*) filter (where (security.field_applicable_v1('registered_tuition', c.id)->>'applicable')::boolean),
          count(*) filter (where not (security.field_applicable_v1('registered_tuition', c.id)->>'applicable')::boolean)
@@ -94,8 +94,8 @@ begin
     from (select c2.id from catalogue.courses c2 join catalogue.providers p on p.id = c2.provider_id join ref.countries k on k.id = p.country_id
            where c2.lifecycle_status = 'active' and k.iso_alpha2 = 'AU' limit 50) c;  -- fixed: a sample for the rehearsal
   if a <> 50 or b <> 0 then raise exception 'guard: AU sample applicable %, not applicable %', a, b; end if;
-  select count(*) into n from (select c2.id from catalogue.courses c2 join catalogue.providers p on p.id = c2.provider_id join ref.countries k on k.id = p.country_id
+  select count(*) into v_cnt from (select c2.id from catalogue.courses c2 join catalogue.providers p on p.id = c2.provider_id join ref.countries k on k.id = p.country_id
            where c2.lifecycle_status = 'active' and k.iso_alpha2 = 'NZ' limit 50) c  -- fixed: a sample for the rehearsal
    where (security.field_applicable_v1('registered_tuition', c.id)->>'applicable')::boolean;
-  if n <> 0 then raise exception 'guard: % NZ courses wrongly applicable', n; end if;
+  if v_cnt <> 0 then raise exception 'guard: % NZ courses wrongly applicable', v_cnt; end if;
 end $c$;
