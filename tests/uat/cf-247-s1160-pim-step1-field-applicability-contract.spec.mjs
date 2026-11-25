@@ -16,7 +16,7 @@ test('s1160: the register gains grain, rule, rule data and the absence field nam
 test('s1160: only registered_tuition carries a rule, and its countries are data', () => {
   expect(code).toContain("where field = 'registered_tuition' and applicability_rule = 'always'")
   expect(code).toContain("jsonb_build_array('AU')")
-  expect((code.match(/applicability_rule = 'countries'/g) || []).length).toBe(1)
+  expect((code.match(/set applicability_rule = 'countries'/g) || []).length).toBe(1)
 })
 
 test('s1160: the function checks registration, then a recorded not-applicable absence, then the rule; service role only', () => {
