@@ -16,7 +16,8 @@
 --   4. Provider scholarships measured: verified when the provider has an active scholarship; the scholarship lane's disposition is the source finding.
 --   Regular monitoring of read pages stays with the existing re-read schedule (median 90 days after a read); course entry Window 2 and its leases are not touched.
 -- G1: no job (the planner's existing jobs). G2: settings. G3: no consumer API object touched (checked). No lock removed; cron ceiling checked.
--- New table: pipeline.coverage_page_revisits (history beside the reader's table). Replaces: security.enrich_plan_v1, security.enrich_plan_start_step_v1, security.enrich_plan_tick_v1, security.field_state_entity_v1 (each md5 guarded, anchored edits). Retires: none.
+-- New table: pipeline.coverage_page_revisits (history beside the reader's table).
+-- Replaces: security.enrich_plan_v1, security.enrich_plan_start_step_v1, security.enrich_plan_tick_v1, security.field_state_entity_v1 (each md5 guarded, anchored edits). Retires: none.
 set local lock_timeout = '5s';  -- fixed: lock wait for the column add and function replaces
 set local statement_timeout = '120s';  -- fixed: the guard reads
 
