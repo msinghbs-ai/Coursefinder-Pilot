@@ -19,6 +19,8 @@
 -- Level 2; ALREADY CANONICAL ACTIVE. Used only as duplicate-protection fixture.
 -- Unchanged source/quote/edition/L4/locks and consumer API gates decide.
 --
+-- Rebased on live proposer MD5 from s119x; unchanged existing admission and
+-- v1.24 preprocessing code is preserved by the exact-body guard.
 -- Shared recorder and proposer accept both v1.4 global and v1.5 scoped stored
 -- readings. New reading keys are accepted by recorder ONLY when the extractor
 -- is v1.5. Only v1.5 is eligible from the bounded manual workflow; sweeping
@@ -45,7 +47,7 @@ begin
     raise exception 'S3 AER shared default sweep changed; coordinate with S1-Build';
   end if;
   v_f := pg_get_functiondef('security.aer_det_propose_v1()'::regprocedure);
-  if md5(v_f) <> '1eec1fef14b7a3eeef28dc33d5f02ef2' then
+  if md5(v_f) <> '330e281bf013eb6094b6e8932ef73af9' then
     raise exception 'S3 AER proposer body changed; coordinate shared integrator rebase';
   end if;
 
@@ -76,7 +78,7 @@ begin
   -- Reset the edit buffer to the EXISTING proposer definition: the preceding
   -- change was for the recorder, which must never be edited as a proposer.
   v_f := pg_get_functiondef('security.aer_det_propose_v1()'::regprocedure);
-  if md5(v_f) <> '1eec1fef14b7a3eeef28dc33d5f02ef2' then
+  if md5(v_f) <> '330e281bf013eb6094b6e8932ef73af9' then
     raise exception 'S3 AER proposer changed before release; request S1-Build rebase';
   end if;
 
