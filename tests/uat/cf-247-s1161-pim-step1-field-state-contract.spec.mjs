@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261127130000_cf247_s1161_pim_step1_field_state.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261127140000_cf247_s1161_pim_step1_field_state.sql', 'utf8')
 const code = MIG.replace(/--.*$/gm, '')
 
 test('s1161: the five facts are separate keys, and the job fact is not part of completeness', () => {
