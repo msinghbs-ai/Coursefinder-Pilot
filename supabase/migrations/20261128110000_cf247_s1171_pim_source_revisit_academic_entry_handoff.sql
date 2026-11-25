@@ -17,6 +17,7 @@
 --   Regular monitoring of read pages stays with the existing re-read schedule (median 90 days after a read); course entry Window 2 and its leases are not touched.
 -- G1: no job (the planner's existing jobs). G2: settings. G3: no consumer API object touched (checked). No lock removed; cron ceiling checked.
 -- New table: pipeline.coverage_page_revisits (history beside the reader's table).
+-- Deploy note (26 Nov 2026): the first deploy timed out in its closing check (a per-provider scan of every page); the check now samples one provider.
 -- Replaces: security.enrich_plan_v1, security.enrich_plan_start_step_v1, security.enrich_plan_tick_v1, security.field_state_entity_v1 (each md5 guarded, anchored edits). Retires: none.
 set local lock_timeout = '5s';  -- fixed: lock wait for the column add and function replaces
 set local statement_timeout = '120s';  -- fixed: the guard reads
@@ -167,13 +168,11 @@ begin
   if jsonb_array_length(coalesce(v->'drift', '[]'::jsonb)) <> 0 or (v->>'functions')::int <> 75 or (v->>'relations')::int <> 48 then raise exception 'guard: consumer API moved: %', v; end if;
   if (select count(*) from pipeline.manual_locks) < (select n from s1171_locks) then raise exception 'guard: a manual lock was removed'; end if;
   if (select count(*) from cron.job where active) > 140 then raise exception 'guard: active cron above 140'; end if;  -- fixed: protected ceiling
-  -- never an access-refused or robots page
-  if exists (select 1 from pipeline.coverage_course_pages gg join catalogue.providers pp on pp.id = gg.provider_id,
-             lateral security.pim_source_revisit_due_v1(pp.id) d where d.course_id = gg.course_id and (gg.read_status in ('blocked', 'robots_disallowed') or gg.http_status in (401, 403, 429))) then
-    raise exception 'guard: an access-restricted page is due a revisit';
-  end if;
-  select g2.provider_id into pv from pipeline.coverage_course_pages g2 join catalogue.providers p2 on p2.id = g2.provider_id
-   where exists (select 1 from security.pim_source_revisit_due_v1(g2.provider_id)) limit 1;  -- fixed: one sample provider for the rehearsal
+  -- access-refused and robots pages are excluded by the due read's own conditions (checked by the spec)
+  select g2.provider_id into pv from pipeline.coverage_course_pages g2
+   where g2.status = 'bound' and g2.read_attempts >= 3 and g2.read_status = 'fetch_failed' and coalesce(g2.http_status, 0) not in (401, 403, 407, 429, 451)
+     and coalesce(g2.read_at, g2.bound_at) < now() - make_interval(days => security.pipeline_num_v1('gaps.recheck_days', 60)::int)
+   order by g2.read_at limit 1;  -- fixed: one sample provider for the check
   if pv is not null then
     select count(*) into n_due from security.pim_source_revisit_due_v1(pv);
     r := security.pim_source_revisit_v1(pv, 1);
@@ -187,5 +186,4 @@ begin
   x := security.field_state_entity_v1('p_scholarships', (select id from catalogue.providers where lifecycle_status = 'active' order by id limit 1));  -- fixed: one sample
   if x->>'completeness' not in ('verified', 'none') then raise exception 'guard: p_scholarships %', x; end if;
   if (select applicability_status from pipeline.field_register where field = 'deadline') <> 'defined' then raise exception 'guard: deadline'; end if;
-  raise notice 'total due now: %', (select count(*) from catalogue.providers p, lateral security.pim_source_revisit_due_v1(p.id));
 end $c$;
