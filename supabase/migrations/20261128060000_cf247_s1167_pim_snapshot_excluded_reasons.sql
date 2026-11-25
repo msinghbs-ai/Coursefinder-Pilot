@@ -11,6 +11,7 @@
 --      because a null rule made the eligibility test null. The tests are now null-safe: an unknown country is not covered (as in security.field_applicable_v1), a field with no
 --      international rule is not excluded by it.
 -- G1: no new job (the existing data-delivery job). G2: the count-again time is the existing setting. G3: no consumer API object touched (checked before and after). Locks and cron unchanged.
+-- Deploy note (26 Nov 2026): the first deploy stopped at its own guard because another lane switched a cron job during the 40 s count; the guard now checks the ceiling and that no lock was removed.
 -- Replaces: the s1166 security.enrich_plan_priority_v1 (null-safe tests); the s1162 live call of security.pim_progress_v1 inside security.data_delivery_v1. Retires: none.
 set local lock_timeout = '5s';  -- fixed: lock wait for the column add and function replaces
 set local statement_timeout = '120s';  -- fixed: the first snapshot count (about 10 to 40 s) and the guard reads
@@ -152,8 +153,8 @@ do $c$
 declare v jsonb := security.consumer_api_check_v1(); x jsonb; v_plan bigint; v_elig bigint; t0 timestamptz; v_ms int;
 begin
   if jsonb_array_length(coalesce(v->'drift', '[]'::jsonb)) <> 0 or (v->>'functions')::int <> 75 or (v->>'relations')::int <> 48 then raise exception 'guard: the consumer API moved: %', v; end if;
-  if (select count(*) from pipeline.manual_locks) <> (select n from s1167_locks) then raise exception 'guard: manual locks changed'; end if;
-  if (select count(*) from cron.job where active) <> (select n from s1167_cron) then raise exception 'guard: active cron jobs changed'; end if;
+  if (select count(*) from pipeline.manual_locks) < (select n from s1167_locks) then raise exception 'guard: a manual lock was removed'; end if;  -- people may add locks while this runs; none is ever removed
+  if (select count(*) from cron.job where active) > 140 then raise exception 'guard: active cron jobs above the ceiling of 140'; end if;  -- fixed: the protected ceiling; this change schedules nothing, and other lanes may switch jobs while it runs
   if position('security.pim_progress_v1()' in pg_get_functiondef('security.data_delivery_v1()'::regprocedure)) > 0 then raise exception 'guard: the screen read still runs the count'; end if;
   if position('security.pim_progress_v1()' in pg_get_functiondef('security.data_delivery_refresh_v1(boolean)'::regprocedure)) = 0 then raise exception 'guard: the background count does not run the PIM count'; end if;
   x := (select j.pim from pipeline.data_delivery_job_runs j where j.singleton);
