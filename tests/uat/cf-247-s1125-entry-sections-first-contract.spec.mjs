@@ -36,7 +36,7 @@ test('s1125: the selector picks the entry section, its table and footnote, and t
   const sel = { selector: s.selector, blocks: s.blocks, chars: s.chars, plain: s.plain, no_selection: s.no_selection, signal: String(s.signal) }
   const whole = PAGE.replace(/<[^>]+>/g, ' ')
   const r = ce.courseEntryInput(whole, sel, { on: true, ofBlocks: ab.blocks.length })
-  expect(r.input).toMatchObject({ basis: 'course-entry-sections-v1', sent: 'sections', why: null, selector: 'lean-sections-v4' })  // s1130: the selector's current version
+  expect(r.input).toMatchObject({ basis: 'course-entry-sections-v1', sent: 'sections', why: null, selector: 'lean-sections-v5' })  // s1135: the selector's current version
   for (const q of ['Australian Year 12 qualification or equivalent', 'ATAR 70.00', 'Diploma of Nursing (HLT54121)', 'International applicants must also complete an interview']) expect(r.text, q).toContain(q)
   expect(r.text).not.toContain('simulation labs')  // the overview is not sent
   expect(r.input.sent_chars).toBeLessThan(r.input.page_chars / 4)
