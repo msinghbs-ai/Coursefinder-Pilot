@@ -58,6 +58,7 @@ values
  ('portal_search', 'relax_budget_headroom_pct', 'Suggested budget: headroom', 'Percentage added to the third-cheapest otherwise matching fee before rounding.', 'number', '5'::jsonb, 0, 25, '%', 6130, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
  ('portal_search', 'relax_budget_round_to', 'Suggested budget: rounded up to', 'The suggested budget is rounded up to a multiple of this amount.', 'number', '1000'::jsonb, 100, 10000, 'dollars', 6140, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
  ('portal_search', 'relax_budget_max_raise_pct', 'Suggested budget: largest raise', 'The largest budget raise offered; beyond it only "Remove the budget" is offered.', 'number', '30'::jsonb, 5, 100, '%', 6150, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
+ ('portal_search', 'city_radius_km', 'City: campuses within', 'A city in the words matches campuses within this distance of the city''s centre (worked out from the campuses that carry its name), so suburbs count.', 'number', '40'::jsonb, 5, 150, 'km', 6155, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
  ('portal_search', 'topic_min_similarity', 'Topic match: least meaning similarity', 'A course counts as a topic match when its meaning similarity to the typed topic is at least this (or its words match).', 'number', '0.35'::jsonb, 0.1, 0.9, 'similarity', 6160, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
  ('portal_search', 'query_cache_hours', 'Typed query meaning: reused for', 'How long a typed query''s meaning vector is reused before it is worked out again.', 'number', '24'::jsonb, 1, 720, 'hours', 6170, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
  ('portal_search', 'query_embed_daily_max', 'Typed queries embedded a day', 'The most new typed queries given a meaning vector in one Melbourne day; beyond it searches rank by words only.', 'number', '5000'::jsonb, 100, 50000, 'queries', 6180, 'Portal search', 'catalogue.portal_course_search_v1', 'CF-247 s1153'),
@@ -76,6 +77,13 @@ $function$;
 create or replace function security.portal_search_text_v1(p_key text, p_default text)
 returns text language sql stable security definer set search_path = '' as $function$
   select coalesce((select s.value #>> '{}' from pipeline.platform_toolset_settings s where s.toolset_key = 'portal_search' and s.key = p_key), p_default)
+$function$;
+
+create or replace function security.portal_search_near_v1(p_lat numeric, p_lng numeric, p_lats numeric[], p_lngs numeric[], p_km numeric)
+returns boolean language sql immutable set search_path = '' as $function$
+  select p_lat is not null and p_lng is not null and exists (
+    select 1 from generate_subscripts(p_lats, 1) i
+     where 111.32 * sqrt(power(p_lat - p_lats[i], 2) + power((p_lng - p_lngs[i]) * cos(radians(p_lats[i])), 2)) <= p_km)  -- fixed: km per degree
 $function$;
 
 -- 2. The portal's own search profile, so the website and Zoho profiles get no vectors.
@@ -228,7 +236,8 @@ declare
   v_model text := security.portal_search_text_v1('embedding_model', 'openai/text-embedding-3-small');
   v_scope text := security.portal_search_text_v1('visibility_scope', 'active');
   v_today date := (now() at time zone 'Australia/Melbourne')::date;  -- fixed: Melbourne calendar day
-  v_qcountries text[] := '{}'; v_states text[] := '{}'; v_cities text[] := '{}'; v_city_states text[] := '{}'; v_levels text[] := '{}';
+  v_qcountries text[] := '{}'; v_states text[] := '{}'; v_cities text[] := '{}'; v_city_states text[] := '{}'; v_levels text[] := '{}'; v_clat numeric[] := '{}'; v_clng numeric[] := '{}';
+  v_km numeric := security.portal_search_num_v1('city_radius_km', 40);
   v_level_label text; v_loc_label text; v_budget numeric; v_budget_cur text; v_budget_raw text; m text[]; r record;
   v_topic text; v_tsq text; v_vec extensions.vector; v_key text; v_hybrid boolean := false;
   v_chips jsonb := '[]'::jsonb; v_exact jsonb; v_near jsonb := '[]'::jsonb; v_relax jsonb := '[]'::jsonb; v_total integer; v_ids uuid[];
@@ -263,12 +272,13 @@ begin
   end loop;
 
   -- campus cities (live campus table), longest names first
-  for r in select lower(trim(ca.city)) nm, array_agg(distinct s.code) filter (where s.code is not null) sc
+  for r in select lower(trim(ca.city)) nm, array_agg(distinct s.code) filter (where s.code is not null) sc, avg(ca.latitude) lat, avg(ca.longitude) lng
              from catalogue.campuses ca left join ref.subdivisions s on s.id = ca.subdivision_id
             where ca.city is not null and length(trim(ca.city)) >= 3 and coalesce(ca.status, 'active') = 'active'
             group by 1 order by length(lower(trim(ca.city))) desc loop
     if position(' ' || r.nm || ' ' in v_t) > 0 then
       v_cities := v_cities || r.nm; v_city_states := v_city_states || coalesce(r.sc, '{}'); v_t := replace(v_t, ' ' || r.nm || ' ', ' ');
+      if r.lat is not null and r.lng is not null then v_clat := v_clat || r.lat; v_clng := v_clng || r.lng; end if;
     end if;
   end loop;
 
@@ -297,8 +307,8 @@ begin
 
   for r in select x->>'key' k, x->'to' t from jsonb_array_elements(coalesce(p_args->'relax', '[]'::jsonb)) x loop
     if r.k = 'budget' then v_relax_budget_set := true; v_relax_budget := case when jsonb_typeof(r.t) = 'number' then (r.t #>> '{}')::numeric end; end if;
-    if r.k = 'location' and jsonb_typeof(r.t) = 'string' then v_cities := '{}'; v_states := array[r.t #>> '{}']; v_city_states := '{}'; end if;
-    if r.k = 'location' and jsonb_typeof(r.t) = 'null' then v_cities := '{}'; v_states := '{}'; v_city_states := '{}'; end if;
+    if r.k = 'location' and jsonb_typeof(r.t) = 'string' then v_cities := '{}'; v_states := array[r.t #>> '{}']; v_city_states := '{}'; v_clat := '{}'; v_clng := '{}'; end if;
+    if r.k = 'location' and jsonb_typeof(r.t) = 'null' then v_cities := '{}'; v_states := '{}'; v_city_states := '{}'; v_clat := '{}'; v_clng := '{}'; end if;
   end loop;
   if v_relax_budget_set then v_budget := v_relax_budget; end if;
   -- the person's chosen relaxations first, then the chips for what is still applied (a removed chip is not returned), then the removals
@@ -319,7 +329,7 @@ begin
   if v_topic is not null and not 'topic' = any(v_removed) then v_chips := v_chips || jsonb_build_object('key', 'topic', 'label', initcap(v_topic), 'removable', true, 'kind', 'topic'); end if;
 
   if 'country' = any(v_removed) then v_qcountries := '{}'; end if;
-  if 'location' = any(v_removed) then v_cities := '{}'; v_states := '{}'; v_city_states := '{}'; end if;
+  if 'location' = any(v_removed) then v_cities := '{}'; v_states := '{}'; v_city_states := '{}'; v_clat := '{}'; v_clng := '{}'; end if;
   if 'level' = any(v_removed) then v_levels := '{}'; end if;
   if 'budget' = any(v_removed) then v_budget := null; end if;
   if 'topic' = any(v_removed) then v_topic := null; end if;
@@ -345,7 +355,7 @@ begin
   insert into pg_temp.portal_search_pass
   select d.course_id, d.provider_annual_tuition_amount, d.provider_annual_tuition_currency,
          cardinality(v_cities) = 0 or exists (select 1 from catalogue.course_campuses cc join catalogue.campuses ca on ca.id = cc.campus_id
-                                               where cc.course_id = d.course_id and lower(trim(ca.city)) = any(v_cities))
+                                               where cc.course_id = d.course_id and (lower(trim(ca.city)) = any(v_cities) or security.portal_search_near_v1(ca.latitude, ca.longitude, v_clat, v_clng, v_km)))
                                     or (not exists (select 1 from catalogue.course_campuses cc where cc.course_id = d.course_id) and lower(trim(p.primary_city)) = any(v_cities)),
          cardinality(v_states) = 0 or d.subdivision_codes && v_states,
          v_budget is null or (d.provider_annual_tuition_amount is not null and d.provider_annual_tuition_currency = v_budget_cur and d.provider_annual_tuition_amount <= v_budget)
@@ -374,7 +384,7 @@ begin
       from pg_temp.portal_search_pass s join catalogue.courses c on c.id = s.course_id left join pg_temp.portal_search_rank rk on rk.course_id = s.course_id
      where s.city_ok and s.state_ok and s.budget_ok
      order by 2, 3 limit v_page) x;
-  v_exact := catalogue.portal_course_cards_v1(coalesce(v_ids, '{}'), v_cities, v_simmin, null);
+  v_exact := catalogue.portal_course_cards_v1(coalesce(v_ids, '{}'), v_cities, v_simmin, jsonb_build_object('lat', to_jsonb(v_clat), 'lng', to_jsonb(v_clng), 'km', v_km));
 
   -- fewer than the minimum: near misses and relaxations (never applied here)
   if v_total < v_min then
@@ -396,7 +406,7 @@ begin
         v_relax := v_relax || jsonb_build_object('key', 'budget', 'to', null, 'label', 'Remove the budget', 'would_return', v_n, 'note', null);
         select coalesce(jsonb_agg(jsonb_build_object('misses', 'budget', 'miss_text', v_cur_sym || to_char(x.fee - v_budget, 'FM999,999,999') || ' over budget', 'course', x.card) order by x.fee), '[]'::jsonb)
           into v_near
-          from (select s.fee, (catalogue.portal_course_cards_v1(array[s.course_id], v_cities, v_simmin, null))->0 card
+          from (select s.fee, (catalogue.portal_course_cards_v1(array[s.course_id], v_cities, v_simmin, jsonb_build_object('lat', to_jsonb(v_clat), 'lng', to_jsonb(v_clng), 'km', v_km)))->0 card
                   from pg_temp.portal_search_pass s where s.city_ok and s.state_ok and s.fee_cur = v_budget_cur and s.fee > v_budget
                  order by s.fee limit v_page) x;
       end;
@@ -421,7 +431,7 @@ begin
 end $function$;
 
 -- Course cards in the contract's shape. A value not held is null, never a guess.
-create or replace function catalogue.portal_course_cards_v1(p_ids uuid[], p_cities text[], p_simmin numeric, p_unused jsonb)
+create or replace function catalogue.portal_course_cards_v1(p_ids uuid[], p_cities text[], p_simmin numeric, p_near jsonb)
 returns jsonb language plpgsql stable security definer set search_path = '' as $function$
 begin
   return (select coalesce(jsonb_agg(jsonb_build_object(
@@ -440,7 +450,7 @@ begin
       'why', to_jsonb(array_remove(array[
                case when rk.sim >= p_simmin then 'Topic match by meaning' end,
                case when rk.fts > 0 then 'Topic words in the course text' end,
-               case when cam.city is not null and lower(cam.city) = any(p_cities) then 'Campus in ' || cam.city end], null)),
+               case when cam.city is not null and cardinality(p_cities) > 0 then 'Campus in ' || cam.city end], null)),
       'course_url', coalesce(d.official_course_url, c.course_url),
       'saved', exists (select 1 from portal.saved_courses sc where sc.course_id = c.id and sc.user_id = auth.uid()))
     order by x.ord), '[]'::jsonb)
@@ -451,7 +461,10 @@ begin
   left join ref.study_levels sl on sl.id = c.study_level_id
   left join ref.subdivisions ps on ps.id = p.subdivision_id
   left join lateral (select ca.city, s.code state_code from catalogue.course_campuses cc join catalogue.campuses ca on ca.id = cc.campus_id left join ref.subdivisions s on s.id = ca.subdivision_id
-                      where cc.course_id = c.id order by (lower(trim(ca.city)) = any(p_cities)) desc, cc.is_primary desc nulls last, ca.city limit 1) cam on true
+                      where cc.course_id = c.id
+                      order by (lower(trim(ca.city)) = any(p_cities) or security.portal_search_near_v1(ca.latitude, ca.longitude,
+                                  array(select jsonb_array_elements_text(coalesce(p_near->'lat', '[]'::jsonb))::numeric), array(select jsonb_array_elements_text(coalesce(p_near->'lng', '[]'::jsonb))::numeric),
+                                  coalesce((p_near->>'km')::numeric, 0))) desc, cc.is_primary desc nulls last, ca.city limit 1) cam on true
   left join pg_temp.portal_search_rank rk on rk.course_id = c.id);
 end $function$;
 
@@ -466,7 +479,7 @@ end $function$;
 revoke all on function public.portal_course_search_v1(jsonb) from public, anon;
 grant execute on function public.portal_course_search_v1(jsonb) to authenticated;
 revoke all on function catalogue.portal_course_search_v1(jsonb), catalogue.portal_course_cards_v1(uuid[], text[], numeric, jsonb),
-                       security.portal_search_num_v1(text, numeric), security.portal_search_text_v1(text, text), security.portal_search_enqueue_v1(uuid[], integer),
+                       security.portal_search_num_v1(text, numeric), security.portal_search_text_v1(text, text), security.portal_search_near_v1(numeric, numeric, numeric[], numeric[], numeric), security.portal_search_enqueue_v1(uuid[], integer),
                        security.portal_search_embed_fire_v1(), public.svc_portal_search_embed_next(integer), public.svc_portal_search_embed_record(jsonb)
   from public, anon, authenticated;
 grant execute on function public.svc_portal_search_embed_next(integer), public.svc_portal_search_embed_record(jsonb) to service_role;
@@ -484,7 +497,7 @@ begin
   end if;
   if (select count(*) from pipeline.manual_locks) <> (select n from s1153_locks) then raise exception 'post-check: manual locks changed'; end if;
   if (select count(*) from cron.job where active) <> (select n from s1153_cron) then raise exception 'post-check: the number of active cron jobs changed'; end if;
-  if (select count(*) from pipeline.platform_toolset_settings where toolset_key = 'portal_search') <> 14 then raise exception 'post-check: the portal_search settings are not all present'; end if;
+  if (select count(*) from pipeline.platform_toolset_settings where toolset_key = 'portal_search') <> 15 then raise exception 'post-check: the portal_search settings are not all present'; end if;
   if not exists (select 1 from search.profiles where code = 'portal-default' and status = 'active') then raise exception 'post-check: profile portal-default missing'; end if;
   if exists (select 1 from search.course_embeddings e join search.profiles p on p.id = e.profile_id where p.code in ('website-default', 'zoho-default')) then
     raise exception 'post-check: a website or Zoho profile holds vectors';
