@@ -22,6 +22,12 @@ test('s1167: every non-admitted gap has a reason; only eligible ones are planned
   expect(code).toContain("guard: planner % and eligible reasons % disagree")
 })
 
+test('s1167: the planner tests are null-safe (an unknown rule or country never silently drops or adds a gap)', () => {
+  expect(code).toContain("coalesce(r.applicability_requires = 'international_open', false)")
+  expect(code).toContain("not coalesce((r.applicability_param->'countries') ? a.country_code, false)")
+  expect(code).toContain("'7315bd917461d96caf0c9960756d35be'")
+})
+
 test('s1167: the count-again time is the existing setting (G2)', () => {
   expect(code).toContain('make_interval(mins => v_every)')
 })

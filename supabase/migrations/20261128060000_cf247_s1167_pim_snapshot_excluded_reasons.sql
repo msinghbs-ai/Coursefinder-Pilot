@@ -7,8 +7,11 @@
 --   2. security.pim_excluded_gaps_v1(): every non-admitted course field gap by field and the reason it is or is not worked now: no_reader, country_not_covered, closed_to_international,
 --      recorded_not_applicable, no_source_revisit_pending (with the earliest revisit), eligible_unconfirmed, eligible. Nothing is removed from coverage: a gap leaves the planner only
 --      while its reason holds, and comes back by itself when it stops holding (the planner tests the clock and the current flags on every read). Snapshot key pim.excluded.
+--   3. Fix to s1166 (found by this change's agreement check): the planner dropped 337 eligible gaps of courses closed to international students on fields with no international rule,
+--      because a null rule made the eligibility test null. The tests are now null-safe: an unknown country is not covered (as in security.field_applicable_v1), a field with no
+--      international rule is not excluded by it.
 -- G1: no new job (the existing data-delivery job). G2: the count-again time is the existing setting. G3: no consumer API object touched (checked before and after). Locks and cron unchanged.
--- Replaces: the s1162 live call of security.pim_progress_v1 inside security.data_delivery_v1. Retires: none.
+-- Replaces: the s1166 security.enrich_plan_priority_v1 (null-safe tests); the s1162 live call of security.pim_progress_v1 inside security.data_delivery_v1. Retires: none.
 set local lock_timeout = '5s';  -- fixed: lock wait for the column add and function replaces
 set local statement_timeout = '120s';  -- fixed: the first snapshot count (about 10 to 40 s) and the guard reads
 
@@ -20,6 +23,9 @@ begin
   end if;
   if md5(pg_get_functiondef('security.data_delivery_refresh_v1(boolean)'::regprocedure)) <> '5f5f1bd84808ce59d587f7d1a419697d' then
     raise exception 'guard: security.data_delivery_refresh_v1 is not the definition this change was written against';
+  end if;
+  if md5(pg_get_functiondef('security.enrich_plan_priority_v1()'::regprocedure)) <> '7315bd917461d96caf0c9960756d35be' then
+    raise exception 'guard: security.enrich_plan_priority_v1 is not the s1166 definition';
   end if;
   if md5(pg_get_functiondef('security.data_delivery_v1()'::regprocedure)) <> 'd84480a5d78ee11e204b305fdb2d9787' then
     raise exception 'guard: security.data_delivery_v1 is not the definition this change was written against';
@@ -40,6 +46,31 @@ comment on column pipeline.data_delivery_job_runs.pim_took_ms is 'How long the l
 comment on column pipeline.data_delivery_job_runs.pim_error is 'The error of the last failed PIM count (the last good snapshot stays).';
 comment on column pipeline.data_delivery_job_runs.pim_failed_at is 'When the last PIM count failed.';
 
+create or replace function security.enrich_plan_priority_v1()
+returns table(provider_id uuid, name text, country text, courses bigint, missing bigint, best_rank integer)
+language sql
+stable
+security definer
+set search_path = ''
+as $p$
+  select a.provider_id, max(coalesce(p.display_name, p.canonical_name)), max(a.country_code), count(distinct a.course_id),
+         count(*) filter (where e.eligible),
+         (select min(coalesce(o.rank_low, o.rank_exact)) from ranking.observation_provider_links l join ranking.observations o on o.id = l.observation_id where l.provider_id = a.provider_id)
+    from pipeline.course_attribute_coverage a join pipeline.field_register r on r.field = a.attribute and r.reader in ('coverage', 'enrich')
+    join catalogue.providers p on p.id = a.provider_id
+    join catalogue.courses c on c.id = a.course_id
+    cross join lateral (
+      select coalesce(a.state not in ('admitted', 'no_reader'), false)
+         and not (r.applicability_rule = 'countries' and not coalesce((r.applicability_param->'countries') ? a.country_code, false))
+         and not (coalesce(r.applicability_requires = 'international_open', false) and c.open_to_international is false)
+         and not exists (select 1 from pipeline.course_field_absence ab
+                          where ab.course_id = a.course_id and ab.field = r.absence_field and ab.resolved_at is null
+                            and (ab.absence_class = 'not_applicable' or ab.next_eligible_at > now())) as eligible) e
+   where not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = a.provider_id)
+   group by a.provider_id
+  having count(*) filter (where e.eligible) > 0
+$p$;
+
 create or replace function security.pim_excluded_gaps_v1()
 returns jsonb
 language sql
@@ -59,6 +90,7 @@ as $f$
            ab.next_eligible_at
       from pipeline.course_attribute_coverage a
       join pipeline.field_register r on r.field = a.attribute and r.reader in ('coverage', 'enrich')
+      join catalogue.providers pv on pv.id = a.provider_id
       join catalogue.courses c on c.id = a.course_id
       left join lateral (select x.absence_class, x.next_eligible_at from pipeline.course_field_absence x
                           where x.course_id = a.course_id and x.field = r.absence_field and x.resolved_at is null
