@@ -1,7 +1,33 @@
 import React from 'react'
 import { firstName } from '../lib/roles.js'
+import { PortalProvider } from '../lib/portal.jsx'
 import Dashboard from './Dashboard.jsx'
 import Courses from './Courses.jsx'
+import Providers from './Providers.jsx'
+import Scholarships from './Scholarships.jsx'
+import Saved from './Saved.jsx'
+
+// Release 1 menu. Saved courses belong to a Counsellor (rank 2 and above); a Viewer (rank 1) browses only.
+// The database enforces the same rule on every call; this decides what the screen offers.
+const NAV = [
+  { to: '/', label: 'Dashboard' },
+  { to: '/courses', label: 'Courses' },
+  { to: '/providers', label: 'Universities & Providers' },
+  { to: '/scholarships', label: 'Scholarships' },
+  { to: '/saved', label: 'Saved courses', counsellor: true },
+]
+
+function Screen({ here, route, access, name, userId }) {
+  if (here === '/courses') return <Courses params={route.params} access={access} />
+  if (here === '/providers') return <Providers />
+  if (here === '/scholarships') return <Scholarships />
+  if (here === '/saved') {
+    return access.kind === 'counsellor'
+      ? <Saved />
+      : <div className="empty"><strong>Saved courses are for Counsellors.</strong><p className="muted">Your role is Viewer. Ask a Platform Admin for the Counsellor role to save and compare courses.</p><a className="btn" href="#/courses">Back to Courses</a></div>
+  }
+  return <Dashboard name={name} access={access} userId={userId} />
+}
 
 export default function Shell({ session, context, access, loading, error, route, onSignOut }) {
   if (loading) return <div className="center-card"><p>Checking your access…</p></div>
@@ -16,25 +42,25 @@ export default function Shell({ session, context, access, loading, error, route,
     )
   }
   const name = firstName(session.user, context)
-  const nav = [{ to: '/', label: 'Dashboard' }, { to: '/courses', label: 'Courses' }]
+  const nav = NAV.filter(n => !n.counsellor || access.kind === 'counsellor')
   const here = route.path
   return (
-    <div className="shell">
-      <aside className="side">
-        <div className="brand"><strong>StudySearch</strong><span>StudySearch Portal</span></div>
-        <nav aria-label="Portal">
-          {nav.map(n => <a key={n.to} href={`#${n.to}`} aria-current={here === n.to ? 'page' : undefined}>{n.label}</a>)}
-        </nav>
-      </aside>
-      <div className="main">
-        <header className="top">
-          <span className="who">{name || 'Signed in'} <span className="pill">{access.label}</span></span>
-          <button className="btn" onClick={onSignOut}>Sign out</button>
-        </header>
-        <div className="content">
-          {here === '/courses' ? <Courses params={route.params} access={access} /> : <Dashboard name={name} access={access} userId={context?.user_id} />}
+    <PortalProvider userId={context?.user_id}>
+      <div className="shell">
+        <aside className="side">
+          <div className="brand"><strong>StudySearch</strong><span>StudySearch Portal</span></div>
+          <nav aria-label="Portal">
+            {nav.map(n => <a key={n.to} href={`#${n.to}`} aria-current={here === n.to ? 'page' : undefined}>{n.label}</a>)}
+          </nav>
+        </aside>
+        <div className="main">
+          <header className="top">
+            <span className="who">{name || 'Signed in'} <span className="pill">{access.label}</span></span>
+            <button className="btn" onClick={onSignOut}>Sign out</button>
+          </header>
+          <div className="content"><Screen here={here} route={route} access={access} name={name} userId={context?.user_id} /></div>
         </div>
       </div>
-    </div>
+    </PortalProvider>
   )
 }

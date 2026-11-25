@@ -6,4 +6,3 @@ export const EXAMPLE_PROMPTS = [
   'Diploma of Business starting February, IELTS 6.0',
   'MBA in Canada with scholarships',
 ]
-export const RECENT_SEARCHES_SHOWN = 5
