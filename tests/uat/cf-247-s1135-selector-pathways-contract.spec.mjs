@@ -31,7 +31,7 @@ test('s1135: each genuine pathway or conditional admission sentence is selected,
   const lean = await load('supabase/functions/coverage-sweep/lean-input.ts', 'li1135')
   const aer = await load('supabase/functions/coverage-sweep/aer-v2.ts', 'av1135')
   const sec = await load('supabase/functions/coverage-sweep/lean-sections.ts', 'ls1135')
-  expect(sec.LEAN_SECTIONS).toBe('lean-sections-v5')
+  expect(['lean-sections-v5', 'lean-sections-v6']).toContain(sec.LEAN_SECTIONS)  // v6 (s1140) keeps v5's signals
   for (const q of GENUINE) {
     const s = sec.selectSections(aer.aerV3Blocks(lean.leanText(page(`<p>${q}</p>`)), null), 'entry_requirements')
     expect(sec.holds(s.plain, [q]), q).toBe(true)

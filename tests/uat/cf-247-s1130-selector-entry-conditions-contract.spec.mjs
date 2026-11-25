@@ -28,7 +28,7 @@ test('s1130: each missed entry condition is selected under a heading that names 
   const lean = await load('supabase/functions/coverage-sweep/lean-input.ts', 'li1130')
   const aer = await load('supabase/functions/coverage-sweep/aer-v2.ts', 'av1130')
   const sec = await load('supabase/functions/coverage-sweep/lean-sections.ts', 'ls1130')
-  expect(['lean-sections-v4', 'lean-sections-v5']).toContain(sec.LEAN_SECTIONS)  // v5 (s1135) keeps v4's signals
+  expect(['lean-sections-v4', 'lean-sections-v5', 'lean-sections-v6']).toContain(sec.LEAN_SECTIONS)  // v5 (s1135) keeps v4's signals
   for (const q of MISSED) {
     const s = sec.selectSections(aer.aerV3Blocks(lean.leanText(page(`<p>${q}</p>`)), null), 'entry_requirements')
     expect(s.no_selection, q).toBe(false)

@@ -11,7 +11,7 @@
 import { preflight } from "./lean-input.ts";
 import { AER_V3_INPUT, type AerBlock, type AerBlocks } from "./aer-v2.ts";
 
-export const LEAN_SECTIONS = "lean-sections-v5";  // v5 (25 Nov 2026, s1135): pathway and conditional admission sentences; v4 (25 Nov 2026, s1130): entry condition sentences are signals; v3 (14 Nov 2026): entry score lines are signals; v2: wider entry-requirement headings (runs step1c, step1d); v1: runs step1, step1b  // never edited in place once released: a different selection is a new version
+export const LEAN_SECTIONS = "lean-sections-v6";  // v6 (25 Nov 2026, s1140): entry condition headings bring their section; age, marks, approval and must lines; v5 (25 Nov 2026, s1135): pathway and conditional admission sentences; v4 (25 Nov 2026, s1130): entry condition sentences are signals; v3 (14 Nov 2026): entry score lines are signals; v2: wider entry-requirement headings (runs step1c, step1d); v1: runs step1, step1b  // never edited in place once released: a different selection is a new version
 export const BLOCK_INPUT = AER_V3_INPUT;           // the one [B#] contract (aer-v2.ts); not redefined here
 
 // headings that name the part of a course page a field lives in (wider than the words a value uses)
@@ -41,7 +41,9 @@ const ENTRY_SCORE = /\b(atar|selection rank|guaranteed entry|lowest (rank|atar|s
 // v5 (25 Nov 2026, CF-247 s1135, run s1130-entry-cohort-v4-2026-11-25: 4 genuine earlier rows still outside v4): pathway and conditional admission
 // sentences ("You may also be considered if you have", "Applicants may be admitted ... if they have previously successfully completed",
 // "will be considered on the basis of their work and life experience", "Provided you meet the required academic and work-ready criteria")
-const ENTRY_CONDITION = /\b(applicants? (must|should|will|are|need)|(are|is|be) required to (hold|have|complete|provide|submit|demonstrate|undertake|obtain|pass)|must (hold|have|complete|provide|submit|demonstrate|be (aged|at least|a graduate))|\d\+? (years?|months?) of (relevant |professional |industry |full[- ]time |cumulative |paid |managerial )*(work|professional|industry|managerial|employment|practice)|(relevant |professional |industry |paid )?work(ing)? experience|police (check|clearance)|criminal (record|history) check|working with children|wwcc|ndis (worker )?(screening|check)|auditions?|open to (individuals|applicants|students|people|those) who|designed (exclusively |specifically )?for (professionals|graduates|people|applicants|students)|aqf level \d+|high-level music making|may (also )?be (considered|admitted|eligible|accepted|offered)|will be considered (on the basis|for (entry|admission|a place))|considered on the basis of|provided (that )?you (meet|have|hold|satisfy)|(if|who|where) (they|you|applicants) have (previously )?(successfully )?completed)\b/i;
+// v6 (25 Nov 2026, CF-247 s1140, qualification run s1125-entry-qualify-2026-11-25 and recall run s1135-entry-cohort-v5-2026-11-25): such a line printed as a
+// heading, and "you must", minimum ages, weighted average marks, approval of a coordinator, previous completion, creative submissions and portfolios
+const ENTRY_CONDITION = /\b(applicants? (must|should|will|are|need)|(are|is|be) required to (hold|have|complete|provide|submit|demonstrate|undertake|obtain|pass)|must (hold|have|complete|provide|submit|demonstrate|be (aged|at least|a graduate))|\d\+? (years?|months?) of (relevant |professional |industry |full[- ]time |cumulative |paid |managerial )*(work|professional|industry|managerial|employment|practice)|(relevant |professional |industry |paid )?work(ing)? experience|police (check|clearance)|criminal (record|history) check|working with children|wwcc|ndis (worker )?(screening|check)|auditions?|open to (individuals|applicants|students|people|those) who|designed (exclusively |specifically )?for (professionals|graduates|people|applicants|students)|aqf level \d+|high-level music making|may (also )?be (considered|admitted|eligible|accepted|offered)|will be considered (on the basis|for (entry|admission|a place))|considered on the basis of|provided (that )?you (meet|have|hold|satisfy)|(if|who|where) (they|you|applicants) have (previously )?(successfully )?completed|you (must|will (also )?need|need to)|(minimum of|at least|over|aged?) \d{2} years( old| of age)?|years of age|weighted average (mark|score)|\bwam\b|grade point average|gpa of|approval of the|previous (completion|study) of|ability to demonstrate|creative submission|portfolio|literacy and numeracy)\b/i;
 export function fieldHit(field: string, text: string): "likely" | "unknown" | "no_signal" {
   if (field === "fees") return FEE_TEXT.test(text) ? "likely" : "no_signal";
   if (field === "entry_requirements" && ENTRY_SCORE.test(text) && /\d/.test(text)) return "likely";
@@ -73,7 +75,8 @@ export function selectSections(ab: AerBlocks, field: string, opt: SectionOptions
   for (let i = 0; i < B.length; i++) {
     const b = B[i];
     if (b.kind === "data") { keep.add(i); continue }  // page data fields always travel (design §3.5)
-    if (isHead(b)) { if (HEADINGS[field]?.test(b.text)) takeSection(i); continue }
+    // v6 (s1140): an entry condition printed as a heading ("Graduate with an AUSTRALIAN DEGREE (AQF Level 9)", "You may also be considered if you have:") brings its section too
+    if (isHead(b)) { if (HEADINGS[field]?.test(b.text) || (field === "entry_requirements" && ENTRY_CONDITION.test(b.text))) takeSection(i); continue }
     const label = b.text.length <= LABEL_MAX_CHARS && (HEADINGS[field]?.test(b.text) ?? false);
     const hit = field !== "description" && fieldHit(field, b.text) !== "no_signal";
     if (!label && !hit) continue;
