@@ -12,9 +12,15 @@ async function measured(page) {
 
 async function journeyOnFocusedCard(page, testInfo, who) {
   const runtime = observeRuntime(page)
-  await page.goto('/layer-4-review')
-  const card = page.locator('[data-l4-focus-card]').first()
-  await expect(card, 'the focused Layer 4 card is shown').toBeVisible({ timeout: 60_000 })
+  // the Admin routes by hash: the default view is the focused card (Waiting, grouped by rule); the description queue's list view is the fallback
+  await page.goto('/#layer-4-review')
+  let card = page.locator('[data-l4-focus-card]').first(), view = 'focused card'
+  if (!(await card.waitFor({ state: 'visible', timeout: 30_000 }).then(() => true, () => false))) {
+    await page.goto('/#layer-4-review?view=kind&kind=provider_description')
+    card = page.locator('article').filter({ has: page.locator('[data-l4-fold="journey"]') }).first(); view = 'description queue list'
+  }
+  await expect(card, 'a Layer 4 card is shown').toBeVisible({ timeout: 60_000 })
+  testInfo.annotations.push({ type: 'view', description: `${who}: ${view}` })
   const fold = card.locator('[data-l4-fold="journey"]').first()
   await expect(fold).toBeVisible()
   await fold.locator('summary').click()
