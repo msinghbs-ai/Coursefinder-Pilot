@@ -80,3 +80,7 @@ export function awardValue(s) {
 
 // State codes are held as AU-QLD, CA-ON; people read QLD, ON.
 export const stateShort = code => String(code || '').replace(/^[A-Z]{2}-/, '')
+
+// s1275: where a course is taught. A course with campuses in several cities and no primary campus is sent with place_label ("Multiple campuses",
+// or "Multiple campuses (VIC)"); the card says that instead of leaving the place blank. A campus is never guessed.
+export const placeText = (c, sep = ' · ', cityFirst = false) => c?.place_label || (cityFirst ? [c?.city, stateShort(c?.state_code)] : [stateShort(c?.state_code), c?.city]).filter(Boolean).join(sep)

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useSaved } from '../lib/saved.js'
 import { basket } from '../lib/basket.js'
-import { durationText, durationInYears, money, dateText, initials, stateShort, NOT_RECORDED } from '../lib/format.js'
+import { durationText, durationInYears, money, dateText, initials, placeText, NOT_RECORDED } from '../lib/format.js'
 import { PageHead, StudyInBar, LoadState, Pill, ViewToggle, RegBadge } from '../components/ui.jsx'
 import { usePortal } from '../lib/portal.jsx'
 import { lengthOrBlank, primaryFeeAmount, primaryFeeNote } from '../lib/courseDetailFormat.js'
@@ -58,7 +58,7 @@ export default function Saved() {
     ['Duration', c => <strong>{durationText(c.duration_value, c.duration_unit)}</strong>],
     ['Level', c => <strong>{c.level || NOT_RECORDED}</strong>],
     ['Delivery', c => <strong>{DELIVERY[c.delivery_mode] || NOT_RECORDED}</strong>],
-    ['State and campus', c => <strong>{[stateShort(c.state_code), c.city].filter(Boolean).join(' · ') || NOT_RECORDED}</strong>],
+    ['State and campus', c => <strong>{placeText(c) || NOT_RECORDED}</strong>],
     ['Next intake', c => c.next_intake ? <><strong>{c.next_intake.label || dateText(c.next_intake.start_date, 'day') || NOT_RECORDED}</strong>{c.next_intake.start_date && c.next_intake.label && <small>Starts {dateText(c.next_intake.start_date, 'day')}</small>}</> : <><strong>{NOT_RECORDED}</strong><small>No open intake on file</small></>],
     ['Last checked', c => <strong>{dateText(c.last_verified_at) || NOT_RECORDED}</strong>],
   ]
@@ -80,7 +80,7 @@ export default function Saved() {
             <div className="list" role="list">
               <ListHead />
               {saved.items.map(c => (
-                <CourseRow key={c.course_id} c={c} level={c.level} place={[stateShort(c.state_code), c.city].filter(Boolean).join(' · ')} length={lengthOrBlank(c.duration_value, c.duration_unit)}
+                <CourseRow key={c.course_id} c={c} level={c.level} place={placeText(c)} length={lengthOrBlank(c.duration_value, c.duration_unit)}
                   fee={primaryFeeAmount(feeOf(c)) || ''} lead={tick(c)}>
                   {actions(c)}
                 </CourseRow>
@@ -104,7 +104,7 @@ export default function Saved() {
                     {!c.active && <Pill tone="amber">No longer offered</Pill>}
                     {c.active && !c.published && <Pill tone="amber">Not published</Pill>}
                     {c.level && <Pill>{c.level}</Pill>}
-                    {[stateShort(c.state_code), c.city].filter(Boolean).length > 0 && <Pill>{[stateShort(c.state_code), c.city].filter(Boolean).join(' · ')}</Pill>}
+                    {placeText(c) && <Pill>{placeText(c)}</Pill>}
                     {lengthOrBlank(c.duration_value, c.duration_unit) && <Pill>{lengthOrBlank(c.duration_value, c.duration_unit)}</Pill>}
                   </div>
                   {primaryFeeAmount(feeOf(c)) && <p className="fee-line"><strong>{primaryFeeAmount(feeOf(c))}</strong> <span className="muted small">{primaryFeeNote(feeOf(c))}</span></p>}
