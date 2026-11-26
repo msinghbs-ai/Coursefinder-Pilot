@@ -38,6 +38,7 @@ import{defaultKind,holdLabelOf,orderChoices,plainHold,holdHintOf,lockable,reread
 import Layer4DecisionBar,{AiBudgetLine,RejectReasonChips,useVerifiedCount}from'./Layer4DecisionBar' // s931 (Decision 279): Yes / No / Resubmit to Review with AI
 import Layer4PrimaryFilters from'./Layer4PrimaryFilters' // s931: the primary filter row
 import Layer4AdvancedFilters from'./Layer4AdvancedFilters' // s931: Advanced filters (N)
+import ReportedIssues from'./ReportedIssues' // CF-247 s1285 (Reported data issues R3): one view of Admin, Portal and Zoho reports
 
 const rpc=async(action,args)=>{const{data,error}=await supabase.rpc('admin_layer4_inbox',{p_action:action,p_args:args||{}});if(error)throw new Error(error.message);return data||{}}
 // SS-016 role simulation (1 Nov 2026): the rank a choice needs, as public.admin_layer4_inbox decides it: its own rank, else rank 4
@@ -154,6 +155,7 @@ export default function Layer4Inbox({onError,routeParams}){
     </section>
     {/* SS-020 step 4 (Decision 269, 3 Nov 2026): review readiness header line, moved from Coverage › Attributes */}
     <ReviewReadinessLine/>
+    <ReportedIssues rank={sum.rank}/>
     {!focus&&<GroupBar active={view==='group'?grp:''} onPick={g=>{setGrp(g);setView('group');setNote('')}} refresh={gtick} total={sum.total}/>}
     {/* s931 (Decision 279, §4.1 and §5.1): the primary row and Advanced filters (N) replace the kind toolbar and the view row, in place */}
     <Layer4PrimaryFilters kinds={kinds} order={order} kind={kind} part={effPart} split={split} total={sum.total} showAll={!focus}
