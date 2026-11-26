@@ -33,6 +33,7 @@ async function journeyOnFocusedCard(page, testInfo, who) {
   const vp = await measured(page)
   testInfo.annotations.push({ type: 'viewport', description: `${who}: ${JSON.stringify(vp)}` })
   testInfo.annotations.push({ type: 'journey', description: `${who}: ${(await fold.locator('[data-l4j-stop]').innerText()).slice(0, 200)}` })
+  console.log(`s1272 evidence ${testInfo.project.name} ${who} ${view}: viewport ${JSON.stringify(vp)}; ${(await fold.locator('[data-l4j-stop]').innerText()).slice(0, 160)}; stages ${(await stages.evaluateAll(els => els.map(e => `${e.getAttribute('data-l4j-stage')}:${e.getAttribute('data-l4j-state')}`))).join(' ')}`)
   expect(vp.scrollWidth, 'no sideways scroll').toBeLessThanOrEqual(vp.clientWidth + 1)
   if (testInfo.project.name === 'chromium-mobile') expect(vp.innerWidth, 'measured phone width').toBeLessThanOrEqual(430)
   await fold.scrollIntoViewIfNeeded()
@@ -57,3 +58,15 @@ test.describe('DR-19 record journey on the live Layer 4 card @deployed', () => {
     await journeyOnFocusedCard(page, testInfo, 'pipeline-operator')
   })
 })
+
+// The phone gate runs only @responsive tests; this one first checks it is at phone width (measured), then reads the same fold.
+test.describe('phone screens @responsive', () => {
+  test('Platform Admin on a phone: the fold opens, wraps and does not scroll sideways @deployed', async ({ page }, testInfo) => {
+    const w = await page.evaluate(() => window.innerWidth)
+    expect(w, 'measured phone width').toBeLessThanOrEqual(430)
+    if (!process.env.UAT_BASE_URL) throw new Error('UAT_BASE_URL is required for deployed acceptance.')
+    await loginAsUatUser(page, 6)
+    await journeyOnFocusedCard(page, testInfo, 'platform-admin-phone')
+  })
+})
+
