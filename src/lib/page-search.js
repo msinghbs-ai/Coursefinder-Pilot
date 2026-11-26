@@ -108,7 +108,10 @@ export function rank(entries, query, limit = 12) {
 export function dedupe(entries) {
   const seen = new Set()
   const out = []
+  // a heading the page drew is the same thing as the entry a screen registered for it: keep the registered one (it knows the view to open)
+  const registered = new Set(entries.filter((e) => !String(e.id).startsWith('dom:')).map((e) => `${e.kind}|${norm(e.label)}`))
   for (const e of entries) {
+    if (String(e.id).startsWith('dom:') && registered.has(`${e.kind}|${norm(e.label)}`)) continue
     const keys = [`id:${e.id}`, `${e.kind}|${norm(e.label)}|${norm(e.path)}`]
     if (keys.some((k) => seen.has(k))) continue
     keys.forEach((k) => seen.add(k))

@@ -35,6 +35,8 @@ test.describe('matching (pure)', () => {
     expect(rank(E, 'course nothing')).toEqual([])                       // every word must be found
     expect(rank(E, 'read course pages')[0].id).toBe('b')
     expect(dedupe([{ id: '1', kind: 'section', label: 'X', path: 'P' }, { id: '2', kind: 'section', label: 'x', path: 'p' }])).toHaveLength(1)
+    // a drawn heading and the entry a screen registered for it are one result: the registered one stays
+    expect(dedupe([{ id: 'pim:sec:workers', kind: 'section', label: 'Workers', path: 'A' }, { id: 'dom:section:workers:9', kind: 'section', label: 'Workers', path: 'B' }]).map((e) => e.id)).toEqual(['pim:sec:workers'])
   })
 })
 
@@ -194,6 +196,14 @@ test.describe('Settings', () => {
     await (await search(page, 'coverage')).locator('[data-ps-kind="setting"]').first().locator('button').click()
     await page.waitForTimeout(600)
     expect(reads.length).toBe(before)
+  })
+
+  test('the search text does not follow a person to another page', async ({ page }) => {
+    await openSettings(page)
+    await input(page).fill('retry')
+    await page.evaluate(() => { location.hash = '#layer-2-discovery' })
+    await expect(page.locator('.cf-page-tabs button', { hasText: 'Operations' })).toBeVisible({ timeout: 20_000 })
+    await expect(input(page)).toHaveValue('')
   })
 
   test('the Settings tab entries come from the page tabs for the role, not a typed list', async ({ page }) => {

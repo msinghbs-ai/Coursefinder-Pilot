@@ -90,7 +90,7 @@ export function PageLayout({tabs,active,onTab,toolbar,children,className='',labe
   </>
   // s1270: a page that opts in gets the search bar at its top (PageSearch.jsx); a screen inside registers its own entries with usePageSearchEntries
   return <div className={`cf-page${className?' '+className:''}`}>
-    {search?<PageSearchScope tabs={tabs} active={active} onTab={onTab} pageLabel={pageLabel||label} pageKey={pageKey}>{inner}</PageSearchScope>:inner}
+    {search?<PageSearchScope key={pageKey||pageLabel||label} tabs={tabs} active={active} onTab={onTab} pageLabel={pageLabel||label} pageKey={pageKey}>{inner}</PageSearchScope>:inner}
   </div>
 }
 
