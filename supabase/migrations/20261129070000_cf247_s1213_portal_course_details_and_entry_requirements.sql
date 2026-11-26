@@ -193,22 +193,26 @@ begin
   if v_market is not null then select co.id into v_mc from ref.countries co where co.iso_alpha2 = v_market; end if;
   if v_level is not null then select sl.id into v_level_id from ref.study_levels sl where sl.code = v_level; end if;
 
-  with hits as materialized (
+  with er as materialized (
+    select distinct r.course_id from catalogue.course_entry_requirements r
+     where r.status = 'active' and r.audience in ('all', 'international') and (v_mc is null or r.country_id is null or r.country_id = v_mc)
+       and coalesce(nullif(btrim(r.description), ''), nullif(btrim(r.min_grade), ''), nullif(btrim(r.min_entry_score_basis), ''), nullif(btrim(r.quote), ''), r.min_value::text, r.min_entry_score::text) is not null),
+  en as materialized (select distinct e.course_id from catalogue.course_english_requirements e where e.status = 'active'),
+  mx as materialized (
+    select m.provider_id, m.course_id, m.study_level_id from catalogue.provider_entry_matrix m
+     where v_market is not null and m.status = 'active' and m.audience = 'international' and m.country_code = v_market),
+  hits as materialized (
     select z.course_id, z.provider_id, z.provider_name, z.title, z.has_entry, z.has_english, z.has_matrix
       from (select d.course_id, d.provider_id, d.provider_name, d.course_title as title,
-                   exists (select 1 from catalogue.course_entry_requirements r
-                            where r.course_id = d.course_id and r.status = 'active' and r.audience in ('all', 'international')
-                              and (v_mc is null or r.country_id is null or r.country_id = v_mc)
-                              and coalesce(nullif(btrim(r.description), ''), nullif(btrim(r.min_grade), ''), nullif(btrim(r.min_entry_score_basis), ''), nullif(btrim(r.quote), ''), r.min_value::text, r.min_entry_score::text) is not null) as has_entry,
-                   exists (select 1 from catalogue.course_english_requirements e where e.course_id = d.course_id and e.status = 'active') as has_english,
-                   (v_market is not null and exists (select 1 from catalogue.provider_entry_matrix m
-                            where m.provider_id = d.provider_id and m.status = 'active' and m.audience = 'international' and m.country_code = v_market
-                              and (m.course_id = d.course_id
-                                   or (m.course_id is null and (m.study_level_id is null or m.study_level_id = d.study_level_id
-                                        or m.study_level_id = (select sl.parent_id from ref.study_levels sl where sl.id = d.study_level_id)))))) as has_matrix
+                   d.course_id in (select er.course_id from er) as has_entry,
+                   d.course_id in (select en.course_id from en) as has_english,
+                   exists (select 1 from mx where mx.provider_id = d.provider_id
+                              and (mx.course_id = d.course_id
+                                   or (mx.course_id is null and (mx.study_level_id is null or mx.study_level_id = d.study_level_id or mx.study_level_id = lv.parent_id)))) as has_matrix
               from search.course_documents d
               join catalogue.courses c on c.id = d.course_id and c.lifecycle_status = 'active' and (v_scope <> 'published' or c.publication_status = 'published')
               join catalogue.providers p on p.id = d.provider_id and p.lifecycle_status = 'active'
+              left join ref.study_levels lv on lv.id = d.study_level_id
              where (v_country is null or d.country_code = v_country)
                and (v_provider is null or d.provider_id = v_provider)
                and (v_level is null or d.study_level_code = v_level or d.study_level_id in (select sl.id from ref.study_levels sl where sl.parent_id = v_level_id))
