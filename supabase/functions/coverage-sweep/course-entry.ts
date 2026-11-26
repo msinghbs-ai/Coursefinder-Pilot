@@ -166,6 +166,18 @@ export function storeQuote(q: string, limit: number): { quote: string; cut: { ch
 }
 export type CourseQuoteOptions = { quoteChars?: number; fragments?: boolean; minFragment?: number };
 
+// s1280 (26 Nov 2026, CF-247, SS-Programme-Control 22:27 AEDT, first autonomous AER cycle): the prompt calls a sentence "domestic" when it names
+// an Australian school-leaver route, and the model read "Australian Year 12 or an equivalent qualification" as one (121558M, 121594G, 121475C,
+// 121476B; 701 admitted rows on 671 courses). A route that accepts an equivalent qualification is open to every applicant, so it is "all"
+// unless the sentence also names a domestic-only route or group. The same rule (same words) corrects the admitted rows (migration s1280).
+export const ENTRY_EQUIVALENT_ROUTE = /\bor (an |any )?equivalent/i;
+export const ENTRY_DOMESTIC_ROUTE = /\b(vce|atar|vtac|stat|qce|hsc|sace|wace|uac|qtac|satac|tisc|selection rank|school.leaver|domestic|local|citizen|permanent resident)\b/i;
+export function entryAudience(audience: unknown, quote: string): { audience: string; normalised: boolean } {
+  const a = String(audience || "all");
+  if (a === "domestic" && ENTRY_EQUIVALENT_ROUTE.test(quote) && !ENTRY_DOMESTIC_ROUTE.test(quote)) return { audience: "all", normalised: true };
+  return { audience: a, normalised: false };
+}
+
 // one slice's rows: a row is kept only when its quote is on that slice (so on the page)
 export function courseEntrySliceRows(a: any, sliceText: string, o: CourseQuoteOptions = {}): { rows: any[]; dropped: any[] } {
   const P = flat(sliceText), rows: any[] = [], dropped: any[] = [];
@@ -177,8 +189,8 @@ export function courseEntrySliceRows(a: any, sliceText: string, o: CourseQuoteOp
       dropped.push({ reason: "quote_not_on_page", kind: r?.kind, quote: s.quote, ...(proof.detail !== "quote is not on the page" ? { detail: proof.detail } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
       continue;
     }
-    const s = storeQuote(q, limit);
-    rows.push({ ...r, quote: s.quote, description: String(r?.description || "").slice(0, 500), ...(proof.fragments > 1 ? { quote_fragments: proof.fragments } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
+    const s = storeQuote(q, limit), aud = entryAudience(r?.audience, q);
+    rows.push({ ...r, audience: aud.audience, ...(aud.normalised ? { audience_normalised: { from: "domestic", rule: "s1280 equivalent route" } } : {}), quote: s.quote, description: String(r?.description || "").slice(0, 500), ...(proof.fragments > 1 ? { quote_fragments: proof.fragments } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
   }
   return { rows, dropped };
 }
