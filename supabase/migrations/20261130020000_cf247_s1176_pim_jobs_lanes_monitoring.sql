@@ -7,9 +7,9 @@
 --   Outcome class of one execution, from the run's own recorded status and result (inline, one pass per log):
 --     failed | deferred | productive (an admission, publication or hand-off counter above 0) | held (only protective counters above 0: Layer 4,
 --     held, refused, left for a person) | empty (a structured result with every counter at 0) | unmeasured (no structured result).
---   security.data_delivery_jobs_v1()  the jobs read, counted only in the background by security.data_delivery_refresh_v1 into new columns of the
---     existing singleton row pipeline.data_delivery_job_runs (ops, ops_measured_at, ops_took_ms, ops_error, ops_failed_at; the last good read is
---     kept on failure), on a run that does not count the PIM progress, so neither run grows (PIM progress about 42 s, this read about 18 s).
+--   security.data_delivery_jobs_v1()  the jobs read, counted only in the background by security.data_delivery_refresh_v1 into the new singleton
+--     table pipeline.pim_jobs_snapshot (the last good read is kept on failure; a new table so the deploy takes no lock on the Data Delivery tables
+--     the every-minute count holds), on a run that does not count the PIM progress, so neither run grows (PIM progress about 42 s, this read 18 s).
 --     The screen read (security.data_delivery_v1) never counts it. One row per component:
 --       every cron.job row, keyed by jobid (history from cron.job_run_details by jobid, so a reused job name is never mixed);
 --       every pipeline.field_execution_registry lane, pipeline.rollup_targets target and pipeline.admission_rules rule, with its runs from
@@ -28,7 +28,7 @@
 --     job's own schedule (pim.jobs_stall_periods periods, never less than plans.auto_stall_hours). New keys: states, by_component, attention
 --     (every component degraded, held, in shadow or with a finding), holds, toolset, jobs_snapshot (as_at, took_ms, error, windows, retained
 --     history). The full list stays out of the screen payload. consumer, freshness_by_country, expired_leases, requests and meaning are unchanged.
--- G1: no job. G2: five settings (pim.jobs_stall_periods, pim.jobs_min_runs, pim.jobs_empty_share, pim.jobs_failure_share, pim.jobs_deferred_share)
+-- Table: pipeline.pim_jobs_snapshot (one row). G1: no job. G2: five settings (pim.jobs_stall_periods, pim.jobs_min_runs, pim.jobs_empty_share, pim.jobs_failure_share, pim.jobs_deferred_share)
 -- and the existing data_delivery.net_short_hours, data_delivery.net_long_hours, plans.auto_stall_hours. G3: no consumer object; 75/48 asserted
 -- before and after. Manual locks and cron count asserted unchanged. AI and spend untouched ($0). Nothing dropped.
 --   public.admin_pim_jobs_v1()  the full jobs read from the snapshot, for the monitoring screen's drill-down; Curator and above (the Data
@@ -65,18 +65,18 @@ insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, k
   'A dispatcher target deferred (not started for lack of time in its tick) in at least this share of its seven-day executions is flagged as contended.',
   'number', '0.3'::jsonb, 0.05, 1, 'share (0 to 1)', 1609, 'PIM', 'security.data_delivery_jobs_v1 (s1176)', 'CF-247 s1176 PIM monitoring by jobid');
 
--- the jobs read is kept beside the PIM snapshot, in the existing singleton row (new columns only; nothing renamed or dropped)
-alter table pipeline.data_delivery_job_runs
-  add column if not exists ops jsonb,
-  add column if not exists ops_measured_at timestamptz,
-  add column if not exists ops_took_ms integer,
-  add column if not exists ops_error text,
-  add column if not exists ops_failed_at timestamptz;
-comment on column pipeline.data_delivery_job_runs.ops is 'PIM monitoring (s1176): the last good security.data_delivery_jobs_v1() read (every cron job by jobid, every lane, rule and target), counted in the background by security.data_delivery_refresh_v1 on a run that does not count the PIM progress.';
-comment on column pipeline.data_delivery_job_runs.ops_measured_at is 'PIM monitoring (s1176): when ops was last counted.';
-comment on column pipeline.data_delivery_job_runs.ops_took_ms is 'PIM monitoring (s1176): how long the last ops count took.';
-comment on column pipeline.data_delivery_job_runs.ops_error is 'PIM monitoring (s1176): the error of the last failed ops count; ops keeps the last good read.';
-comment on column pipeline.data_delivery_job_runs.ops_failed_at is 'PIM monitoring (s1176): when the last ops count failed.';
+-- the jobs read is kept in its own singleton row (a new table, so the deploy takes no lock on the Data Delivery tables the background count holds)
+create table pipeline.pim_jobs_snapshot (
+  singleton boolean primary key default true check (singleton),
+  ops jsonb,
+  measured_at timestamptz,
+  took_ms integer,
+  error text,
+  failed_at timestamptz
+);
+comment on table pipeline.pim_jobs_snapshot is 'PIM monitoring (s1176): the last good security.data_delivery_jobs_v1() read (every cron job by jobid, every lane, rule and target, with state and outcomes), counted in the background by security.data_delivery_refresh_v1 on a run that does not count the PIM progress; error and failed_at record a failed count, ops keeps the last good read. Read by security.pim_operations_v1 and public.admin_pim_jobs_v1.';
+revoke all on table pipeline.pim_jobs_snapshot from public, anon, authenticated;
+grant select, insert, update on table pipeline.pim_jobs_snapshot to service_role;
 
 create or replace function security.data_delivery_jobs_v1()
 returns jsonb
@@ -328,14 +328,17 @@ declare d text := pg_get_functiondef('security.data_delivery_refresh_v1(boolean)
         a constant text := $a$  -- PIM progress (s1167): counted here in the background$a$;
         b constant text := $b$  -- PIM monitoring (s1176): the jobs read, on a run where the PIM progress is not due, so the two never share a run
   if p_force or (exists (select 1 from pipeline.data_delivery_job_runs j where j.singleton and coalesce(j.pim_failed_at, j.pim_measured_at) >= now() - make_interval(mins => v_every))
-                 and not exists (select 1 from pipeline.data_delivery_job_runs j where j.singleton and coalesce(j.ops_failed_at, j.ops_measured_at) >= now() - make_interval(mins => v_every))) then
+                 and not exists (select 1 from pipeline.pim_jobs_snapshot x where x.singleton and coalesce(x.failed_at, x.measured_at) >= now() - make_interval(mins => v_every))) then
     declare v_ops jsonb; v_o0 timestamptz := clock_timestamp();
     begin
       v_ops := security.data_delivery_jobs_v1();
-      update pipeline.data_delivery_job_runs set ops = v_ops, ops_measured_at = clock_timestamp(), ops_took_ms = (extract(epoch from clock_timestamp() - v_o0) * 1000)::int,
-             ops_error = null, ops_failed_at = null where singleton;
+      insert into pipeline.pim_jobs_snapshot as x(singleton, ops, measured_at, took_ms, error, failed_at)
+        values (true, v_ops, clock_timestamp(), (extract(epoch from clock_timestamp() - v_o0) * 1000)::int, null, null)
+        on conflict (singleton) do update set ops = excluded.ops, measured_at = excluded.measured_at, took_ms = excluded.took_ms, error = null, failed_at = null;
     exception when others then
-      update pipeline.data_delivery_job_runs set ops_took_ms = (extract(epoch from clock_timestamp() - v_o0) * 1000)::int, ops_error = left(sqlerrm, 300), ops_failed_at = clock_timestamp() where singleton;
+      insert into pipeline.pim_jobs_snapshot as x(singleton, took_ms, error, failed_at)
+        values (true, (extract(epoch from clock_timestamp() - v_o0) * 1000)::int, left(sqlerrm, 300), clock_timestamp())
+        on conflict (singleton) do update set took_ms = excluded.took_ms, error = excluded.error, failed_at = excluded.failed_at;
     end;
   end if;
   -- PIM progress (s1167): counted here in the background$b$;
@@ -352,7 +355,7 @@ security definer
 set search_path = ''
 as $f$
   with st as materialized (select security.pipeline_num_v1('pim.refresh_days', 365)::int d),
-  js as materialized (select j.ops rows, j.ops_measured_at measured_at, j.ops_took_ms took_ms, j.ops_error error, j.ops_failed_at failed_at from pipeline.data_delivery_job_runs j where j.singleton),
+  js as materialized (select x.ops rows, x.measured_at, x.took_ms, x.error, x.failed_at from pipeline.pim_jobs_snapshot x where x.singleton),
   comp as materialized (select c from js cross join lateral jsonb_array_elements(coalesce(js.rows->'components', '[]'::jsonb)) c),
   w as (select c from comp where c->>'component' = 'cron' and (c->>'active')::boolean and c->>'name' <> 'data-delivery'),
   f as (
@@ -394,7 +397,7 @@ as $f$
     'consumer', coalesce((select jsonb_agg(jsonb_build_object('stream', r.stream, 'rows', r.rows, 'measured_at', r.measured_at, 'error', r.error) order by r.stream)
                             from pipeline.data_delivery_readings r where r.measure = 'consumer'), '[]'::jsonb),
     'requests', jsonb_build_object('status', 'not_projected', 'reason', 'No registered database source holds the StudySearch request register; it is kept by the requirements register outside the database.'),
-    'meaning', 'Workers are every active scheduled job, by jobid, from the background jobs read (pipeline.data_delivery_job_runs.ops); stalled means no success within pim.jobs_stall_periods of its own schedule (never less than plans.auto_stall_hours). attention lists every lane, rule, target or job that is degraded, held, in shadow or carries a finding; the full list with 24-hour and seven-day outcomes is public.admin_pim_jobs_v1. Consumer figures are the existing verified read-back of what the website and Zoho read.')
+    'meaning', 'Workers are every active scheduled job, by jobid, from the background jobs read (pipeline.pim_jobs_snapshot); stalled means no success within pim.jobs_stall_periods of its own schedule (never less than plans.auto_stall_hours). attention lists every lane, rule, target or job that is degraded, held, in shadow or carries a finding; the full list with 24-hour and seven-day outcomes is public.admin_pim_jobs_v1. Consumer figures are the existing verified read-back of what the website and Zoho read.')
 $f$;
 comment on function security.pim_operations_v1() is 'PIM (s1175, s1176): every active worker by jobid, every lane, rule and target with state and effectiveness (jobs helper snapshot), freshness by country, verified consumer read-back; counted into the Data Delivery snapshot (pim.operations).';
 revoke all on function security.pim_operations_v1() from public, anon, authenticated;
@@ -411,8 +414,8 @@ begin
   if auth.uid() is null or coalesce(security.current_role_rank(), 0) < 3 then  -- fixed: the Data Delivery read's own gate (Curator and above)
     raise exception 'Curator role or above required' using errcode = '42501';
   end if;
-  return (select jsonb_build_object('as_at', j.ops_measured_at, 'took_ms', j.ops_took_ms, 'error', j.ops_error, 'failed_at', j.ops_failed_at) || coalesce(j.ops, '{}'::jsonb)
-            from pipeline.data_delivery_job_runs j where j.singleton);
+  return coalesce((select jsonb_build_object('as_at', x.measured_at, 'took_ms', x.took_ms, 'error', x.error, 'failed_at', x.failed_at) || coalesce(x.ops, '{}'::jsonb)
+                      from pipeline.pim_jobs_snapshot x where x.singleton), jsonb_build_object('as_at', null, 'error', 'not yet counted'));
 end $f$;
 comment on function public.admin_pim_jobs_v1() is 'PIM (s1176): the full jobs read (every cron job by jobid, every lane, rule and target, 24-hour and seven-day outcomes, findings, toolset use) from the background snapshot; Curator and above.';
 revoke all on function public.admin_pim_jobs_v1() from public, anon;
@@ -433,7 +436,7 @@ begin
   if jsonb_array_length(j->'components') <> (select count(*) from cron.job) + (select count(*) from pipeline.field_execution_registry) + (select count(*) from pipeline.rollup_targets) + (select count(*) from pipeline.admission_rules)
     then raise exception 'guard: a component is missing from the jobs helper'; end if;
   if (select count(distinct (c->>'jobid')) from jsonb_array_elements(j->'components') c where c->>'component' = 'cron') <> (select count(*) from cron.job) then raise exception 'guard: cron rows not keyed by jobid'; end if;
-  update pipeline.data_delivery_job_runs set ops = j, ops_measured_at = clock_timestamp(), ops_took_ms = null, ops_error = null, ops_failed_at = null where singleton;
+  insert into pipeline.pim_jobs_snapshot(singleton, ops, measured_at, took_ms, error, failed_at) values (true, j, clock_timestamp(), null, null, null);
   o := security.pim_operations_v1();
   if jsonb_array_length(o->'workers') <> (select count(*) from cron.job where active and jobname <> 'data-delivery') then raise exception 'guard: workers are not every active job'; end if;
   if jsonb_array_length(o->'freshness_by_country') = 0 or jsonb_array_length(o->'consumer') = 0 then raise exception 'guard: operations read empty'; end if;
