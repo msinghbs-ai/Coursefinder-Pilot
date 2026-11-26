@@ -5,6 +5,8 @@ import { useSaved } from '../lib/saved.js'
 import { basket } from '../lib/basket.js'
 import { durationText, money, dateText, stateShort, NOT_RECORDED } from '../lib/format.js'
 import { PageHead, StudyInBar, Pill } from '../components/ui.jsx'
+import { ExtLink } from '../components/ExtLink.jsx'
+import { CourseDetails, DetailsButton } from '../components/CourseDetails.jsx'
 
 // Plain-English course search. The search itself is catalogue.portal_course_search_v1 (S1-Build), called through
 // public.portal_course_search_v1(p_args jsonb). Until it is live this screen says so and never crashes. The response shape is
@@ -29,6 +31,8 @@ function normaliseRelaxations(r) {
 
 function CourseCard({ c, near, canSave, saved, busy, onToggle }) {
   const [inBasket, setInBasket] = useState(() => basket.has(c.course_id))
+  const [open, setOpen] = useState(false)
+  const panel = `details-${c.course_id}`
   const place = [stateShort(c.state_code), c.city].filter(Boolean).join(' · ')
   const fee = c.fee && Number(c.fee.per_year) ? money(c.fee.per_year, c.fee.currency) : null
   const intakes = Array.isArray(c.intakes) && c.intakes.length ? c.intakes : c.next_intake ? [c.next_intake] : []
@@ -58,8 +62,10 @@ function CourseCard({ c, near, canSave, saved, busy, onToggle }) {
       <div className="actions">
         {canSave && <button type="button" className={`btn${saved ? ' on' : ''}`} aria-pressed={saved} disabled={busy} onClick={() => onToggle(c.course_id, !saved)}>{saved ? '♥ Saved' : '♡ Save'}</button>}
         {canSave && <button type="button" className={`btn${inBasket ? ' on' : ''}`} aria-pressed={inBasket} onClick={() => { if (inBasket) basket.remove(c.course_id); else basket.add(c); setInBasket(!inBasket) }}>{inBasket ? '✓ In proposal' : '+ Add to proposal'}</button>}
-        {c.course_url && <a className="btn" href={c.course_url} target="_blank" rel="noopener noreferrer">Open course</a>}
+        <DetailsButton open={open} id={panel} onClick={() => setOpen(o => !o)} />
+        <ExtLink className="btn" href={c.course_url}>Open course</ExtLink>
       </div>
+      {open && <CourseDetails id={panel} courseId={c.course_id} />}
     </article>
   )
 }

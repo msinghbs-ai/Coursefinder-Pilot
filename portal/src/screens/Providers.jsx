@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { usePortal, usePagedList, useDebounced } from '../lib/portal.jsx'
 import { initials, stateShort } from '../lib/format.js'
 import { PageHead, StudyInBar, PillGroup, Select, LoadState, ShowMore, Count, Pill } from '../components/ui.jsx'
+import { ExtLink } from '../components/ExtLink.jsx'
 
 const ROUTE_WORDS = {
   represented: ['green', 'Represented'], direct: ['blue', 'Direct'], not_represented: ['grey', 'Not represented'], not_recorded: ['dashed', 'Status not recorded'],
@@ -46,7 +47,7 @@ function ProviderCard({ p }) {
       <div className="actions">
         <a className="btn primary" href={`#/courses?provider=${p.id}&providerName=${encodeURIComponent(p.name)}`}>View courses{p.course_count ? ` (${p.course_count.toLocaleString('en-AU')})` : ''}</a>
         {p.website
-          ? <a className="btn" href={p.website} target="_blank" rel="noopener noreferrer">Provider website</a>
+          ? <ExtLink className="btn" href={p.website}>Provider website</ExtLink>
           : <span className="muted small">Website not recorded</span>}
       </div>
     </article>

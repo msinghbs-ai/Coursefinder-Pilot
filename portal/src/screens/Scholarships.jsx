@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { usePortal, usePagedList, useDebounced } from '../lib/portal.jsx'
 import { awardValue, dateText, NOT_PUBLISHED, NOT_RECORDED } from '../lib/format.js'
 import { PageHead, StudyInBar, PillGroup, Select, LoadState, ShowMore, Count, Pill } from '../components/ui.jsx'
+import { ExtLink } from '../components/ExtLink.jsx'
 
 const STATUS = {
   open_now: ['green', 'Open now'], opens_later: ['amber', 'Opens later'], closed: ['red', 'Closed'], dates_not_published: ['grey', 'Dates not published'],
@@ -29,7 +30,7 @@ function ScholarshipCard({ s }) {
         <Cell label="How to apply">{apply}</Cell>
       </div>
       {s.source_url
-        ? <p><a className="textlink" href={s.source_url} target="_blank" rel="noopener noreferrer">Provider scholarship page</a></p>
+        ? <p><ExtLink className="textlink" href={s.source_url}>Provider scholarship page</ExtLink></p>
         : <p className="muted small">Provider page not recorded</p>}
     </article>
   )

@@ -11,6 +11,7 @@ export function toApiError(error) {
   if (code === 'PGRST202' || code === '42883' || /could not find the function|schema cache/i.test(text)) {
     return new ApiError('missing', 'This part of the platform is not switched on yet.')
   }
+  if (code === 'P0002' || /course not found/i.test(text)) return new ApiError('notfound', 'This course is no longer listed, so its details are not shown.')
   if (PLATFORM_PREFIX.test(text)) return new ApiError(text.startsWith('SAVED_LIMIT') ? 'limit' : 'input', text.replace(PLATFORM_PREFIX, ''))
   if (code === '42501' || /permission denied|not allowed|insufficient/i.test(text)) {
     return new ApiError('access', 'Your role does not include this. Ask a Platform Admin if you need it.')

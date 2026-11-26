@@ -29,7 +29,8 @@ test('the four route states have plain words, and no route is promised when none
   for (const w of ['Represented', 'Direct', 'Not represented', 'Status not recorded']) expect(providers).toContain(w)
   expect(providers).toMatch(/Ask the Study Square team before promising a route/)
   expect(providers).toMatch(/Website not recorded/)
-  expect(providers).toMatch(/rel="noopener noreferrer"/)
+  // s1215: the website link goes through the one new-tab component (target _blank, rel noopener noreferrer), guarded in the s1215 contract.
+  expect(providers).toMatch(/<ExtLink[^>]*href=\{p\.website\}/)
 })
 
 test('state codes and initials read naturally', () => {

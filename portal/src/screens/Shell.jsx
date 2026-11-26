@@ -3,6 +3,7 @@ import { firstName } from '../lib/roles.js'
 import { PortalProvider } from '../lib/portal.jsx'
 import Dashboard from './Dashboard.jsx'
 import Courses from './Courses.jsx'
+import EntryRequirements from './EntryRequirements.jsx'
 import Providers from './Providers.jsx'
 import Scholarships from './Scholarships.jsx'
 import Saved from './Saved.jsx'
@@ -15,10 +16,11 @@ import ProposalSheet from './ProposalSheet.jsx'
 const NAV = [
   { to: '/', label: 'Dashboard' },
   { to: '/courses', label: 'Courses' },
-  { to: '/proposals', label: 'Proposals', counsellor: true },
+  { to: '/entry-requirements', label: 'Entry Requirements' },
   { to: '/providers', label: 'Universities & Providers' },
   { to: '/scholarships', label: 'Scholarships' },
   { to: '/saved', label: 'Saved courses', counsellor: true },
+  { to: '/proposals', label: 'Proposals', counsellor: true },
 ]
 
 const COUNSELLOR_ONLY = what => (
@@ -40,6 +42,7 @@ function Screen({ here, route, access, name, userId }) {
     return <ProposalEditor key={prop.id} id={prop.id} params={route.params} />
   }
   if (here === '/courses') return <Courses params={route.params} access={access} />
+  if (here === '/entry-requirements') return <EntryRequirements access={access} />
   if (here === '/providers') return <Providers />
   if (here === '/scholarships') return <Scholarships />
   if (here === '/saved') {
