@@ -8,7 +8,8 @@
 --   and possible-route wording only, so this row would have been served as a requirement unless it is corrected first.
 -- Fix (both live on deploy; worker v1.0.54 entryDocumentInstruction for new reads, this migration for admitted rows): an active prior_qualification or
 --   minimum_grade row with no score and no grade whose words are a document-submission instruction (certified copies, transcripts or documents; submit,
---   upload, attach, send or lodge an application, form, document, transcript or copy) and that names no qualification level (Year 10 to 12, certificate III
+--   upload, attach, send or lodge an application, form, document, transcript or copy; read from the row's description, the stated requirement, not its
+--   quote) and that names no qualification level (Year 10 to 12, certificate III
 --   or IV, diploma, bachelor, degree, AQF, honours, master, doctorate, equivalent) becomes kind general_note. Quote, description, audience and source stay;
 --   provenance keeps the earlier kind; every id is logged. Manually locked courses are left unchanged. "Submit a copy of minimum Year 12 or equivalent"
 --   (113935B, 119104D) names a level and is left as read.
@@ -34,8 +35,8 @@ select e.id, e.course_id, e.kind
   from catalogue.course_entry_requirements e
  where e.status = 'active' and e.kind in ('prior_qualification', 'minimum_grade')
    and e.min_entry_score is null and nullif(btrim(coalesce(e.min_grade, '')), '') is null
-   and (coalesce(e.description, '') || ' ' || coalesce(e.quote, '')) ~* '(\mcertified (copy|copies|transcripts?|documents?)\M|\m(submit|upload|attach|send|lodge)\M[^.]{0,50}\m(application|form|documents?|transcripts?|copies|copy|certified)\M)'
-   and (coalesce(e.description, '') || ' ' || coalesce(e.quote, '')) !~* '\m(year\s*(10|11|12)|certificate\s*(iii|iv|3|4)|diploma|bachelor|degree|aqf|honours|masters?|doctorate|equivalent)\M'
+   and coalesce(e.description, '') ~* '(\mcertified (copy|copies|transcripts?|documents?)\M|\m(submit|upload|attach|send|lodge)\M[^.]{0,50}\m(application|form|documents?|transcripts?|copies|copy|certified)\M)'
+   and coalesce(e.description, '') !~* '\m(year\s*(10|11|12)|certificate\s*(iii|iv|3|4)|diploma|bachelor|degree|aqf|honours|masters?|doctorate|equivalent)\M'
    and not exists (select 1 from pipeline.manual_locks l
                     where l.entity = 'course' and l.entity_id = e.course_id
                       and (l.field = 'all' or coalesce(security.toolset_setting('pipeline', 'aer.schedule_lock_fields'), '[]'::jsonb) ? l.field));

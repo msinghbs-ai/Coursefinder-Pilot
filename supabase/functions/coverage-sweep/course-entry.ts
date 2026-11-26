@@ -190,8 +190,8 @@ export function entryAgeNotScore(r: any, quote: string): { row: any; normalised:
 // "Submit a copy of minimum Year 12 or equivalent" names a level and stays as read.
 export const ENTRY_DOC_INSTRUCTION = /\bcertified (copy|copies|transcripts?|documents?)\b|\b(submit|upload|attach|send|lodge)\b[^.]{0,50}\b(application|form|documents?|transcripts?|copies|copy|certified)\b/i;
 export const ENTRY_LEVEL_WORDS = /\b(year\s*(10|11|12)|certificate\s*(iii|iv|3|4)|diploma|bachelor|degree|aqf|honours|masters?|doctorate|equivalent)\b/i;
-export function entryDocumentInstruction(r: any, quote: string): { row: any; normalised: boolean } {
-  const text = `${String(r?.description || "")} ${quote}`;
+export function entryDocumentInstruction(r: any, _quote: string): { row: any; normalised: boolean } {
+  const text = String(r?.description || "");  // the stated requirement; the quote is only its evidence (a row whose quote tells how to apply but whose description names a qualification is a requirement)
   if ((r?.kind === "prior_qualification" || r?.kind === "minimum_grade") && (r?.min_entry_score == null) && !String(r?.min_grade || "").trim()
       && ENTRY_DOC_INSTRUCTION.test(text) && !ENTRY_LEVEL_WORDS.test(text))
     return { row: { ...r, kind: "general_note", min_entry_score: null, min_entry_score_basis: null, document_instruction: { kind: r.kind, rule: "s1293 application instruction" } }, normalised: true };

@@ -21,6 +21,8 @@ test('s1293: an application instruction is a general note; a wording that names 
   expect(entryDocumentInstruction({ kind: 'minimum_grade', min_entry_score: 70, description: 'Submit certified copies; minimum ATAR 70' }, 'Submit certified copies; minimum ATAR 70').normalised).toBe(false)
   expect(entryDocumentInstruction({ kind: 'minimum_grade', min_grade: 'GPA 5.0', description: 'Submit certified copies' }, 'Submit certified copies').normalised).toBe(false)
   expect(entryDocumentInstruction({ kind: 'portfolio_interview', description: 'Submit a portfolio' }, 'Submit a portfolio').normalised).toBe(false)
+  expect(entryDocumentInstruction({ kind: 'prior_qualification', description: 'High School Certificate' }, 'To apply for this course, you are required to complete an enrolment form and submit all required supporting evidence including copies of your: High School Certificate.').normalised).toBe(false)
+  expect(entryDocumentInstruction({ kind: 'prior_qualification', description: 'Senior schooling qualification' }, 'If your senior schooling is from outside Australia, you can submit your application to UQ.').normalised).toBe(false)
   const page = 'Applicants should submit certified transcripts of all academic achievements, including secondary school education.'
   const { rows } = courseEntrySliceRows({ rows: [{ kind: 'prior_qualification', audience: 'all', description: page, quote: page }] }, page)
   expect(rows[0].kind).toBe('general_note')
@@ -29,6 +31,8 @@ test('s1293: an application instruction is a general note; a wording that names 
 test('s1293: the migration applies the same words to active rows, skips locked courses, keeps the earlier kind and logs every id', () => {
   expect(code).toContain("e.status = 'active' and e.kind in ('prior_qualification', 'minimum_grade')")
   expect(code).toContain('e.min_entry_score is null')
+  expect(code).toContain("coalesce(e.description, '') ~*")
+  expect(code).not.toContain('e.quote')
   expect(code).toContain("set kind = 'general_note', updated_at = now()")
   expect(code).toContain("'document_instruction', jsonb_build_object('kind', r.kind")
   expect(code).toContain('not exists (select 1 from pipeline.manual_locks l')
