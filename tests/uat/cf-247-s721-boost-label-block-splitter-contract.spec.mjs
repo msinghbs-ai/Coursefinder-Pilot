@@ -52,7 +52,7 @@ test('versions: worker v1.0.24, selectors v6 and v3, prompt unchanged', () => {
   expect(B.BOOST_SELECTOR).toBe('study-load-windows-v6')
   expect(B.BOOST_SELECTOR_INTERNATIONAL).toBe('study-load-international-v3')
   expect(B.BOOST_STUDY_LOAD_PROMPT_VERSION).toBe('boost-study-load-v5')
-  expect(fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')).toContain('const WORKER = "coverage-sweep-worker-v1.0.49"')  // v1.0.38 from s1037  // v1.0.37 from s1029  // v1.0.36 from s1017  // v1.0.35 from s992  // v1.0.34 from s851
+  expect(fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')).toContain('const WORKER = "coverage-sweep-worker-v1.0.50"')  // v1.0.38 from s1037  // v1.0.37 from s1029  // v1.0.36 from s1017  // v1.0.35 from s992  // v1.0.34 from s851
 })
 
 test('a line under the Domestic label is never an international sentence, whatever it says about visas', () => {

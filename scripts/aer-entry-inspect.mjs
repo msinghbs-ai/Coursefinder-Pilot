@@ -30,7 +30,7 @@ const pages = []
 const step = pick.length ? 1 : 4  // a selected source is asked alone: a PDF's positioned text is large
 for (let k = 0; k < items.length; k += step) {  // a small batch keeps one worker answer well under the response size pg_net keeps
   const chunk = items.slice(k, k + step)
-  const res = await worker(`jsonb_build_object('mode', 'entry_inspect', 'source_ids', to_jsonb(array[${chunk.map((x) => lit(x.source_id)).join(', ')}]::text[]), 'pages', ${lit(pick.length ? `${pageFrom}-${pageTo}` : '')}, 'links', ${pick.length ? 'true' : 'false'}, 'scope_check', ${pick.length ? 'true' : 'false'})`)
+  const res = await worker(`jsonb_build_object('mode', 'entry_inspect', 'source_ids', to_jsonb(array[${chunk.map((x) => lit(x.source_id)).join(', ')}]::text[]), 'pages', ${lit(pick.length ? `${pageFrom}-${pageTo}` : '')}, 'links', ${pick.length ? 'true' : 'false'}, 'scope_check', ${pick.length ? 'true' : 'false'}, 'geometry', ${pick.length && pageTo - pageFrom < 3 ? 'true' : 'false'})`)
   if (res.mode !== 'entry_inspect') throw Error('the worker did not answer in mode entry_inspect')
   for (const p of res.pages || []) {
     const it = chunk.find((x) => x.source_id === p.source_id) || null
