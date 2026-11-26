@@ -10,10 +10,9 @@ name: Auto-merge
 on:
   pull_request:
     types: [labeled, synchronize, reopened]
-  check_suite:
-    types: [completed]
+  # s1285: one look when the test evidence of a pull request finishes (was every finished check suite on every branch: most auto-merge runs)
   workflow_run:
-    workflows: ["Database migration dry run (rolled back)"]
+    workflows: ["Database migration dry run (rolled back)", "Test evidence"]
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -34,7 +33,8 @@ jobs:
     name: auto-merge
     if: >-
       (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'automerge')
-        && github.event.pull_request.head.repo.full_name == github.repository)
+        && github.event.pull_request.head.repo.full_name == github.repository
+        && (github.event.action != 'labeled' || github.event.label.name == 'automerge'))
       || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 130
@@ -50,12 +50,14 @@ jobs:
           PR: ${{ github.event.pull_request.number || inputs.pr }}
           MODE: wait
           MIN_CHECKS: '5'
+          REQUIRED_CHECKS: 'build-and-smoke;test-evidence;Secret scan (ISM-2030);Dependency vulnerabilities (ISM-2028, 2102, 2154);Software bill of materials (ISM-1730)'
+          MAIN_UAT_WORKFLOW: deployed-uat.yml
           POST_MERGE: pilot
         run: bash scripts/ci/auto-merge.sh
 
-  on-check-suite:
+  on-test-evidence:
     name: auto-merge
-    if: github.event_name == 'check_suite' && github.event.check_suite.head_branch != 'main'
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Test evidence' && github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -64,15 +66,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          SHA: ${{ github.event.check_suite.head_sha }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           for pr in $(gh api "repos/$REPO/commits/$SHA/pulls" --jq '.[] | select(.state == "open" and any(.labels[]; .name == "automerge")) | .number'); do
-            PR=$pr MODE=once MIN_CHECKS=5 POST_MERGE=pilot bash scripts/ci/auto-merge.sh
+            PR=$pr MODE=once MIN_CHECKS=5 REQUIRED_CHECKS='build-and-smoke;test-evidence;Secret scan (ISM-2030);Dependency vulnerabilities (ISM-2028, 2102, 2154);Software bill of materials (ISM-1730)' MAIN_UAT_WORKFLOW=deployed-uat.yml POST_MERGE=pilot bash scripts/ci/auto-merge.sh
           done
 
   probe-cleanup:
     name: probe branch clean-up
-    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'workflow_dispatch'
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.name != 'Test evidence' && github.event.workflow_run.event == 'workflow_dispatch'
+      && (endsWith(github.event.workflow_run.head_branch, '-probe') || endsWith(github.event.workflow_run.head_branch, '-diag'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:

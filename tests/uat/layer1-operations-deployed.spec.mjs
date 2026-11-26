@@ -7,9 +7,9 @@ import { openLayer1 } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 // v2.15.246 (bugs 11/10-3, Feature 2): Layer 1 › Sources is one list; filters line up with the columns; a row opens in place
-async function chooseCountry(dialog,country){await dialog.locator('.xl-field').filter({hasText:'Country'}).locator('select').selectOption(country)}
-async function chooseType(dialog,type){await dialog.locator('.xl-field').filter({hasText:'Type'}).locator('select').selectOption(type)}
-async function openRow(dialog,row){const id=await row.getAttribute('data-l1-source');if(!(await row.locator('.xl-body').count()))await row.locator('.xl-chev').click();const body=dialog.locator(`[data-l1-source-body="${id}"]`);await expect(body).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});return body}
+async function chooseCountry(dialog,country){await dialog.locator('.ui-xl-field').filter({hasText:'Country'}).locator('select').selectOption(country)}
+async function chooseType(dialog,type){await dialog.locator('.ui-xl-field').filter({hasText:'Type'}).locator('select').selectOption(type)}
+async function openRow(dialog,row){const id=await row.getAttribute('data-l1-source');if(!(await row.locator('.ui-xl-body').count()))await row.locator('.ui-xl-chev').click();const body=dialog.locator(`[data-l1-source-body="${id}"]`);await expect(body).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});return body}
 
 async function validateSource(page,dialog,predicate,label){
   const readResponsePromise=page.waitForResponse(response=>{
@@ -35,8 +35,8 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
   test('AU and NZ expose the production-shaped operator journey',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const dialog=await openLayer1(page)
     await expect(page.getByRole('heading',{name:'Layer 1 Register'}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    const summary=dialog.locator('.xl-summary');for(const label of ['Needs attention','Running','Due','Paused','Healthy'])await expect(summary).toContainText(label)
-    await expect(dialog.locator('.xl-head')).toContainText('Source');await expect(dialog.locator('.xl-head')).toContainText('Health');await expect(dialog.locator('.xl-head')).toContainText('Schedule')
+    const summary=dialog.locator('.ui-xl-summary');for(const label of ['Needs attention','Running','Due','Paused','Healthy'])await expect(summary).toContainText(label)
+    await expect(dialog.locator('.ui-xl-head')).toContainText('Source');await expect(dialog.locator('.ui-xl-head')).toContainText('Health');await expect(dialog.locator('.ui-xl-head')).toContainText('Schedule')
     for(const country of ['AU','NZ']){await chooseCountry(dialog,country);const row=dialog.locator('[data-l1-source]').filter({hasNotText:/scholarship/i}).first();await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(row.locator('[data-col="country"]')).toContainText(country);const body=await openRow(dialog,row);await expect(body).toContainText('evidence');await expect(body).toContainText('Checked');await expect(body.getByRole('button',{name:'Check source'})).toBeVisible()}
     await expect(page.getByRole('tab',{name:'Manual batch runs'})).toHaveCount(0)
     await expect(dialog.getByText(/reset database/i)).toHaveCount(0);await expect(dialog.getByText(/parser qualification/i)).toHaveCount(0)

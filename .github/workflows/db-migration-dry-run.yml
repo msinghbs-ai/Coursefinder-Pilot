@@ -36,6 +36,7 @@ concurrency:
 jobs:
   dry-run:
     if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'live-dry-run')
+      && (github.event.action != 'labeled' || github.event.label.name == 'live-dry-run')  # s1285: another label added later does not re-run the live dry run
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
