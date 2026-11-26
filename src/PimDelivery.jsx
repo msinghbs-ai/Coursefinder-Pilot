@@ -17,6 +17,7 @@
 // Rules kept: a figure that is not counted is "Not measured" or "Unknown" with its reason, never 0; roll-ups are sums over pim.fields (the backend does not repeat
 // them); countries come from the rows and domains from the field register (s930, no list is typed here); the screen adds no control and no setting, so every
 // existing permission, backend control and the Consumer API are untouched. Detailed queue and lane work stays on Operations and Scheduled jobs (links below).
+import{RecordDrill}from'./RecordTrace' // CF-247 s1282 (DR-19 increment 2)
 import React,{useEffect,useMemo,useState}from'react'
 import{StatusChip,fmtDateTime,fmtNumber,fmtRelative}from'./ui-kit'
 import{fmtMoney}from'./lib/format'
@@ -233,6 +234,8 @@ export default function PimDelivery({pim,now,rank=0,streams=null,snapshots=null,
             {countries.map(c=>{const x=cellOf(inD.filter(r=>r.country===c),measure);return <td key={c} data-label={countryName(lk,c)}><button type="button" className="pim-cell" data-pim-cell={c} onClick={()=>{setCountry(c);setDomain(g)}} title={`Open ${g} in ${countryName(lk,c)}`}><strong>{x.text}</strong><small>{x.small}</small>{x.pct!=null&&<span className="dd-bar" role="img" aria-label={`${Math.round(x.pct)}% complete`}><i style={{width:`${Math.min(100,x.pct)}%`}}/></span>}</button></td>})}
           </tr>})}
       </tbody></table></div>
+      {/* CF-247 s1282 (DR-19 increment 2): from a field of this matrix to a provider's records, by hold or recovery class, each opening its trace */}
+      <RecordDrill label="Records by field, hold or recovery" rank={rank}/>
       {(measure==='canonical'||measure==='published')&&<div className="sl-sub" data-pim-basis-legend><strong>Gain bases in this view.</strong> A gain is counted on the basis its field reports; fields on different bases are not added, and a cell that spans two shows Mixed bases.
         <ul>{byBasis(rows).map(([b,g])=>{const ds=domains.filter(([,fs])=>g.some(r=>fs.has(r.field))).map(([d])=>d);return <li key={b||'none'} data-pim-basis-item>{basisWord(b)}: {ds.join(', ')||'—'}</li>})}</ul></div>}
 

@@ -316,6 +316,11 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(Layer4Journey\.jsx|Layer4Inbox\.jsx)$|^supabase/migrations/.*_cf247_s1272_dr19_record_journey\.sql$|^tests/uat/cf-247-s1272-dr19-record-journey-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/cf-247-s1272-dr19-record-journey-deployed.spec.mjs)
           fi
+          # DR-19 increments 2 to 4 (SS-Programme-Control 26 Nov 2026 22:52, s1282): the record trace in Data Delivery and the course drawer runs its
+          # read-only production acceptance as the Platform Admin, at desktop and phone width
+          if printf '%s\n' "$changed" | grep -Eq '(^src/RecordTrace\.jsx$|^tests/uat/cf-247-s1282-dr19-record-trace-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/cf-247-s1282-dr19-record-trace-deployed.spec.mjs)
+          fi
           # S2-BOOST-Courses (19 Nov 2026, s728): last, so it wins over blocks that also match this workflow file
           if printf '%s\n' "$changed" | grep -qx '.github/s2-boost-live-counts-candidate'; then
             targeted=(tests/uat/cf-247-s728-pim-admin-live-counts-deployed.spec.mjs)
