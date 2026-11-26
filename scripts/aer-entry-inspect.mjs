@@ -9,7 +9,7 @@ need()
 // The read-only database role cannot run security functions (first run, 19 Nov 2026 06:24: "permission denied for function aer_matrix_machine_check_v1"), so the list is taken
 // from the tables: every entry-matrix first read waiting in Layer 4, with its run's completeness verdict and dropped rows. Argument 1 is kept for the record only.
 const rules = String(process.argv[2] || 'all').split(',').map((s) => s.trim()).filter(Boolean)
-// s1275 (S2-AER, 26 Nov 2026): argument 2 selects stored sources (comma-separated entry-matrix source ids, at most 12, each a UUID), and argument 3 a PDF page range ("15-33"; at most 60 pages).
+// s1253 (S2-AER, 26 Nov 2026): argument 2 selects stored sources (comma-separated entry-matrix source ids, at most 12, each a UUID), and argument 3 a PDF page range ("15-33"; at most 60 pages).
 // Only a source the database lists in pipeline.entry_matrix_sources is asked for; the worker returns its stored copy as before, the copy's hash is compared with the hash recorded for it, and nothing
 // else is reachable (no path, no bucket listing, no export of a whole document).
 const pick = String(process.argv[3] || '').split(',').map((s) => s.trim()).filter(Boolean)
@@ -30,7 +30,7 @@ const pages = []
 const step = pick.length ? 1 : 4  // a selected source is asked alone: a PDF's positioned text is large
 for (let k = 0; k < items.length; k += step) {  // a small batch keeps one worker answer well under the response size pg_net keeps
   const chunk = items.slice(k, k + step)
-  const res = await worker(`jsonb_build_object('mode', 'entry_inspect', 'source_ids', to_jsonb(array[${chunk.map((x) => lit(x.source_id)).join(', ')}]::text[]), 'pages', ${lit(pick.length ? `${pageFrom}-${pageTo}` : '')}, 'links', ${pick.length ? 'true' : 'false'})`)
+  const res = await worker(`jsonb_build_object('mode', 'entry_inspect', 'source_ids', to_jsonb(array[${chunk.map((x) => lit(x.source_id)).join(', ')}]::text[]), 'pages', ${lit(pick.length ? `${pageFrom}-${pageTo}` : '')}, 'links', ${pick.length ? 'true' : 'false'}, 'scope_check', ${pick.length ? 'true' : 'false'})`)
   if (res.mode !== 'entry_inspect') throw Error('the worker did not answer in mode entry_inspect')
   for (const p of res.pages || []) {
     const it = chunk.find((x) => x.source_id === p.source_id) || null
