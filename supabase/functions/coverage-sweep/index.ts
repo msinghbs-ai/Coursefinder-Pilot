@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { feeAiParsed, feeAiRequest, hasFeeAmount, noNul } from "./fees.ts";
 import { answerLimit, errorCost, readAnswer, readError, type ReadType } from "./answer.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { detRead, detUncovered, AER_DET_VERSION } from "./aer-det-reader.ts"; import { elrRead, ELR_DET_VERSION } from "./elr-det-reader.ts"; import { centralRead, ELR_CENTRAL_VERSION } from "./elr-central-reader.ts"; import { bandMentions, ELR_BAND_VERSION } from "./elr-band-reader.ts"; import { fidRead, FID_DET_VERSION } from "./fid-det-reader.ts";  // s840: ELR reader on this line so the worker's line references stay (s851: fid-det-reader added on the same line)
+import { detRead, detUncovered, AER_DET_VERSION, AER_DET_SCOPED_VERSION } from "./aer-det-reader.ts"; import { elrRead, ELR_DET_VERSION } from "./elr-det-reader.ts"; import { centralRead, ELR_CENTRAL_VERSION } from "./elr-central-reader.ts"; import { bandMentions, ELR_BAND_VERSION } from "./elr-band-reader.ts"; import { fidRead, FID_DET_VERSION } from "./fid-det-reader.ts";  // s840: ELR reader on this line so the worker's line references stay (s851: fid-det-reader added on the same line)
 import { clean, currencyFor, domainFitsName, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, pageDataItems, robotsAllows, siteNameMatch, staleCalendarUrl, titleOf } from "./extract.ts";
 // v0.17.32: same normalising as extract.ts siteNorm (kept here so the shared extract.ts, used by other functions, is unchanged)
 import { LINK_ROLLOVER_VERSION, pageAnswer, storedCopyAnswer, strongIdentity, yearCandidates } from "./link-rollover.ts"; import { structRead, structLines, STRUCT_DET_VERSION } from "./struct-det-reader.ts"; // s861: deterministic course structure reader (duration, study load, delivery mode)
@@ -3026,6 +3026,9 @@ async function handle(req: Request): Promise<Response> {
     }
     // v1.0.32 (s815): read-only. The caller (workflow aer-det-read.yml) sends stored course pages (course_id, evidence_id, storage_path); each is read from storage, turned to text and read by aer-det-reader.ts. Nothing is written here.
     if (mode === "aer_det_read") {
+      // S3-AER: opt-in v1.5 for explicitly scoped manual NZ/CA providers only.
+      if (body.scoped_extractor != null && body.scoped_extractor !== AER_DET_VERSION && body.scoped_extractor !== AER_DET_SCOPED_VERSION) return j({ ok: false, mode, error: "unqualified_academic_extractor" });
+      const scopedAER = body.scoped_extractor === AER_DET_SCOPED_VERSION;
       const items: { course_id: string; evidence_id: string; storage_path: string }[] = (Array.isArray(body.items) ? body.items : []).slice(0, 40);  // fixed: bound on one call (CPU and response size)
       const out: unknown[] = [];
       await pool(items, 4, async (it) => {
@@ -3035,10 +3038,10 @@ async function handle(req: Request): Promise<Response> {
           const b = new Uint8Array(await data.arrayBuffer());
           const raw = b[0] === 0x1f && b[1] === 0x8b ? await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text() : new TextDecoder().decode(b);
           const text = /<\w+[\s>]/.test(raw.slice(0, 2000)) ? htmlToText(raw) : raw;
-          const rd = detRead(text); out.push({ course_id: it.course_id, evidence_id: it.evidence_id, chars: text.length, sha256: await sha256(new TextEncoder().encode(text)), readings: rd, uncovered: detUncovered(text, rd) });
+          const rd = detRead(text, { scoped: scopedAER }); out.push({ course_id: it.course_id, evidence_id: it.evidence_id, chars: text.length, sha256: await sha256(new TextEncoder().encode(text)), readings: rd, uncovered: detUncovered(text, rd) });
         } catch (e) { out.push({ course_id: it.course_id, evidence_id: it.evidence_id, error: (e instanceof Error ? e.message : String(e)).slice(0, 160) }) }
       });
-      return j({ ok: true, mode, extractor: AER_DET_VERSION, pages: out, ms: Date.now() - t0, worker: WORKER, workerVersion: VERSION });
+      return j({ ok: true, mode, extractor: scopedAER ? AER_DET_SCOPED_VERSION : AER_DET_VERSION, pages: out, ms: Date.now() - t0, worker: WORKER, workerVersion: VERSION });
     }
     // s861 (session S1-Structure-Outcomes, 20 Nov 2026): read-only. The caller (job struct-det-sweep, security.struct_det_sweep_v1) sends stored course pages
     // (course_id, evidence_id, storage_path); each is read from storage and read by struct-det-reader.ts (duration, study load, delivery mode; no model, no fetch). Nothing is written here.
