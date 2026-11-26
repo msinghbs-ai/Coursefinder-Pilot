@@ -1,4 +1,4 @@
-// Guards: F-OPS.17 to F-OPS.21 (SS-Programme-Control 26 Nov 2026 14:25, "Final frontend accuracy and UAT"): the Autonomous PIM block shows each gain with its gain_basis and never adds gains measured on different bases, keeps published-provider gain apart from verified consumer delivery, reads a measured zero as measured and a missing figure as Not measured (never summed as 0), and shows canonical field coverage apart from work-item counts.
+// Guards: F-OPS.17 to F-OPS.21 (SS-Programme-Control 26 Nov 2026 14:25 and 15:04, "Final frontend accuracy and UAT" and "Final authenticated frontend UAT"): the Autonomous PIM block is shown only at rank 3 and above and is read only, and the Autonomous PIM block shows each gain with its gain_basis and never adds gains measured on different bases, keeps published-provider gain apart from verified consumer delivery, reads a measured zero as measured and a missing figure as Not measured (never summed as 0), and shows canonical field coverage apart from work-item counts.
 // Desktop project (chromium-desktop, 1440 x 900). Mocked admin plus tests/uat/support/pim-mock.mjs; nothing reaches a real backend.
 import { test, expect } from '@playwright/test'
 import { mockAdmin } from './support/admin-mock.mjs'
@@ -122,4 +122,30 @@ test.describe('canonical backlog and work-item holds', () => {
     await pim.locator('[data-pim-measure]').selectOption('backlog')
     await expect(pim.locator('[data-pim-measure-help]')).toContainText('Work-item holds are not subtracted')
   })
+})
+
+test.describe('role permissions', () => {
+  async function openAt(page, rank) {
+    await mockAdmin(page, { rank }); await mockLaneFunnels(page)
+    await mockPim(page)
+    await page.goto(OPERATIONS)
+  }
+  test('below rank 3 (counsellor) Data Delivery and the PIM block are not shown', async ({ page }) => {
+    await openAt(page, 2)
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('[data-dd-pim]')).toHaveCount(0)
+    await expect(page.locator('[data-data-delivery]')).toHaveCount(0)
+  })
+  for (const rank of [3, 4, 6]) {
+    test(`rank ${rank} sees the PIM block, and it offers no control that changes data`, async ({ page }) => {
+      await openAt(page, rank)
+      const pim = page.locator('[data-dd-pim]')
+      await expect(pim).toBeVisible({ timeout: 20_000 })
+      await expect(pim.locator('input, textarea, [data-pim-save], [data-pim-apply]')).toHaveCount(0)
+      // every button is a view or navigation control, never an action on data
+      const labels = await pim.locator('button:not([data-pim-cell])').allTextContents() // matrix cells are figures that open a country and domain
+      for (const l of labels) expect(l).not.toMatch(/\b(save|apply|approve|delete|run now|retry now|activate)\b/i)
+      await expect(pim.locator('[data-pim-link="layer4"]').first()).toHaveAttribute('href', /#layer-4-review/)
+    })
+  }
 })
