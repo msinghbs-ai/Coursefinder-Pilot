@@ -7,6 +7,10 @@
 //                    screen says it is not available, and no request status, weight or coverage is estimated.
 //   Refresh & maintenance: freshness of held values, source outcomes (a protected hold never removes a value), excluded gaps (workload, not delivered data),
 //                    and the Academic entry, Scholarships and replacement-check lifecycle.
+// s1218 (Platform Admin, SS-Programme-Control 14:25 26 Nov 2026, final frontend accuracy): each gain is shown with its gain_basis and rows with different bases are
+// never added together (a mixed cell says so); "published-provider gain" is not "verified consumer delivery" (that is not counted per field); a measured zero reads
+// "0, measured" and an unavailable figure "Not measured" (a missing value is never summed as 0); canonical field coverage (applicable, completed, backlog) and
+// work-item counts (queued, running, held, failed) are shown as two groups, because work items can exceed the backlog.
 // Rules kept: a figure that is not counted is "Not measured" or "Unknown" with its reason, never 0; roll-ups are sums over pim.fields (the backend does not repeat
 // them); countries come from the rows and domains from the field register (s930, no list is typed here); the screen adds no control and no setting, so every
 // existing permission, backend control and the Consumer API are untouched. Detailed queue and lane work stays on Operations and Scheduled jobs (links below).
@@ -17,8 +21,11 @@ import{hrefFor}from'./nav-map'
 import{useLookups,countryName}from'./lib/lookups'
 import{supabase}from'./lib/supabase'
 
-const sum=(rows,k)=>rows.reduce((a,r)=>a+(Number(r[k])||0),0)
-const num=v=>v==null?'':fmtNumber(Number(v))
+const has=v=>v!=null&&v!==''&&Number.isFinite(Number(v))
+/** Sum over the rows that carry the figure. A row with no value is counted as missing, never as 0. */
+const agg=(rows,k)=>{let total=0,known=0;for(const r of rows)if(has(r[k])){total+=Number(r[k]);known++}return{total,known,missing:rows.length-known}}
+const sum=(rows,k)=>agg(rows,k).total
+const num=v=>has(v)?fmtNumber(Number(v)):''
 const word=s=>{const t=String(s||'').replaceAll('_',' ').trim();return t?t[0].toUpperCase()+t.slice(1):''}
 const pctText=(n,d)=>d>0?`${fmtNumber(Math.round(n/d*1000)/10,{maxDecimals:1})}%`:null
 /** Hours as the words a person reads: hours, days or years. Never a guess: the caller passes only a measured figure. */
@@ -30,6 +37,16 @@ function NotMeasured({reason,word:w='Not measured'}){return <span className="dd-
 /** The way back from the detail screens (Scheduled jobs, Platform health › Queues & yield) to the primary monitoring screen. */
 export const PimBacklink=()=><p className="l3v-note" data-pim-backlink>Progress by country and domain (backlog, gains, clearance, human interventions) is in <a className="cf-link" href={hrefFor('layer2','operations')}>Data Delivery › Autonomous PIM</a> on Layer 2/3 Build &amp; enrich › Operations.</p>
 const V=({children})=><span className="pim-v">{children}</span> // one flex child per table cell, so a stacked phone row keeps a figure and its note together
+/** A figure from the rows: Not measured when no row carries it; "at least" when some rows do not. */
+function Fig({a,signed,unit,attr}){
+  if(!a.known)return <NotMeasured/>
+  const t=signed&&a.total>0?`+${fmtNumber(a.total)}`:fmtNumber(a.total)
+  return <><strong {...attr}>{t}{unit?<small> {unit}</small>:null}</strong>{a.missing>0&&<small data-pim-partial>at least; {fmtNumber(a.missing)} row{a.missing===1?'':'s'} not counted</small>}{signed&&a.total===0&&<small data-pim-measured-zero>measured: none in the window</small>}</>
+}
+const BASIS_NONE='Basis not stated'
+/** Rows grouped by the basis the backend measured their gain on. Gains on different bases are never added together. */
+const byBasis=rows=>{const m=new Map();for(const r of rows){const k=r.gain_basis||'';if(!m.has(k))m.set(k,[]);m.get(k).push(r)}return[...m.entries()]}
+const basisWord=b=>b||BASIS_NONE
 const Val=({v,reason,unit})=>v==null?<NotMeasured reason={reason}/>:<strong data-pim-value={v}>{fmtNumber(Number(v))}{unit?<small> {unit}</small>:null}</strong>
 
 // The field register (domains and plain labels) is read once a page load and shared; a failed read is tried again on the next use.
@@ -41,50 +58,71 @@ function loadRegister(){
 
 const MEASURES=[
   {key:'completeness',label:'Canonical completeness',help:'Values held out of the fields that apply (held divided by applicable).'},
-  {key:'backlog',label:'Backlog',help:'Applicable fields that still hold no value.'},
-  {key:'canonical',label:'Canonical gain',help:'Values admitted in the window.'},
-  {key:'published',label:'Consumer gain',help:'Values admitted in the window for courses of a published provider. Consumer coverage as a share is not counted yet.'},
+  {key:'backlog',label:'Backlog',help:'Applicable fields that still hold no value (canonical). Work-item holds are not subtracted from it.'},
+  {key:'canonical',label:'Canonical gain',help:'Values admitted in the window, on the basis shown for each field. Fields measured on different bases are not added together.'},
+  {key:'published',label:'Published-provider gain',help:'Values admitted in the window for courses of a provider whose Published switch is on. This is not verified delivery to the website or Zoho, which is not counted per field.'},
 ]
 const VIEWS=[{key:'matrix',label:'Delivery matrix'},{key:'requests',label:'Requests & feedback'},{key:'refresh',label:'Refresh & maintenance'}]
 
 function cellOf(rows,measure){
-  const a=sum(rows,'applicable'),h=sum(rows,'held')
+  const a=agg(rows,'applicable'),h=agg(rows,'held')
   if(!rows.length)return{text:'—',small:'No field of this kind',tone:'none'}
-  if(measure==='completeness'){if(!(a>0))return{text:'—',small:'None apply',tone:'none'};return{text:pctText(h,a),small:`${fmtNumber(h)} of ${fmtNumber(a)}`,pct:h/a*100}}
-  if(measure==='backlog')return{text:fmtNumber(sum(rows,'backlog')),small:a>0?`of ${fmtNumber(a)} applicable`:'None apply'}
-  if(measure==='canonical')return{text:`+${fmtNumber(sum(rows,'canonical_gain_window'))}`,small:'in the window'}
-  return{text:`+${fmtNumber(sum(rows,'published_gain_window'))}`,small:'in the window'}
+  if(measure==='completeness'){if(!a.known||!h.known)return{text:'Not measured',small:'no count for these fields',tone:'unknown'};if(!(a.total>0))return{text:'—',small:'None apply',tone:'none'};return{text:pctText(h.total,a.total),small:`${fmtNumber(h.total)} of ${fmtNumber(a.total)}${a.missing||h.missing?' (at least)':''}`,pct:h.total/a.total*100}}
+  if(measure==='backlog'){const b=agg(rows,'backlog');return b.known?{text:fmtNumber(b.total),small:a.total>0?`of ${fmtNumber(a.total)} applicable${b.missing?' (at least)':''}`:'None apply'}:{text:'Not measured',small:'no count for these fields',tone:'unknown'}}
+  const k=measure==='canonical'?'canonical_gain_window':'published_gain_window'
+  const groups=byBasis(rows)
+  if(groups.length>1)return{text:'Mixed bases',small:`${fmtNumber(groups.length)} bases, not added`,tone:'mixed'}
+  const g=agg(rows,k)
+  if(!g.known)return{text:'Not measured',small:'no count for these fields',tone:'unknown'}
+  return{text:g.total>0?`+${fmtNumber(g.total)}`:'0',small:g.total>0?'in the window':'measured: none in the window'}
 }
 
-/** The funnel for one scope: sums over the rows. Stage counts are work-item counts and can overlap, so they are shown as counts, not as parts of the backlog. */
+/** The funnel for one scope, in two groups that are never added together: canonical field coverage (applicable, completed, backlog) and the work items in the queue
+ *  (queued, running, held, failed). Work items are counted per queue item, not per course field, so a held count can exceed the backlog. */
 function Funnel({rows,label}){
-  const applicable=sum(rows,'applicable'),held=sum(rows,'held'),backlog=sum(rows,'backlog'),queued=sum(rows,'queued'),running=sum(rows,'running'),review=sum(rows,'review'),nosrc=sum(rows,'no_source_found'),failed=sum(rows,'failed')
-  const cells=[
-    ['applicable','Applicable',fmtNumber(applicable),'fields that apply to a course'],
-    ['backlog','Backlog',fmtNumber(backlog),'applicable, no value held yet'],
-    ['queued','Queued',fmtNumber(queued),'waiting for a worker'],
-    ['running','Running',fmtNumber(running),'being processed now'],
-    ['held','Held',fmtNumber(review+nosrc),`${fmtNumber(review)} in review · ${fmtNumber(nosrc)} no source found`],
-    ['failed','Failed',fmtNumber(failed),'last attempt failed'],
-    ['completed','Completed',fmtNumber(held),`value held · ${pctText(held,applicable)||'no applicable field'}`],
+  const A=k=>agg(rows,k)
+  const applicable=A('applicable'),held=A('held'),backlog=A('backlog'),queued=A('queued'),running=A('running'),review=A('review'),nosrc=A('no_source_found'),failed=A('failed')
+  const hold=review.known||nosrc.known?{known:1,total:review.total+nosrc.total,missing:Math.max(review.missing,nosrc.missing)}:{known:0,total:0,missing:rows.length}
+  const fig=(a)=>a.known?fmtNumber(a.total):<NotMeasured/>
+  const field=[
+    ['applicable','Applicable',fig(applicable),'fields that apply to a course'],
+    ['completed','Completed',fig(held),applicable.known&&held.known?`value held · ${pctText(held.total,applicable.total)||'no applicable field'}`:'value held'],
+    ['backlog','Backlog',fig(backlog),'applicable, no value held yet'],
   ]
-  return <dl className="pim-funnel" data-pim-funnel aria-label={`Stage funnel, ${label}`}>{cells.map(([k,t,v,s])=><div key={k} data-pim-stage={k}><dt>{t}</dt><dd><strong>{v}</strong><small>{s}</small></dd></div>)}</dl>
+  const items=[
+    ['queued','Queued',fig(queued),'waiting for a worker'],
+    ['running','Running',fig(running),'being processed now'],
+    ['held','Held',fig(hold),hold.known?`${fmtNumber(review.total)} in review · ${fmtNumber(nosrc.total)} no source found`:'not counted'],
+    ['failed','Failed',fig(failed),'last attempt failed'],
+  ]
+  const dl=(cells,g)=><dl className="pim-funnel" data-pim-funnel-group={g}>{cells.map(([k,t,v,x])=><div key={k} data-pim-stage={k}><dt>{t}</dt><dd><strong>{v}</strong><small>{x}</small></dd></div>)}</dl>
+  return <div data-pim-funnel aria-label={`Stage funnel, ${label}`}>
+    <h6 className="pim-group" data-pim-group="field">Canonical field coverage <small>per course field</small></h6>{dl(field,'field')}
+    <h6 className="pim-group" data-pim-group="items">Work items in the queue <small>per queue item, not per field</small></h6>{dl(items,'items')}
+  </div>
 }
 
 function Gains({rows,hours}){
-  const canonical=sum(rows,'canonical_gain_window'),published=sum(rows,'published_gain_window'),perHour=sum(rows,'throughput_per_hour')
   const withBacklog=rows.filter(r=>Number(r.backlog)>0)
   const measured=withBacklog.filter(r=>r.clearance_hours!=null)
   const unmeasured=withBacklog.length-measured.length
   const longest=measured.reduce((m,r)=>!m||Number(r.clearance_hours)>Number(m.clearance_hours)?r:m,null)
-  return <div className="pim-gains" data-pim-gains>
-    <div><span>Canonical gain, {hoursWord(hours)}</span><strong data-pim-gain="canonical">+{fmtNumber(canonical)}</strong><small>values admitted</small></div>
-    <div><span>Consumer gain, {hoursWord(hours)}</span><strong data-pim-gain="published">+{fmtNumber(published)}</strong><small>for courses of a published provider</small></div>
-    <div><span>Throughput</span><strong data-pim-gain="throughput">{fmtNumber(Math.round(perHour*100)/100)}<small> per hour</small></strong><small>measured over the window</small></div>
-    <div><span>Estimated clearance</span>
-      {!withBacklog.length?<strong data-pim-clearance="none">Nothing outstanding</strong>
-        :longest?<><strong data-pim-clearance={longest.clearance_hours}>{durText(longest.clearance_hours)}</strong><small>longest measured field ({word(longest.field)}), from its own measured rate{unmeasured>0?`. ${fmtNumber(unmeasured)} of ${fmtNumber(withBacklog.length)} fields with a backlog gained nothing in the window, so they have no estimate.`:'.'}</small></>
-        :<NotMeasured reason={`No field with a backlog gained a value in the window, so no rate can be measured (${fmtNumber(withBacklog.length)} field${withBacklog.length===1?'':'s'}).`}/>}
+  const groups=byBasis(rows)
+  return <div className="pim-gains-wrap" data-pim-gains>
+    {groups.map(([b,g])=>{const tp=agg(g,'throughput_per_hour')
+      return <div key={b||'none'} className="pim-gains" data-pim-gain-group data-pim-basis={b||''}>
+        <p className="sl-sub pim-basis" data-pim-gain-basis><strong>Measured on:</strong> {basisWord(b)}{groups.length>1?<> · {fmtNumber(new Set(g.map(r=>r.field)).size)} field{new Set(g.map(r=>r.field)).size===1?'':'s'}</>:null}</p>
+        <div><span>Canonical gain, {hoursWord(hours)}</span><Fig a={agg(g,'canonical_gain_window')} signed attr={{'data-pim-gain':'canonical'}}/><small>values admitted</small></div>
+        <div><span>Published-provider gain, {hoursWord(hours)}</span><Fig a={agg(g,'published_gain_window')} signed attr={{'data-pim-gain':'published'}}/><small>courses of a provider whose Published switch is on</small></div>
+        <div><span>Throughput</span>{tp.known?<><strong data-pim-gain="throughput">{fmtNumber(Math.round(tp.total*100)/100)}<small> per hour</small></strong><small>{tp.total===0?'measured: none gained':'measured over the window'}{tp.missing?`; ${fmtNumber(tp.missing)} row${tp.missing===1?'':'s'} not counted`:''}</small></>:<NotMeasured/>}</div>
+      </div>})}
+    <div className="pim-gains" data-pim-gain-group-shared>
+      <div><span>Verified consumer delivery</span><NotMeasured reason="Not counted per field. Website and Zoho read-back is shown on each stream card above where it is measured; published-provider gain is not a delivery check."/></div>
+      <div><span>Estimated clearance</span>
+        {!withBacklog.length?<strong data-pim-clearance="none">Nothing outstanding</strong>
+          :longest?<><strong data-pim-clearance={longest.clearance_hours}>{durText(longest.clearance_hours)}</strong><small>longest measured field ({word(longest.field)}; {basisWord(longest.gain_basis)}), from its own measured rate{unmeasured>0?`. ${fmtNumber(unmeasured)} of ${fmtNumber(withBacklog.length)} fields with a backlog gained nothing in the window, so they have no estimate.`:'.'} Fields are not combined.</small></>
+          :<NotMeasured reason={`No field with a backlog gained a value in the window, so no rate can be measured (${fmtNumber(withBacklog.length)} field${withBacklog.length===1?'':'s'}).`}/>}
+      </div>
     </div>
   </div>
 }
@@ -146,9 +184,9 @@ export default function PimDelivery({pim,now,rank=0}){
       <p className="sl-sub" data-pim-measure-help>{MEASURES.find(m=>m.key===measure)?.help}</p>
       <h5 className="sl-h4" data-pim-scope>{scopeLabel}: stage funnel</h5>
       {scope.length?<><Funnel rows={scope} label={scopeLabel}/>
-        <p className="sl-sub" data-pim-funnel-note>Stage counts are work-item counts from the queue; one course field can appear in more than one stage over time, so the stages are not parts of the backlog and are not added to it.</p>
+        <p className="sl-sub" data-pim-funnel-note>Work items are counted per queue item, not per course field. One field can have several items, and a held item can belong to a field that already holds a value, so work-item holds are not parts of the backlog, can be larger than it, and are never subtracted from it.</p>
         <Gains rows={scope} hours={hours}/>
-        <p className="sl-sub" data-pim-meaning>{pim.meaning?.clearance_hours?`Clearance: ${pim.meaning.clearance_hours}.`:''} {pim.meaning?.published_gain?`Consumer gain: ${pim.meaning.published_gain}.`:''}</p>
+        <p className="sl-sub" data-pim-meaning>{pim.meaning?.clearance_hours?`Clearance: ${pim.meaning.clearance_hours}.`:''} {pim.meaning?.published_gain?`Published-provider gain: ${pim.meaning.published_gain}.`:''}</p>
         <p className="sl-sub" data-pim-oldest>Oldest outstanding work: {oldestRow?<><strong>{fmtDateTime(oldestRow.oldest_outstanding)}</strong> ({word(oldestRow.field)}, {countryName(lk,oldestRow.country)}; {fmtRelative(oldestRow.oldest_outstanding,'',now)})</>:<NotMeasured reason="No outstanding work item carries a start time in this scope."/>}</p>
       </>:<NotMeasured word="Not available" reason="No PIM rows for this country."/>}
 
@@ -162,21 +200,23 @@ export default function PimDelivery({pim,now,rank=0}){
             {countries.map(c=>{const x=cellOf(inD.filter(r=>r.country===c),measure);return <td key={c} data-label={countryName(lk,c)}><button type="button" className="pim-cell" data-pim-cell={c} onClick={()=>{setCountry(c);setDomain(g)}} title={`Open ${g} in ${countryName(lk,c)}`}><strong>{x.text}</strong><small>{x.small}</small>{x.pct!=null&&<span className="dd-bar" role="img" aria-label={`${Math.round(x.pct)}% complete`}><i style={{width:`${Math.min(100,x.pct)}%`}}/></span>}</button></td>})}
           </tr>})}
       </tbody></table></div>
+      {(measure==='canonical'||measure==='published')&&<div className="sl-sub" data-pim-basis-legend><strong>Gain bases in this view.</strong> A gain is counted on the basis its field reports; fields on different bases are not added, and a cell that spans two shows Mixed bases.
+        <ul>{byBasis(rows).map(([b,g])=>{const ds=domains.filter(([,fs])=>g.some(r=>fs.has(r.field))).map(([d])=>d);return <li key={b||'none'} data-pim-basis-item>{basisWord(b)}: {ds.join(', ')||'—'}</li>})}</ul></div>}
 
       {activeDomain&&<><h5 className="sl-h4" data-pim-fields-title>{activeDomain} in {scopeLabel}: by field</h5>
-        <div className="lf-frame"><table className="cf-table pim-fields" data-pim-fields><thead><tr><th>Field</th>{!country&&<th>Country</th>}<th>Applicable</th><th>Completed</th><th>Backlog</th><th>Queued</th><th>Running</th><th>Held</th><th>Failed</th><th>Gain</th><th>Per hour</th><th>Clearance</th><th>Oldest outstanding</th></tr></thead><tbody>
+        <div className="lf-frame"><table className="cf-table pim-fields" data-pim-fields><thead><tr><th>Field</th>{!country&&<th>Country</th>}<th>Applicable</th><th>Completed</th><th>Backlog</th><th>Items queued</th><th>Items running</th><th>Items held</th><th>Items failed</th><th>Gain</th><th>Per hour</th><th>Clearance</th><th>Oldest outstanding</th></tr></thead><tbody>
           {scope.filter(r=>domainFields.has(r.field)).sort((a,b)=>String(a.field).localeCompare(b.field)||String(a.country).localeCompare(b.country)).map(r=>{
             const app=Number(r.applicable)
             return <tr key={`${r.country}-${r.field}`} data-pim-field={r.field} data-pim-country-row={r.country}>
               <td data-label="Field"><V>{labelOf(r.field)}<small>{r.field}</small></V></td>{!country&&<td data-label="Country">{countryName(lk,r.country)}</td>}
-              <td data-label="Applicable">{app>0?num(r.applicable):<NotMeasured word="None apply" reason={Number(r.not_applicable)>0?`${fmtNumber(Number(r.not_applicable))} recorded not applicable`:null}/>}</td>
-              <td data-label="Completed">{app>0?<V><strong>{num(r.held)}</strong><small>{pctText(Number(r.held),app)}</small></V>:'—'}</td>
-              <td data-label="Backlog">{num(r.backlog)}</td><td data-label="Queued">{num(r.queued)}</td><td data-label="Running">{num(r.running)}</td>
-              <td data-label="Held"><V>{num(Number(r.review)+Number(r.no_source_found))}<small>{fmtNumber(Number(r.review))} review · {fmtNumber(Number(r.no_source_found))} no source</small></V></td>
-              <td data-label="Failed">{num(r.failed)}</td>
-              <td data-label="Gain"><V>+{num(r.canonical_gain_window)}<small>{fmtNumber(Number(r.published_gain_window))} published</small></V></td>
-              <td data-label="Per hour">{r.throughput_per_hour==null?<NotMeasured/>:fmtNumber(Number(r.throughput_per_hour))}</td>
-              <td data-label="Clearance">{Number(r.backlog)===0?'Nothing outstanding':r.clearance_hours==null?<NotMeasured reason="Nothing gained in the window"/>:durText(r.clearance_hours)}</td>
+              <td data-label="Applicable">{!has(r.applicable)?<NotMeasured/>:app>0?num(r.applicable):<NotMeasured word="None apply" reason={Number(r.not_applicable)>0?`${fmtNumber(Number(r.not_applicable))} recorded not applicable`:null}/>}</td>
+              <td data-label="Completed">{!has(r.held)?<NotMeasured/>:app>0?<V><strong>{num(r.held)}</strong><small>{pctText(Number(r.held),app)}</small></V>:'—'}</td>
+              <td data-label="Backlog">{has(r.backlog)?num(r.backlog):<NotMeasured/>}</td><td data-label="Items queued">{has(r.queued)?num(r.queued):<NotMeasured/>}</td><td data-label="Items running">{has(r.running)?num(r.running):<NotMeasured/>}</td>
+              <td data-label="Items held">{has(r.review)||has(r.no_source_found)?<V>{fmtNumber((Number(r.review)||0)+(Number(r.no_source_found)||0))}<small>{fmtNumber(Number(r.review)||0)} review · {fmtNumber(Number(r.no_source_found)||0)} no source</small></V>:<NotMeasured/>}</td>
+              <td data-label="Items failed">{has(r.failed)?num(r.failed):<NotMeasured/>}</td>
+              <td data-label="Gain" data-pim-gain-cell>{has(r.canonical_gain_window)?<V>{Number(r.canonical_gain_window)>0?`+${num(r.canonical_gain_window)}`:'0'}<small>{Number(r.canonical_gain_window)>0?'canonical':'measured: none'}</small>{has(r.published_gain_window)?<small>{fmtNumber(Number(r.published_gain_window))} published-provider</small>:<small>published-provider: not measured</small>}<small className="pim-basis-cell" data-pim-row-basis title={basisWord(r.gain_basis)}>{basisWord(r.gain_basis)}</small></V>:<NotMeasured/>}</td>
+              <td data-label="Per hour">{!has(r.throughput_per_hour)?<NotMeasured/>:Number(r.throughput_per_hour)===0?<V>0<small>measured: none gained</small></V>:fmtNumber(Number(r.throughput_per_hour))}</td>
+              <td data-label="Clearance">{!has(r.backlog)?<NotMeasured/>:Number(r.backlog)===0?'Nothing outstanding':r.clearance_hours==null?<NotMeasured reason="Nothing gained in the window"/>:durText(r.clearance_hours)}</td>
               <td data-label="Oldest outstanding">{r.oldest_outstanding?fmtDateTime(r.oldest_outstanding):'—'}</td>
             </tr>})}
         </tbody></table></div></>}
@@ -211,7 +251,7 @@ export default function PimDelivery({pim,now,rank=0}){
 
     {view==='requests'&&<div data-pim-panel="requests">
       {Array.isArray(pim.requests)&&pim.requests.length>0?<><h5 className="sl-h4">Stakeholder requests</h5>
-        <p className="sl-sub">Status keeps the Request Register Rules v1.3 meanings. Canonical coverage, consumer coverage and freshness of a request&rsquo;s scope sit beside the status as separate figures and never change it.</p>
+        <p className="sl-sub">Status keeps the Request Register Rules v1.3 meanings. Canonical coverage, consumer coverage (as the register reports it) and freshness of a request&rsquo;s scope sit beside the status as separate figures and never change it.</p>
         <div className="lf-frame"><table className="cf-table pim-requests" data-pim-requests><thead><tr><th>Request</th><th>Scope</th><th>Status</th><th>Weight</th><th>Canonical coverage</th><th>Consumer coverage</th><th>Freshness</th><th>Clarification</th></tr></thead><tbody>
           {pim.requests.map((r,i)=><tr key={r.id||i} data-pim-request={r.id||i}><td data-label="Request"><strong>{r.id}</strong><small>{r.title}</small></td><td data-label="Scope">{r.scope||<NotMeasured word="Unknown"/>}</td>
             <td data-label="Status">{r.status?<StatusChip tone="neutral" label={r.status}/>:<NotMeasured word="Unknown"/>}</td><td data-label="Weight">{r.weight==null?<NotMeasured word="Unknown"/>:fmtNumber(Number(r.weight))}</td>
@@ -223,7 +263,7 @@ export default function PimDelivery({pim,now,rank=0}){
       <h5 className="sl-h4">Reported data issues</h5>
       <NotMeasured word="Not available" reason="Counsellor reports are not yet tied to a verified re-check in this read, so no fixed or verified figure is shown."/>
       <h5 className="sl-h4">Coverage of any scope, available now</h5>
-      <p className="sl-sub">The figures a request would show beside its status are the country and domain figures on the <button type="button" className="cf-link" data-pim-goto="matrix" onClick={()=>setView('matrix')}>Delivery matrix</button>. Consumer coverage is not counted as a share yet; the matrix shows consumer gain in the window.</p>
+      <p className="sl-sub">The figures a request would show beside its status are the country and domain figures on the <button type="button" className="cf-link" data-pim-goto="matrix" onClick={()=>setView('matrix')}>Delivery matrix</button>. Verified consumer coverage is not counted as a share yet; the matrix shows published-provider gain in the window, which is not a delivery check.</p>
     </div>}
 
     {view==='refresh'&&<div data-pim-panel="refresh">

@@ -4,22 +4,29 @@ import { DATA_DELIVERY, mockDataDelivery } from './data-delivery-mock.mjs'
 
 const row = (country, field, o = {}) => ({
   country, field, applicable: 0, not_applicable: 0, unconfirmed: 0, held: 0, backlog: 0, queued: 0, running: 0, review: 0, failed: 0, no_source_found: 0,
-  expired_leases: 0, canonical_gain_window: 0, published_gain_window: 0, gain_basis: 'enrich items filled in the window', throughput_per_hour: 0, clearance_hours: null,
+  expired_leases: 0, canonical_gain_window: 0, published_gain_window: 0, gain_basis: ENRICH_BASIS, throughput_per_hour: 0, clearance_hours: null,
   oldest_outstanding: null, ...o,
 })
 
+// The live snapshot measures academic entry on its own basis (courses whose first active entry row was created in the window); every other field counts enrich items filled.
+export const ENTRY_BASIS = 'canonical: courses whose first active entry row was created in the window'
+export const ENRICH_BASIS = 'enrich items filled in the window'
+
 export const PIM_FIELDS = [
-  row('AU', 'academic_entry', { applicable: 25639, held: 10206, backlog: 15433, canonical_gain_window: 547, published_gain_window: 547, throughput_per_hour: 22.79, clearance_hours: 677.1 }),
+  row('AU', 'academic_entry', { gain_basis: ENTRY_BASIS, applicable: 25639, held: 10206, backlog: 15433, canonical_gain_window: 547, published_gain_window: 547, throughput_per_hour: 22.79, clearance_hours: 677.1 }),
+  row('AU', 'english', { applicable: 25639, held: 16840, backlog: 8799, no_source_found: 12929 }),
   row('AU', 'description', { applicable: 25703, held: 12685, backlog: 13018, review: 94, failed: 3326, no_source_found: 35262, canonical_gain_window: 54, published_gain_window: 54, throughput_per_hour: 2.25, clearance_hours: 5785.8, oldest_outstanding: '2026-11-04T04:23:00+00:00' }),
   row('AU', 'intakes', { applicable: 25703, held: 9658, backlog: 16045, failed: 543, no_source_found: 23303, canonical_gain_window: 1, published_gain_window: 1, throughput_per_hour: 0.04, clearance_hours: 385080 }),
   row('AU', 'campus', { applicable: 25703, held: 25672, backlog: 31, review: 1, failed: 1, no_source_found: 90, oldest_outstanding: '2026-10-20T21:19:35+00:00' }),
   row('AU', 'duration', { applicable: 25703, held: 25703 }),
-  row('NZ', 'academic_entry', { applicable: 2111, held: 325, backlog: 1786, unconfirmed: 4269, not_applicable: 140 }),
+  row('NZ', 'academic_entry', { gain_basis: ENTRY_BASIS, applicable: 2111, held: 325, backlog: 1786, unconfirmed: 4269, not_applicable: 140 }),
+  row('NZ', 'english', { applicable: 2111, held: 1490, backlog: 621, no_source_found: 6636 }),
   row('NZ', 'description', { applicable: 6520, held: 1812, backlog: 4708, review: 54, failed: 1088, no_source_found: 9300, oldest_outstanding: '2026-11-03T03:45:00+00:00' }),
   row('NZ', 'intakes', { applicable: 6520, held: 2234, backlog: 4286, failed: 107, no_source_found: 6574 }),
   row('NZ', 'campus', { applicable: 6498, held: 2693, backlog: 3805, queued: 1, review: 759, failed: 117, no_source_found: 9108, oldest_outstanding: '2026-10-14T00:18:46+00:00' }),
   row('NZ', 'duration', { applicable: 6520, held: 2611, backlog: 3909, failed: 107, no_source_found: 7684 }),
-  row('CA', 'academic_entry', { applicable: 3829, held: 0, backlog: 3829 }),
+  row('CA', 'academic_entry', { gain_basis: ENTRY_BASIS, applicable: 3829, held: 0, backlog: 3829 }),
+  row('CA', 'english', { applicable: 3829, held: 2085, backlog: 1744, no_source_found: 4251 }),
   row('CA', 'description', { applicable: 3829, held: 1604, backlog: 2225, review: 9, failed: 715, no_source_found: 6446, oldest_outstanding: '2026-11-15T05:23:00+00:00' }),
   row('CA', 'intakes', { applicable: 3829, held: 1789, backlog: 2040, failed: 127, no_source_found: 3992 }),
   row('CA', 'campus', { applicable: 3814, held: 2310, backlog: 1504, queued: 4, review: 300, failed: 81, no_source_found: 4881, oldest_outstanding: '2026-10-14T01:09:16+00:00' }),

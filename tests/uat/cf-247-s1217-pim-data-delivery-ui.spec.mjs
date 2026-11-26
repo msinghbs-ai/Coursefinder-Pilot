@@ -25,12 +25,12 @@ test.describe('Autonomous PIM inside Data Delivery', () => {
     for (const v of ['matrix', 'requests', 'refresh']) await expect(pim.locator(`[data-pim-tab="${v}"]`)).toBeVisible()
   })
 
-  test('overall funnel is the sum over the rows, in the hand-off order, with held as review plus no source found', async ({ page }) => {
+  test('overall funnel is the sum over the rows, canonical coverage then work items, with held as review plus no source found', async ({ page }) => {
     const { pim } = await open(page)
     const sum = (k) => PIM_FIELDS.reduce((a, r) => a + (Number(r[k]) || 0), 0)
     const fmt = (n) => n.toLocaleString('en-AU')
     const stages = await pim.locator('[data-pim-funnel] [data-pim-stage]').evaluateAll((els) => els.map((e) => e.getAttribute('data-pim-stage')))
-    expect(stages).toEqual(['applicable', 'backlog', 'queued', 'running', 'held', 'failed', 'completed'])
+    expect(stages).toEqual(['applicable', 'completed', 'backlog', 'queued', 'running', 'held', 'failed']) // s1218: canonical coverage first, then work items
     await expect(pim.locator('[data-pim-stage="applicable"] strong')).toHaveText(fmt(sum('applicable')))
     await expect(pim.locator('[data-pim-stage="backlog"] strong')).toHaveText(fmt(sum('backlog')))
     await expect(pim.locator('[data-pim-stage="held"] strong')).toHaveText(fmt(sum('review') + sum('no_source_found')))
@@ -67,7 +67,8 @@ test.describe('Autonomous PIM inside Data Delivery', () => {
     const entryAll = pim.locator('[data-pim-domain-row="Entry"] [data-pim-cell="all"]')
     await expect(entryAll).toContainText('%')
     await pim.locator('[data-pim-measure]').selectOption('canonical')
-    await expect(entryAll).toContainText('+547')
+    await expect(entryAll).toContainText('Mixed bases') // s1218: entry rows (canonical basis) and English (enrich items) are not added
+    await expect(pim.locator('[data-pim-domain-row="Course page"] [data-pim-cell="all"]')).toContainText('+54')
     await pim.locator('[data-pim-measure]').selectOption('backlog')
     await expect(pim.locator('[data-pim-measure-help]')).toContainText('still hold no value')
     await pim.locator('[data-pim-domain-row="Entry"] [data-pim-cell="NZ"]').click()
@@ -95,8 +96,7 @@ test.describe('Autonomous PIM inside Data Delivery', () => {
   test('a scope where nothing was gained shows Not measured for clearance, not 0 or a guess', async ({ page }) => {
     const none = PIM_FIELDS.map((r) => ({ ...r, canonical_gain_window: 0, published_gain_window: 0, throughput_per_hour: 0, clearance_hours: null }))
     const { pim } = await open(page, { pim: { ...PIM, fields: none } })
-    await expect(pim.locator('[data-pim-gains] [data-pim-unknown]')).toContainText('Not measured')
-    await expect(pim.locator('[data-pim-gains]')).toContainText('gained a value in the window')
+    await expect(pim.locator('[data-pim-gains] [data-pim-unknown]').filter({ hasText: 'gained a value in the window' })).toContainText('Not measured')
     await expect(pim.locator('[data-pim-clearance]')).toHaveCount(0)
   })
 
