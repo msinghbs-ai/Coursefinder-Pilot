@@ -16,6 +16,8 @@ async function drillAndDrawer(page, testInfo, who) {
   await expect(drill, 'the PIM records drill is shown').toBeVisible({ timeout: 90_000 })
   await drill.locator('[data-rt-drill-toggle]').click()
   await expect(drill).toHaveAttribute('data-rt-open', 'true')
+  // the field list comes from the field register, read when the drill opens: wait for the option before choosing it
+  await expect(drill.locator('[data-rt-field-select] option[value="description"]')).toHaveCount(1, { timeout: 30_000 })
   await drill.locator('[data-rt-field-select]').selectOption('description')
   await drill.locator('[data-rt-provider-search]').fill('Lincoln University')
   const hit = drill.locator('.rt-hits button').first()
