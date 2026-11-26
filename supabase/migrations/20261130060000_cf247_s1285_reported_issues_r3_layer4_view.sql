@@ -110,7 +110,7 @@ begin
   if p_verification is not null and p_verification <> '{}'::jsonb then
     v_ok := p_verification->>'outcome' = 'verified';
     return jsonb_build_object('basis', 'verification', 'outcome', p_verification->>'outcome', 'checked_at', p_verification->>'checked_at',
-      'catalogue', p_verification->'catalogue', 'consumer', p_verification->'consumer' - 'value', 'consumer_key', p_verification->>'consumer_key',
+      'catalogue', p_verification->'catalogue', 'consumer', (p_verification->'consumer') - 'value', 'consumer_key', p_verification->>'consumer_key',
       'fixed_without_evidence', p_status = 'fixed' and not coalesce(v_ok, false));
   end if;
   if p_field is null or p_course is null then
