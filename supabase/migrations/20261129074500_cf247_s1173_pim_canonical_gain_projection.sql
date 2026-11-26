@@ -26,7 +26,7 @@ declare d text := pg_get_functiondef('security.pim_progress_v1()'::regprocedure)
           || E'    left join (select k2.iso_alpha2 cc, count(*) gain, count(*) filter (where pr2.publication_status = ''published'') pub\n'
           || E'                 from (select x.course_id, min(x.created_at) first_at from catalogue.course_entry_requirements x where x.status = ''active'' group by x.course_id) fx\n'
           || E'                 join catalogue.courses co2 on co2.id = fx.course_id join catalogue.providers pr2 on pr2.id = co2.provider_id join ref.countries k2 on k2.id = pr2.country_id\n'
-          || E'                where fx.first_at >= v_since group by k2.iso_alpha2) ae on ae.cc = ap.cc and ap.field = ''academic_entry'';  -- s1173: canonical basis';
+          || E'                where fx.first_at >= v_since group by k2.iso_alpha2) ae on ae.cc = ap.cc and ap.field = ''academic_entry'';';
         a2 constant text := E'''canonical_gain_window'', coalesce(q.filled_window, 0), ''published_gain_window'', coalesce(q.filled_published_window, 0), ''throughput_per_hour'', round(coalesce(q.filled_window, 0)::numeric / v_hours, 2), ''clearance_hours'', case when coalesce(q.filled_window, 0) > 0 then round((ap.applicable - ap.held)::numeric / (q.filled_window::numeric / v_hours), 1) end,';
         b2 constant text := E'''canonical_gain_window'', case when ap.field = ''academic_entry'' then coalesce(ae.gain, 0) else coalesce(q.filled_window, 0) end,\n'
           || E'      ''published_gain_window'', case when ap.field = ''academic_entry'' then coalesce(ae.pub, 0) else coalesce(q.filled_published_window, 0) end,\n'
