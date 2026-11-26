@@ -100,6 +100,16 @@ export function quoteSource(q: string, parts: { id: string; text: string }[]): s
   for (const p of parts) { const T = flat(p.text); if (pieces.every((x) => T.includes(x))) return p.id }
   return null;
 }
+// s1237 (S2-Scholarship-Readers, 26 Nov 2026): a printed amount is often the whole quote ("$165.00", "$4,000", "$1,000"), which is under the 6 letters and digits
+// quoteSource needs, so a correctly read award value was dropped (checks.detail.benefits = []). A quote of a currency sign and a number only is on a source when
+// the same amount is printed there on its own (no digit before or after it); a longer quote is proven by quoteSource as before.
+export function amountQuoteSource(q: string, parts: { id: string; text: string }[]): string | null {
+  const t = String(q || "").trim();
+  if (!/^(?:[A-Z]{3}\s?)?[$€£]\s?\d[\d,]*(?:\.\d{1,2})?(?:\s?(?:[A-Z]{3}|CAD|USD))?$/.test(t) && !/^\d[\d,]*(?:\.\d{1,2})?\s?(?:[A-Z]{3})$/.test(t)) return null;
+  const re = new RegExp(`(^|[^0-9.,])${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s*")}(?![0-9]|[.,]\\d)`);
+  for (const p of parts) if (re.test(p.text)) return p.id;
+  return null;
+}
 const isNum = (x: unknown): x is number => typeof x === "number" && isFinite(x);
 const digitsIn = (n: number, q: string) => {
   const t = String(q || "").replace(/(\d),(?=\d{3}\b)/g, "$1").replace(/\s/g, "");
@@ -158,7 +168,7 @@ export function checkScholarshipDetail(d: any, parts: { id: string; text: string
     .filter((c: any) => c.source && c.text.length >= 6).slice(0, 20);
   const criteria_conjunction = criteria.length >= 2 && ["all", "any"].includes(D.criteria_conjunction) ? D.criteria_conjunction : null;
   const benefits = (Array.isArray(D.benefits) ? D.benefits : []).map((b: any) => ({ kind: String(b?.kind || "other"), amount: isNum(b?.amount) ? b.amount : null, currency: typeof b?.currency === "string" && /^[A-Z]{3}$/.test(b.currency) ? b.currency : null,
-      percentage: isNum(b?.percentage) && b.percentage > 0 && b.percentage <= 100 ? b.percentage : null, maximum: !!b?.maximum, quote: String(b?.quote || "").slice(0, 600), source: quoteSource(b?.quote, parts) || "" }))
+      percentage: isNum(b?.percentage) && b.percentage > 0 && b.percentage <= 100 ? b.percentage : null, maximum: !!b?.maximum, quote: String(b?.quote || "").slice(0, 600), source: quoteSource(b?.quote, parts) || amountQuoteSource(b?.quote, parts) || "" }))
     .filter((b: any) => b.source && (b.amount == null || digitsIn(b.amount, b.quote)) && (b.percentage == null || digitsIn(b.percentage, b.quote)) &&
       (b.kind === "full_tuition" ? /\b(full|100 ?%|entire|whole|all)\b/i.test(b.quote) : b.amount != null || b.percentage != null || ["accommodation", "travel", "health_cover", "in_kind", "other", "living_allowance", "stipend"].includes(b.kind)))
     .slice(0, 12);

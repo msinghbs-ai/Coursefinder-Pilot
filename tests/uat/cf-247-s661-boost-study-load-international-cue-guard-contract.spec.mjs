@@ -23,7 +23,7 @@ test('versions: the reader is v6 by selector; the prompt and the route are uncha
   expect(B.BOOST_SELECTOR).toBe('study-load-windows-v6')  // v6 from s721
   expect(B.BOOST_SELECTOR_INTERNATIONAL).toBe('study-load-international-v3')  // v3 from s721
   expect(B.BOOST_STUDY_LOAD_PROMPT_VERSION).toBe('boost-study-load-v5')  // the route qualification is tied to the prompt version (a migration), so the prompt text stays
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.47"')  // v1.0.38 from s1037  // v1.0.37 from s1029  // v1.0.36 from s1017  // v1.0.35 from s992  // v1.0.34 from s851  // v1.0.25 from s721
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.48"')  // v1.0.38 from s1037  // v1.0.37 from s1029  // v1.0.36 from s1017  // v1.0.35 from s992  // v1.0.34 from s851  // v1.0.25 from s721
   expect(BX).toMatch(/const INTL_NEAR = 80;\s+\/\/ fixed: /)
   expect(BX).toMatch(/const INTL_LABEL_NEAR = 160;\s+\/\/ fixed: /)
   expect(BX).toMatch(/const LOAD_SUBJECT_GAP = 40;\s+\/\/ fixed: /)

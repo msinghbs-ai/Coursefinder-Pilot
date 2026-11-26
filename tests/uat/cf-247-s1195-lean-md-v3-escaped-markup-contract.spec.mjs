@@ -29,5 +29,5 @@ test('s1195: no queue, job or setting reads on the converter name, so the new ve
   const sql = fs.readdirSync('supabase/migrations').filter((f) => f >= '20261129040000').map((f) => fs.readFileSync(`supabase/migrations/${f}`, 'utf8')).join('\n')
   expect(sql).not.toMatch(/lean-md-v[0-9]/)
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v1.0.47"; // v1.0.47 (26 Nov 2026, CF-247 s1195')
+  expect(ix).toContain('// was v1.0.47 // v1.0.47 (26 Nov 2026, CF-247 s1195')
 })
