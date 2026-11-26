@@ -57,7 +57,7 @@ test('s1153: no cron job; a registry lane that starts the edge function only whe
 
 test('s1153: the worker mode embeds through the one gateway, denies provider data collection and logs spend; no separate edge function', () => {
   expect(fs.existsSync('supabase/functions/portal-search-embed')).toBe(false)
-  expect(fn).toContain('const WORKER = "coverage-sweep-worker-v1.0.46"; // v1.0.46 (25 Nov 2026, CF-247 s1153')
+  expect(fn).toContain('// was v1.0.46 // v1.0.46 (25 Nov 2026, CF-247 s1153')
   expect(fn).toContain('if (mode === "portal_search_embed") {')
   expect(fn).toContain('https://openrouter.ai/api/v1/embeddings')
   expect(fn).toMatch(/provider: \{ data_collection: "deny" \}/)

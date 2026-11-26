@@ -11,7 +11,14 @@
 //                 sent-input hash and the content/prompt/model/schema fingerprint for change-based re-reading.
 // Page content is data: nothing here follows an instruction found on a page.
 
-export const LEAN_CONVERTER = "lean-md-v2";  // never edited in place: a different conversion is a new version
+export const LEAN_CONVERTER = "lean-md-v3";  // never edited in place: a different conversion is a new version
+// lean-md-v3 (26 Nov 2026, CF-247 s1195, S1-Build; Platform Admin 25 Nov 2026 18:26 AEDT: the converter fix after the windows): markup a page
+// prints escaped (Holmesglen publishes its requirements as "&lt;p&gt;&lt;strong&gt;Academic requirements&lt;/strong&gt;&lt;br&gt;You must have ...")
+// is markup, not words. lean-md-v2 took tags out before decoding, so the decoded "<br>" stayed in the text and the line no longer matched the page.
+// v3 takes out an escaped tag of a known HTML element before decoding, the same way as a real one. Text such as "a &lt; b" stays text.
+// Nothing else changes from lean-md-v2: region, blocks, offsets, score lines and the line format are the same. No queue reads on this name
+// (checked live 26 Nov 2026: no function, job or setting names a converter; it is recorded only in pipeline.ai_input_observations and
+// pipeline.lean_section_eval_cases), so no page is read again because the version changed.
 // lean-md-v2 (14 Nov 2026, CF-247 S1-AER, Lean AI Phase 1b Run B recall audit: 20 of 51 entry requirement misses were score lines such as
 // "70 Guaranteed ATAR or equivalent" lost in conversion). Changes from lean-md-v1, block line format unchanged:
 //   1. the region is the page today's reader sends (the whole page without navigation, site header, footer and non-text), not <main> only and
@@ -32,8 +39,10 @@ const decode = (s: string) => s.replace(/&[a-z#0-9]+;/gi, (m) => {
   if (Number.isFinite(n) && n > 0 && n <= 0x10ffff) { const ch = String.fromCodePoint(n); return /[\u2000-\u200b\u00a0]/.test(ch) ? " " : ch }  // v2: numeric references decoded
   return ENT[m.toLowerCase()] ?? " ";
 });
+// v3: an escaped tag of a known HTML element ("&lt;br&gt;", "&lt;/strong&gt;", "&lt;a href=&#34;...&#34;&gt;"), taken out like a real tag
+const ESC_TAG = /&lt;\/?(?:a|b|br|i|u|p|em|strong|span|div|font|small|sup|sub|ul|ol|li|dl|dt|dd|h[1-6]|table|thead|tbody|tr|td|th|section|article|hr)\b(?:(?!&gt;|&lt;)[^<>])*?\/?&gt;/gi;
 // the visible words of a piece of markup, on one line
-const words = (h: string) => decode(h.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+const words = (h: string) => decode(h.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, " ").replace(ESC_TAG, " ")).replace(/\s+/g, " ").trim();
 
 // the region of the page a reader reads (v2): the whole page, as today's reader sends it; navigation, site header and footer are blanked below
 function bodyOf(html: string): { h: string; base: number } {

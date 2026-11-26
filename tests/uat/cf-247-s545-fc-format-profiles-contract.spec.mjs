@@ -135,9 +135,9 @@ test('the markdown and the stored HTML of one read are kept under one evidence r
 
 test('stored HTML evidence is still converted locally by lean-md-v2; the kept markdown is read only when reading.markdown_input is on (worker v1.0.0)', async () => {
   const { leanText, LEAN_CONVERTER } = await load('lean-input.ts', 'lean')
-  expect(LEAN_CONVERTER).toBe('lean-md-v2')
+  expect(LEAN_CONVERTER).toBe('lean-md-v3')
   const t = leanText(BIG)
-  expect(t.converter).toBe('lean-md-v2')
+  expect(t.converter).toBe('lean-md-v3')
   expect(t.text).toContain('IELTS 6.5 overall')  // content outside <main> kept, as today
   expect(ix).not.toMatch(/download\([^)]*\.md\.gz/)
   // v1.0.0 (Platform Admin 15 Nov 2026 00:23): lean-md-v2 itself never reads markdown; the readers take the kept .md.gz only through storedMarkdown,
