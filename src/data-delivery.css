@@ -100,6 +100,12 @@
 .dd .pim-gains,.dd .pim-proc{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin:6px 0}
 .dd .pim-gains>div,.dd .pim-proc>div{display:flex;flex-direction:column;gap:2px;border:1px solid var(--cf-border);border-radius:8px;padding:6px 8px;min-width:0;overflow-wrap:anywhere}
 .dd .pim-gains>div>span,.dd .pim-proc>div>span{font-size:var(--cf-fs-md);color:var(--cf-muted);font-weight:600}
+.dd .pim-gains>.pim-basis{grid-column:1/-1;border:0;padding:0;margin:0;display:block}
+.dd .pim-group{margin:8px 0 0;font-size:var(--cf-fs-md);font-weight:600}
+.dd .pim-group small{display:inline;color:var(--cf-muted);font-weight:400;margin-left:6px}
+.dd .pim-gains-wrap{display:flex;flex-direction:column;gap:2px}
+.dd .pim-basis-cell{font-style:italic}
+.dd [data-pim-basis-legend] ul{margin:4px 0 0 18px;padding:0}
 .dd .pim-matrix th,.dd .pim-matrix td{vertical-align:top}
 .dd .pim-v{display:flex;flex-direction:column;gap:2px;min-width:0;overflow-wrap:anywhere}
 .dd .pim-matrix tr.is-active{background:color-mix(in srgb,var(--cf-brand) 7%,transparent)}
