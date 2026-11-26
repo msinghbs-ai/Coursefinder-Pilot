@@ -35,6 +35,8 @@ test.describe('matching (pure)', () => {
     expect(rank(E, 'course nothing')).toEqual([])                       // every word must be found
     expect(rank(E, 'read course pages')[0].id).toBe('b')
     expect(dedupe([{ id: '1', kind: 'section', label: 'X', path: 'P' }, { id: '2', kind: 'section', label: 'x', path: 'p' }])).toHaveLength(1)
+    // a drawn heading and the entry a screen registered for it are one result: the registered one stays
+    expect(dedupe([{ id: 'pim:sec:workers', kind: 'section', label: 'Workers', path: 'A' }, { id: 'dom:section:workers:9', kind: 'section', label: 'Workers', path: 'B' }]).map((e) => e.id)).toEqual(['pim:sec:workers'])
   })
 })
 
