@@ -41,6 +41,32 @@ export const REGISTER = [
   { field: 'registered_tuition', label: 'Registered tuition (register)', group: 'Cost' }, { field: 'duration', label: 'Duration', group: 'Study' },
 ]
 
+// s1220: `pim.operations` shaped like the live s1175 read (security.pim_progress_v1 `operations`, counted into the same snapshot). Zoho is null for stream `sch`.
+const cons = (cc, expected, w, z) => ({ cc, expected, w_matched: w[0], w_missing: w[1], w_pending: w[2], w_not_served: w[3], z_matched: z ? z[0] : null, z_missing: z ? z[1] : null, z_pending: z ? z[2] : null, z_not_served: z ? z[3] : null })
+export const OPERATIONS = {
+  as_at: '2026-11-26T02:03:09+00:00', jobs_summary_at: '2026-11-26T02:02:30+00:00',
+  meaning: 'Worker status is read from the scheduled-job summary; a worker is stalled when its last success is older than the stall window or it has never succeeded.',
+  workers: [
+    { job: 'enrich-plan-run', running: true, stalled: false, schedule: '*/5 * * * *', failed_24h: 0, last_start: '2026-11-26T02:00:00+00:00', last_success: '2026-11-26T02:00:04+00:00' },
+    { job: 'field-gap-queue', running: false, stalled: false, schedule: '35 * * * *', failed_24h: 2, last_start: '2026-11-26T01:35:00+00:00', last_success: '2026-11-26T01:35:41+00:00' },
+    { job: 'enrich-plan-auto', running: false, stalled: true, schedule: '41 * * * *', failed_24h: 5, last_start: '2026-11-25T13:41:00+00:00', last_success: null },
+  ],
+  stalled_workers: 1, expired_leases: 0,
+  consumer: [
+    { stream: 'disc', measured_at: '2026-11-26T02:01:00+00:00', error: null, rows: [cons('AU', 1200, [1100, 20, 60, 20], [1090, 25, 65, 20]), cons('NZ', 300, [250, 10, 30, 10], [240, 12, 38, 10])] },
+    { stream: 'int', measured_at: '2026-11-26T02:01:00+00:00', error: null, rows: [cons('AU', 5000, [4000, 500, 400, 100], [3900, 550, 450, 100])] },
+    { stream: 'sch', measured_at: '2026-11-26T02:01:00+00:00', error: null, rows: [cons('AU', 800, [700, 40, 40, 20], null)] },
+    { stream: 'fee', measured_at: '2026-11-25T20:00:00+00:00', error: 'read timed out', rows: null },
+  ],
+  freshness_by_country: [
+    { country: 'AU', field: 'description', held: 12685, refresh_due: 40 }, { country: 'AU', field: 'academic_entry', held: 10206, refresh_due: 0 },
+    { country: 'NZ', field: 'description', held: 1812, refresh_due: 12 }, { country: 'CA', field: 'campus', held: 0, refresh_due: 0 },
+  ],
+  requests: { status: 'not_projected', reason: 'No registered database source holds the StudySearch request register; it is kept by the requirements register outside the database.' },
+}
+// The same operations with every worker on time (no stalled processing).
+export const OPERATIONS_HEALTHY = { ...OPERATIONS, stalled_workers: 0, workers: OPERATIONS.workers.map((w) => ({ ...w, stalled: false, last_success: w.last_success || '2026-11-26T01:41:00+00:00' })) }
+
 export const PIM = {
   as_at: '2026-11-26T02:03:09+00:00', snapshot_at: '2026-11-26T02:03:09+00:00', snapshot_ms: 41000, snapshot_error: null, snapshot_failed_at: null, window_hours: 24,
   fields: PIM_FIELDS,
@@ -68,10 +94,16 @@ export const PIM = {
     scholarships: { owner: 'scholarship lanes', providers: [{ country: 'AU', providers: 70, disposition: 'published', reviews_pending: 32, scholarships_published: 889 }, { country: 'NZ', providers: 13, disposition: 'published', reviews_pending: 17, scholarships_published: 120 }] },
     academic_entry: { stages: [{ stage: 'admitted', country: 'AU', courses: 10206 }, { stage: 'no_page', country: 'NZ', courses: 3433 }], next_owner: { admitted: 'refresh (PIM step 5)', no_page: 'course pages (S1-Build)' } },
     replacement_check: { checked: 2153, flagged: 1773, meaning: 'Guarded supersessions in the window tested again: flagged ones need a person; nothing is reversed automatically.', window_hours: 168 },
-  },
+  },  operations: OPERATIONS,
 }
 
-export const withPim = (pim = PIM) => ({ ...DATA_DELIVERY, pim })
+// What the read carried before s1175: no `operations`, so every operations figure is labelled not available.
+export const PIM_NO_OPERATIONS = (() => { const { operations, ...rest } = PIM; return rest })()
+export const SNAPSHOTS = {
+  aer: { as_at: '2026-11-26T02:02:00+00:00', error: null, took_ms: 410, failed_at: null }, pdesc: { as_at: '2026-11-26T02:02:00+00:00', error: null, took_ms: 120, failed_at: null },
+  intake: { as_at: '2026-11-26T00:10:00+00:00', error: 'statement timeout', took_ms: null, failed_at: '2026-11-26T02:00:00+00:00' }, cdesc_stages: { as_at: '2026-11-26T02:02:00+00:00', error: null, took_ms: 90, failed_at: null },
+}
+export const withPim = (pim = PIM) => ({ ...DATA_DELIVERY, pim, snapshots: SNAPSHOTS })
 
 /** Mock the Data Delivery read (with `pim`) and the field register read. `register: 'fail'` makes the register read fail. */
 export async function mockPim(page, { pim = PIM, register = REGISTER } = {}) {

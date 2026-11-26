@@ -112,6 +112,10 @@
 .dd .pim-cell,.dd .pim-domain{background:none;border:0;padding:4px 0;text-align:left;cursor:pointer;color:inherit;font:inherit;min-height:36px;display:flex;flex-direction:column;gap:2px;width:100%}
 .dd .pim-domain{color:var(--cf-link);font-weight:600;text-decoration:underline;flex-direction:row}
 .dd .pim-cell:hover,.dd .pim-cell:focus-visible{outline:2px solid var(--cf-brand);outline-offset:1px;border-radius:4px}
+/* s1221: worker status, verified consumer read-back and freshness by country (operations). Same labelled-row stacking and tap sizes as the other PIM tables. */
+.dd .pim-workers td code,.dd .pim-consumer td small{overflow-wrap:anywhere}
+.dd .pim-consumer td{vertical-align:top}
+.dd [data-pim-helper-snapshots] span{white-space:normal}
 @media (max-width:640px){
   .dd .pim-tabs .cf-btn,.dd .pim-controls select,.dd .pim-cell,.dd .pim-domain,.dd .dd-pim .cf-link{min-height:44px}
   .dd .pim-controls label,.dd .pim-controls select{width:100%}
