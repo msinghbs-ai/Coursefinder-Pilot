@@ -83,3 +83,36 @@
 .dd .dd-recognition li{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 /* v2.16.19 RM0F: links in the delivery panels (Destination loads) are tap-sized on a phone too (guard cf-247-f-ops-04) */
 .dd .dd-recognition a{display:inline-flex;align-items:center;min-height:24px}
+
+/* CF-247 s1217 Autonomous PIM (F-OPS.17 to F-OPS.21): the block inside Data Delivery. Desktop: funnel and gains as wrapping cards, matrix and field tables scroll inside their own frame
+   (never the page). Phone (<= 640 px): the stacked-table rules above apply (data-label cells), controls and every tap target are 44 px. */
+.dd .dd-pim{margin-top:14px;border-top:1px solid var(--cf-border);padding-top:10px}
+.dd .pim-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.dd .pim-controls{display:flex;flex-wrap:wrap;gap:10px 16px;margin:4px 0}
+.dd .pim-controls label{display:flex;flex-direction:column;gap:2px;font-size:var(--cf-fs-md);color:var(--cf-muted)}
+.dd .pim-controls select{min-height:36px;max-width:100%}
+.dd .pim-funnel{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin:6px 0}
+.dd .pim-funnel>div{border:1px solid var(--cf-border);border-radius:8px;padding:6px 8px;background:var(--cf-surface);min-width:0}
+.dd .pim-funnel dt{font-size:var(--cf-fs-md);color:var(--cf-muted)}
+.dd .pim-funnel dd{margin:0;display:flex;flex-direction:column;gap:2px;overflow-wrap:anywhere}
+.dd .pim-funnel dd strong{font-size:var(--cf-fs-lg,1.15em)}
+.dd .pim-funnel small,.dd .pim-gains small,.dd .pim-proc small,.dd .cf-table small{color:var(--cf-muted);font-size:var(--cf-fs-sm);display:block;overflow-wrap:anywhere}
+.dd .pim-gains,.dd .pim-proc{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin:6px 0}
+.dd .pim-gains>div,.dd .pim-proc>div{display:flex;flex-direction:column;gap:2px;border:1px solid var(--cf-border);border-radius:8px;padding:6px 8px;min-width:0;overflow-wrap:anywhere}
+.dd .pim-gains>div>span,.dd .pim-proc>div>span{font-size:var(--cf-fs-md);color:var(--cf-muted);font-weight:600}
+.dd .pim-matrix th,.dd .pim-matrix td{vertical-align:top}
+.dd .pim-v{display:flex;flex-direction:column;gap:2px;min-width:0;overflow-wrap:anywhere}
+.dd .pim-matrix tr.is-active{background:color-mix(in srgb,var(--cf-brand) 7%,transparent)}
+.dd .pim-cell,.dd .pim-domain{background:none;border:0;padding:4px 0;text-align:left;cursor:pointer;color:inherit;font:inherit;min-height:36px;display:flex;flex-direction:column;gap:2px;width:100%}
+.dd .pim-domain{color:var(--cf-link);font-weight:600;text-decoration:underline;flex-direction:row}
+.dd .pim-cell:hover,.dd .pim-cell:focus-visible{outline:2px solid var(--cf-brand);outline-offset:1px;border-radius:4px}
+@media (max-width:640px){
+  .dd .pim-tabs .cf-btn,.dd .pim-controls select,.dd .pim-cell,.dd .pim-domain,.dd .dd-pim .cf-link{min-height:44px}
+  .dd .pim-controls label,.dd .pim-controls select{width:100%}
+  .dd .pim-funnel{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dd .pim-gains,.dd .pim-proc{grid-template-columns:minmax(0,1fr)}
+  .dd .pim-cell{align-items:flex-end;text-align:right}
+  .dd .pim-v{flex:1 1 auto;align-items:flex-end;text-align:right}
+  .dd .pim-domain{flex-direction:row;justify-content:flex-end}
+  .dd .dd-pim a{min-height:44px;display:inline-flex;align-items:center}
+}

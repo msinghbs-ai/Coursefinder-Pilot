@@ -588,7 +588,7 @@ Tab key `checks` · Curator and above
 
 Tab key `queues` · Curator and above
 
-- **Screen:** `PipelineYield` (IntegrationQueue.jsx), `QueueWatch` (QueueWatch.jsx), `BoostQueue` (BoostQueue.jsx)
+- **Screen:** `PimBacklink` (PimDelivery.jsx), `PipelineYield` (IntegrationQueue.jsx), `QueueWatch` (QueueWatch.jsx), `BoostQueue` (BoostQueue.jsx)
 
 #### Platform health › Integration queue — `#platform-health?tab=integration`
 
@@ -618,7 +618,7 @@ Page key `jobs` · opens for Pipeline Operator and above · 3 tabs
 
 Tab key `automations` · Pipeline Operator and above
 
-- **Screen:** `Automations` (ui-v1/AutomationsView.jsx), `ScheduledRuntimeHealth` (ui-v1/ScheduledRuntimeHealthView.jsx)
+- **Screen:** `PimBacklink` (PimDelivery.jsx), `Automations` (ui-v1/AutomationsView.jsx), `ScheduledRuntimeHealth` (ui-v1/ScheduledRuntimeHealthView.jsx)
 - **Folds:**
   - Checks before removal (details) — ui-v1/AutomationsView.jsx
 

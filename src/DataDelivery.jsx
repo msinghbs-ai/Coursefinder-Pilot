@@ -4,7 +4,7 @@
 // timestamps), Website and Zoho state, queue, holds with the largest exact reasons, processing speed, last and next run, and the automatic recovery status.
 // It reuses the lane funnels below it (queue and hold stages, the reason breakdown), the Provider Catalogue and the Course Catalogue for drill-down; it
 // is not another dashboard. Server: public.admin_layer23('data_delivery') (rank 3 and above, the same gate as Operations; SELECT only, counted by job
-// data-delivery). It reloads itself at the interval in Pipeline settings > Data delivery (stops while the tab is hidden), and has a Refresh button.
+// data-delivery; s1217 adds the Autonomous PIM block from the same answer's `pim`, see PimDelivery.jsx). It reloads itself at the interval in Pipeline settings > Data delivery (stops while the tab is hidden), and has a Refresh button.
 // Unknown is never 0: a measure that is not counted, not built or failed shows "Not measured" or "Unknown" with the reason. A green job that admitted nothing
 // in the window carries a visible flag that links to the reason breakdown. Times are Melbourne time, to the second where the page was read.
 import React,{useCallback,useEffect,useRef,useState}from'react'
@@ -16,6 +16,7 @@ import{fmtMoney}from'./lib/format'
 import{plainError}from'./lib/errors'
 import'./data-delivery.css'
 import{DestinationLoads}from'./DestinationData' // v2.16.19 RM0F
+import PimDelivery from'./PimDelivery' // s1217: the Autonomous PIM block (F-OPS.17 to F-OPS.21), drawn from d.pim
 
 const READ_TIMEOUT_MS=20000 // fixed: an API time-out for one read, so a hung request cannot halt the reload loop
 const stampOf=v=>fmtTimeSeconds(v,null)
@@ -442,6 +443,8 @@ export default function DataDelivery({rank=0,onError,client=null}){
     {(flagged.length>0||failing.length>0||unknownAdm.length>0)&&<p className="dd-summary" data-dd-summary>{flagged.length>0&&<><strong>{flagged.length}</strong> stream{flagged.length===1?'':'s'} ran green but admitted nothing in {hoursText(d.windows?.short_hours)} ({flagged.map(s=>s.title).join(', ')}). </>}{unknownAdm.length>0&&<><strong>{unknownAdm.length}</strong> ran green with what they admitted unknown ({unknownAdm.map(s=>s.title).join(', ')}). </>}{failing.length>0&&<><strong>{failing.length}</strong> with a failed run ({failing.map(s=>s.title).join(', ')}).</>}</p>}
     <div className="dd-head" aria-hidden="true"><span>Stream</span><span>Coverage</span><span>Net {hoursText(d.windows?.short_hours)}</span><span>Net {hoursText(d.windows?.long_hours)}</span><span>Website</span><span>Zoho</span><span>Queue</span><span>Holds and reasons</span><span>Speed</span><span>Last and next run</span><span>Automatic recovery</span></div>
     <div className="dd-streams">{streams.map(s=><Stream key={s.stream} s={s} now={now} providerFilters={Boolean(d.provider_filters_available)} open={open[s.stream]??Boolean(s.stages||s.provider_ai||s.aer_sources)} onToggle={o=>setOpen(x=>({...x,[s.stream]:o}))}/>)}</div>
+    {/* s1217: Autonomous PIM, inside this panel: matrix, requests and refresh views from the pim snapshot in this same read */}
+    <PimDelivery pim={d.pim} now={now} rank={rank}/>
     <RecognitionDelivery rpc={rpc}/>
     {/* v2.16.19 RM0F: destination load jobs and what waits for a person */}
     <DestinationLoads rpc={rpc} rank={rank}/>
