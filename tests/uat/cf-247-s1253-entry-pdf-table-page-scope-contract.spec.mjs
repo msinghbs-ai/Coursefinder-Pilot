@@ -40,8 +40,8 @@ test('a continuation page that draws no table ends the scope; a document with no
 test('the worker applies the scope only to a held read and only when the same reader proves it; entry_inspect stays read only and bounded', () => {
   const idx = read('supabase/functions/coverage-sweep/index.ts')
   expect(idx).toMatch(/if \(t\.status !== "ok"\) \{ const sc = entryTablePageScope\(pages\);/)
-  expect(idx).toMatch(/st = pdfTables\(sp\); if \(st\.status === "ok"\) \{ pages = sp;/)
-  expect(idx).toContain('const WORKER = "coverage-sweep-worker-v1.0.50"')
+  expect(idx).toMatch(/st = pdfTables\(sp\); if \(st\.status !== "ok"\) \{ const cp = clipRunningFooter\(sp\); if \(cp !== sp\) \{ sp = cp; st = pdfTables\(sp\) \} \} if \(st\.status === "ok"\) \{ pages = sp;/)
+  expect(idx).toContain('const WORKER = "coverage-sweep-worker-v1.0.51"')
   const ins = idx.slice(idx.indexOf('if (mode === "entry_inspect")'), idx.indexOf('if (mode === "entry_ai")'))
   expect(ins).toContain('slice(0, 12);  // fixed: diagnostic batch cap')
   expect(ins).toContain('slice(0, 40) : undefined;  // fixed: diagnostic bound')
@@ -61,4 +61,32 @@ test('the inspection script and workflow select stored sources by id with bounds
   expect(w).toMatch(/source_ids:/)
   expect(w).toMatch(/IN_SOURCES/)
   expect(w).not.toMatch(/\$\{\{\s*(inputs|github\.event\.inputs)\.[a-z_]+\s*\}\}[^\n]*node scripts/)  // inputs reach the script through env, not the command line
+})
+
+const fp = JSON.parse(fs.readFileSync('tests/fixtures/entry-matrix/pdf-scope/lcb-footer-pages.json', 'utf8'))
+const gpages = () => fp.pages.map((p) => ({ p: p.p, width: p.width, height: p.height, items: p.items.map(([x, y, w, s, h]) => ({ x, y, w, h, s })), rules: p.rules.map(([o, pos, a, b, box]) => (o === 'h' ? { o, y: pos, a, b, box: box || undefined } : { o, x: pos, a, b, box: box || undefined })) }))
+
+test('LCB pages 15 and 32: the footnote between the table and the footer band falls inside the grid and holds the page; leaving out the repeated footer proves it, and nothing above it changes', async () => {
+  const pdf = await load('supabase/functions/coverage-sweep/pdf.ts', 'pdf1253')
+  const m = await load('supabase/functions/coverage-sweep/entry-pdf-scope.ts', 'pscope1253c')
+  const ps = gpages()
+  const by = (a) => Object.fromEntries(a.map((q) => [q.p, pdf.pdfTables([q])]))
+  const before = by(ps)
+  expect(before[15].status).toBe('unparsed'); expect(before[15].reason).toMatch(/"\* Score is based on Advanced" crosses a column edge/)
+  expect(before[32].status).toBe('unparsed')
+  expect(before[16].status).toBe('ok')
+  const cl = m.clipRunningFooter(ps)
+  const after = by(cl)
+  for (const n of [15, 16, 32]) { expect(after[n].status, `page ${n}`).toBe('ok'); expect(after[n].tables.length).toBe(1) }
+  // the page that already proved reads the same table lines; only the footer text is gone
+  const rows = (r) => r.text.split('\n').filter((l) => l.startsWith('|'))
+  expect(rows(after[16])).toEqual(rows(before[16]))
+  // the footnote that gives the scale is kept, as free text, not lost
+  expect(after[15].text).toContain('A*=6, A=5, B=4, C=3, D=2, E=1')
+  expect(after[15].text).not.toMatch(/controlled document/)
+  // Table A is read as the table of international qualifications: its first column is the qualification, not a country
+  expect(after[15].text).toMatch(/\| Qualification: International Baccalaureate \(IB\) \|/)
+  // fewer than three pages share a footer: nothing is clipped
+  const two = ps.slice(0, 2)
+  expect(m.clipRunningFooter(two)).toBe(two)
 })

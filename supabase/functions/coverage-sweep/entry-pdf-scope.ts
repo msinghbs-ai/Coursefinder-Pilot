@@ -39,3 +39,19 @@ export function entryTablePageScope(pages: PdfPage[]): EntryPageScope | null {
   }
   return first ? { first, last, titles } : null;
 }
+
+// the running footer of the scoped pages: horizontal rules in the lower third of the page that are drawn at the same place on every one of three or more pages (a page footer band:
+// version, approval date, page number). The ruled-cell reader joins such rules to a table above them when no other text lies between, so a note printed between the table and the
+// footer (Le Cordon Bleu pages 15 and 32: "* Score is based on Advanced Levels...") falls inside the table's grid and fails closed. The page's items and rules below the topmost of
+// those rules are left out, so the note is read as the free text it is; nothing above that line changes, and it is used only after the scoped read has already held.
+export function clipRunningFooter(pages: PdfPage[]): PdfPage[] {
+  if (pages.length < 3) return pages;
+  const low = (pg: PdfPage) => pg.rules.filter((r) => r.o === "h" && !r.box && typeof r.y === "number" && r.y < pg.height / 3);  // fixed: the same third-of-a-page limit the grid reader uses
+  const key = (r: { y?: number; a: number; b: number }) => `${Math.round(r.y!)}|${Math.round(r.a)}|${Math.round(r.b)}`;
+  const everywhere = low(pages[0]).map(key).filter((k) => pages.every((pg) => low(pg).some((r) => key(r) === k)));
+  if (!everywhere.length) return pages;
+  return pages.map((pg) => {
+    const cut = Math.max(...low(pg).filter((r) => everywhere.includes(key(r))).map((r) => r.y!)) + 0.5;
+    return { ...pg, items: pg.items.filter((i) => i.y > cut), rules: pg.rules.filter((r) => (r.o === "h" ? (r.y as number) > cut : r.b > cut)) };
+  });
+}
