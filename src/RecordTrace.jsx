@@ -137,7 +137,10 @@ export function RecordDrill({field='',label='Records',rank=0}){
 
 function DrillBody({fieldIn='',rank=0}){
   const[reg,setReg]=useState([]),[field,setField]=useState(fieldIn),[prov,setProv]=useState(null),[sum,setSum]=useState(null),[cls,setCls]=useState(''),[recs,setRecs]=useState(null),[err,setErr]=useState(''),[gain,setGain]=useState(null)
-  useEffect(()=>{loadRegister().then(r=>setReg((r||[]).filter(x=>!x.level||x.level==='course'))).catch(()=>setReg([]));readRecoveryMeasure().then(setGain).catch(()=>setGain(null))},[])
+  // the field list: a failed read says so and can be read again (it is never shown as an empty register)
+  const[regErr,setRegErr]=useState('')
+  const readReg=()=>{setRegErr('');loadRegister().then(r=>setReg((r||[]).filter(x=>!x.level||x.level==='course'))).catch(e=>{setReg([]);setRegErr(e.message||'read failed')})}
+  useEffect(()=>{readReg();readRecoveryMeasure().then(setGain).catch(()=>setGain(null))},[])
   useEffect(()=>{setSum(null);setCls('');setRecs(null);setErr('');if(prov&&field)readProviderTrace(prov.id,field).then(setSum).catch(e=>setErr(e.message))},[prov?.id,field])
   useEffect(()=>{setRecs(null);if(prov&&field&&cls)readProviderTrace(prov.id,field,cls).then(d=>setRecs(d.records||[])).catch(e=>setErr(e.message))},[cls])
   const g=gain||{}
@@ -145,6 +148,7 @@ function DrillBody({fieldIn='',rank=0}){
     <div className="rt-pick">
       <label className="rt-field-pick"><small>Field</small><select value={field} onChange={e=>setField(e.target.value)} aria-label="Field" data-rt-field-select>
         <option value="">Choose a field</option>{reg.map(r=><option key={r.field} value={r.field}>{r.label||word(r.field)}</option>)}{field&&!reg.some(r=>r.field===field)&&<option value={field}>{word(field)}</option>}</select></label>
+      {regErr&&<p className="l4lc-err" role="alert" data-rt-reg-error>The field list could not be read ({regErr}). <button type="button" className="l4j-refresh" onClick={readReg}>Read again</button></p>}
       <div className="rt-prov-pick"><small>Provider</small><ProviderSearch value={prov} onPick={setProv} onError={setErr}/></div>
     </div>
     {gain&&<p className="l4lc-ref" data-rt-gain>Operational recovery (platform-wide): {fmtNumber(Number(g.items||0))} field reads handed back{g.filled_by_field&&Object.keys(g.filled_by_field).length?`, filled: ${Object.entries(g.filled_by_field).map(([k,v])=>`${word(k)} ${fmtNumber(v)}`).join(', ')}`:', 0 filled so far'}{g.cost_usd!=null?`, US$${Number(g.cost_usd).toFixed(4)}`:''}{g.measured_at?` · measured ${when(g.measured_at)}`:''}.</p>}

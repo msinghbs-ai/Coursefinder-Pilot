@@ -32,6 +32,8 @@ test('Data Delivery: a drill in each stream and in the PIM matrix; records open 
   expect(dd).toContain('<RecordDrill label="Records behind this stream" field={s.field||\'\'} rank={rank}/>')
   expect(pim).toContain('<RecordDrill label="Records by field, hold or recovery" rank={rank}/>')
   expect(rt).toContain("readProviderTrace(prov.id,field,cls)")
+  // a failed field-list read is said, with Read again; never an empty register
+  expect(rt).toContain('The field list could not be read ({regErr}). <button type="button" className="l4j-refresh" onClick={readReg}>Read again</button>')
   // a button disclosure, never a second <summary> inside the stream or matrix fold; the body reads only when opened
   expect(rt).toContain('<button type="button" className="rt-toggle" aria-expanded={open} onClick={()=>setOpen(!open)} data-rt-drill-toggle>')
   expect(rt).toContain('{open&&<DrillBody fieldIn={field} rank={rank}/>}')
