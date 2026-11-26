@@ -41,13 +41,17 @@ test('the worker applies the scope only to a held read and only when the same re
   const idx = read('supabase/functions/coverage-sweep/index.ts')
   expect(idx).toMatch(/if \(t\.status !== "ok"\) \{ const sc = entryTablePageScope\(pages\);/)
   expect(idx).toMatch(/st = pdfTables\(sp\); if \(st\.status === "ok"\) \{ pages = sp;/)
-  expect(idx).toContain('const WORKER = "coverage-sweep-worker-v1.0.49"')
+  expect(idx).toContain('const WORKER = "coverage-sweep-worker-v1.0.50"')
   const ins = idx.slice(idx.indexOf('if (mode === "entry_inspect")'), idx.indexOf('if (mode === "entry_ai")'))
   expect(ins).toContain('slice(0, 12);  // fixed: diagnostic batch cap')
   expect(ins).toContain('slice(0, 40) : undefined;  // fixed: diagnostic bound')
   expect(ins).not.toMatch(/\.rpc\(|upload\(|svc_entry_matrix_record|fetch\(/)  // no write, no fetch, no model
   const exp = read('supabase/functions/coverage-sweep/entry-pdf-export.ts')
   expect(exp).toMatch(/opt\.scopeCheck/)
+  // geometry: only when asked, at most three pages and 600 rules a page; per-page proof only inside the scope
+  expect(exp).toContain('opt.geometry && shown.length <= 3')
+  expect(exp).toContain('q.rules.slice(0, 600)')
+  expect(exp).toMatch(/per = sc \? pg\.filter/)
 })
 
 test('the inspection script and workflow select stored sources by id with bounds and leave the permissions unchanged', () => {
