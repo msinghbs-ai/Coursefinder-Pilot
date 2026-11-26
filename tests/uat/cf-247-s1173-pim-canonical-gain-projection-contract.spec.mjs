@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261129070000_cf247_s1173_pim_canonical_gain_projection.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261129074500_cf247_s1173_pim_canonical_gain_projection.sql', 'utf8')
 const code = MIG.replace(/--.*$/gm, '')
 
 test('s1173: academic entry gain is the first active entry row in the window, from the canonical table, with its basis named', () => {
