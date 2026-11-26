@@ -172,6 +172,17 @@ export type CourseQuoteOptions = { quoteChars?: number; fragments?: boolean; min
 // unless the sentence also names a domestic-only route or group. The same rule (same words) corrects the admitted rows (migration s1280).
 export const ENTRY_EQUIVALENT_ROUTE = /\bor (an |any )?equivalent/i;
 export const ENTRY_DOMESTIC_ROUTE = /\b(vce|atar|vtac|stat|qce|hsc|sace|wace|uac|qtac|satac|tisc|selection rank|school.leaver|domestic|local|citizen|permanent resident)\b/i;
+// s1284 (26 Nov 2026, CF-247, first autonomous AER cycle): a minimum age ("Applicants must be 18 years of age or over") was read as a minimum
+// entry score (kind minimum_grade, min_entry_score 18), so Website v2 served "min_score 18" (121476B; 1,402 admitted rows on 1,365 courses).
+// An age is an entry condition, not a score: such a row is a general_note with no score. A row that also names a score word is left as read.
+export const ENTRY_AGE_WORDS = /\b(years of age|years old|years or older|aged|age of|minimum age|age)\b/i;
+export const ENTRY_SCORE_WORDS = /\b(atar|rank|gpa|wam|score|grade|percent)\b|%/i;
+export function entryAgeNotScore(r: any, quote: string): { row: any; normalised: boolean } {
+  const n = Number(r?.min_entry_score);
+  if (r?.kind === "minimum_grade" && Number.isFinite(n) && n >= 14 && n <= 30 && ENTRY_AGE_WORDS.test(quote) && !ENTRY_SCORE_WORDS.test(quote))  // fixed: the ages a page prints (14 to 30)
+    return { row: { ...r, kind: "general_note", min_entry_score: null, min_entry_score_basis: null, age_not_score: { min_entry_score: n, rule: "s1284 age is not a score" } }, normalised: true };
+  return { row: r, normalised: false };
+}
 export function entryAudience(audience: unknown, quote: string): { audience: string; normalised: boolean } {
   const a = String(audience || "all");
   if (a === "domestic" && ENTRY_EQUIVALENT_ROUTE.test(quote) && !ENTRY_DOMESTIC_ROUTE.test(quote)) return { audience: "all", normalised: true };
@@ -189,8 +200,8 @@ export function courseEntrySliceRows(a: any, sliceText: string, o: CourseQuoteOp
       dropped.push({ reason: "quote_not_on_page", kind: r?.kind, quote: s.quote, ...(proof.detail !== "quote is not on the page" ? { detail: proof.detail } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
       continue;
     }
-    const s = storeQuote(q, limit), aud = entryAudience(r?.audience, q);
-    rows.push({ ...r, audience: aud.audience, ...(aud.normalised ? { audience_normalised: { from: "domestic", rule: "s1280 equivalent route" } } : {}), quote: s.quote, description: String(r?.description || "").slice(0, 500), ...(proof.fragments > 1 ? { quote_fragments: proof.fragments } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
+    const s = storeQuote(q, limit), aud = entryAudience(r?.audience, q), age = entryAgeNotScore(r, q);
+    rows.push({ ...age.row, audience: aud.audience, ...(aud.normalised ? { audience_normalised: { from: "domestic", rule: "s1280 equivalent route" } } : {}), quote: s.quote, description: String(r?.description || "").slice(0, 500), ...(proof.fragments > 1 ? { quote_fragments: proof.fragments } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
   }
   return { rows, dropped };
 }
