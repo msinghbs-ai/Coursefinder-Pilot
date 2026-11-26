@@ -118,6 +118,7 @@ export default function PlatformHealth({onError}){
     <AlertsPanel alerts={alerts} onChange={loadAlerts} onError={onError}/>
     <Scorecard alerts={alerts}/>
     <HealthHistory history={data.history||[]}/>
+    <RecoveryKnowledge/>
     </details>
   </>
 }
@@ -215,5 +216,33 @@ function HealthHistory({history}){
         <small>{fmtDayMonth(d.day)}</small></div>})}
     </div>
     <details className="ui-ph-history-details"><summary>Show as a table</summary><div className="ui-tablewrap ui-ph-history-table"><table className="ui-table"><thead><tr><th>Day</th><th className="num">Warning</th><th className="num">Critical</th></tr></thead><tbody>{[...days].reverse().filter(d=>d.warning||d.critical).map(d=><tr key={d.day}><td>{fmtDate(d.day)}</td><td className="num">{fmtNumber(d.warning||0)}</td><td className="num">{fmtNumber(d.critical||0)}</td></tr>)}{!days.some(d=>d.warning||d.critical)&&<tr><td colSpan={3} className="ui-muted">No warnings or critical issues in the last 14 days.</td></tr>}</tbody></table></div></details>
+  </section>
+}
+
+// CF-247 s1292 (Agent Operating Model v1.29, operational learning): what the platform has learned, read from public.admin_ops_learning_v1 (read only).
+// Patterns recorded vs automatic, outcomes in the last seven days by who performed them, attempts still blocked, and the last automatic recoveries the
+// controller verified. A pattern that is not automatic is consulted before a repeat and applied only by its authority.
+export async function readOpsLearning(){try{const{data,error}=await supabase.rpc('admin_ops_learning_v1');return !error&&data&&Array.isArray(data.patterns)?data:null}catch{return null}}
+const AUTHORITY_WORDS={auto:'Automatic',release:'Engineering release',admin:'Platform Admin',layer4_human:'Person in Layer 4'}
+export function RecoveryKnowledge(){
+  const[d,setD]=useState(null),[state,setState]=useState('loading')
+  useEffect(()=>{readOpsLearning().then(x=>{setD(x);setState(x?'ready':'missing')})},[])
+  if(state==='loading')return <section className="ui-card"><Loading label="Reading recovery knowledge…"/></section>
+  if(!d)return null
+  const pats=d.patterns||[],auto=pats.filter(p=>p.automatic).length,o7=d.outcomes_7d||[],ok7=o7.reduce((n,x)=>n+Number(x.successful||0),0),n7=o7.reduce((n,x)=>n+Number(x.outcomes||0),0)
+  return <section className="ui-card" data-ops-learning>
+    <SectionTitle icon={RefreshCw} title="Recovery knowledge" subtitle="What the platform has learned from fixes, failed attempts and people's corrections. Automatic patterns run by themselves; the others are checked before any repeat and need their named authority."/>
+    <div className="ui-metrics">
+      <Metric label="Patterns held" value={pats.length} icon={Info} tone="neutral" detail={`${fmtNumber(auto)} automatic`}/>
+      <Metric label="Outcomes, 7 days" value={n7} icon={CheckCircle2} tone="neutral" detail={`${fmtNumber(ok7)} successful`}/>
+      <Metric label="Repeats blocked" value={(d.blocks||[]).length} icon={ShieldAlert} tone={(d.blocks||[]).length?'warning':'neutral'} detail="Same remedy, same evidence"/>
+      <Metric label="Recent automatic recoveries" value={(d.recoveries||[]).length} icon={Gauge} tone="neutral" detail="Verified by the controller"/>
+    </div>
+    <div className="ui-tablewrap"><table className="ui-table" data-ops-learning-patterns><thead><tr><th>Pattern</th><th>Who may apply it</th><th>Verified</th><th>Failed</th><th>Last outcome</th></tr></thead><tbody>
+      {pats.map(p=><tr key={p.code} data-ops-pattern={p.code}><td><strong>{scrubInternals(p.title||p.code)}</strong>{p.no_retry&&<div className="ui-ph-detail">Before repeating: {scrubInternals(p.no_retry)}</div>}</td>
+        <td><StatusChip value={p.automatic?'auto':p.authority} tone={p.automatic?'success':'neutral'} label={p.automatic?'Automatic':(AUTHORITY_WORDS[p.authority]||human(p.authority))}/></td>
+        <td>{fmtNumber(Number(p.verified||0))}</td><td>{fmtNumber(Number(p.failed||0))}</td><td>{p.last_outcome_at?fmtDateTime(p.last_outcome_at):'—'}</td></tr>)}
+    </tbody></table></div>
+    {(d.recoveries||[]).length>0&&<><h3>Last automatic recoveries</h3><ul className="ui-ph-recoveries">{d.recoveries.map(r=><li key={r.run}>{fmtDateTime(r.at)} · {human(r.remedy)} · {r.issue||'issue'} {Number(r.regressions||0)>0?`(recurred ${fmtNumber(Number(r.regressions))} times)`:''} · {human(r.result)}</li>)}</ul></>}
   </section>
 }
