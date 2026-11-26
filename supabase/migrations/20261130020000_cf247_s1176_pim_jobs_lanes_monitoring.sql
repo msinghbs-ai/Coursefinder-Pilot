@@ -66,17 +66,17 @@ stable
 security definer
 set search_path = ''
 as $f$
-  with st as (
+  with st as materialized (
     select security.pipeline_num_v1('data_delivery.net_short_hours', 24)::int short_h, security.pipeline_num_v1('data_delivery.net_long_hours', 168)::int long_h,
            security.pipeline_num_v1('plans.auto_stall_hours', 2)::numeric stall_h, security.pipeline_num_v1('pim.jobs_stall_periods', 3)::numeric stall_p,
            security.pipeline_num_v1('pim.jobs_min_runs', 20)::int min_runs, security.pipeline_num_v1('pim.jobs_empty_share', 0.95)::numeric empty_share,
            security.pipeline_num_v1('pim.jobs_failure_share', 0.2)::numeric fail_share, security.pipeline_num_v1('pim.jobs_deferred_share', 0.3)::numeric deferred_share),
   -- the three dispatchers' own cron rows (jobid), by runner name
-  disp as (
+  disp as materialized (
     select c.jobid, c.jobname, c.active,
            case when c.jobname ~ '^rollup-scheduler' then 'rollup-scheduler' when c.jobname ~ '^admission-rule-runner' then 'admission-rule-runner' else 'coverage-lane-dispatch' end runner
       from cron.job c where c.jobname ~ '^(rollup-scheduler|admission-rule-runner|coverage-lane-dispatch)(-[a-z])?$'),
-  reg as (
+  reg as materialized (
     select 'lane'::text k, r.lane_code code, r.legacy_job, r.schedule, r.enabled, r.mode, r.kind sub, r.consecutive_failures, r.open_until, r.last_status, r.last_error,
            r.last_started_at, r.last_finished_at, r.last_ms, coalesce(r.budget_ms, r.expected_ms) budget_ms, r.field, r.owner, r.uses_ai, r.fill_function, r.note,
            'coverage-lane-dispatch'::text runner
@@ -90,7 +90,7 @@ as $f$
            a.last_started_at, a.last_finished_at, a.last_ms, coalesce(a.budget_ms, a.expected_ms), null, null, null, null, a.note, 'admission-rule-runner'
       from pipeline.admission_rules a),
   -- one grouped scan of the scheduler history, by jobid
-  ch as (
+  ch as materialized (
     select d.jobid, min(d.start_time) first_start, max(d.start_time) last_start,
            (array_agg(d.end_time order by d.start_time desc))[1] last_end, (array_agg(d.status order by d.start_time desc))[1] last_status,
            max(d.start_time) filter (where d.status = 'succeeded') last_success,
@@ -118,7 +118,7 @@ as $f$
               from cron.job_run_details d0 cross join st where d0.start_time > now() - make_interval(hours => st.long_h)) d
       cross join st cross join lateral (select d.cls) o
      group by d.jobid),
-  hist as (select min(d.start_time) since from cron.job_run_details d),
+  hist as materialized (select min(d.start_time) since from cron.job_run_details d),
   -- the three dispatchers' run logs, by register code
   rr as (
     select 'lane'::text k, c.lane_code code, c.status, c.result, c.error, c.due_at at, c.ms from pipeline.coverage_lane_runs c cross join st where c.due_at > now() - make_interval(hours => st.long_h)
@@ -126,7 +126,7 @@ as $f$
     select 'rollup', u.target_code, u.status, null, u.error, u.due_at, u.ms from pipeline.rollup_runs u cross join st where u.due_at > now() - make_interval(hours => st.long_h)
     union all
     select 'rule', a.rule_code, a.status, a.result, a.error, a.due_at, a.ms from pipeline.admission_rule_runs a cross join st where a.due_at > now() - make_interval(hours => st.long_h)),
-  rh as (
+  rh as materialized (
     select r.k, r.code, min(r.at) first_at, max(r.at) last_at, max(r.at) filter (where r.status = 'succeeded') last_success,
            (array_agg(left(r.error, 240) order by r.at desc) filter (where r.status = 'failed'))[1] last_failure,
            count(*) filter (where r.at > now() - make_interval(hours => st.short_h)) n_s,
@@ -150,18 +150,18 @@ as $f$
     else 'empty' end cls from rr r0) r
       cross join st cross join lateral (select r.cls) o
      group by r.k, r.code),
-  rhist as (
+  rhist as materialized (
     select 'lane'::text k, min(due_at) since from pipeline.coverage_lane_runs
     union all select 'rollup', min(due_at) from pipeline.rollup_runs
     union all select 'rule', min(due_at) from pipeline.admission_rule_runs),
   -- next run and the schedule's own period (pg_cron "n seconds" schedules are read as their interval)
-  sch as (
+  sch as materialized (
     select s.schedule, n1, case when s.schedule ~ '^\d+ seconds?$' then make_interval(secs => split_part(s.schedule, ' ', 1)::int)
                                 else security.cron_next_run_v1(s.schedule, n1) - n1 end period
       from (select distinct schedule from cron.job where active union select distinct schedule from reg where schedule is not null) s
       cross join lateral (select case when s.schedule ~ '^\d+ seconds?$' then now() + make_interval(secs => split_part(s.schedule, ' ', 1)::int)
                                       else security.cron_next_run_v1(s.schedule, now()) end n1) x),
-  cj as (
+  cj as materialized (
     select c.jobid, c.jobname, c.schedule, c.active,
            case when d.jobid is not null then 'dispatcher' when exists (select 1 from reg g where g.legacy_job = c.jobname) then 'moved' else 'own' end role,
            cr.status reg_status, cr.purpose, cr.area, cr.layer,
@@ -175,7 +175,7 @@ as $f$
       left join pipeline.component_register cr on cr.kind = 'job' and cr.name = c.jobname
       left join ch h on h.jobid = c.jobid
       left join sch s on s.schedule = c.schedule and c.active),
-  rg as (
+  rg as materialized (
     select g.*, h.first_at, h.last_at, h.last_success hist_success, h.last_failure, h.n_s, h.prod_s, h.held_s, h.empty_s, h.fail_s, h.def_s, h.unm_s,
            h.n_l, h.prod_l, h.held_l, h.empty_l, h.fail_l, h.def_l, h.unm_l, h.avg_s, h.max_s, h.avg_l, s.n1 next_run, s.period,
            exists (select 1 from disp d where d.runner = g.runner and d.active) runner_on,
@@ -183,7 +183,7 @@ as $f$
            (select x.purpose from pipeline.component_register x where x.kind = 'job' and x.name = g.legacy_job) purpose
       from reg g left join rh h on h.k = g.k and h.code = g.code left join sch s on s.schedule = g.schedule),
   -- states and findings
-  cjs as (
+  cjs as materialized (
     select j.*,
            greatest(make_interval(secs => ((select stall_h from st) * 3600)::int), coalesce(j.period, interval '0') * (select stall_p from st)) stall_after,
            case
@@ -196,7 +196,7 @@ as $f$
              when j.prod_s = 0 and j.held_s = 0 and j.unm_s = 0 and j.empty_s > 0 then 'idle'
              else 'active' end state
       from cj j),
-  rgs as (
+  rgs as materialized (
     select g.*,
            case
              when g.mode = 'shadow' then 'shadow'
@@ -210,7 +210,7 @@ as $f$
              when g.prod_s = 0 and g.held_s = 0 and g.unm_s = 0 and g.empty_s > 0 then 'idle'
              else 'active' end state
       from rg g),
-  rows_cron as (
+  rows_cron as materialized (
     select j.state, jsonb_strip_nulls(jsonb_build_object(
       'component', 'cron', 'jobid', j.jobid, 'name', j.jobname, 'role', j.role, 'schedule', j.schedule, 'active', j.active, 'state', j.state,
       'reason', case j.state
@@ -235,7 +235,7 @@ as $f$
          case when not j.active and j.last_start > now() - make_interval(hours => (select short_h from st)) then 'switched_off_in_window' end,
          case when j.active and j.role = 'moved' then 'runs_beside_its_register_row' end], null), '{}')))
       j_row from cjs j),
-  rows_reg as (
+  rows_reg as materialized (
     select g.state, jsonb_strip_nulls(jsonb_build_object(
       'component', g.k, 'code', g.code, 'kind', g.sub, 'runner', g.runner, 'runner_jobids', g.runner_jobids, 'legacy_job', g.legacy_job, 'schedule', g.schedule,
       'enabled', g.enabled, 'mode', g.mode, 'state', g.state,
@@ -262,14 +262,14 @@ as $f$
          case when g.n_l >= (select min_runs from st) and g.def_l >= g.n_l * (select deferred_share from st) then 'often_deferred' end,
          case when g.mode = 'live' and g.enabled and g.n_l > 0 and g.unm_l + coalesce(g.def_l, 0) = g.n_l then 'outcome_unmeasured' end], null), '{}')))
       j_row from rgs g),
-  allrows as (select state, j_row from rows_cron union all select state, j_row from rows_reg),
-  ai as (
+  allrows as materialized (select state, j_row from rows_cron union all select state, j_row from rows_reg),
+  ai as materialized (
     select a.service_code, count(*) filter (where a.at > now() - make_interval(hours => st.short_h)) n_s,
            count(*) filter (where a.at > now() - make_interval(hours => st.short_h) and a.outcome is distinct from 'ok' and a.outcome is distinct from 'success') nf_s,
            round(sum(a.cost_usd) filter (where a.at > now() - make_interval(hours => st.short_h)), 4) usd_s,
            count(*) n_l, count(*) filter (where a.outcome is distinct from 'ok' and a.outcome is distinct from 'success') nf_l, round(sum(a.cost_usd), 4) usd_l
       from pipeline.ai_invocations a cross join st where a.at > now() - make_interval(hours => st.long_h) group by 1),
-  fc as (
+  fc as materialized (
     select f.use_case, count(*) filter (where f.at > now() - make_interval(hours => st.short_h)) n_s, round(sum(f.credits_used) filter (where f.at > now() - make_interval(hours => st.short_h)), 1) cr_s,
            count(*) filter (where f.at > now() - make_interval(hours => st.short_h) and not coalesce(f.success, false)) nf_s,
            count(*) n_l, round(sum(f.credits_used), 1) cr_l, count(*) filter (where not coalesce(f.success, false)) nf_l
@@ -298,9 +298,9 @@ stable
 security definer
 set search_path = ''
 as $f$
-  with st as (select security.pipeline_num_v1('pim.refresh_days', 365)::int d),
-  js as (select j rows, (j->>'as_at')::timestamptz measured_at from (select security.data_delivery_jobs_v1() j) x),
-  comp as (select c from js cross join lateral jsonb_array_elements(coalesce(js.rows->'components', '[]'::jsonb)) c),
+  with st as materialized (select security.pipeline_num_v1('pim.refresh_days', 365)::int d),
+  js as materialized (select j rows, (j->>'as_at')::timestamptz measured_at from (select security.data_delivery_jobs_v1() j) x),
+  comp as materialized (select c from js cross join lateral jsonb_array_elements(coalesce(js.rows->'components', '[]'::jsonb)) c),
   w as (select c from comp where c->>'component' = 'cron' and (c->>'active')::boolean and c->>'name' <> 'data-delivery'),
   f as (
     select k.iso_alpha2 cc, a.attribute field, count(*) held,
