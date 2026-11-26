@@ -4,7 +4,7 @@
 -- effective processing state ... reuse existing Data Delivery helper snapshots ... preserve the existing pim.operations contract").
 --
 -- What it adds (read-only; no table, job, worker, queue, planner or schedule change; nothing is retired or switched):
---   security.pim_outcome_class_v1(status, result)  one execution's outcome from the run's own recorded status and result:
+--   Outcome class of one execution, from the run's own recorded status and result (inline, one pass per log):
 --     failed | deferred | productive (an admission, publication or hand-off counter above 0) | held (only protective counters above 0: Layer 4,
 --     held, refused, left for a person) | empty (a structured result with every counter at 0) | unmeasured (no structured result).
 --   security.data_delivery_jobs_v1()  the jobs read, counted only in the background: security.pim_operations_v1 calls it, and that is counted by
@@ -59,25 +59,6 @@ insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, k
   'A dispatcher target deferred (not started for lack of time in its tick) in at least this share of its seven-day executions is flagged as contended.',
   'number', '0.3'::jsonb, 0.05, 1, 'share (0 to 1)', 1609, 'PIM', 'security.data_delivery_jobs_v1 (s1176)', 'CF-247 s1176 PIM monitoring by jobid');
 
-create or replace function security.pim_outcome_class_v1(p_status text, p_result text)
-returns text
-language sql
-immutable
-set search_path = ''
-as $f$
-  select case
-    when p_status = 'failed' then 'failed'
-    when p_status in ('deferred', 'skipped') then 'deferred'
-    when p_status in ('running', 'starting') then 'running'
-    when p_result is null or btrim(p_result) !~ '^[\[{]' then 'unmeasured'
-    when p_result ~ '"(written|applied|approved|settled|restored|delivery|replaced|admitted|auto_admitted|items_admitted|rows_admitted|course_items_admitted|course_rows_admitted|proof_items_admitted|proof_rows_admitted|confirmed|confirmed_by_wording|confirmed_short_course|stamped|fees_aligned|items_closed|rule_b_rows|decided_by_rule|published|auto_published|promoted|filled|linked|bound|enqueued|queued|inserted|created)": ?[1-9]' then 'productive'
-    when p_result ~ '"(layer4|sampled_to_layer4|held|held_refused|held_manual_lock|refused|refused_identity|refused_waiting|not_proved_left_for_review|left_for_a_person|skipped_check_failed|ambiguous|quarantined|blocked)": ?[1-9]' then 'held'
-    else 'empty' end
-$f$;
-comment on function security.pim_outcome_class_v1(text, text) is 'PIM (s1176): the outcome class of one execution from its recorded status and result: failed, deferred, running, productive, held, empty or unmeasured.';
-revoke all on function security.pim_outcome_class_v1(text, text) from public, anon, authenticated;
-grant execute on function security.pim_outcome_class_v1(text, text) to service_role;
-
 create or replace function security.data_delivery_jobs_v1()
 returns jsonb
 language sql
@@ -126,9 +107,16 @@ as $f$
            round(avg(extract(epoch from d.end_time - d.start_time)) filter (where d.start_time > now() - make_interval(hours => st.short_h)), 2) avg_s,
            round(max(extract(epoch from d.end_time - d.start_time)) filter (where d.start_time > now() - make_interval(hours => st.short_h)), 2) max_s,
            round(avg(extract(epoch from d.end_time - d.start_time)), 2) avg_l
-      from cron.job_run_details d cross join st
-      cross join lateral (select security.pim_outcome_class_v1(d.status, d.return_message) cls) o
-     where d.start_time > now() - make_interval(hours => st.long_h)
+      from (select d0.*, case
+    when d0.status = 'failed' then 'failed'
+    when d0.status in ('deferred', 'skipped') then 'deferred'
+    when d0.status in ('running', 'starting') then 'running'
+    when d0.return_message is null or btrim(d0.return_message) !~ '^[\[{]' then 'unmeasured'
+    when d0.return_message ~ '"(written|applied|approved|settled|restored|delivery|replaced|admitted|auto_admitted|items_admitted|rows_admitted|course_items_admitted|course_rows_admitted|proof_items_admitted|proof_rows_admitted|confirmed|confirmed_by_wording|confirmed_short_course|stamped|fees_aligned|items_closed|rule_b_rows|decided_by_rule|published|auto_published|promoted|filled|linked|bound|enqueued|queued|inserted|created)": ?[1-9]' then 'productive'
+    when d0.return_message ~ '"(layer4|sampled_to_layer4|held|held_refused|held_manual_lock|refused|refused_identity|refused_waiting|not_proved_left_for_review|left_for_a_person|skipped_check_failed|ambiguous|quarantined|blocked)": ?[1-9]' then 'held'
+    else 'empty' end cls
+              from cron.job_run_details d0 cross join st where d0.start_time > now() - make_interval(hours => st.long_h)) d
+      cross join st cross join lateral (select d.cls) o
      group by d.jobid),
   hist as (select min(d.start_time) since from cron.job_run_details d),
   -- the three dispatchers' run logs, by register code
@@ -152,7 +140,15 @@ as $f$
            count(*) filter (where o.cls = 'failed') fail_l, count(*) filter (where o.cls = 'deferred') def_l, count(*) filter (where o.cls = 'unmeasured') unm_l,
            round(avg(r.ms) filter (where r.at > now() - make_interval(hours => st.short_h)) / 1000.0, 2) avg_s,
            round(max(r.ms) filter (where r.at > now() - make_interval(hours => st.short_h)) / 1000.0, 2) max_s, round(avg(r.ms) / 1000.0, 2) avg_l
-      from rr r cross join st cross join lateral (select security.pim_outcome_class_v1(r.status, r.result) cls) o
+      from (select r0.*, case
+    when r0.status = 'failed' then 'failed'
+    when r0.status in ('deferred', 'skipped') then 'deferred'
+    when r0.status in ('running', 'starting') then 'running'
+    when r0.result is null or btrim(r0.result) !~ '^[\[{]' then 'unmeasured'
+    when r0.result ~ '"(written|applied|approved|settled|restored|delivery|replaced|admitted|auto_admitted|items_admitted|rows_admitted|course_items_admitted|course_rows_admitted|proof_items_admitted|proof_rows_admitted|confirmed|confirmed_by_wording|confirmed_short_course|stamped|fees_aligned|items_closed|rule_b_rows|decided_by_rule|published|auto_published|promoted|filled|linked|bound|enqueued|queued|inserted|created)": ?[1-9]' then 'productive'
+    when r0.result ~ '"(layer4|sampled_to_layer4|held|held_refused|held_manual_lock|refused|refused_identity|refused_waiting|not_proved_left_for_review|left_for_a_person|skipped_check_failed|ambiguous|quarantined|blocked)": ?[1-9]' then 'held'
+    else 'empty' end cls from rr r0) r
+      cross join st cross join lateral (select r.cls) o
      group by r.k, r.code),
   rhist as (
     select 'lane'::text k, min(due_at) since from pipeline.coverage_lane_runs
