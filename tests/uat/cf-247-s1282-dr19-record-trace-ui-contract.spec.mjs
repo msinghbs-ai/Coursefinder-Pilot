@@ -36,7 +36,8 @@ test('Data Delivery: a drill in each stream and in the PIM matrix; records open 
   expect(rt).toContain('<button type="button" className="rt-toggle" aria-expanded={open} onClick={()=>setOpen(!open)} data-rt-drill-toggle>')
   expect(rt).toContain('{open&&<DrillBody fieldIn={field} rank={rank}/>}')
   expect(rt).toContain("<a className=\"cf-link\" href={hrefFor('courses','',{id:r.course_id})} data-rt-open-course>Open the course record</a>")
-  expect(rt).toContain('<CourseFieldStatus courseId={r.course_id} field={field} open rank={rank}/>')
+  // a record reads its trace only once opened (a class can list many records)
+  expect(rt).toContain('{opened&&<CourseFieldStatus courseId={r.course_id} field={field} open rank={rank}/>}')
 })
 
 test('course record drawer: field status fold, read when opened, Layer 4 links only for Curator and above', () => {

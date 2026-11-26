@@ -28,7 +28,11 @@ async function drillAndDrawer(page, testInfo, who) {
   await expect(rec).toBeVisible({ timeout: 60_000 })
   await rec.locator('summary').click()
   const field = rec.locator('[data-rt-field="description"]')
-  await expect(field, 'the record trace for the field').toBeVisible({ timeout: 60_000 })
+  // the trace or its error, whichever comes first; an error is printed before the test fails on it
+  await expect(rec.locator('[data-rt-field="description"], [data-rt-error]').first(), 'the record trace for the field').toBeVisible({ timeout: 60_000 })
+  if (await rec.locator('[data-rt-error]').count()) console.log(`s1282 evidence ${testInfo.project.name} ${who} record trace error: ${(await rec.locator('[data-rt-error]').innerText()).slice(0, 300)}`)
+  await expect(rec.locator('[data-rt-error]'), 'the record trace reads without an error').toHaveCount(0)
+  await expect(field).toBeVisible()
   for (const k of FACTS) await expect(field.locator(`[data-rt-fact="${k}"]`), `fact ${k}`).toHaveCount(1)
   await expect(drill.locator('[data-rt-error]')).toHaveCount(0)
   let vp = await measured(page)
