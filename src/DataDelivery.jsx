@@ -444,7 +444,7 @@ export default function DataDelivery({rank=0,onError,client=null}){
     <div className="dd-head" aria-hidden="true"><span>Stream</span><span>Coverage</span><span>Net {hoursText(d.windows?.short_hours)}</span><span>Net {hoursText(d.windows?.long_hours)}</span><span>Website</span><span>Zoho</span><span>Queue</span><span>Holds and reasons</span><span>Speed</span><span>Last and next run</span><span>Automatic recovery</span></div>
     <div className="dd-streams">{streams.map(s=><Stream key={s.stream} s={s} now={now} providerFilters={Boolean(d.provider_filters_available)} open={open[s.stream]??Boolean(s.stages||s.provider_ai||s.aer_sources)} onToggle={o=>setOpen(x=>({...x,[s.stream]:o}))}/>)}</div>
     {/* s1217: Autonomous PIM, inside this panel: matrix, requests and refresh views from the pim snapshot in this same read */}
-    <PimDelivery pim={d.pim} now={now} rank={rank}/>
+    <PimDelivery pim={d.pim} now={now} rank={rank} streams={d.streams} snapshots={d.snapshots} staleMinutes={d.stale_after_minutes}/>
     <RecognitionDelivery rpc={rpc}/>
     {/* v2.16.19 RM0F: destination load jobs and what waits for a person */}
     <DestinationLoads rpc={rpc} rank={rank}/>

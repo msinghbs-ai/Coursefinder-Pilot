@@ -11,6 +11,9 @@
 // never added together (a mixed cell says so); "published-provider gain" is not "verified consumer delivery" (that is not counted per field); a measured zero reads
 // "0, measured" and an unavailable figure "Not measured" (a missing value is never summed as 0); canonical field coverage (applicable, completed, backlog) and
 // work-item counts (queued, running, held, failed) are shown as two groups, because work items can exceed the backlog.
+// s1221 (SS-Programme-Control 26 Nov 2026 15:46; backend s1175, `pim.operations`): worker status and stalled processing (workers[], stalled_workers), freshness by country
+// (freshness_by_country[]), and verified consumer read-back per stream and country (consumer[]; streams are different kinds of record and are never added). The request
+// register stays "Not available" (operations.requests is `not_projected` with its reason) and verified feedback stays "Not available" (no authoritative source).
 // Rules kept: a figure that is not counted is "Not measured" or "Unknown" with its reason, never 0; roll-ups are sums over pim.fields (the backend does not repeat
 // them); countries come from the rows and domains from the field register (s930, no list is typed here); the screen adds no control and no setting, so every
 // existing permission, backend control and the Consumer API are untouched. Detailed queue and lane work stays on Operations and Scheduled jobs (links below).
@@ -102,7 +105,7 @@ function Funnel({rows,label}){
   </div>
 }
 
-function Gains({rows,hours}){
+function Gains({rows,hours,hasConsumer}){
   const withBacklog=rows.filter(r=>Number(r.backlog)>0)
   const measured=withBacklog.filter(r=>r.clearance_hours!=null)
   const unmeasured=withBacklog.length-measured.length
@@ -117,7 +120,7 @@ function Gains({rows,hours}){
         <div><span>Throughput</span>{tp.known?<><strong data-pim-gain="throughput">{fmtNumber(Math.round(tp.total*100)/100)}<small> per hour</small></strong><small>{tp.total===0?'measured: none gained':'measured over the window'}{tp.missing?`; ${fmtNumber(tp.missing)} row${tp.missing===1?'':'s'} not counted`:''}</small></>:<NotMeasured/>}</div>
       </div>})}
     <div className="pim-gains" data-pim-gain-group-shared>
-      <div><span>Verified consumer delivery</span><NotMeasured reason="Not counted per field. Website and Zoho read-back is shown on each stream card above where it is measured; published-provider gain is not a delivery check."/></div>
+      <div><span>Verified consumer delivery</span><NotMeasured reason={hasConsumer?'Not counted per field. It is measured per stream and country in Verified consumer read-back below; streams are different kinds of record and are not added. Published-provider gain is not a delivery check.':'Not counted per field. Website and Zoho read-back is shown on each stream card above where it is measured; published-provider gain is not a delivery check.'}/></div>
       <div><span>Estimated clearance</span>
         {!withBacklog.length?<strong data-pim-clearance="none">Nothing outstanding</strong>
           :longest?<><strong data-pim-clearance={longest.clearance_hours}>{durText(longest.clearance_hours)}</strong><small>longest measured field ({word(longest.field)}; {basisWord(longest.gain_basis)}), from its own measured rate{unmeasured>0?`. ${fmtNumber(unmeasured)} of ${fmtNumber(withBacklog.length)} fields with a backlog gained nothing in the window, so they have no estimate.`:'.'} Fields are not combined.</small></>
@@ -126,9 +129,19 @@ function Gains({rows,hours}){
     </div>
   </div>
 }
+const minutesAgo=(iso,now)=>{const t=iso?new Date(iso).getTime():NaN;return Number.isFinite(t)&&now?Math.max(0,Math.round((now-t)/60000)):null}
+const ageWord=m=>m==null?'at an unknown time':m<1?'under a minute ago':m<120?`${fmtNumber(m)} min ago`:`${fmtNumber(Math.round(m/60))} h ago`
+/** Verified consumer read-back for one consumer: matched out of expected, with pending, missing and not served kept apart. A null count is Not measured, never 0. */
+function ConsumerCell({r,c}){
+  const matched=r[`${c}_matched`],pending=r[`${c}_pending`],missing=r[`${c}_missing`],notServed=r[`${c}_not_served`],expected=Number(r.expected)
+  if(!has(matched))return <NotMeasured reason={c==='z'?'Zoho read-back is not counted for this stream.':'Not counted.'}/>
+  return <V><strong data-pim-matched={matched}>{fmtNumber(Number(matched))}</strong><small>{expected>0?`${pctText(Number(matched),expected)} of expected`:'none expected'}</small>
+    <small>{has(pending)?`${fmtNumber(Number(pending))} pending`:'pending: not measured'} · {has(missing)?`${fmtNumber(Number(missing))} missing`:'missing: not measured'} · {has(notServed)?`${fmtNumber(Number(notServed))} not served`:'not served: not measured'}</small></V>
+}
+const HELPER_STREAM={aer:'aer',pdesc:'pdesc',intake:'int',cdesc_stages:'cdesc'} // which Data Delivery stream each helper snapshot feeds
 const hoursWord=h=>{const n=Number(h);return !n?'the window':n%24===0?`${n/24===1?'24 h':`${n/24} d`}`:`${fmtNumber(n)} h`}
 
-export default function PimDelivery({pim,now,rank=0}){
+export default function PimDelivery({pim,now,rank=0,streams=null,snapshots=null,staleMinutes=null}){
   const lk=useLookups()
   const[view,setView]=useState('matrix'),[country,setCountry]=useState(''),[measure,setMeasure]=useState('completeness'),[domain,setDomain]=useState('')
   const[register,setRegister]=useState(null),[regErr,setRegErr]=useState(null)
@@ -153,6 +166,8 @@ export default function PimDelivery({pim,now,rank=0}){
   const snapMs=pim.snapshot_at?new Date(pim.snapshot_at).getTime():null
   const ageMin=snapMs&&now?Math.max(0,Math.round((now-snapMs)/60000)):null
   const hours=pim.window_hours
+  const ops=pim.operations&&typeof pim.operations==='object'?pim.operations:null
+  const streamTitle=id=>(Array.isArray(streams)?streams.find(x=>x.stream===id)?.title:null)||word(id)
   const jobs=Array.isArray(pim.jobs)?pim.jobs:[]
   const nextRun=jobs.filter(j=>j.active&&j.next_run).map(j=>j.next_run).sort()[0]||null
   const lastRun=pim.gap_queue?.last_run_at||null
@@ -174,6 +189,7 @@ export default function PimDelivery({pim,now,rank=0}){
     <p className="sl-sub" data-pim-stamp>PIM figures counted <strong data-pim-snapshot-at>{pim.snapshot_at?fmtDateTime(pim.snapshot_at):'at an unknown time'}</strong> (Melbourne){ageMin!=null?`, ${ageMin} min ago`:''}.
       {' '}Window: {hoursWord(hours)}. {pim.snapshot_error?'':'Figures are counts of the live database at that time.'}
       {pim.snapshot_error&&<> <StatusChip tone="warning" label="Stale" title="The latest PIM count failed"/> <small data-pim-snapshot-error title={pim.snapshot_error}>The latest count failed ({pim.snapshot_error}{pim.snapshot_failed_at?` at ${fmtDateTime(pim.snapshot_failed_at)}`:''}); these are the last good figures.</small></>}</p>
+    {snapshots&&typeof snapshots==='object'&&Object.keys(snapshots).length>0&&<p className="sl-sub" data-pim-helper-snapshots>Other Data Delivery counts, each kept as its last good result: {Object.entries(snapshots).map(([k,v],i)=>{const ago=minutesAgo(v?.as_at,now),stale=staleMinutes!=null&&ago!=null&&ago>Number(staleMinutes);return <span key={k} data-pim-helper-snapshot={k} data-pim-helper-state={v?.error?'error':stale?'stale':'ok'}>{i?'; ':''}{streamTitle(HELPER_STREAM[k]||k)} {v?.as_at?ageWord(ago):'not counted yet'}{(v?.error||stale)&&<> <StatusChip tone="warning" label={v?.error?'Last count failed':'Stale'} title={v?.error||''}/></>}</span>})}.</p>}
     <div className="pim-tabs" role="tablist" aria-label="PIM views">{VIEWS.map(v=><button key={v.key} type="button" role="tab" aria-selected={view===v.key} className={`cf-btn compact${view===v.key?' primary':''}`} data-pim-tab={v.key} onClick={()=>setView(v.key)}>{v.label}</button>)}</div>
 
     {view==='matrix'&&<div data-pim-panel="matrix">
@@ -185,7 +201,7 @@ export default function PimDelivery({pim,now,rank=0}){
       <h5 className="sl-h4" data-pim-scope>{scopeLabel}: stage funnel</h5>
       {scope.length?<><Funnel rows={scope} label={scopeLabel}/>
         <p className="sl-sub" data-pim-funnel-note>Work items are counted per queue item, not per course field. One field can have several items, and a held item can belong to a field that already holds a value, so work-item holds are not parts of the backlog, can be larger than it, and are never subtracted from it.</p>
-        <Gains rows={scope} hours={hours}/>
+        <Gains rows={scope} hours={hours} hasConsumer={Array.isArray(ops?.consumer)&&ops.consumer.length>0}/>
         <p className="sl-sub" data-pim-meaning>{pim.meaning?.clearance_hours?`Clearance: ${pim.meaning.clearance_hours}.`:''} {pim.meaning?.published_gain?`Published-provider gain: ${pim.meaning.published_gain}.`:''}</p>
         <p className="sl-sub" data-pim-oldest>Oldest outstanding work: {oldestRow?<><strong>{fmtDateTime(oldestRow.oldest_outstanding)}</strong> ({word(oldestRow.field)}, {countryName(lk,oldestRow.country)}; {fmtRelative(oldestRow.oldest_outstanding,'',now)})</>:<NotMeasured reason="No outstanding work item carries a start time in this scope."/>}</p>
       </>:<NotMeasured word="Not available" reason="No PIM rows for this country."/>}
@@ -225,11 +241,34 @@ export default function PimDelivery({pim,now,rank=0}){
       <div className="pim-proc" data-pim-processing>
         <div><span>Last queue pass</span>{lastRun?<><strong data-pim-last-run>{fmtDateTime(lastRun)}</strong><small>{fmtRelative(lastRun,'',now)}{pim.gap_queue?.cycle_scanned!=null?` · scanned ${fmtNumber(Number(pim.gap_queue.cycle_scanned))}, found ${fmtNumber(Number(pim.gap_queue.cycle_found))}`:''}</small></>:<NotMeasured reason="The gap queue has not recorded a pass."/>}</div>
         <div><span>Next scheduled run</span>{nextRun?<><strong data-pim-next-run>{fmtDateTime(nextRun)}</strong><small>{untilText(nextRun,now)}</small></>:<NotMeasured reason="No active scheduled job has a next run."/>}</div>
-        <div><span>Expired leases</span>{pim.leases?<><strong data-pim-leases={pim.leases.expired}>{fmtNumber(Number(pim.leases.expired))}</strong><small>{pim.leases.recovery}</small></>:<NotMeasured reason="Leases were not counted."/>}</div>
-        <div><span>Worker heartbeat</span><NotMeasured reason="The PIM read carries the job schedule, the last queue pass and expired leases; it does not carry a per-worker heartbeat."/></div>
+        <div><span>Expired leases</span>{pim.leases?<><strong data-pim-leases={pim.leases.expired}>{fmtNumber(Number(pim.leases.expired))}</strong><small>{pim.leases.recovery}</small></>:has(ops?.expired_leases)?<><strong data-pim-leases={ops.expired_leases}>{fmtNumber(Number(ops.expired_leases))}</strong><small>counted in the worker status read</small></>:<NotMeasured reason="Leases were not counted."/>}</div>
+        <div><span>Stalled workers</span>{Array.isArray(ops?.workers)&&has(ops?.stalled_workers)?<><strong data-pim-stalled={ops.stalled_workers}>{fmtNumber(Number(ops.stalled_workers))}</strong><small>of {fmtNumber(ops.workers.length)} scheduled jobs{ops.jobs_summary_at?`; job summary read ${ageWord(minutesAgo(ops.jobs_summary_at,now))}`:''}</small></>:<NotMeasured reason="The worker status is not in this PIM snapshot yet, so stalled processing is not shown."/>}</div>
       </div>
       {jobs.length>0&&<div className="lf-frame"><table className="cf-table pim-jobs" data-pim-jobs><thead><tr><th>Scheduled job</th><th>State</th><th>Schedule</th><th>Next run</th></tr></thead><tbody>
         {jobs.map(j=><tr key={j.job} data-pim-job={j.job}><td data-label="Scheduled job">{j.job}</td><td data-label="State">{j.active?<StatusChip tone="success" label="On"/>:<StatusChip tone="warning" label="Off"/>}</td><td data-label="Schedule"><code>{j.schedule||'—'}</code></td><td data-label="Next run">{j.next_run?`${fmtDateTime(j.next_run)} (${untilText(j.next_run,now)})`:j.active?<NotMeasured reason="No next run is recorded."/>:'—'}</td></tr>)}</tbody></table></div>}
+
+      {Array.isArray(ops?.workers)?<><h5 className="sl-h4">Workers (scheduled jobs)</h5>
+        <p className="sl-sub" data-pim-workers-meaning>{ops.meaning} A worker that has never succeeded counts as stalled.</p>
+        {ops.workers.length?<div className="lf-frame"><table className="cf-table pim-workers" data-pim-workers><thead><tr><th>Worker</th><th>State</th><th>Last success</th><th>Last start</th><th>Failed in 24 h</th><th>Schedule</th></tr></thead><tbody>
+          {ops.workers.map(w=><tr key={w.job} data-pim-worker={w.job} data-pim-worker-state={w.stalled?'stalled':w.running?'running':'idle'}><td data-label="Worker">{w.job}</td>
+            <td data-label="State">{w.stalled?<StatusChip tone="warning" label="Stalled"/>:w.running?<StatusChip tone="info" label="Running"/>:<StatusChip tone="success" label="Idle, on time"/>}</td>
+            <td data-label="Last success">{w.last_success?<V>{fmtDateTime(w.last_success)}<small>{fmtRelative(w.last_success,'',now)}</small></V>:<NotMeasured word="Never" reason="No success on record, so it counts as stalled."/>}</td>
+            <td data-label="Last start">{w.last_start?fmtDateTime(w.last_start):<NotMeasured word="Unknown"/>}</td>
+            <td data-label="Failed in 24 h">{has(w.failed_24h)?<V>{fmtNumber(Number(w.failed_24h))}{Number(w.failed_24h)===0&&<small>measured: none</small>}</V>:<NotMeasured/>}</td>
+            <td data-label="Schedule"><code>{w.schedule||'—'}</code></td></tr>)}</tbody></table></div>:<NotMeasured word="None" reason="No active scheduled job is listed."/>}</>
+        :<><h5 className="sl-h4">Workers (scheduled jobs)</h5><NotMeasured word="Not available" reason="The PIM snapshot carries no worker status yet."/></>}
+
+      <h5 className="sl-h4">Verified consumer read-back</h5>
+      <p className="sl-sub" data-pim-consumer-meaning>Matched out of expected, per stream and country, from the verified read-back of what the website and Zoho read. Each stream counts a different kind of record, so streams are never added together. Not served is expected but not offered to that consumer (for example the provider is hidden or blocked in Layer 4); it is not counted as missing.</p>
+      {Array.isArray(ops?.consumer)&&ops.consumer.length?<div className="lf-frame"><table className="cf-table pim-consumer" data-pim-consumer><thead><tr><th>Stream</th><th>Country</th><th>Expected</th><th>Website</th><th>Zoho</th><th>Read</th></tr></thead><tbody>
+        {ops.consumer.flatMap(st=>{const label=streamTitle(st.stream),ago=minutesAgo(st.measured_at,now),stale=staleMinutes!=null&&ago!=null&&ago>Number(staleMinutes)
+          const rowsC=(Array.isArray(st.rows)?st.rows:[]).filter(r=>!country||r.cc===country)
+          if(st.error||!Array.isArray(st.rows))return [<tr key={st.stream} data-pim-consumer-stream={st.stream} data-pim-consumer-error><td data-label="Stream">{label}</td><td colSpan={5}><NotMeasured reason={`Could not be read${st.error?`: ${st.error}`:''}${st.measured_at?` (last read ${ageWord(ago)})`:''}.`}/></td></tr>]
+          if(!rowsC.length)return []
+          return rowsC.map((r,i)=><tr key={`${st.stream}-${r.cc}`} data-pim-consumer-stream={st.stream} data-pim-consumer-country={r.cc}><td data-label="Stream">{i===0?label:<small>{label}</small>}</td><td data-label="Country">{countryName(lk,r.cc)}</td>
+            <td data-label="Expected">{has(r.expected)?fmtNumber(Number(r.expected)):<NotMeasured/>}</td><td data-label="Website"><ConsumerCell r={r} c="w"/></td><td data-label="Zoho"><ConsumerCell r={r} c="z"/></td>
+            <td data-label="Read"><V>{ageWord(ago)}{stale&&<StatusChip tone="warning" label="Stale"/>}</V></td></tr>)})}</tbody></table></div>
+        :<NotMeasured word="Not available" reason="The PIM snapshot carries no consumer read-back yet."/>}
 
       <h5 className="sl-h4">Consumption in the last {hoursWord(hours)}</h5>
       <div className="pim-proc" data-pim-consumption>
@@ -259,9 +298,10 @@ export default function PimDelivery({pim,now,rank=0}){
             <td data-label="Freshness">{r.fresh_pct==null?<NotMeasured/>:`${fmtNumber(Number(r.fresh_pct),{maxDecimals:1})}%`}</td><td data-label="Clarification">{r.clarification||'None'}</td></tr>)}</tbody></table></div></>
       :<div data-pim-requests-unavailable><h5 className="sl-h4">Stakeholder requests</h5>
         <NotMeasured word="Not available" reason="The request register is not part of the Data Delivery read yet (Master Plan section 6, interface 6, owned by S1-RM-Design). No request status, weight or request coverage is shown, and none is estimated."/>
+        {ops?.requests?.status==='not_projected'&&<p className="sl-sub" data-pim-requests-reason><strong>Why:</strong> {ops.requests.reason}</p>}
         <p className="sl-sub">When the read arrives this view shows each request&rsquo;s Rules v1.3 status beside its canonical coverage, consumer coverage and freshness as separate figures. The internal gap register is never shown here.</p></div>}
       <h5 className="sl-h4">Reported data issues</h5>
-      <NotMeasured word="Not available" reason="Counsellor reports are not yet tied to a verified re-check in this read, so no fixed or verified figure is shown."/>
+      <NotMeasured word="Not available" reason="No authoritative source for verified feedback has been resolved: counsellor reports are not tied to a verified re-check, so no fixed or verified figure is shown."/>
       <h5 className="sl-h4">Coverage of any scope, available now</h5>
       <p className="sl-sub">The figures a request would show beside its status are the country and domain figures on the <button type="button" className="cf-link" data-pim-goto="matrix" onClick={()=>setView('matrix')}>Delivery matrix</button>. Verified consumer coverage is not counted as a share yet; the matrix shows published-provider gain in the window, which is not a delivery check.</p>
     </div>}
@@ -269,12 +309,22 @@ export default function PimDelivery({pim,now,rank=0}){
     {view==='refresh'&&<div data-pim-panel="refresh">
       {pim.refresh?<>
         <h5 className="sl-h4">Freshness of held values</h5>
-        <p className="sl-sub" data-pim-refresh-meaning>{pim.refresh.meaning} Refresh window: {fmtNumber(Number(pim.refresh.window_days))} days. Freshness is counted by field across all countries, not by country.</p>
+        <p className="sl-sub" data-pim-refresh-meaning>{pim.refresh.meaning} Refresh window: {fmtNumber(Number(pim.refresh.window_days))} days. This first table is by field across all countries; the next is by country and field.</p>
         <div className="lf-frame"><table className="cf-table pim-refresh" data-pim-refresh><thead><tr><th>Field</th><th>Values held</th><th>Due to be verified</th><th>Fresh</th><th>Oldest verified</th></tr></thead><tbody>
           {(pim.refresh.fields||[]).map(f=>{const h=Number(f.held),d=Number(f.refresh_due)
             return <tr key={f.field} data-pim-refresh-field={f.field}><td data-label="Field"><V>{labelOf(f.field)}<small>{f.field}</small></V></td><td data-label="Values held">{fmtNumber(h)}</td><td data-label="Due to be verified">{fmtNumber(d)}</td>
               <td data-label="Fresh">{h>0?<V><strong>{pctText(h-d,h)}</strong><span className="dd-bar" role="img" aria-label={`${pctText(h-d,h)} fresh`}><i style={{width:`${Math.min(100,(h-d)/h*100)}%`}}/></span></V>:<NotMeasured word="None held"/>}</td>
               <td data-label="Oldest verified">{f.oldest_verified?fmtDateTime(f.oldest_verified):<NotMeasured word="Unknown"/>}</td></tr>})}</tbody></table></div>
+        <h5 className="sl-h4">Freshness by country</h5>
+        {Array.isArray(ops?.freshness_by_country)&&ops.freshness_by_country.length?<>
+          <div className="pim-controls"><label>Country <select value={country} onChange={e=>setCountry(e.target.value)} data-pim-fresh-country><option value="">All countries</option>{countries.map(c=><option key={c} value={c}>{countryName(lk,c)}</option>)}</select></label></div>
+          <div className="lf-frame"><table className="cf-table pim-refresh" data-pim-fresh-by-country><thead><tr><th>Field</th><th>Country</th><th>Values held</th><th>Due to be verified</th><th>Fresh</th></tr></thead><tbody>
+            {ops.freshness_by_country.filter(f=>!country||f.country===country).slice().sort((a,b)=>String(a.country).localeCompare(b.country)||labelOf(a.field).localeCompare(labelOf(b.field))).map(f=>{const h=Number(f.held),d=Number(f.refresh_due)
+              return <tr key={`${f.country}-${f.field}`} data-pim-fresh-row={`${f.country}-${f.field}`}><td data-label="Field"><V>{labelOf(f.field)}<small>{f.field}</small></V></td><td data-label="Country">{countryName(lk,f.country)}</td>
+                <td data-label="Values held">{has(f.held)?fmtNumber(h):<NotMeasured/>}</td><td data-label="Due to be verified">{has(f.refresh_due)?fmtNumber(d):<NotMeasured/>}</td>
+                <td data-label="Fresh">{!has(f.held)||!has(f.refresh_due)?<NotMeasured/>:h>0?<V><strong>{pctText(h-d,h)}</strong><span className="dd-bar" role="img" aria-label={`${pctText(h-d,h)} fresh`}><i style={{width:`${Math.min(100,(h-d)/h*100)}%`}}/></span></V>:<NotMeasured word="None held"/>}</td></tr>})}</tbody></table></div>
+          <p className="sl-sub">The oldest verified date is counted by field across all countries (first table), not by country.</p></>
+          :<NotMeasured word="Not available" reason="The PIM snapshot carries no freshness by country yet."/>}
         <h5 className="sl-h4">Source outcomes</h5>
         <p className="sl-sub">Pages bound to courses, by their last read. A protected hold (blocked or robots disallowed) keeps its held values in coverage; nothing is read around it.</p>
         <div className="lf-frame"><table className="cf-table pim-sources" data-pim-sources><thead><tr><th>Outcome</th><th>Pages</th><th>Due for re-read</th><th>Protected hold</th></tr></thead><tbody>

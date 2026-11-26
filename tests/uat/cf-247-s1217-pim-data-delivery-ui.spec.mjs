@@ -100,15 +100,15 @@ test.describe('Autonomous PIM inside Data Delivery', () => {
     await expect(pim.locator('[data-pim-clearance]')).toHaveCount(0)
   })
 
-  test('processing: last and next run, jobs, leases with the recovery sentence, and the worker heartbeat is labelled not measured', async ({ page }) => {
+  test('processing: last and next run, jobs, leases with the recovery sentence, and the worker status comes from operations (s1221 covers it in full)', async ({ page }) => {
     const { pim } = await open(page)
     const p = pim.locator('[data-pim-processing]')
     await expect(p.locator('[data-pim-last-run]')).toBeVisible()
     await expect(p.locator('[data-pim-next-run]')).toBeVisible()
     await expect(p.locator('[data-pim-leases="0"]')).toBeVisible()
     await expect(p).toContainText('taken back by the next worker claim')
-    await expect(p).toContainText('Worker heartbeat')
-    await expect(p.locator('[data-pim-unknown]').last()).toContainText('Not measured')
+    await expect(p).toContainText('Stalled workers')
+    await expect(pim.locator('[data-pim-workers]')).toBeVisible()
     for (const j of ['enrich-plan-run', 'enrich-plan-auto', 'field-gap-queue']) await expect(pim.locator(`[data-pim-job="${j}"]`)).toBeVisible()
   })
 
@@ -188,7 +188,7 @@ test.describe('Requests & feedback and Refresh & maintenance views', () => {
     const { pim } = await open(page)
     await pim.locator('[data-pim-tab="refresh"]').click()
     const v = pim.locator('[data-pim-panel="refresh"]')
-    await expect(v.locator('[data-pim-refresh-meaning]')).toContainText('not by country')
+    await expect(v.locator('[data-pim-refresh-meaning]')).toContainText('by field across all countries')
     const desc = v.locator('[data-pim-refresh-field="description"]')
     await expect(desc.locator('[data-label="Due to be verified"]')).toHaveText('40')
     await expect(desc.locator('[data-label="Fresh"]')).toContainText('99.8%')
