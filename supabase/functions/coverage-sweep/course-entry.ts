@@ -183,6 +183,20 @@ export function entryAgeNotScore(r: any, quote: string): { row: any; normalised:
     return { row: { ...r, kind: "general_note", min_entry_score: null, min_entry_score_basis: null, age_not_score: { min_entry_score: n, rule: "s1284 age is not a score" } }, normalised: true };
   return { row: r, normalised: false };
 }
+// s1293 (27 Nov 2026, CF-247, S2-AER, SS-Programme-Control "Academic entry classification"): "Applicants should submit certified transcripts of all academic
+// achievements" (115246M) and "Certified copies of three most recent school reports" (112659C) are application instructions (documents to send with an
+// application), not a qualification an applicant must hold or a grade. A prior_qualification or minimum_grade row with no score and no grade whose words are
+// a document-submission instruction and name no qualification level (Year 10 to 12, certificate, diploma, degree, AQF, honours, equivalent) is a general_note.
+// "Submit a copy of minimum Year 12 or equivalent" names a level and stays as read.
+export const ENTRY_DOC_INSTRUCTION = /\bcertified (copy|copies|transcripts?|documents?)\b|\b(submit|upload|attach|send|lodge)\b[^.]{0,50}\b(application|form|documents?|transcripts?|copies|copy|certified)\b/i;
+export const ENTRY_LEVEL_WORDS = /\b(year\s*(10|11|12)|certificate\s*(iii|iv|3|4)|diploma|bachelor|degree|aqf|honours|masters?|doctorate|equivalent)\b/i;
+export function entryDocumentInstruction(r: any, quote: string): { row: any; normalised: boolean } {
+  const text = `${String(r?.description || "")} ${quote}`;
+  if ((r?.kind === "prior_qualification" || r?.kind === "minimum_grade") && (r?.min_entry_score == null) && !String(r?.min_grade || "").trim()
+      && ENTRY_DOC_INSTRUCTION.test(text) && !ENTRY_LEVEL_WORDS.test(text))
+    return { row: { ...r, kind: "general_note", min_entry_score: null, min_entry_score_basis: null, document_instruction: { kind: r.kind, rule: "s1293 application instruction" } }, normalised: true };
+  return { row: r, normalised: false };
+}
 export function entryAudience(audience: unknown, quote: string): { audience: string; normalised: boolean } {
   const a = String(audience || "all");
   if (a === "domestic" && ENTRY_EQUIVALENT_ROUTE.test(quote) && !ENTRY_DOMESTIC_ROUTE.test(quote)) return { audience: "all", normalised: true };
@@ -200,8 +214,8 @@ export function courseEntrySliceRows(a: any, sliceText: string, o: CourseQuoteOp
       dropped.push({ reason: "quote_not_on_page", kind: r?.kind, quote: s.quote, ...(proof.detail !== "quote is not on the page" ? { detail: proof.detail } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
       continue;
     }
-    const s = storeQuote(q, limit), aud = entryAudience(r?.audience, q), age = entryAgeNotScore(r, q);
-    rows.push({ ...age.row, audience: aud.audience, ...(aud.normalised ? { audience_normalised: { from: "domestic", rule: "s1280 equivalent route" } } : {}), quote: s.quote, description: String(r?.description || "").slice(0, 500), ...(proof.fragments > 1 ? { quote_fragments: proof.fragments } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
+    const s = storeQuote(q, limit), aud = entryAudience(r?.audience, q), age = entryAgeNotScore(r, q), doc = entryDocumentInstruction(age.row, q);
+    rows.push({ ...doc.row, audience: aud.audience, ...(aud.normalised ? { audience_normalised: { from: "domestic", rule: "s1280 equivalent route" } } : {}), quote: s.quote, description: String(r?.description || "").slice(0, 500), ...(proof.fragments > 1 ? { quote_fragments: proof.fragments } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
   }
   return { rows, dropped };
 }
