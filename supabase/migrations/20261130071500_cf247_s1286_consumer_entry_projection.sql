@@ -6,15 +6,22 @@
 -- Defects (read live 27 Nov 2026 00:20 AEDT):
 --   1. A domestic-only row is served to international readers: 103424H (IN) serves "Equivalent to Australian Year 12." (audience domestic) in
 --      requirements_note on Website v2, Zoho v2 and the v3 international read.
---   2. (not in this change; under investigation) a course resolves contact_provider for a country although it holds a course-level row.
+--   2. A course's own international requirement is not used by the country resolution: security.entry_resolve_v1 reads a course override
+--      (step 1) and the provider's per-country matrix (steps 2 to 4), and otherwise answers contact_provider ("No published requirement for
+--      this country"). 9,555 of the 10,192 courses holding an international or all-audience row resolve contact_provider for IN; 2,222 courses
+--      hold a minimum grade stated for every country (no country named).
 --   3. A minimum grade with no numeric score is not served: 110070D's "grade point average (GPA) of 5.0 on a 7-point scale" (kind minimum_grade,
 --      no min_entry_score) is missing from Website v2 and Zoho v2 (min_scores only takes numeric scores; requirements_note skipped the kind).
 -- Change, in the shared payload security.entry_course_payload_v1 (md5 guarded, anchored edits; same signature, same keys):
 --   the rows exclude audience domestic (the consumers serve international students); a minimum_grade row without a numeric score is given in
 --   requirements_note. No key is added, renamed or removed.
+-- And in security.entry_resolve_v1 (md5 guarded, one anchored insertion): before contact_provider, a new step answers with the course's own
+--   minimum grade and prior qualification rows that are for international or all students and name no country (rule course_general, step 5,
+--   the same row shape as course_override; outcome minimum_published when a row holds a grade or score, otherwise case_by_case). A new rule value
+--   is additive; contact_provider is unchanged when the course holds no such row. The per-country matrix still wins (steps 1 to 4 unchanged).
 -- G1: no job. G2: no setting. G3: no frozen object's definition changes (the payload is a helper they read); the served values change, so the gate above
 -- applies. Locks and cron checked. Nothing dropped or deleted.
--- Replaces: security.entry_course_payload_v1 (md5 691bbba7). Retires: nothing.
+-- Replaces: security.entry_course_payload_v1 (md5 691bbba7); security.entry_resolve_v1 (md5 69bbc05f). Retires: nothing.
 set local lock_timeout = '5s';  -- fixed: lock wait for the function replace
 
 create temp table s1286_guard on commit drop as select (select count(*) from pipeline.manual_locks) as locks_before;
@@ -27,6 +34,7 @@ begin
     raise exception 'guard: consumer API baseline is not 75/48 with no drift: %', v;
   end if;
   if md5(pg_get_functiondef('security.entry_course_payload_v1(uuid,text)'::regprocedure)) <> '691bbba7958ebcd35ac332879c27d341' then raise exception 'guard: entry_course_payload_v1 changed'; end if;
+  if md5(pg_get_functiondef('security.entry_resolve_v1(uuid,text)'::regprocedure)) <> '69bbc05f650191954a22af09c0c85c74' then raise exception 'guard: entry_resolve_v1 changed'; end if;
 end $g$;
 
 do $e$
@@ -39,6 +47,24 @@ begin
   if (length(d) - length(replace(d, a1, ''))) / length(a1) <> 1 or (length(d) - length(replace(d, a2, ''))) / length(a2) <> 1 then raise exception 'guard: the payload anchors are not found exactly once'; end if;
   execute replace(replace(d, a1, b1), a2, b2);
 end $e$;
+
+do $e2$
+declare d text := pg_get_functiondef('security.entry_resolve_v1(uuid,text)'::regprocedure);
+        a constant text := '  -- 5 nothing published applies: contact the provider (never invented).';
+        b constant text := $b$  -- 5 (s1286) the course's own requirement for international or all students that names no country: it applies to every country
+  select jsonb_agg(jsonb_build_object('text', r.description, 'min_grade', r.min_grade, 'min_score', r.min_entry_score, 'min_score_basis', r.min_entry_score_basis,
+                                      'quote', r.quote, 'as_at', r.as_at, 'case_by_case', r.min_grade is null and r.min_entry_score is null, 'scale_stated', null::boolean) order by r.created_at)
+    into v_rows from catalogue.course_entry_requirements r
+   where r.course_id = c.id and r.status = 'active' and r.kind in ('minimum_grade', 'prior_qualification') and r.audience in ('international', 'all') and r.country_id is null;
+  if v_rows is not null then
+    return jsonb_build_object('country', v_cc, 'step', 5, 'rule', 'course_general', 'rows', v_rows,
+      'outcome', case when exists (select 1 from jsonb_array_elements(v_rows) z where not (z->>'case_by_case')::boolean) then 'minimum_published' else 'case_by_case' end);
+  end if;
+$b$;
+begin
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'guard: the resolver anchor is not found exactly once'; end if;
+  execute replace(d, a, b || a);
+end $e2$;
 
 do $c$
 declare v jsonb := security.consumer_api_check_v1();
