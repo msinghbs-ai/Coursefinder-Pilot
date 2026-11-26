@@ -1,4 +1,4 @@
--- CF-247 s1280 (S1-Data-Gaps; Atlas brief 26 Nov 2026 22:19 AEDT; Platform Admin approvals of S1-DG-2 option B and S1-DG-3 option A, admin PR #1213 follow-up).
+-- CF-247 s1281 (S1-Data-Gaps; Atlas brief 26 Nov 2026 22:19 AEDT; Platform Admin approvals of S1-DG-2 option B and S1-DG-3 option A, admin PR #1213 follow-up).
 -- What, S1-DG-2 ($0 intake sweep over the stored pages outside its provider types):
 --   * a dedicated scope setting, fid.provider_types, for the deterministic fee, intake and deadline sweep (fid-det-sweep). It starts with the five types the sweep reads today
 --     and adds private_vet, school and wananga, the three types that hold the stored pages the sweep has never been offered (live read 26 Nov 2026 22:2x AEDT:
@@ -15,7 +15,7 @@
 -- G1: no job added, removed or (de)activated. G2: one new setting (list) with its reason and an audit event; no number in code except the frozen list size, marked fixed.
 -- G3: no consumer object touched (checked 75/48 before and after). Locks: 7,585 unchanged (checked). Spend: none.
 -- Replaces: the provider-type scope source of security.fid_det_batch_v1 (same name; md5-guarded text edit, resulting md5 checked; was fees.provider_types, now fid.provider_types).
--- Retires: nothing. Nothing dropped or deleted. Reversal: reverse the edit (body 7efca08ef1793aef72c89de8da3d0bd5 back to 23f4c2946d9ee8e0cc6778f67b44e657); the 23 list rows are removable by a person.
+-- Retires: nothing. Nothing dropped or deleted. Reversal: reverse the edit (body ec678d37e7ed3578ae4c1d06d8308dc8 back to 23f4c2946d9ee8e0cc6778f67b44e657); the 23 list rows are removable by a person.
 set local lock_timeout = '5s';  -- fixed: lock wait for the function, setting and list writes
 set local statement_timeout = '120s';  -- fixed: one function body is replaced and 23 list rows are written
 
@@ -27,7 +27,7 @@ begin
   end if;
 end $g$;
 
-create temp table s1280_guard on commit drop as
+create temp table s1281_guard on commit drop as
 select (select count(*) from cron.job where active) as cron_before,
        (select count(*) from pipeline.manual_locks) as locks_before,
        (select count(*) from catalogue.course_links) as links_before,
@@ -44,11 +44,11 @@ values ('pipeline', 'fid.provider_types', 'Deterministic fee, intake and deadlin
         'Provider types whose stored course pages the deterministic sweep reads (no model, US$0). It is separate from Fee reader: provider types, which scopes the AI fee reader, so widening this list adds no AI cost.',
         'list', '["university", "tafe_polytechnic", "other", "higher_education_institute", "university_college", "private_vet", "school", "wananga"]'::jsonb, null, null, 'types', 999, 'Fees and intakes',
         'fid-det-sweep (security.fid_det_batch_v1)',
-        'CF-247 s1280 (Platform Admin approval of S1-DG-2 option B, 26 Nov 2026): the five types read until now plus private_vet, school and wananga; fees.provider_types (AI fee reader) unchanged')
+        'CF-247 s1281 (Platform Admin approval of S1-DG-2 option B, 26 Nov 2026): the five types read until now plus private_vet, school and wananga; fees.provider_types (AI fee reader) unchanged')
 on conflict (toolset_key, key) do nothing;
 insert into pipeline.admin_control_events(area, action, target, detail, actor)
 select 'toolsets', 'setting', 'pipeline.fid.provider_types',
-       jsonb_build_object('before', null, 'after', s.value, 'reason', s.reason, 'via', 'CF-247 s1280 migration'), null
+       jsonb_build_object('before', null, 'after', s.value, 'reason', s.reason, 'via', 'CF-247 s1281 migration'), null
   from pipeline.platform_toolset_settings s
  where s.toolset_key = 'pipeline' and s.key = 'fid.provider_types'
    and not exists (select 1 from pipeline.admin_control_events e where e.target = 'pipeline.fid.provider_types' and e.action = 'setting');
@@ -72,9 +72,9 @@ begin
   return p_sig || ': applied';
 end $f$;
 
-select pg_temp.edit_counted('security.fid_det_batch_v1(integer,text)', '23f4c2946d9ee8e0cc6778f67b44e657', '7efca08ef1793aef72c89de8da3d0bd5',
+select pg_temp.edit_counted('security.fid_det_batch_v1(integer,text)', '23f4c2946d9ee8e0cc6778f67b44e657', 'ec678d37e7ed3578ae4c1d06d8308dc8',
 array[$o1$and coalesce(t.code, 'other') in (select jsonb_array_elements_text(s.value) from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'fees.provider_types')$o1$],
-array[$n1$and coalesce(t.code, 'other') in (select jsonb_array_elements_text(s.value) from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'fid.provider_types')  -- s1280: this sweep's own scope; the AI fee reader keeps fees.provider_types$n1$],
+array[$n1$and coalesce(t.code, 'other') in (select jsonb_array_elements_text(s.value) from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'fid.provider_types')  -- this sweep's own scope (fid.provider_types); the AI fee reader keeps fees.provider_types$n1$],
 array[1]);
 
 -- ---------------------------------------------------------------------------------------------------------------------------------
@@ -109,7 +109,7 @@ begin
   loop
     perform security.course_page_needed_add_v1(r.course_id, r.link_url,
       format('The address held for this course was read and refused (%s): the page is not proved to be this course''s own page. The address is kept as it is; a person decides: add the right page, search again, or record that the course has no page of its own (S1-Data-Gaps, Platform Admin approval of S1-DG-3 option A, 26 Nov 2026).', r.rs),
-      's1280 url alignment', r.evidence_id, null);
+      's1281 url alignment', r.evidence_id, null);
     v_n := v_n + 1;
   end loop;
   if v_n <> v_expected then
@@ -117,17 +117,17 @@ begin
   end if;
   insert into pipeline.admin_control_events(area, action, target, detail, actor)
   values ('layer4', 'course_page_needed_add', 'pipeline.course_page_needed',
-          jsonb_build_object('courses', v_n, 'lane', 's1280 url alignment', 'via', 'CF-247 s1280 migration', 'locked_courses_untouched', true, 'addresses_deleted', 0), null);
+          jsonb_build_object('courses', v_n, 'lane', 's1281 url alignment', 'via', 'CF-247 s1281 migration', 'locked_courses_untouched', true, 'addresses_deleted', 0), null);
 end $q$;
 
 -- ---------------------------------------------------------------------------------------------------------------------------------
 -- post-checks (a failure raises and the whole migration rolls back)
 -- ---------------------------------------------------------------------------------------------------------------------------------
 do $p$
-declare v jsonb := security.consumer_api_check_v1(); g s1280_guard%rowtype;
+declare v jsonb := security.consumer_api_check_v1(); g s1281_guard%rowtype;
 begin
-  select * into g from s1280_guard;
-  if md5((select prosrc from pg_proc where oid = 'security.fid_det_batch_v1(integer,text)'::regprocedure)) <> '7efca08ef1793aef72c89de8da3d0bd5' then
+  select * into g from s1281_guard;
+  if md5((select prosrc from pg_proc where oid = 'security.fid_det_batch_v1(integer,text)'::regprocedure)) <> 'ec678d37e7ed3578ae4c1d06d8308dc8' then
     raise exception 'post-check: fid_det_batch_v1 is not the edited text';
   end if;
   if jsonb_array_length(coalesce(v->'drift', '[]'::jsonb)) <> 0 or (v->>'functions')::int <> 75 or (v->>'relations')::int <> 48 then
@@ -146,7 +146,7 @@ begin
     raise exception 'post-check: fid.provider_types is not the eight approved types';
   end if;
   if exists (select 1 from pipeline.course_page_needed n join pipeline.manual_locks k on k.entity = 'course' and k.entity_id = n.course_id and k.field in ('official_url', 'course_url')
-              where n.last_refused_lane = 's1280 url alignment') then
+              where n.last_refused_lane = 's1281 url alignment') then
     raise exception 'post-check: a course with a manual address lock was added to the list';
   end if;
 end $p$;
