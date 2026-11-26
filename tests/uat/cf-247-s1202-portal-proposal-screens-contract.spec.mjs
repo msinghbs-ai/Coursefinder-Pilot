@@ -59,5 +59,7 @@ test('no operational number or secret is written into the proposal code, and the
   // the 15-minute window is the server's: the editor shows only the people the server returns in others_recent
   expect(read('portal/src/screens/ProposalEditor.jsx')).toContain('others_recent')
   const migs = fs.readdirSync('supabase/migrations').filter((f) => f >= '20261126')
-  for (const m of migs) expect(read(path.join('supabase/migrations', m)), m).not.toMatch(/website_v2_|zoho_edge_/)
+  // the frozen surface is never defined, changed, granted or dropped here (G3's central guard is s57); a read-only call, such as the s1176b
+  // consumer read-back sample, does not touch it
+  for (const m of migs) expect(read(path.join('supabase/migrations', m)).replace(/--.*$/gm, ''), m).not.toMatch(/\b(create(\s+or\s+replace)?\s+(function|view|table)|alter\s+(function|view|table)|drop\s+(function|view|table)|comment\s+on\s+(function|view|table|column)|(grant|revoke)\s+[\w\s,]+\s+on\s+(function|table)?)\s+(public\.)?(website_v2_|zoho_edge_)/i)
 })
