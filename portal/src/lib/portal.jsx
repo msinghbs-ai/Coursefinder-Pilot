@@ -26,10 +26,13 @@ export function PortalProvider({ userId, children }) {
   const studyIn = destinations.some(d => d.code === prefs.studyIn) ? prefs.studyIn : ''
 
   const update = useCallback(patch => setPrefs(p => { const next = { ...p, ...patch }; writePrefs(userId, next); return next }), [userId])
+  const priority = Array.isArray(state.settings.priority_source_countries) ? state.settings.priority_source_countries : []
+  const view = prefs.view === 'list' ? 'list' : 'cards'
   const value = useMemo(() => ({
     ...state, destinations, markets: state.lookups.markets || [], studyIn, market: prefs.market || '',
-    setStudyIn: code => update({ studyIn: code }), setMarket: code => update({ market: code }),
-  }), [state, destinations, studyIn, prefs.market, update])
+    setStudyIn: code => update({ studyIn: code }), setMarket: code => update({ market: code === '__divider' ? '' : code }),
+    priority, view, setView: v => update({ view: v === 'list' ? 'list' : 'cards' }),  // s1222: pinned countries; Cards or List kept per person
+  }), [state, destinations, studyIn, prefs.market, update, priority, view])
   return <PortalContext.Provider value={value}>{children}</PortalContext.Provider>
 }
 

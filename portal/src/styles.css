@@ -20,7 +20,7 @@ input { font:inherit; padding:.7rem .8rem; border:1px solid var(--line); border-
 .side a[aria-current='page'] { background:rgba(255,255,255,.12); color:#fff }
 .top { display:flex; justify-content:flex-end; align-items:center; gap:1rem; padding:.8rem 1.4rem }
 .pill { background:#e6f6f2; color:#0b6657; border-radius:999px; padding:.1rem .6rem; font-size:.8rem; margin-left:.4rem }
-.content { padding:0 1.4rem 2rem; max-width:1100px }
+.content { padding:0 1.6rem 2rem; max-width:1680px; width:100%; min-width:0; box-sizing:border-box }  /* s1222: fluid full-width desktop layout */
 .hero { background:var(--indigo); color:#fff; padding:1.4rem; border-radius:16px }
 .hero h2 { color:#fff }
 .searchbar { display:flex; gap:.6rem } .searchbar input { flex:1 }
@@ -208,3 +208,40 @@ a.textlink { display:inline-flex; align-items:center; min-height:44px }
   .details .actions .btn { min-height:44px }
 }
 
+/* s1222: portal UAT fixes - card grid, Cards/List toggle, list rows, course drawer, course code badge, one fee line */
+.card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr)); gap:1rem; align-items:start }
+.card-grid > .card { margin:0; height:100%; box-sizing:border-box; align-content:start }
+.title-row { display:flex; flex-wrap:wrap; align-items:center; gap:.4rem .6rem } .title-row h2, .title-row h3 { margin:0 }
+.reg-badge { display:inline-flex; align-items:center; font-size:.72rem; font-weight:700; letter-spacing:.03em; padding:.15rem .5rem; border-radius:6px; background:#fff; color:var(--indigo); border:1px solid #b8bde0; white-space:nowrap }
+.fee-line { margin:0; display:flex; flex-wrap:wrap; align-items:baseline; gap:.2rem .5rem } .fee-line strong { font-size:1.05rem }
+.view-toggle { display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#fff }
+.vt-btn { font:inherit; font-weight:600; min-height:44px; min-width:72px; padding:.4rem .9rem; border:0; background:#fff; color:var(--ink); cursor:pointer }
+.vt-btn + .vt-btn { border-left:1px solid var(--line) } .vt-btn[aria-pressed='true'] { background:var(--indigo); color:#fff }
+.list { display:grid; background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden }
+.list-row { display:grid; grid-template-columns:minmax(0,2.4fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,.8fr) minmax(0,1fr) 300px; gap:.8rem; align-items:center; padding:.7rem 1rem; border-top:1px solid var(--line) }
+.list-row:first-child { border-top:0 } .list-head { background:#f7f8fc; font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); font-weight:700 }
+.lr-main { display:flex; gap:.6rem; align-items:center; min-width:0 } .lr-title { overflow-wrap:break-word } .lr-cell { min-width:0; overflow-wrap:break-word; font-size:.92rem }
+.lr-actions { display:grid; grid-template-columns:1fr 1fr; gap:.4rem } .lr-actions .btn { justify-content:center; padding:.4rem .5rem; font-size:.88rem } .small { font-size:.85rem }
+.drawer-backdrop { position:fixed; inset:0; background:rgba(22,20,54,.42); z-index:50; display:flex; justify-content:flex-end }
+.drawer { width:min(760px,92vw); height:100%; background:var(--bg); box-shadow:-12px 0 32px rgba(22,20,54,.25); display:flex; flex-direction:column; animation:drawer-in .18s ease-out }
+@keyframes drawer-in { from { transform:translateX(40px); opacity:.6 } to { transform:none; opacity:1 } }
+@media (prefers-reduced-motion:reduce) { .drawer { animation:none } }
+.drawer-head { background:#fff; padding:1rem 1.2rem .9rem; border-bottom:1px solid var(--line); display:grid; gap:.4rem }
+.drawer-head p { margin:0 } .drawer-top { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem }
+.drawer-close { min-width:44px; justify-content:center; font-size:1.4rem; line-height:1; padding:.3rem .7rem }
+.drawer-body { overflow-y:auto; padding:1rem 1.2rem 2rem; flex:1; overscroll-behavior:contain }
+.drawer-body .details { margin-top:0; padding-top:0; border-top:0 } .drawer .d-grid { grid-template-columns:1fr }
+.d-group { display:grid; gap:.3rem; margin-top:.6rem } .d-group h5 { margin:0; font-size:.8rem; letter-spacing:.04em; text-transform:uppercase; color:var(--indigo) }
+.d-more summary { cursor:pointer; color:var(--indigo); font-weight:600; min-height:44px; display:flex; align-items:center }
+@media (max-width:1100px) {
+  .list-head { display:none }
+  .list-row { grid-template-columns:1fr; gap:.4rem }
+  .lr-cell:empty { display:none } .lr-cell::before { content:attr(data-k) ': '; color:var(--muted); font-size:.8rem }
+  .lr-actions { display:flex; justify-content:flex-start; flex-wrap:wrap }
+}
+@media (max-width:640px) {
+  .drawer { width:100vw; box-shadow:none } .drawer-head, .drawer-body { padding-left:.9rem; padding-right:.9rem }
+  .card-grid { grid-template-columns:1fr } .vt-btn { flex:1 1 auto }
+  .lr-actions .btn, .drawer-head .actions .btn { flex:1 1 auto; justify-content:center }
+}
+.chip-x { padding:0 0 0 .9rem } .chip-x button { width:44px; height:44px } .understood .btn.small { min-height:44px }  /* s1222: 44px tap targets on the search chips */

@@ -1,4 +1,4 @@
-// Guards: StudySearch Portal lane (Platform Admin 25 Nov 2026 16:44, S1-API-Frontend-Delivery): Universities & Providers shows only what the published-only function returns, paged on the server, with an honest Study Square route (s930: no cut or static lists).
+// Guards: StudySearch Portal lane (Platform Admin 25 Nov 2026 16:44, S1-API-Frontend-Delivery): Universities & Providers shows only what the published-only function returns, paged on the server, with an honest Study Square route (s930: no cut or static lists).; amended by s1222 (Atlas brief 26 Nov 2026 15:59 AEDT, portal UAT fixes: concise cards, drawer, pinned student countries)
 // CF-247 S1145. The route comes from pipeline.provider_representation, which holds no rows yet, so every provider reads "Status not recorded" rather than guessing.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -21,7 +21,8 @@ test('filters come from the facets the server returns, not from a list in the co
   expect(providers).toMatch(/f\.types \|\| \[\]/)
   expect(providers).toMatch(/f\.states \|\| \[\]/)
   expect(providers).toMatch(/f\.routes \|\| \[\]/)
-  expect(providers).toMatch(/markets\.map/)
+  // s1222: the market list is the live lookup, with portal.priority_source_countries pinned first (MarketOptions).
+  expect(providers).toMatch(/<MarketOptions markets=\{markets\} priority=\{priority\} \/>/)
   expect(providers).not.toMatch(/['"`](Victoria|New South Wales|Queensland|University|TAFE)['"`]/)
 })
 

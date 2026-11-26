@@ -1,4 +1,4 @@
-// Guards: Atlas brief to S1-API-Frontend-Delivery, 26 Nov 2026 12:02 AEDT (Platform Admin live UAT): an expandable Course details panel on Courses and Saved courses, every outside link opening in a new tab, and a separate Entry Requirements (AER) screen; Viewer reads, Counsellor saves and adds to a proposal
+// Guards: Atlas brief to S1-API-Frontend-Delivery, 26 Nov 2026 12:02 AEDT (Platform Admin live UAT): an expandable Course details panel on Courses and Saved courses, every outside link opening in a new tab, and a separate Entry Requirements (AER) screen; Viewer reads, Counsellor saves and adds to a proposal; amended by s1222 (Atlas brief 26 Nov 2026 15:59 AEDT, portal UAT fixes: concise cards, drawer, pinned student countries)
 // CF-247 s1215: portal screens. The read functions (s1214, S2-Build) and the study-levels read (s1215) are guarded in their migration contracts; this spec guards the screens, the one link component and the menu.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -47,7 +47,9 @@ test('Entry Requirements: reads the one function, filters come from the database
   const s = read(`${SRC}/screens/EntryRequirements.jsx`)
   expect(s).toContain("'portal_aer_list_v1'"); expect(s).toContain("'portal_study_levels_v1'")
   expect(s).toContain('access.kind === \'counsellor\'')
-  expect((s.match(/\{canSave && <button/g) || []).length).toBe(2)
+  // s1222: the two Counsellor buttons sit in one component that renders nothing for a Viewer.
+  expect(s).toContain('if (!canSave) return null')
+  expect((s.match(/<button type="button" className=\{`btn\$\{(saved|inBasket) \? ' on' : ''\}`\}/g) || []).length).toBe(2)
   expect(s).toContain("'♡ Save'"); expect(s).toMatch(/Add to proposal/)
   // s930: destinations, markets and levels are read live; none is written into the screen.
   expect(s).toContain('setLevels(l)')
@@ -57,11 +59,13 @@ test('Entry Requirements: reads the one function, filters come from the database
 })
 
 test('the Course details panel is on Courses, Saved courses and Entry Requirements, reads the course when opened, and says Not recorded', () => {
+  // s1222: the panel opens in the right-hand drawer (DetailDrawer), so the list keeps its place.
   for (const f of ['Courses', 'Saved', 'EntryRequirements']) {
     const s = read(`${SRC}/screens/${f}.jsx`)
-    expect(s, f).toContain('<DetailsButton'); expect(s, f).toContain('<CourseDetails')
-    expect(s, f).toMatch(/\{(open|openId === c\.course_id) && <CourseDetails/)
+    expect(s, f).toContain('<DetailsButton'); expect(s, f).toMatch(/<DetailDrawer course=\{openCourse/)
+    expect(s, f).toContain('onClose={() => setOpenCourse(null)}')
   }
+  expect(read(`${SRC}/components/DetailDrawer.jsx`)).toContain('<CourseDetails id={`drawer-${course.course_id}`} courseId={course.course_id} />')
   const p = read(`${SRC}/components/CourseDetails.jsx`)
   for (const h of ['Overview', 'Campuses and delivery', 'Fees', 'Intakes and deadlines', 'Academic entry requirements', 'English language requirements', 'Career outcomes', 'Official source']) expect(p).toContain(`title="${h}"`)
   expect(p).toMatch(/aria-expanded/); expect(read(`${SRC}/lib/courseDetail.js`)).toMatch(/'portal_course_detail_v1', \{ p_course_id: courseId \}/)

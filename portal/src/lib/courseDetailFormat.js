@@ -82,6 +82,7 @@ export function matrixLine(r) {
     band: r.benchmark_band ? sentence(r.benchmark_band) : '',
     level: [r.course_label, r.level_label].filter(Boolean).join(' · '),
     forCourse: r.for_this_course === true,
+    scope: r.scope || (r.for_this_course === true ? 'course' : ''),
     conditions: conditionsText(r.conditions),
     asAt: r.as_at || '',
     url: r.source_url || '',
@@ -89,4 +90,19 @@ export function matrixLine(r) {
 }
 // The rows for the student's country, with the rows that name no country; every row when no country is chosen.
 export const matrixForMarket = (rows, market) => (rows || []).filter(r => !market || !r.country_code || r.country_code === market)
+
+// s1222: matrix rows grouped as the counsellor reads them: this course, this study level, every course at the provider.
+export const SCOPES = [['course', 'This course'], ['study_level', 'This study level'], ['provider', 'Every course at the provider']]
+export function groupByScope(lines) {
+  const out = SCOPES.map(([key, label]) => ({ key, label, rows: lines.filter(l => (l.scope || 'provider') === key) }))
+  const known = new Set(SCOPES.map(s => s[0]))
+  const other = lines.filter(l => l.scope && !known.has(l.scope))
+  if (other.length) out[2].rows.push(...other)
+  return out.filter(g => g.rows.length)
+}
+// s1222: the one annual tuition fee (portal.primary_fee_v1): the amount, and "per year" with its year and source.
+export const primaryFeeAmount = f => (f && (Number(f.per_year) || Number(f.amount)) ? money(Number(f.per_year) || Number(f.amount), f.currency) : null)
+export const primaryFeeNote = f => (f ? ['per year', f.year ? `${f.year} fee` : '', 'provider'].filter(Boolean).join(' · ') : '')
+// s1222: a concise card shows only what is held; these return '' rather than "Not recorded".
+export const lengthOrBlank = (v, u) => { const t = durationText(v, u); return t === NOT_RECORDED ? '' : t }
 

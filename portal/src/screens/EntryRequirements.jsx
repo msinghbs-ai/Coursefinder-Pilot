@@ -3,11 +3,13 @@ import { rpc } from '../lib/api.js'
 import { usePortal, useDebounced } from '../lib/portal.jsx'
 import { useSaved } from '../lib/saved.js'
 import { basket } from '../lib/basket.js'
-import { entryLine, entryForMarket, englishLine } from '../lib/courseDetailFormat.js'
-import { NOT_RECORDED, money, durationText, stateShort } from '../lib/format.js'
-import { PageHead, StudyInBar, Select, LoadState, ShowMore, Count, Pill } from '../components/ui.jsx'
+import { entryLine, entryForMarket, englishLine, lengthOrBlank, primaryFeeAmount, primaryFeeNote } from '../lib/courseDetailFormat.js'
+import { stateShort } from '../lib/format.js'
+import { PageHead, StudyInBar, Select, LoadState, ShowMore, Count, Pill, ViewToggle, RegBadge, MarketOptions } from '../components/ui.jsx'
+import { CourseRow, ListHead } from '../components/CourseRow.jsx'
+import { DetailDrawer } from '../components/DetailDrawer.jsx'
 import { ExtLink } from '../components/ExtLink.jsx'
-import { CourseDetails, DetailsButton } from '../components/CourseDetails.jsx'
+import { DetailsButton } from '../components/CourseDetails.jsx'
 
 // Entry Requirements (AER): academic and English entry requirements by destination, study level, provider or course, and the
 // student's country of education. It lists courses that hold a recorded requirement (portal_aer_list_v1, s1214; study levels from
@@ -16,54 +18,61 @@ import { CourseDetails, DetailsButton } from '../components/CourseDetails.jsx'
 const FN = 'portal_aer_list_v1'
 const HAS = [{ value: '', label: 'Academic or English' }, { value: 'both', label: 'Both academic and English' }, { value: 'academic', label: 'Academic only' }, { value: 'english', label: 'English only' }]
 
-function Lines({ title, empty, children }) {
-  return <div className="er-col"><h4>{title}</h4>{children || <p className="muted">{empty}</p>}</div>
+// s1222: a concise card: only what is held is shown; "Not recorded" stays inside Course details (the right-hand drawer), where the
+// provider's table for the student's country is read in full.
+function SaveButtons({ c, canSave, saved, busy, onToggle }) {
+  const [inBasket, setInBasket] = useState(() => basket.has(c.course_id))
+  if (!canSave) return null
+  return (
+    <>
+      <button type="button" className={`btn${saved ? ' on' : ''}`} aria-pressed={saved} disabled={busy} onClick={() => onToggle(c.course_id, !saved)}>{saved ? '♥ Saved' : '♡ Save'}</button>
+      <button type="button" className={`btn${inBasket ? ' on' : ''}`} aria-pressed={inBasket} onClick={() => { if (inBasket) basket.remove(c.course_id); else basket.add({ ...c, level: c.level_name, course_url: c.official_url }); setInBasket(!inBasket) }}>{inBasket ? '✓ In proposal' : '+ Add to proposal'}</button>
+    </>
+  )
 }
 
-function EntryCard({ c, market, marketName, canSave, saved, busy, onToggle }) {
-  const [inBasket, setInBasket] = useState(() => basket.has(c.course_id))
-  const [open, setOpen] = useState(false)
+const facts = c => ({ place: [c.city, stateShort(c.state_code)].filter(Boolean).join(', '), length: lengthOrBlank(c.duration_value, c.duration_unit), fee: primaryFeeAmount(c.annual_tuition_fee) })
+
+function EntryCard({ c, market, marketName, onOpen, openId, ...save }) {
   const entry = entryForMarket(c.entry_requirements, market).map(entryLine), english = (c.english_requirements || []).map(englishLine)
-  const panel = `er-${c.course_id}`
+  const f = facts(c)
   return (
     <article className="card course">
       <header className="course-head">
         <div>
-          <h3>{c.title}</h3>
+          <div className="title-row"><h3>{c.title}</h3><RegBadge r={c.regulator} /></div>
           <p className="muted">{c.provider_name}</p>
-          <div className="tags">{c.country_code && <Pill>{c.country_code}</Pill>}{c.level_name && <Pill>{c.level_name}</Pill>}</div>
         </div>
       </header>
-      <dl className="er-facts">
-        <div><dt>Location</dt><dd>{[c.city, stateShort(c.state_code)].filter(Boolean).join(', ') || NOT_RECORDED}</dd></div>
-        <div><dt>Length</dt><dd>{durationText(c.duration_value, c.duration_unit)}</dd></div>
-        <div><dt>Tuition per year (provider)</dt><dd>{(c.annual_tuition_fee && money(c.annual_tuition_fee.amount, c.annual_tuition_fee.currency)) || NOT_RECORDED}</dd></div>
-      </dl>
-      <div className="er-grid">
-        <Lines title="Academic entry" empty={market ? `No academic requirement recorded for ${marketName || 'this country'}` : NOT_RECORDED}>
+      <div className="tags">{c.country_code && <Pill>{c.country_code}</Pill>}{c.level_name && <Pill>{c.level_name}</Pill>}{f.place && <Pill>{f.place}</Pill>}{f.length && <Pill>{f.length}</Pill>}</div>
+      {f.fee && <p className="fee-line"><strong>{f.fee}</strong> <span className="muted small">{primaryFeeNote(c.annual_tuition_fee)}</span></p>}
+      {(entry.length > 0 || english.length > 0) && (
+        <div className="er-grid">
           {entry.length > 0 && (
-            <ul className="d-list">
-              {entry.map((e, n) => <li key={n}><span className="d-k">{e.kind}{e.countryName ? ` · ${e.countryName}` : ''}</span><div>{e.main || NOT_RECORDED}{e.grade && <> <Pill tone="teal">{e.grade}</Pill></>}</div></li>)}
-            </ul>
+            <div className="er-col"><h4>Academic entry</h4>
+              <ul className="d-list">{entry.map((e, n) => <li key={n}><span className="d-k">{e.kind}{e.countryName ? ` · ${e.countryName}` : ''}</span><div>{e.main || e.kind}{e.grade && <> <Pill tone="teal">{e.grade}</Pill></>}</div></li>)}</ul>
+            </div>
           )}
-        </Lines>
-        <Lines title="English" empty={NOT_RECORDED}>
-          {english.length > 0 && <ul className="d-list">{english.map((e, n) => <li key={n}><strong>{e.test}</strong>{e.overall && <> <Pill tone="teal">{e.overall}</Pill></>}{e.parts && <div className="muted small">{e.parts}</div>}</li>)}</ul>}
-        </Lines>
-      </div>
+          {english.length > 0 && (
+            <div className="er-col"><h4>English</h4>
+              <ul className="d-list">{english.map((e, n) => <li key={n}><strong>{e.test}</strong>{e.overall && <> <Pill tone="teal">{e.overall}</Pill></>}{e.parts && <div className="muted small">{e.parts}</div>}</li>)}</ul>
+            </div>
+          )}
+        </div>
+      )}
+      {market && entry.length === 0 && <p className="muted small">Open Course details for the provider’s requirements for {marketName || 'this country'}.</p>}
       <div className="actions">
-        {canSave && <button type="button" className={`btn${saved ? ' on' : ''}`} aria-pressed={saved} disabled={busy} onClick={() => onToggle(c.course_id, !saved)}>{saved ? '♥ Saved' : '♡ Save'}</button>}
-        {canSave && <button type="button" className={`btn${inBasket ? ' on' : ''}`} aria-pressed={inBasket} onClick={() => { if (inBasket) basket.remove(c.course_id); else basket.add({ ...c, level: c.level_name }); setInBasket(!inBasket) }}>{inBasket ? '✓ In proposal' : '+ Add to proposal'}</button>}
-        <DetailsButton open={open} id={panel} onClick={() => setOpen(o => !o)} />
-        <ExtLink className="btn" href={c.official_url}>Open course</ExtLink>
+        <DetailsButton open={openId === c.course_id} id={`drawer-${c.course_id}`} onClick={() => onOpen(c)} />
+        <ExtLink className="btn" href={c.official_url}>Course page ↗</ExtLink>
+        <SaveButtons c={c} {...save} />
       </div>
-      {open && <CourseDetails id={panel} courseId={c.course_id} />}
     </article>
   )
 }
 
 export default function EntryRequirements({ access }) {
-  const { studyIn, market, setMarket, markets } = usePortal()
+  const { studyIn, market, setMarket, markets, priority, view, setView } = usePortal()
+  const [openCourse, setOpenCourse] = useState(null)
   const canSave = access.kind === 'counsellor'
   const saved = useSaved(canSave)
   const [level, setLevel] = useState('')
@@ -96,6 +105,7 @@ export default function EntryRequirements({ access }) {
   }, [load, reload])
 
   const marketName = markets.find(m => m.code === market)?.name
+  const saveFor = c => ({ canSave, saved: saved.ids.has(c.course_id), busy: saved.busy === c.course_id, onToggle: saved.toggle })
   const showMore = () => { setS(o => ({ ...o, more: true })); load(s.page + 1, false, () => true) }
 
   return (
@@ -106,7 +116,7 @@ export default function EntryRequirements({ access }) {
         <div className="selects">
           <Select label="Student’s country of education" value={market} onChange={setMarket}>
             <option value="">Not chosen</option>
-            {markets.map(m => <option key={m.code} value={m.code}>{m.name}</option>)}
+            <MarketOptions markets={markets} priority={priority} />
           </Select>
           <Select label="Study level" value={level} onChange={setLevel}>
             <option value="">All levels</option>
@@ -123,12 +133,26 @@ export default function EntryRequirements({ access }) {
       {saved.message && <div className="notice bad" role="alert">{saved.message} <button type="button" className="link-inline" onClick={saved.clearMessage}>Dismiss</button></div>}
       {!s.loading && !s.error && (
         <>
-          <Count n={s.total}>{s.total === 1 ? 'course' : 'courses'} with a recorded requirement</Count>
+          <div className="count-row"><Count n={s.total}>{s.total === 1 ? 'course' : 'courses'} with a recorded requirement</Count>{s.total > 0 && <ViewToggle value={view} onChange={setView} />}</div>
           {s.total === 0 && <div className="empty"><strong>No courses match.</strong><p className="muted">Clear a filter or change the destination to see more.</p></div>}
-          <div className="stack">{s.items.map(c => <EntryCard key={c.course_id} c={c} market={market} marketName={marketName} canSave={canSave} saved={saved.ids.has(c.course_id)} busy={saved.busy === c.course_id} onToggle={saved.toggle} />)}</div>
+          {view === 'list' ? (
+            <div className="list" role="list">
+              <ListHead />
+              {s.items.map(c => { const f = facts(c); return (
+                <CourseRow key={c.course_id} c={c} level={c.level_name} place={f.place} length={f.length} fee={f.fee || ''}>
+                  <DetailsButton open={openCourse?.course_id === c.course_id} id={`drawer-${c.course_id}`} onClick={() => setOpenCourse(c)} />
+                  <ExtLink className="btn" href={c.official_url}>Course page ↗</ExtLink>
+                  <SaveButtons c={c} {...saveFor(c)} />
+                </CourseRow>
+              ) })}
+            </div>
+          ) : (
+            <div className="card-grid">{s.items.map(c => <EntryCard key={c.course_id} c={c} market={market} marketName={marketName} onOpen={setOpenCourse} openId={openCourse?.course_id} {...saveFor(c)} />)}</div>
+          )}
           <ShowMore shown={s.items.length} total={s.total} loading={s.more} onClick={showMore} noun="courses" />
         </>
       )}
+      <DetailDrawer course={openCourse ? { ...openCourse, course_url: openCourse.course_url || openCourse.official_url, level: openCourse.level_name } : null} onClose={() => setOpenCourse(null)} />
     </div>
   )
 }

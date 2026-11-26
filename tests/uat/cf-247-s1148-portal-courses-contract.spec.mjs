@@ -1,4 +1,4 @@
-// Guards: StudySearch Portal lane (Platform Admin 25 Nov 2026 16:44, S1-API-Frontend-Delivery): the Courses screen follows the agreed portal_course_search_v1 contract, never invents a value, never relaxes a filter by itself, and says plainly when the search is not live yet (G2: relaxation numbers belong to the function's settings).
+// Guards: StudySearch Portal lane (Platform Admin 25 Nov 2026 16:44, S1-API-Frontend-Delivery): the Courses screen follows the agreed portal_course_search_v1 contract, never invents a value, never relaxes a filter by itself, and says plainly when the search is not live yet (G2: relaxation numbers belong to the function's settings).; amended by s1222 (Atlas brief 26 Nov 2026 15:59 AEDT, portal UAT fixes: concise cards, drawer, pinned student countries)
 // CF-247 S1148. The function is S1-Build's; this screen is built to the contract in the portal design document and does not wait for it.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -31,9 +31,10 @@ test('the "Understood as" chips can be removed, topic words are badged, and noth
   expect(courses).toMatch(/0 courses match every filter/)
 })
 
-test('a value the function leaves out reads "Not recorded", and no budget rule is written into the screen', () => {
-  expect(courses).toMatch(/fee \|\| NOT_RECORDED/)
-  expect(courses).toMatch(/durationText\(c\.duration_value, c\.duration_unit\)/)
+test('a value the function leaves out is not shown on the card (s1222: "Not recorded" is said in Course details), and no budget rule is written into the screen', () => {
+  expect(courses).toMatch(/fee: primaryFeeAmount\(c\.fee\)/)
+  expect(courses).toMatch(/lengthOrBlank\(c\.duration_value, c\.duration_unit\)/)
+  expect(courses).not.toContain('NOT_RECORDED')
   expect(courses).not.toMatch(/1\.05|\b1000\b|Math\.ceil/)
   expect(courses).not.toMatch(/topic_score\s*[<>]=?\s*0\.\d/)
 })

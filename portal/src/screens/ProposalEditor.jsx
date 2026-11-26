@@ -8,7 +8,7 @@ import {
   statusInfo, whenText, agoText, groupChanges, changeCount, courseFromSummary,
 } from '../lib/proposals.js'
 import { money, durationText, durationInYears, dateText, initials, stateShort, NOT_RECORDED } from '../lib/format.js'
-import { Pill, LoadState } from '../components/ui.jsx'
+import { Pill, LoadState, MarketOptions } from '../components/ui.jsx'
 import { ExtLink } from '../components/ExtLink.jsx'
 
 // Proposal builder (Mockups 11 and 12). The database owns versions, the course snapshots and the live comparison; this screen
@@ -95,7 +95,7 @@ function RefreshBanner({ result, busy, dirty, onAccept, onKeep }) {
 
 export default function ProposalEditor({ id, params }) {
   const isNew = id === 'new'
-  const { destinations, markets, studyIn } = usePortal()
+  const { destinations, markets, studyIn, priority } = usePortal()
   const [load, setLoad] = useState({ loading: true, error: '', unavailable: false })
   const [meta, setMeta] = useState({ limits: {}, others: [], counsellor: null })
   const [saved, setSaved] = useState(null)
@@ -260,7 +260,7 @@ export default function ProposalEditor({ id, params }) {
           <Field label="Given name" hint="Shown on the PDF."><input value={draft.student.given_name} onChange={e => setStudent({ given_name: e.target.value })} autoComplete="off" /></Field>
           <Field label="Family name initial" hint="One letter. No full name, phone, email or passport number is stored."><input maxLength={2} value={draft.student.family_initial} onChange={e => setStudent({ family_initial: e.target.value })} autoComplete="off" /></Field>
           <Field label="Source country" hint="Where the student completed their schooling.">
-            <select value={draft.student.source_country} onChange={e => setStudent({ source_country: e.target.value })}><option value="">Choose a country</option>{markets.map(m => <option key={m.code} value={m.code}>{m.name}</option>)}</select>
+            <select value={draft.student.source_country} onChange={e => setStudent({ source_country: e.target.value === '__divider' ? '' : e.target.value })}><option value="">Choose a country</option><MarketOptions markets={markets} priority={priority} /></select>
           </Field>
           <Field label="Qualification"><input value={draft.student.qualification} onChange={e => setStudent({ qualification: e.target.value })} /></Field>
           <Field label="Result"><input value={draft.student.result_text} onChange={e => setStudent({ result_text: e.target.value })} /></Field>

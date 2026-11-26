@@ -3,10 +3,13 @@ import { rpc } from '../lib/api.js'
 import { usePortal } from '../lib/portal.jsx'
 import { useSaved } from '../lib/saved.js'
 import { basket } from '../lib/basket.js'
-import { durationText, money, dateText, stateShort, NOT_RECORDED } from '../lib/format.js'
-import { PageHead, StudyInBar, Pill } from '../components/ui.jsx'
+import { dateText, stateShort } from '../lib/format.js'
+import { lengthOrBlank, primaryFeeAmount, primaryFeeNote } from '../lib/courseDetailFormat.js'
+import { PageHead, StudyInBar, Pill, ViewToggle, RegBadge } from '../components/ui.jsx'
+import { CourseRow, ListHead } from '../components/CourseRow.jsx'
+import { DetailDrawer } from '../components/DetailDrawer.jsx'
 import { ExtLink } from '../components/ExtLink.jsx'
-import { CourseDetails, DetailsButton } from '../components/CourseDetails.jsx'
+import { DetailsButton } from '../components/CourseDetails.jsx'
 
 // Plain-English course search. The search itself is catalogue.portal_course_search_v1 (S1-Build), called through
 // public.portal_course_search_v1(p_args jsonb). Until it is live this screen says so and never crashes. The response shape is
@@ -29,49 +32,78 @@ function normaliseRelaxations(r) {
   return []
 }
 
-function CourseCard({ c, near, canSave, saved, busy, onToggle }) {
-  const [inBasket, setInBasket] = useState(() => basket.has(c.course_id))
-  const [open, setOpen] = useState(false)
-  const panel = `details-${c.course_id}`
+// s1222: a concise card. Only values the platform holds are shown ("Not recorded" stays inside Course details); the fee is the one
+// annual tuition fee (portal.primary_fee_v1); the national course code sits beside the title; the Course page link sits next to
+// Course details, which opens the right-hand drawer.
+function facts(c) {
   const place = [stateShort(c.state_code), c.city].filter(Boolean).join(' · ')
-  const fee = c.fee && Number(c.fee.per_year) ? money(c.fee.per_year, c.fee.currency) : null
   const intakes = Array.isArray(c.intakes) && c.intakes.length ? c.intakes : c.next_intake ? [c.next_intake] : []
+  const intake = intakes.map(i => i.label || dateText(i.start_date, 'day')).filter(Boolean)[0] || ''
+  return { place, intake, length: lengthOrBlank(c.duration_value, c.duration_unit), fee: primaryFeeAmount(c.fee) }
+}
+
+function SaveButtons({ c, canSave, saved, busy, onToggle }) {
+  const [inBasket, setInBasket] = useState(() => basket.has(c.course_id))
+  if (!canSave) return null
+  return (
+    <>
+      <button type="button" className={`btn${saved ? ' on' : ''}`} aria-pressed={saved} disabled={busy} onClick={() => onToggle(c.course_id, !saved)}>{saved ? '♥ Saved' : '♡ Save'}</button>
+      <button type="button" className={`btn${inBasket ? ' on' : ''}`} aria-pressed={inBasket} onClick={() => { if (inBasket) basket.remove(c.course_id); else basket.add(c); setInBasket(!inBasket) }}>{inBasket ? '✓ In proposal' : '+ Add to proposal'}</button>
+    </>
+  )
+}
+
+function CourseCard({ c, near, onOpen, openId, ...save }) {
+  const f = facts(c)
   const score = Number(c.topic_score)
   return (
     <article className="card course">
       <header className="course-head">
         <div>
-          <h3>{c.title}</h3>
+          <div className="title-row"><h3>{c.title}</h3><RegBadge r={c.regulator} /></div>
           <p className="muted">{c.provider_name}</p>
-          {place && <div className="tags"><Pill>{place}</Pill></div>}
         </div>
         <div className="badges">
           {c.topic_match && <Pill tone="teal">Topic match{Number.isFinite(score) && score > 0 ? ` ${Math.round(score <= 1 ? score * 100 : score)}%` : ''}</Pill>}
           {near && c.miss_text && <Pill tone="amber">{c.miss_text}</Pill>}
         </div>
       </header>
+      <div className="tags">
+        {c.level && <Pill>{c.level}</Pill>}{f.place && <Pill>{f.place}</Pill>}{f.length && <Pill>{f.length}</Pill>}{f.intake && <Pill tone="blue">Next intake {f.intake}</Pill>}
+      </div>
+      {f.fee && <p className="fee-line"><strong>{f.fee}</strong> <span className="muted small">{primaryFeeNote(c.fee)}</span></p>}
       {Array.isArray(c.why) && c.why.length > 0 && <p className="why"><strong>Why it matched:</strong> {c.why.join(' · ')}</p>}
-      <div className="cells">
-        <div className="cell"><span className="cell-k">Annual tuition{c.fee?.year ? ` ${c.fee.year}` : ''}</span><span className="cell-v">{fee || NOT_RECORDED}</span></div>
-        <div className="cell"><span className="cell-k">Duration</span><span className="cell-v">{durationText(c.duration_value, c.duration_unit)}</span></div>
-        <div className="cell"><span className="cell-k">Level</span><span className="cell-v">{c.level || NOT_RECORDED}</span></div>
-        <div className="cell"><span className="cell-k">Next intake</span>
-          <span className="cell-v">{intakes.length ? intakes.map((i, n) => <span key={n} className="intake">{i.label || dateText(i.start_date, 'day') || NOT_RECORDED}</span>) : NOT_RECORDED}</span>
-        </div>
-      </div>
       <div className="actions">
-        {canSave && <button type="button" className={`btn${saved ? ' on' : ''}`} aria-pressed={saved} disabled={busy} onClick={() => onToggle(c.course_id, !saved)}>{saved ? '♥ Saved' : '♡ Save'}</button>}
-        {canSave && <button type="button" className={`btn${inBasket ? ' on' : ''}`} aria-pressed={inBasket} onClick={() => { if (inBasket) basket.remove(c.course_id); else basket.add(c); setInBasket(!inBasket) }}>{inBasket ? '✓ In proposal' : '+ Add to proposal'}</button>}
-        <DetailsButton open={open} id={panel} onClick={() => setOpen(o => !o)} />
-        <ExtLink className="btn" href={c.course_url}>Open course</ExtLink>
+        <DetailsButton open={openId === c.course_id} id={`drawer-${c.course_id}`} onClick={() => onOpen(c)} />
+        <ExtLink className="btn" href={c.course_url}>Course page ↗</ExtLink>
+        <SaveButtons c={c} {...save} />
       </div>
-      {open && <CourseDetails id={panel} courseId={c.course_id} />}
     </article>
   )
 }
 
+function Results({ items, view, near, onOpen, openId, saveFor }) {
+  if (view === 'list') {
+    return (
+      <div className="list" role="list">
+        <ListHead />
+        {items.map(c => { const f = facts(c); return (
+          <CourseRow key={c.course_id} c={c} level={c.level} place={f.place} length={f.length} fee={f.fee ? `${f.fee}${c.fee?.year ? ` (${c.fee.year})` : ''}` : ''}
+            lead={near && c.miss_text ? <Pill tone="amber">{c.miss_text}</Pill> : null}>
+            <DetailsButton open={openId === c.course_id} id={`drawer-${c.course_id}`} onClick={() => onOpen(c)} />
+            <ExtLink className="btn" href={c.course_url}>Course page ↗</ExtLink>
+            <SaveButtons c={c} {...saveFor(c)} />
+          </CourseRow>
+        ) })}
+      </div>
+    )
+  }
+  return <div className="card-grid">{items.map(c => <CourseCard key={c.course_id} c={c} near={near} onOpen={onOpen} openId={openId} {...saveFor(c)} />)}</div>
+}
+
 export default function Courses({ params, access }) {
-  const { studyIn } = usePortal()
+  const { studyIn, view, setView } = usePortal()
+  const [openCourse, setOpenCourse] = useState(null)
   const q = params.get('q') || ''
   const provider = params.get('provider') || ''
   const providerName = params.get('providerName') || ''
@@ -104,6 +136,7 @@ export default function Courses({ params, access }) {
   const clearAll = () => writeHash(q, { provider, providerName, drop: chips.filter(c => c.removable).map(c => c.key), relax })
   const applyRelax = r => writeHash(q, { provider, providerName, drop, relax: [...relax.filter(x => x.key !== r.key), { key: r.key, to: r.to }] })
   const clearProvider = () => writeHash(q, { drop, relax })
+  const saveFor = c => ({ canSave, saved: saved.ids.has(c.course_id), busy: saved.busy === c.course_id, onToggle: saved.toggle })
 
   return (
     <div className="stack-lg">
@@ -153,18 +186,24 @@ export default function Courses({ params, access }) {
               {relaxations.some(r => r.note) && <p className="small">{relaxations.find(r => r.note).note} Nothing changes until you choose.</p>}
             </div>
           )}
-          {exact.length > 0 && <p className="count"><strong>{exact.length.toLocaleString('en-AU')}</strong>{Number(d.total) > exact.length ? ` of ${Number(d.total).toLocaleString('en-AU')}` : ''} {exact.length === 1 ? 'course' : 'courses'} ranked by meaning</p>}
+          {(exact.length > 0 || near.length > 0) && (
+            <div className="count-row">
+              {exact.length > 0 ? <p className="count"><strong>{exact.length.toLocaleString('en-AU')}</strong>{Number(d.total) > exact.length ? ` of ${Number(d.total).toLocaleString('en-AU')}` : ''} {exact.length === 1 ? 'course' : 'courses'} ranked by meaning</p> : <span />}
+              <ViewToggle value={view} onChange={setView} />
+            </div>
+          )}
           {Number(d.total) > exact.length && exact.length > 0 && <p className="muted small">Showing the best {exact.length}. Add a filter to narrow the rest.</p>}
-          <div className="stack">{exact.map(c => <CourseCard key={c.course_id} c={c} canSave={canSave} saved={saved.ids.has(c.course_id)} busy={saved.busy === c.course_id} onToggle={saved.toggle} />)}</div>
+          <Results items={exact} view={view} onOpen={setOpenCourse} openId={openCourse?.course_id} saveFor={saveFor} />
           {near.length > 0 && (
             <>
               <div className="count-row"><p className="count"><strong>{near.length}</strong> near {near.length === 1 ? 'miss' : 'misses'}</p><Pill tone="amber">Not exact matches</Pill></div>
-              <div className="stack">{near.map(n => { const c = n.course || n; return <CourseCard key={c.course_id} c={{ ...c, miss_text: n.miss_text || c.miss_text || (n.misses ? `Misses: ${(chips.find(x => x.key === n.misses) || {}).label || n.misses}` : '') }} near canSave={canSave} saved={saved.ids.has(c.course_id)} busy={saved.busy === c.course_id} onToggle={saved.toggle} /> })}</div>
+              <Results items={near.map(n => { const c = n.course || n; return { ...c, miss_text: n.miss_text || c.miss_text || (n.misses ? `Misses: ${(chips.find(x => x.key === n.misses) || {}).label || n.misses}` : '') } })} view={view} near onOpen={setOpenCourse} openId={openCourse?.course_id} saveFor={saveFor} />
             </>
           )}
           {exact.length === 0 && near.length === 0 && relaxations.length === 0 && <div className="empty"><strong>No courses found.</strong><p className="muted">Try fewer words, or remove a filter above.</p></div>}
         </>
       )}
+      <DetailDrawer course={openCourse} onClose={() => setOpenCourse(null)} />
     </div>
   )
 }
