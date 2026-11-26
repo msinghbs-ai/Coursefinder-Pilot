@@ -14,7 +14,7 @@
 # Release Currentness Deployed when release files changed. POST_MERGE=admin starts Security gates.
 #
 # s1285 (Keep Main Green P0, SS-Programme-Control 26 Nov 2026 23:58 AEDT): REQUIRED_CHECKS names the checks that must have passed on the exact head
-# (comma-separated; empty names none, MIN_CHECKS still applies). MAIN_UAT_WORKFLOW names the deployed UAT workflow of main: while its latest run on
+# (separated by ';', because check names hold commas; empty names none, MIN_CHECKS still applies). MAIN_UAT_WORKFLOW names the deployed UAT workflow of main: while its latest run on
 # main is running, a merge waits (one release at a time, so each merge gets its own deployed verification); while it failed, only a pull request
 # labelled MAIN_FIX_LABEL (main-green-fix) may merge, to restore main. Empty (as in coursefinder-admin) checks nothing.
 set -euo pipefail
@@ -72,7 +72,7 @@ while :; do
 
   missing=""
   if [ -n "$REQUIRED" ]; then
-    IFS=',' read -ra req <<<"$REQUIRED"
+    IFS=';' read -ra req <<<"$REQUIRED"
     for n in "${req[@]}"; do
       [ "$(jq -r --arg n "$n" '[.[] | select(.name == $n and (.conclusion | IN("success", "neutral")))] | length' <<<"$runs")" = 0 ] && missing="${missing:+$missing, }$n"
     done

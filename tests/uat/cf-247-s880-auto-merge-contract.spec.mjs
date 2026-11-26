@@ -38,6 +38,9 @@ test('green means every check finished well, the dry run passed for a migration,
 
 test('s1285: named checks must pass on the exact head; a running deployed check of main holds the merge; a red main admits only a main-green-fix', () => {
   for (const n of ['build-and-smoke', 'test-evidence', 'Secret scan (ISM-2030)', 'Dependency vulnerabilities (ISM-2028, 2102, 2154)', 'Software bill of materials (ISM-1730)']) expect(wf).toContain(n)
+  // the names hold commas, so the list is split on ';' (a comma split never matched the dependency check, so no merge could happen)
+  expect(wf).toContain("REQUIRED_CHECKS: 'build-and-smoke;test-evidence;Secret scan (ISM-2030);Dependency vulnerabilities (ISM-2028, 2102, 2154);Software bill of materials (ISM-1730)'")
+  expect(fs.readFileSync('scripts/ci/auto-merge.sh', 'utf8')).toContain("IFS=';' read -ra req")
   expect(wf).toContain('MAIN_UAT_WORKFLOW: deployed-uat.yml')
   expect(merge).toContain('select(.name == $n and (.conclusion | IN("success", "neutral")))')
   expect(merge).toContain('actions/workflows/$MAIN_UAT/runs?branch=main')

@@ -50,7 +50,7 @@ jobs:
           PR: ${{ github.event.pull_request.number || inputs.pr }}
           MODE: wait
           MIN_CHECKS: '5'
-          REQUIRED_CHECKS: 'build-and-smoke,test-evidence,Secret scan (ISM-2030),Dependency vulnerabilities (ISM-2028, 2102, 2154),Software bill of materials (ISM-1730)'
+          REQUIRED_CHECKS: 'build-and-smoke;test-evidence;Secret scan (ISM-2030);Dependency vulnerabilities (ISM-2028, 2102, 2154);Software bill of materials (ISM-1730)'
           MAIN_UAT_WORKFLOW: deployed-uat.yml
           POST_MERGE: pilot
         run: bash scripts/ci/auto-merge.sh
@@ -69,7 +69,7 @@ jobs:
           SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           for pr in $(gh api "repos/$REPO/commits/$SHA/pulls" --jq '.[] | select(.state == "open" and any(.labels[]; .name == "automerge")) | .number'); do
-            PR=$pr MODE=once MIN_CHECKS=5 REQUIRED_CHECKS='build-and-smoke,test-evidence,Secret scan (ISM-2030),Dependency vulnerabilities (ISM-2028, 2102, 2154),Software bill of materials (ISM-1730)' MAIN_UAT_WORKFLOW=deployed-uat.yml POST_MERGE=pilot bash scripts/ci/auto-merge.sh
+            PR=$pr MODE=once MIN_CHECKS=5 REQUIRED_CHECKS='build-and-smoke;test-evidence;Secret scan (ISM-2030);Dependency vulnerabilities (ISM-2028, 2102, 2154);Software bill of materials (ISM-1730)' MAIN_UAT_WORKFLOW=deployed-uat.yml POST_MERGE=pilot bash scripts/ci/auto-merge.sh
           done
 
   probe-cleanup:
