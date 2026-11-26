@@ -5,7 +5,7 @@ import { useSaved } from '../lib/saved.js'
 import { basket } from '../lib/basket.js'
 import { dateText, placeText } from '../lib/format.js'
 import { lengthOrBlank, primaryFeeAmount, primaryFeeNote } from '../lib/courseDetailFormat.js'
-import { PageHead, StudyInBar, Pill, ViewToggle, RegBadge, IntlBadge } from '../components/ui.jsx'
+import { PageHead, StudyInBar, Pill, ViewToggle, RegBadge, IntlBadge, ProviderLine, DescSnippet } from '../components/ui.jsx'
 import { CourseRow, ListHead } from '../components/CourseRow.jsx'
 import { DetailDrawer } from '../components/DetailDrawer.jsx'
 import { ExtLink } from '../components/ExtLink.jsx'
@@ -61,7 +61,7 @@ function CourseCard({ c, near, onOpen, openId, ...save }) {
       <header className="course-head">
         <div>
           <div className="title-row"><h3>{c.title}</h3><RegBadge r={c.regulator} /></div>
-          <p className="muted">{c.provider_name}</p>
+          <ProviderLine name={c.provider_name} />
         </div>
         <div className="badges">
           {c.topic_match && <Pill tone="teal">Topic match{Number.isFinite(score) && score > 0 ? ` ${Math.round(score <= 1 ? score * 100 : score)}%` : ''}</Pill>}
@@ -69,6 +69,7 @@ function CourseCard({ c, near, onOpen, openId, ...save }) {
           <IntlBadge c={c} />
         </div>
       </header>
+      <DescSnippet c={c} />
       <div className="tags">
         {c.level && <Pill>{c.level}</Pill>}{f.place && <Pill>{f.place}</Pill>}{f.length && <Pill>{f.length}</Pill>}{f.intake && <Pill tone="blue">Next intake {f.intake}</Pill>}
       </div>

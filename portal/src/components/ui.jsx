@@ -86,6 +86,10 @@ export function ViewToggle({ value, onChange }) {
 
 // s1275: the platform holds no answer on whether a course takes international students (open_to_international is null). A course known to be
 // closed to them is not searched. The badge shows only when the function sent the field and it is null, never for a course that did not send it.
+// s1279: the provider under a course title is clamped to two lines (a long list of trading names would push the card's facts down); the full text is the tooltip
+// and is read in full in Course details. The short description is shown only when the platform holds one (never "Not recorded" on a concise card).
+export const ProviderLine = ({ name, as: Tag = 'p', className = 'muted' }) => (name ? <Tag className={`${className} clamp-2`} title={name}>{name}</Tag> : null)
+export const DescSnippet = ({ c }) => (c && typeof c.description_snippet === 'string' && c.description_snippet.trim() ? <p className="desc-snippet clamp-2">{c.description_snippet}</p> : null)
 export const IntlBadge = ({ c }) => (c && c.open_to_international === null ? <Pill tone="amber">Check international availability</Pill> : null)
 
 // s1222: the national course register code (CRICOS, NZQA, MTCU) as a badge beside the course title.
