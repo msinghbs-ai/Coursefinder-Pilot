@@ -49,3 +49,44 @@ export function outcomeValue(o) {
 export const intakeText = i => [i.label || dateText(i.start_date, 'day'), i.year && !String(i.label || '').includes(String(i.year)) ? i.year : ''].filter(Boolean).join(' ') || NOT_RECORDED
 export const deliveryText = m => DELIVERY[m] || NOT_RECORDED
 export { durationText }
+
+// s1220: the provider's country-by-country entry matrix (portal_course_detail_v1 entry_matrix, s1216). Each row is shown as recorded;
+// a row that names no country applies to every country.
+const valueText = (v, scale) => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? '' : `${Number(v)}${/percent/i.test(scale || '') ? '%' : ''}`)
+const scaleText = scale => (scale && !/^(none|percent(age)?)$/i.test(scale) ? sentence(scale).replace(/\b(gpa|atar|ib|cgpa|wam)\b/gi, w => w.toUpperCase()) : '')
+function itemText(x) {
+  if (x === null || x === undefined) return ''
+  if (typeof x !== 'object') return String(x).trim()
+  const name = x.subject || x.name || x.label || x.qualification || ''
+  const grade = x.min_grade || x.grade || (x.min_value !== undefined && x.min_value !== null ? String(x.min_value) : '')
+  return [name, grade].filter(Boolean).join(' ') || Object.values(x).filter(v => v !== null && typeof v !== 'object').join(' ')
+}
+export function conditionsText(c) {
+  if (!c || typeof c !== 'object') return ''
+  const parts = []
+  if (Number.isFinite(Number(c.best_n)) && c.best_n !== null) parts.push(`Best ${Number(c.best_n)} subjects`)
+  const subs = Array.isArray(c.subject_minimums) ? c.subject_minimums.map(itemText).filter(Boolean) : []
+  if (subs.length) parts.push(`Subject minimums: ${subs.join('; ')}`)
+  const alts = Array.isArray(c.alternatives) ? c.alternatives.map(itemText).filter(Boolean) : []
+  if (alts.length) parts.push(`Alternatives: ${alts.join('; ')}`)
+  return parts.join(' · ')
+}
+export function matrixLine(r) {
+  const value = valueText(r.min_value, r.grade_scale)
+  return {
+    country: r.country_name || r.country_code || 'Every country',
+    countryCode: r.country_code || '',
+    qualification: r.qualification || '',
+    grade: r.min_grade || value,
+    scale: scaleText(r.grade_scale),
+    band: r.benchmark_band ? sentence(r.benchmark_band) : '',
+    level: [r.course_label, r.level_label].filter(Boolean).join(' · '),
+    forCourse: r.for_this_course === true,
+    conditions: conditionsText(r.conditions),
+    asAt: r.as_at || '',
+    url: r.source_url || '',
+  }
+}
+// The rows for the student's country, with the rows that name no country; every row when no country is chosen.
+export const matrixForMarket = (rows, market) => (rows || []).filter(r => !market || !r.country_code || r.country_code === market)
+

@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { usePortal } from '../lib/portal.jsx'
 import { useCourseDetail } from '../lib/courseDetail.js'
-import { feeLabel, feeAmount, feeAudience, feeIsAnnual, entryLine, entryForMarket, englishLine, outcomeValue, intakeText, deliveryText, durationText } from '../lib/courseDetailFormat.js'
+import { feeLabel, feeAmount, feeAudience, feeIsAnnual, entryLine, entryForMarket, englishLine, outcomeValue, intakeText, deliveryText, durationText, matrixLine, matrixForMarket } from '../lib/courseDetailFormat.js'
 import { dateText, stateShort, money, NOT_RECORDED } from '../lib/format.js'
 import { ExtLink } from './ExtLink.jsx'
 import { Pill, Select } from './ui.jsx'
@@ -84,6 +84,8 @@ function Body({ body, market, markets, setMarket }) {
         {!market && countrySpecific > 0 && <p className="muted small">{countrySpecific} more {countrySpecific === 1 ? 'requirement applies' : 'requirements apply'} to named countries. Choose a country above.</p>}
       </Section>
 
+      <MatrixSection body={body} market={market} marketName={marketName} />
+
       <Section title="English language requirements">
         {english.length === 0 ? <None /> : <ul className="d-list">{english.map((e, n) => <li key={n}><strong>{e.test}</strong>{e.overall && <Pill tone="teal">{e.overall}</Pill>}{e.parts && <div className="muted small">{e.parts}</div>}{e.notes && <div className="muted small">{e.notes}</div>}</li>)}</ul>}
       </Section>
@@ -95,8 +97,10 @@ function Body({ body, market, markets, setMarket }) {
       <Section title="Official source">
         <div className="actions">
           <ExtLink className="btn" href={body.official_url}>Open the official course page</ExtLink>
+          <ExtLink className="btn" href={body.provider_website}>Open the provider website</ExtLink>
         </div>
         {!body.official_url && <None what="The official course page is not recorded" />}
+        {!body.provider_website && <None what="Provider website: Not recorded" />}
         <p className="muted small">Last checked {dateText(body.last_checked, 'day') || NOT_RECORDED}. Confirm fees and entry requirements with the provider before advising a student.</p>
       </Section>
     </div>
@@ -124,3 +128,30 @@ function OutcomeList({ rows }) {
       {Number.isFinite(Number(o.national_benchmark)) && o.national_benchmark !== null && <div className="muted small">National figure {outcomeValue({ ...o, value: o.national_benchmark })}</div>}</li>
   ))}</ul>
 }
+
+// s1220: the provider's country-by-country entry requirements (entry_matrix, s1216), for the student's country when one is chosen.
+function MatrixSection({ body, market, marketName }) {
+  const [all, setAll] = useState(false)
+  const rows = body.entry_matrix || []
+  const total = Number(body.entry_matrix_total) || rows.length
+  const shown = (all ? rows : matrixForMarket(rows, market)).map(matrixLine)
+  const hidden = rows.length - shown.length
+  return (
+    <Section title="Entry requirements by country (provider)" note={market && !all ? `The provider’s published requirement for students from ${marketName || 'the chosen country'}, with any that applies to every country.` : 'The provider’s published requirements by the student’s country of education.'}>
+      {rows.length === 0 ? <None /> : shown.length === 0 ? <None what={`No row recorded for ${marketName || 'this country'}`} /> : (
+        <ul className="d-list d-matrix">{shown.map((m, n) => (
+          <li key={n}>
+            <span className="d-k">{m.country}{m.forCourse ? ' · this course' : ''}</span>
+            <div>{m.qualification || NOT_RECORDED}{m.grade && <> <Pill tone="teal">{m.grade}</Pill></>}{m.band && <> <Pill>{m.band}</Pill></>}</div>
+            {(m.scale || m.level) && <div className="muted small">{[m.scale && `Scale: ${m.scale}`, m.level].filter(Boolean).join(' · ')}</div>}
+            {m.conditions && <div className="muted small">{m.conditions}</div>}
+            <div className="muted small">{m.asAt ? `Checked ${dateText(m.asAt, 'day')}` : ''} {m.url && <ExtLink className="textlink" href={m.url}>Source</ExtLink>}</div>
+          </li>
+        ))}</ul>
+      )}
+      {(hidden > 0 || all) && rows.length > 0 && market && <div className="actions"><button type="button" className="btn" onClick={() => setAll(a => !a)}>{all ? `Show ${marketName || 'the chosen country'} only` : `Show all ${rows.length} rows`}</button></div>}
+      {total > rows.length && <p className="muted small">Showing {rows.length} of {total} rows recorded for this provider. The provider’s source page has the rest.</p>}
+    </Section>
+  )
+}
+
