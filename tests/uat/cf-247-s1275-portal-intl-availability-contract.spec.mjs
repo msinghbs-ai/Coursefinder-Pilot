@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = 'supabase/migrations/20261129220000_cf247_s1275_portal_intl_availability_campus_label.sql'
+const MIG = 'supabase/migrations/20261129230000_cf247_s1275_portal_intl_availability_campus_label.sql'
 const m = fs.readFileSync(MIG, 'utf8')
 const fn = name => { const i = m.indexOf(`create or replace function ${name}(`); return m.slice(i, m.indexOf('$function$;', i)) }
 const src = p => fs.readFileSync(p, 'utf8')
