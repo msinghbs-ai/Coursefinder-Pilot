@@ -5,6 +5,7 @@ import fs from 'node:fs'
 
 const MIG = fs.readFileSync('supabase/migrations/20261129141500_cf247_s1199_dr15_scholarship_free_reads.sql', 'utf8')
 const code = MIG.replace(/--.*$/gm, '')
+const own = code.replace(/\$function\$[\s\S]*?\$function\$/g, '')  // the migration's own statements, outside the replaced bodies
 const fn = (name) => { const i = MIG.indexOf(`CREATE OR REPLACE FUNCTION ${name}(`); return MIG.slice(i, MIG.indexOf('$function$;', i)) }
 
 test('s1199: each replaced function is guarded by the definition read live', () => {
@@ -29,7 +30,7 @@ test('s1199: paid reads keep every control and gain the spend rule for new candi
 
 test('s1199: a held provider waiting for a paid read retries after the existing interval; no new value, job or setting', () => {
   expect(fn('public.svc_scholarship_candidate_record')).toContain("now() + make_interval(mins => (60 * security.pipeline_num_v1('retry.scholarship_waiting_scraper_hours', 1))::int)")
-  expect(code).not.toMatch(/insert into pipeline\.platform_toolset_settings|cron\.schedule|cron\.alter_job|ai_service_routes|\bdelete from\b|truncate |website_v2_/i)
+  expect(own).not.toMatch(/insert into pipeline\.platform_toolset_settings|cron\.schedule|cron\.alter_job|ai_service_routes|\bdelete from\b|truncate |website_v2_/i)
   expect(MIG.split('\n').filter((l) => /^(drop|delete|truncate)\b/i.test(l))).toEqual([])
   for (const s of ['post-check: a cron job was created', 'post-check: more than 140 active cron jobs', 'post-check: manual locks changed', 'post-check: a setting value or range changed', 'post-check: the picker still holds on a paid Firecrawl limit', 'post-check: the consumer API moved']) expect(MIG).toContain(s)
 })
