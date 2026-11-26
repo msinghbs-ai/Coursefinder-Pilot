@@ -81,7 +81,7 @@ export function PageTabs({tabs,active,onChange,label='Page sections'}){
 }
 
 /** Page body: optional tabs, optional toolbar row, then the content. */
-export function PageLayout({tabs,active,onTab,toolbar,children,className='',label,search=false,pageLabel}){
+export function PageLayout({tabs,active,onTab,toolbar,children,className='',label,search=false,pageLabel,pageKey}){
   const body=<div className="cf-page-body" role={tabs?.length>1?'tabpanel':undefined} aria-labelledby={tabs?.length>1&&active?`cf-tab-${active}`:undefined}>{children}</div>
   const inner=<>
     {tabs?.length>1&&<PageTabs tabs={tabs} active={active} onChange={onTab} label={label}/>}
@@ -90,7 +90,7 @@ export function PageLayout({tabs,active,onTab,toolbar,children,className='',labe
   </>
   // s1270: a page that opts in gets the search bar at its top (PageSearch.jsx); a screen inside registers its own entries with usePageSearchEntries
   return <div className={`cf-page${className?' '+className:''}`}>
-    {search?<PageSearchScope tabs={tabs} active={active} onTab={onTab} pageLabel={pageLabel||label}>{inner}</PageSearchScope>:inner}
+    {search?<PageSearchScope tabs={tabs} active={active} onTab={onTab} pageLabel={pageLabel||label} pageKey={pageKey}>{inner}</PageSearchScope>:inner}
   </div>
 }
 

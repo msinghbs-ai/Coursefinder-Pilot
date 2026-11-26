@@ -410,7 +410,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
   const notices=layerNo&&!(pageKey==='layer2'&&tab&&tab!=='operations')
   // F-OPS.03A (Platform Admin 9 Nov 2026): the Data Delivery summary is the FIRST thing on Operations, above the notice strip, so alert cards never push it below the fold
   const dataFirst=pageKey==='layer2'&&(!tab||tab==='operations')
-  return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`} search={SEARCH_PAGES.includes(pageKey)} pageLabel={page.label}>{dataFirst&&<DataDelivery rank={rank} onError={err}/>}{notices&&<LayerNotices layer={layerNo}/>}{body}</PageLayout>
+  return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`} search={SEARCH_PAGES.includes(pageKey)} pageLabel={page.label} pageKey={pageKey}>{dataFirst&&<DataDelivery rank={rank} onError={err}/>}{notices&&<LayerNotices layer={layerNo}/>}{body}</PageLayout>
   function pageBody(){
     switch(pageKey){
       case'dashboard':return <DashboardHome onError={onError} rank={rank} actorId={actorId} navigate={navigate}/>

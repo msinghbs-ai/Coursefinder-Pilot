@@ -91,13 +91,13 @@ export const PAGES = {
     // Universities (its one-click build stays); its old address opens Universities. Minimum roles unchanged.
     // v2.15.300: Operations first; v2.15.301 Flags moved here; v2.15.321 Course sources; v2.15.306 Enrichment plan; v2.15.318 Adapter builder
     // back in the tabs; v2.15.273 Enrich fields; v2.15.301 Scholarships (finding and reading, one tab)
-    { key: 'operations', label: 'Operations', min: 3, find: 'data delivery autonomous pim delivery matrix workers stalled consumer read back freshness requests lane funnels progress intake run validate' },
-    { key: 'universities', label: 'Universities', min: 3, find: 'providers adapters onboarding build adapter waves' },
-    { key: 'enrich', label: 'Enrich fields', min: 3, find: 'fill gaps stalled fields standing queue provider descriptions fee reader english intakes campus duration' },
-    { key: 'plan', label: 'Enrichment plan', min: 3, find: 'plan auto schedule enrich plan run batch' },
+    { key: 'operations', label: 'Operations', min: 3 },
+    { key: 'universities', label: 'Universities', min: 3 },
+    { key: 'enrich', label: 'Enrich fields', min: 3 },
+    { key: 'plan', label: 'Enrichment plan', min: 3 },
     { key: 'builder', label: 'Adapter builder', min: 5 },
-    { key: 'sources', label: 'Course sources', min: 3, find: 'official course pages source find links' },
-    { key: 'flags', label: 'Flags', min: 3, find: 'raise release hold soft reason recheck' },
+    { key: 'sources', label: 'Course sources', min: 3 },
+    { key: 'flags', label: 'Flags', min: 3 },
     { key: 'scholarships', label: 'Scholarships', min: 4 },
   ] },
   // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation retired. University adapters (Layer 2) admit intakes,
@@ -143,13 +143,13 @@ export const PAGES = {
 
   // v2.15.301: two tabs. Settings (Platform Admin) and API usage (Pipeline Operator and above, as before the move).
   environment: { label: 'Settings', slug: 'environment', icon: 'plug', subtitle: 'Every pipeline setting in one place, by step: throughput, reading, page identity and budgets; keys for outside services (never shown) on Integrations; calls to the consumer APIs.', tabs: [
-    { key: 'settings', label: 'Settings', min: 6, find: 'pipeline settings job sizes retries caps limits circuit breakers schedulers consumer apis website zoho alerts retention housekeeping' },
+    { key: 'settings', label: 'Settings', min: 6 },
     // v2.16.12 (Platform Admin 16 Nov 2026 08:22): keys for outside services, platform resources and the services overview are their own tab
-    { key: 'integrations', label: 'Integrations', min: 6, find: 'keys outside services secrets resources services overview' },
+    { key: 'integrations', label: 'Integrations', min: 6 },
     // CF-247 (16 Oct 2026, Platform Admin: "summary and stat collection"): calls to the API version URLs by key and action
-    { key: 'api', label: 'API usage', min: 4, find: 'calls requests keys versions rotation website zoho error rate' },
+    { key: 'api', label: 'API usage', min: 4 },
     // v2.15.310 (Platform Admin, 22 Oct 2026 07:41): daily backup of the provider Published switch and setting values, restore (Platform Admin)
-    { key: 'backup', label: 'Backup & restore', min: 6, find: 'restore rollback setting values published switch' },
+    { key: 'backup', label: 'Backup & restore', min: 6 },
   ] },
   // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is the Fetchers tab of Models & services (old addresses redirect).
   // v2.15.264 (Platform Admin, 13 Oct 2026 00:09): three tabs; the AI configuration Layer 3 used to hold is back as AI & OpenRouter.
@@ -303,6 +303,20 @@ export function allowedTabs(page, rank) { return (page?.tabs || []).filter(t => 
 // s1270 (SS-Programme-Control 26 Nov 2026 17:47): the pages that draw the search bar (PageSearch.jsx) at their top: the long ones, where a setting, control or
 // section was a long scroll away. Each page lists only its own tabs and what it has drawn, so a role never sees a result it cannot open.
 export const SEARCH_PAGES = ['layer2', 'environment', 'services', 'layer1', 'coverage', 'health', 'jobs', 'migration']
+// s1270: plain words a tab is also known by, for the page search (PageSearch.jsx). Kept apart from the tab list so the menu stays one line per tab.
+export const TAB_FIND = {
+  'layer2.operations': 'data delivery autonomous pim delivery matrix workers stalled consumer read back freshness requests lane funnels progress intake run validate',
+  'layer2.universities': 'providers adapters onboarding build adapter waves',
+  'layer2.enrich': 'fill gaps stalled fields standing queue provider descriptions fee reader english intakes campus duration',
+  'layer2.plan': 'plan auto schedule enrich plan run batch',
+  'layer2.sources': 'official course pages source find links',
+  'layer2.flags': 'raise release hold soft reason recheck',
+  'environment.settings': 'pipeline settings job sizes retries caps limits circuit breakers schedulers consumer apis website zoho alerts retention housekeeping',
+  'environment.integrations': 'keys outside services secrets resources services overview',
+  'environment.api': 'calls requests keys versions rotation website zoho error rate',
+  'environment.backup': 'restore rollback setting values published switch',
+}
+
 export function shownTabs(page, rank, active = '') { return allowedTabs(page, rank).filter(t => !t.hidden || t.key === active) }
 export function canOpen(pageKey, rank) { const p = PAGES[pageKey]; return Boolean(p) && rank >= p.min }
 

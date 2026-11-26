@@ -12,6 +12,7 @@
 import React,{createContext,useCallback,useContext,useEffect,useId,useMemo,useReducer,useRef,useState}from'react'
 import{Search,X}from'lucide-react'
 import{dedupe,KIND_WORD,norm,prepare,rank}from'./lib/page-search.js'
+import{TAB_FIND}from'./nav-map.js'
 import'./page-search.css'
 
 const Registry=createContext(null)
@@ -105,21 +106,21 @@ function jumpTo(entry,{active,onTab,offset,done}){
 }
 
 /** The search bar and the registry of entries below it. PageLayout renders this around the page body. */
-export function PageSearchScope({tabs,active,onTab,pageLabel,children}){
+export function PageSearchScope({tabs,active,onTab,pageLabel,pageKey,children}){
   const store=useRef(new Map()),[version,bump]=useReducer(x=>x+1,0)
   // entries are prepared (normalised) once, when a screen registers them, not on every keystroke
   const reg=useMemo(()=>({set:(o,e)=>{store.current.set(o,(e||[]).map(x=>x._f?x:prepare(x)));bump()},clear:o=>{if(store.current.delete(o))bump()}}),[])
   return <Registry.Provider value={reg}>
-    <PageSearch tabs={tabs} active={active} onTab={onTab} pageLabel={pageLabel} store={store} version={version}/>
+    <PageSearch tabs={tabs} active={active} onTab={onTab} pageLabel={pageLabel} pageKey={pageKey} store={store} version={version}/>
     {children}
   </Registry.Provider>
 }
 
-function PageSearch({tabs,active,onTab,pageLabel,store,version}){
+function PageSearch({tabs,active,onTab,pageLabel,pageKey,store,version}){
   const[q,setQ]=useState(''),[open,setOpen]=useState(false),[idx,setIdx]=useState(0),[dom,setDom]=useState([]),[msg,setMsg]=useState(''),[top,setTop]=useState(0)
   const inputRef=useRef(null),wrapRef=useRef(null),cancel=useRef(()=>{}),listId=useId()
   // tabs of this page for this role (shownTabs already removed the ones above the role)
-  const tabEntries=useMemo(()=>(tabs||[]).filter(t=>t.key!==active).map(t=>prepare({id:`tab:${t.key}`,kind:'tab',label:t.label,path:pageLabel||'',keywords:t.find||'',tabKey:t.key})),[tabs,active,pageLabel])
+  const tabEntries=useMemo(()=>(tabs||[]).filter(t=>t.key!==active).map(t=>prepare({id:`tab:${t.key}`,kind:'tab',label:t.label,path:pageLabel||'',keywords:TAB_FIND[`${pageKey}.${t.key}`]||'',tabKey:t.key})),[tabs,active,pageLabel])
   const rescan=useCallback(()=>{const root=wrapRef.current?.closest('.cf-page')?.querySelector('.cf-page-body');setDom(scanDom(root))},[])
   // topbar height, so the bar sticks under it and a jump lands below both
   useEffect(()=>{
