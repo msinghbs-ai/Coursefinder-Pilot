@@ -63,6 +63,8 @@ test.describe('Layer 2/3 Operations, Data Delivery and the PIM block', () => {
     await expect.poll(() => inView(page, '[data-pim-section="workers"]')).toBe(true)
     await expect(target).toBeFocused()
     await expect(page.locator('[data-page-search-msg]')).toContainText('Opened')
+    const c = await page.evaluate(() => ({ top: document.querySelector('[data-pim-section="workers"]').getBoundingClientRect().top, bar: document.querySelector('[data-page-search]').getBoundingClientRect().bottom }))
+    expect(c.top, 'the heading is clear of the bar, including its status line').toBeGreaterThanOrEqual(c.bar)
     await expect(target).not.toHaveClass(/ps-hit/, { timeout: 8000 })    // the highlight fades
   })
 
@@ -120,7 +122,7 @@ test.describe('Layer 2/3 Operations, Data Delivery and the PIM block', () => {
     await expect(page.locator('[data-page-search-results]')).toHaveAttribute('role', 'listbox')
     await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Enter')
-    await expect(page.locator('[data-pim-section]').first()).toBeVisible()
+    await expect(page.locator('[data-page-search-msg]')).toContainText('Opened')
     await input(page).fill('zzzz nothing here')
     await expect(page.locator('[data-page-search-none]')).toContainText('Nothing on this page matches')
     await page.keyboard.press('Escape')
