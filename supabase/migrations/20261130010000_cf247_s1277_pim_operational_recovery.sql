@@ -193,7 +193,7 @@ comment on function security.pim_record_trace_v1(uuid, text, boolean) is
   'PIM DR-19 (s1273, s1277): one course''s processing chain per registered course field (interface 2 facts, producer, attempts, absence, open Layer 4, resolution history), an evidence-only diagnosis with permitted actions, and field-level Website v3 delivery set against the platform state (presence, not accuracy). Read-only.';
 
 create or replace function security.pim_operational_recovery_v1(p_limit int default null)
-returns jsonb language plpgsql volatile security definer set search_path = pg_catalog, public as $f$
+returns jsonb language plpgsql volatile security definer set search_path = pg_catalog, public as $function$
 declare v_lim int := greatest(coalesce(p_limit, security.pipeline_num_v1('pim.op_recovery_batch', 600)::int), 1); v_items int; v_abs int; v_by jsonb;
 begin
   create temp table if not exists pim_oprec_t (absence_course uuid, absence_field text, item_id bigint) on commit drop;
@@ -221,7 +221,7 @@ begin
   values ('pim', 'pim_operational_recovery', 'pipeline.field_enrich_items', jsonb_build_object('change', 's1277', 'items_handed_back', v_items, 'absences_resolved', v_abs, 'by_field', v_by,
                          'item_ids', (select coalesce(jsonb_agg(item_id), '[]'::jsonb) from pim_oprec_t)), null);
   return jsonb_build_object('items_handed_back', v_items, 'absences_resolved', v_abs, 'by_field', v_by, 'at', now());
-end $f$;
+end $function$;
 comment on function security.pim_operational_recovery_v1(integer) is
   'PIM DR-19 (s1277): hands items whose open absence records an account or service refusal back to the existing AI worker for one more attempt (cap of 3 kept), honouring manual locks, and resolves those absences. The worker''s route caps and daily ceiling decide when they are read.';
 
