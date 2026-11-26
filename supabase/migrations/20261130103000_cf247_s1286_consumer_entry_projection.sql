@@ -2,7 +2,9 @@
 -- s1176b consumer read-back sample, Pilot #1699).
 -- HELD: this changes what Website v2, Website v3 and Zoho v2 serve for academic entry. It merges only after the Platform Admin approves it and the
 -- Wix and Zoho developers are told (G3 consumer communication gate). Until then the pull request stays a draft and unlabelled.
--- Consumer API change approved: (pending, to be written here by the Platform Admin's decision with who, when and why)
+-- Consumer API change approved: Platform Admin, decision D9, 27 Nov 2026 (coursefinder-admin #1207 comment 7203709925): the three scoped corrections, with
+--   safeguards (country-specific evidence keeps precedence; no inferred country equivalence; contextual, pathway or duration wording is not made a requirement;
+--   response compatibility and G3 kept). Wix and Zoho developer notice: sent <date, by> (to be recorded before merge).
 -- Defects (read live 27 Nov 2026 00:20 AEDT):
 --   1. A domestic-only row is served to international readers: 103424H (IN) serves "Equivalent to Australian Year 12." (audience domestic) in
 --      requirements_note on Website v2, Zoho v2 and the v3 international read.
@@ -19,6 +21,9 @@
 --   minimum grade and prior qualification rows that are for international or all students and name no country (rule course_general, step 5,
 --   the same row shape as course_override; outcome minimum_published when a row holds a grade or score, otherwise case_by_case). A new rule value
 --   is additive; contact_provider is unchanged when the course holds no such row. The per-country matrix still wins (steps 1 to 4 unchanged).
+--   Safeguards (D9): a row whose wording is about duration, a pathway or a possible route is never used for course_general (exclusion only; 792 of 16,842
+--   rows on 27 Nov, the text stays in requirements_note); course_general carries scope all_countries and only the course's own stated text and figures,
+--   so no country equivalence, eligibility or threshold is inferred.
 -- G1: no job. G2: no setting. G3: no frozen object's definition changes (the payload is a helper they read); the served values change, so the gate above
 -- applies. Locks and cron checked. Nothing dropped or deleted.
 -- Replaces: security.entry_course_payload_v1 (md5 691bbba7); security.entry_resolve_v1 (md5 69bbc05f). Retires: nothing.
@@ -55,9 +60,12 @@ declare d text := pg_get_functiondef('security.entry_resolve_v1(uuid,text)'::reg
   select jsonb_agg(jsonb_build_object('text', r.description, 'min_grade', r.min_grade, 'min_score', r.min_entry_score, 'min_score_basis', r.min_entry_score_basis,
                                       'quote', r.quote, 'as_at', r.as_at, 'case_by_case', r.min_grade is null and r.min_entry_score is null, 'scale_stated', null::boolean) order by r.created_at)
     into v_rows from catalogue.course_entry_requirements r
-   where r.course_id = c.id and r.status = 'active' and r.kind in ('minimum_grade', 'prior_qualification') and r.audience in ('international', 'all') and r.country_id is null;
+   where r.course_id = c.id and r.status = 'active' and r.kind in ('minimum_grade', 'prior_qualification') and r.audience in ('international', 'all') and r.country_id is null
+     -- D9 safeguard: a row whose wording is about duration, a pathway or a possible route is not made a requirement (it stays in requirements_note)
+     and r.description !~* '(\mto (complete|finish)\M[^.]{0,60}\min\M[^.]{0,20}\m(years?|months?|semesters?|trimesters?)\M|\mreduced (duration|length)\M|\maccelerated\M|\mduration\M|\mcomplete (the|this) (course|degree|program|programme)\M[^.]{0,30}\m(sooner|faster|earlier|quicker)\M)'
+     and r.description !~* '(\mpathways?\M|\mmay include\M|\mmay (also )?be (eligible|considered|accepted|admitted|offered)\M|\mfoundation (studies|program|programme|year)\M|\madvanced standing\M|\mcredit (transfer|towards|for)\M|\mrecognition of prior learning\M|\mRPL\M|\mguaranteed entry\M)';
   if v_rows is not null then
-    return jsonb_build_object('country', v_cc, 'step', 5, 'rule', 'course_general', 'rows', v_rows,
+    return jsonb_build_object('country', v_cc, 'step', 5, 'rule', 'course_general', 'scope', 'all_countries', 'rows', v_rows,
       'outcome', case when exists (select 1 from jsonb_array_elements(v_rows) z where not (z->>'case_by_case')::boolean) then 'minimum_published' else 'case_by_case' end);
   end if;
 $b$;
