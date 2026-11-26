@@ -284,7 +284,7 @@ export default function PimDelivery({pim,now,rank=0,streams=null,snapshots=null,
             <td data-label="Expected">{has(r.expected)?fmtNumber(Number(r.expected)):<NotMeasured/>}</td><td data-label="Website"><ConsumerCell r={r} c="w"/></td><td data-label="Zoho"><ConsumerCell r={r} c="z"/></td>
             <td data-label="Read"><V>{ageWord(ago)}{stale&&<StatusChip tone="warning" label="Stale"/>}</V></td></tr>)})}</tbody></table></div>
         :<NotMeasured word="Not available" reason="The PIM snapshot carries no consumer read-back yet."/>}
-      {/* s1286: the rotating sample behind the same reads (consumer_fields); counts the checked courses only, never extrapolated */}
+      {/* s1288: the rotating sample behind the same reads (consumer_fields); counts the checked courses only, never extrapolated */}
       <ConsumerSample ops={ops} streamTitle={id=>(Array.isArray(streams)?streams.find(x=>x.stream===id)?.title:null)||SAMPLE_TITLE[id]}/>
 
       <h5 className="sl-h4" data-pim-section="consumption">Consumption in the last {hoursWord(hours)}</h5>

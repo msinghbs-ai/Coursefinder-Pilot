@@ -1,4 +1,4 @@
-// CF-247 s1286 (SS-Programme-Control "Complete existing Data Delivery integration", 27 Nov 2026 00:09 AEDT; backend s1176b): `pim.operations.consumer_fields`,
+// CF-247 s1288 (SS-Programme-Control "Complete existing Data Delivery integration", 27 Nov 2026 00:09 AEDT; backend s1176b): `pim.operations.consumer_fields`,
 // the rotating sample read back through the reads the website and Zoho call. Drawn inside the existing "Verified consumer read-back" section of Data Delivery:
 // no new screen, tab or dashboard.
 // Rules: every figure counts the courses that were checked and is never a population figure. Verified counts are shown as "n of the sampled courses", the
