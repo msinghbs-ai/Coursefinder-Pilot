@@ -6,6 +6,14 @@ name: AER entry-matrix stored pages (read only)
 on:
   workflow_dispatch:
     inputs:
+      source_ids:
+        description: "Optional: up to 12 stored entry-matrix source ids (comma-separated) to export instead of the waiting first reads"
+        required: false
+        default: ""
+      pages:
+        description: "Optional: PDF page range for the selected sources, for example 15-33 (at most 60 pages)"
+        required: false
+        default: ""
       rules:
         description: "Kept for the record (every waiting first read is exported)"
         required: true
@@ -28,7 +36,11 @@ jobs:
         with:
           node-version: 22
       - name: Export the stored pages
-        run: node scripts/aer-entry-inspect.mjs "${{ inputs.rules }}"
+        env:
+          IN_RULES: ${{ inputs.rules }}
+          IN_SOURCES: ${{ inputs.source_ids }}
+          IN_PAGES: ${{ inputs.pages }}
+        run: node scripts/aer-entry-inspect.mjs "$IN_RULES" "$IN_SOURCES" "$IN_PAGES"
       # the same file, gzipped and base64 in marked lines of the job log, for a session whose network cannot reach the artifact store (19 Nov 2026)
       - name: Print the export to the log
         if: ${{ always() }}
