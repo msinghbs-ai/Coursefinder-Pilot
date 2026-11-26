@@ -311,6 +311,11 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*_cf247_aer_course_outcome_register\.sql$|^tests/uat/cf-247-s185-aer-course-outcome-register-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/cf-247-s185-aer-course-outcome-register-deployed.spec.mjs)
           fi
+          # DR-19 (SS-Programme-Control 26 Nov 2026 19:19, s1272): the Layer 4 journey fold, its read or its deployed spec runs the read-only
+          # production acceptance as the Platform Admin and a Pipeline Operator, at desktop and phone width
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(Layer4Journey\.jsx|Layer4Inbox\.jsx)$|^supabase/migrations/.*_cf247_s1272_dr19_record_journey\.sql$|^tests/uat/cf-247-s1272-dr19-record-journey-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/cf-247-s1272-dr19-record-journey-deployed.spec.mjs)
+          fi
           # S2-BOOST-Courses (19 Nov 2026, s728): last, so it wins over blocks that also match this workflow file
           if printf '%s\n' "$changed" | grep -qx '.github/s2-boost-live-counts-candidate'; then
             targeted=(tests/uat/cf-247-s728-pim-admin-live-counts-deployed.spec.mjs)
