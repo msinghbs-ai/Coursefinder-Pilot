@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { detRead, AER_DET_VERSION } from '../../supabase/functions/coverage-sweep/aer-det-reader.ts'
-const migration = fs.readFileSync('supabase/migrations/20261129033000_cf247_s3_aer_scoped_det_v15.sql','utf8')
+const migration = fs.readFileSync('supabase/migrations/20261129062000_cf247_s3_aer_scoped_det_v15.sql','utf8')
 
 test('source-backed Toi Ohomai 48 NCEA Level 2 credits are detected without inventing international eligibility', () => {
   // A previously paid, stored, quote-checked shadow answer for course 2bb70b6b:
