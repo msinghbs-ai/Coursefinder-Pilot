@@ -158,7 +158,7 @@ function PageSearch({tabs,active,onTab,pageLabel,pageKey,store,version}){
       <input ref={inputRef} className="ps-input" type="search" inputMode="search" autoComplete="off" spellCheck="false" enterKeyHint="go" data-page-search-input
         placeholder="Search this page: a setting, section or control (press / to search)" aria-label="Search this page for a setting, section or control"
         role="combobox" aria-expanded={Boolean(shown)} aria-controls={listId} aria-autocomplete="list" aria-activedescendant={shown&&results[idx]?`${listId}-${idx}`:undefined}
-        value={q} onChange={e=>{setQ(e.target.value);setOpen(true);setMsg('')}} onFocus={()=>{rescan();if(q.trim())setOpen(true)}} onBlur={()=>setTimeout(()=>setOpen(false),160)} onKeyDown={onKey}/>
+        value={q} onChange={e=>{cancel.current();setQ(e.target.value);setOpen(true);setMsg('')}} onFocus={()=>{rescan();if(q.trim())setOpen(true)}} onBlur={()=>setTimeout(()=>setOpen(false),160)} onKeyDown={onKey}/>
       {q&&<button type="button" className="ps-clear" aria-label="Clear search" onMouseDown={e=>e.preventDefault()} onClick={()=>{setQ('');setOpen(false);setMsg('');inputRef.current?.focus()}}><X size={15} aria-hidden/></button>}
     </div>
     {shown&&<ul className="ps-results" id={listId} role="listbox" aria-label="Search results" data-page-search-results>

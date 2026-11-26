@@ -122,7 +122,7 @@ test.describe('Layer 2/3 Operations, Data Delivery and the PIM block', () => {
     await expect(page.locator('[data-page-search-results]')).toHaveAttribute('role', 'listbox')
     await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Enter')
-    await expect(page.locator('[data-pim-section]').first()).toBeVisible()
+    await expect(page.locator('[data-page-search-msg]')).toContainText('Opened')
     await input(page).fill('zzzz nothing here')
     await expect(page.locator('[data-page-search-none]')).toContainText('Nothing on this page matches')
     await page.keyboard.press('Escape')
