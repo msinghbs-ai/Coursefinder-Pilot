@@ -9,6 +9,7 @@ import {
 } from '../lib/proposals.js'
 import { money, durationText, durationInYears, dateText, initials, stateShort, NOT_RECORDED } from '../lib/format.js'
 import { Pill, LoadState } from '../components/ui.jsx'
+import { ExtLink } from '../components/ExtLink.jsx'
 
 // Proposal builder (Mockups 11 and 12). The database owns versions, the course snapshots and the live comparison; this screen
 // only edits the choices and shows what the database says. Limits and the soft-lock window arrive with the proposal (G2).
@@ -39,6 +40,7 @@ function CourseRow({ c, n, count, changes, limits, onWhy, onMove, onRemove }) {
         <div className="prop-course-title">
           <h3>{n + 1}. {s.title || 'Course'}</h3>
           <p className="muted small">{s.provider_name}{s.course_code ? ` · ${s.course_code}` : ''}</p>
+          {s.course_url && <p className="small"><ExtLink className="textlink" href={s.course_url}>Official course page</ExtLink></p>}
         </div>
         <div className="reorder" role="group" aria-label={`Order of ${s.title || 'course'}`}>
           <button type="button" className="btn small" disabled={n === 0} onClick={() => onMove(n, n - 1)} aria-label={`Move ${s.title || 'course'} up`}>↑</button>

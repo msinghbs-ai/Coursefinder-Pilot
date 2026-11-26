@@ -3,6 +3,8 @@ import { useSaved } from '../lib/saved.js'
 import { basket } from '../lib/basket.js'
 import { durationText, durationInYears, money, dateText, initials, stateShort, NOT_RECORDED } from '../lib/format.js'
 import { PageHead, StudyInBar, LoadState, Pill } from '../components/ui.jsx'
+import { ExtLink } from '../components/ExtLink.jsx'
+import { CourseDetails, DetailsButton } from '../components/CourseDetails.jsx'
 
 const DELIVERY = { on_campus: 'On campus', online: 'Online', blended: 'Blended', on_campus_and_online: 'On campus and online' }
 
@@ -21,6 +23,7 @@ function feeCells(c) {
 export default function Saved() {
   const saved = useSaved(true)
   const [picked, setPicked] = useState([])
+  const [openId, setOpenId] = useState('')
   const max = saved.compareMax || 0
   useEffect(() => { setPicked(p => p.filter(id => saved.ids.has(id))) }, [saved.items]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -68,9 +71,11 @@ export default function Saved() {
                   </div>
                 </div>
                 <div className="actions">
-                  {c.course_url && <a className="btn" href={c.course_url} target="_blank" rel="noopener noreferrer">Open course</a>}
+                  <DetailsButton open={openId === c.course_id} id={`details-${c.course_id}`} onClick={() => setOpenId(o => o === c.course_id ? '' : c.course_id)} />
+                  <ExtLink className="btn" href={c.course_url}>Open course</ExtLink>
                   <button type="button" className="btn" disabled={saved.busy === c.course_id} onClick={() => saved.toggle(c.course_id, false)}>Remove</button>
                 </div>
+                {openId === c.course_id && <CourseDetails id={`details-${c.course_id}`} courseId={c.course_id} />}
               </article>
             ))}
           </div>

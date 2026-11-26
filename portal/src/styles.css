@@ -182,3 +182,20 @@ textarea { font:inherit; padding:.7rem .8rem; border:1px solid var(--line); bord
   .proposal-editor .link-inline { min-height:44px }
   .step-row .check { display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px }
 }
+
+/* s1215: Course details panel, Entry Requirements screen */
+.details { flex:1 1 100%; width:100%; margin-top:.9rem; padding-top:.9rem; border-top:1px solid var(--line); display:grid; gap:.9rem }
+.d-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem 1.4rem }
+.d-sec { background:#f7f8fc; border-radius:12px; padding:.8rem .95rem; display:grid; gap:.5rem; align-content:start; min-width:0 }
+.d-sec h4 { margin:0; font-size:.95rem } .d-sec h5 { margin:.4rem 0 0; font-size:.85rem; color:var(--muted) } .d-sec p { margin:0 }
+.d-text { white-space:pre-line; overflow-wrap:anywhere }
+.d-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.5rem .9rem; margin:0 } .d-facts div { display:grid; gap:.1rem } .d-facts dt { font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; color:var(--muted) } .d-facts dd { margin:0; font-weight:600 }
+.d-list { list-style:none; margin:0; padding:0; display:grid; gap:.6rem } .d-list li { display:grid; gap:.15rem; overflow-wrap:anywhere }
+.d-k { font-size:.8rem; color:var(--muted) } .d-v { font-size:1rem }
+.er-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9rem 1.4rem } .er-col { background:#f7f8fc; border-radius:12px; padding:.7rem .9rem; min-width:0 } .er-col h4 { margin:0 0 .4rem; font-size:.9rem }
+.btn.open { background:#e6f6f2; border-color:#a5dccf; color:#0b6657 }
+a.textlink { display:inline-flex; align-items:center; min-height:44px }
+@media (max-width:640px) {
+  .d-grid, .er-grid { grid-template-columns:1fr } .d-facts { grid-template-columns:1fr 1fr }
+  .details .btn, .details select, .er-col a { min-height:44px }
+}
