@@ -44,6 +44,7 @@ import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./ui-v1/P
 import HelpButton from'./HelpDrawer' // CF-247 S1-UX s827: the ? help drawer on each main screen header
 const HELP_TOPIC={dashboard:'dashboard',health:'health',layer4:'layer4',courses:'catalogue',providers:'catalogue'}
 import QueueWatch from'./QueueWatch'
+import{JobsMonitor}from'./PimJobsMonitor' // s1283: job and lane monitoring on Scheduled jobs › Automations
 import{PimBacklink}from'./PimDelivery' // s1217: the way back to Data Delivery › Autonomous PIM
 import IntegrationQueue,{PipelineYield}from'./IntegrationQueue'
 import CourseSources from'./CourseSources'
@@ -474,7 +475,7 @@ function Page({pageKey,tab,requestedTab='',routeParams,rank,actorId,onError,navi
       // v2.15.300: Screen use (Platform Admin) under the health checks, to decide which screens retire
       // v2.15.301: Capacity moved to the Go-live checklist; Storage & retention is a tab here
       case'health':return tab==='completeness'?<CompletenessReport rank={rank} onError={onError}/>:tab==='storage'?<RetentionScreen onError={onError}/>:tab==='queues'?<div className="m-page-stack" data-queues-yield><PimBacklink/>{/* SS-020 step 3 (Decision 269, Final board F31: lanes first): Pipeline yield moved here from Integration queue; PIM Admin and above, as before (server checks too) */}{rank>=5&&<PipelineYield onError={onError}/>}<QueueWatch onError={onError}/><BoostQueue onError={onError}/></div>:tab==='integration'?<IntegrationQueue onError={onError}/>:<><PlatformHealth onError={onError}/>{rank>=6&&<ScreenUse onError={onError}/>}</>
-      case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='automations'?<div className="m-page-stack"><PimBacklink/><Automations onError={err}/><ScheduledRuntimeHealth onNavigate={hash=>{location.hash=hash}}/></div>:<JobsWorkspace/>
+      case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='automations'?<div className="m-page-stack"><PimBacklink/><JobsMonitor/><Automations onError={err}/><ScheduledRuntimeHealth onNavigate={hash=>{location.hash=hash}}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       // CF-247 (16 Oct 2026): calls to the API version URLs (zoho-api-v2 first), by key and action; v2.15.301 Settings › API usage
       // v2.16.12 (Platform Admin 16 Nov 2026 08:22): Environment & integrations moved to its own Integrations tab; the Settings tab is the settings only
