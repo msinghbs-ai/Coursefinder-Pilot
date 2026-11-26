@@ -62,8 +62,9 @@ test.describe('DR-19 record journey on the live Layer 4 card @deployed', () => {
 // The phone gate runs only @responsive tests; this one first checks it is at phone width (measured), then reads the same fold.
 test.describe('phone screens @responsive', () => {
   test('Platform Admin on a phone: the fold opens, wraps and does not scroll sideways @deployed', async ({ page }, testInfo) => {
-    const w = await page.evaluate(() => window.innerWidth)
-    expect(w, 'measured phone width').toBeLessThanOrEqual(430)
+    // before any page loads, about:blank lays out at 980 px on an emulated phone, so the emulated viewport is checked first and the
+    // page's own measured width is checked once Layer 4 is open (journeyOnFocusedCard)
+    expect(page.viewportSize()?.width, 'phone viewport').toBeLessThanOrEqual(430)
     if (!process.env.UAT_BASE_URL) throw new Error('UAT_BASE_URL is required for deployed acceptance.')
     await loginAsUatUser(page, 6)
     await journeyOnFocusedCard(page, testInfo, 'platform-admin-phone')
