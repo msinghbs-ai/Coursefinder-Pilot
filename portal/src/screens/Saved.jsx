@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useSaved } from '../lib/saved.js'
 import { basket } from '../lib/basket.js'
 import { durationText, durationInYears, money, dateText, initials, placeText, NOT_RECORDED } from '../lib/format.js'
-import { PageHead, StudyInBar, LoadState, Pill, ViewToggle, RegBadge } from '../components/ui.jsx'
+import { PageHead, StudyInBar, LoadState, Pill, ViewToggle, RegBadge, ProviderLine } from '../components/ui.jsx'
 import { usePortal } from '../lib/portal.jsx'
 import { lengthOrBlank, primaryFeeAmount, primaryFeeNote } from '../lib/courseDetailFormat.js'
 import { CourseRow, ListHead } from '../components/CourseRow.jsx'
@@ -96,7 +96,7 @@ export default function Saved() {
                       <span className="logo-tile" aria-hidden="true">{initials(c.provider_name)}</span>
                       <div className="saved-main">
                         <div className="title-row"><h3>{c.title}</h3><RegBadge r={c.regulator} /></div>
-                        <p className="muted">{c.provider_name}</p>
+                        <ProviderLine name={c.provider_name} />
                       </div>
                     </div>
                   </header>

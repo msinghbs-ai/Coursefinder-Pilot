@@ -5,7 +5,7 @@ import { useSaved } from '../lib/saved.js'
 import { basket } from '../lib/basket.js'
 import { entryLine, entryForMarket, englishLine, lengthOrBlank, primaryFeeAmount, primaryFeeNote } from '../lib/courseDetailFormat.js'
 import { placeText } from '../lib/format.js'
-import { PageHead, StudyInBar, Select, LoadState, ShowMore, Count, Pill, ViewToggle, RegBadge, MarketOptions, IntlBadge } from '../components/ui.jsx'
+import { PageHead, StudyInBar, Select, LoadState, ShowMore, Count, Pill, ViewToggle, RegBadge, MarketOptions, IntlBadge, ProviderLine } from '../components/ui.jsx'
 import { CourseRow, ListHead } from '../components/CourseRow.jsx'
 import { DetailDrawer } from '../components/DetailDrawer.jsx'
 import { ExtLink } from '../components/ExtLink.jsx'
@@ -41,7 +41,7 @@ function EntryCard({ c, market, marketName, onOpen, openId, ...save }) {
       <header className="course-head">
         <div>
           <div className="title-row"><h3>{c.title}</h3><RegBadge r={c.regulator} /></div>
-          <p className="muted">{c.provider_name}</p>
+          <ProviderLine name={c.provider_name} />
         </div>
       </header>
       <div className="tags">{c.country_code && <Pill>{c.country_code}</Pill>}{c.level_name && <Pill>{c.level_name}</Pill>}{f.place && <Pill>{f.place}</Pill>}{f.length && <Pill>{f.length}</Pill>}<IntlBadge c={c} /></div>

@@ -245,3 +245,7 @@ a.textlink { display:inline-flex; align-items:center; min-height:44px }
   .lr-actions .btn, .drawer-head .actions .btn { flex:1 1 auto; justify-content:center }
 }
 .chip-x { padding:0 0 0 .9rem } .chip-x button { width:44px; height:44px } .understood .btn.small { min-height:44px }  /* s1222: 44px tap targets on the search chips */
+
+/* s1279: a long provider name keeps to two lines (full text in the tooltip and in Course details); a short description sits under the title when the platform holds one */
+.clamp-2 { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden; overflow-wrap:anywhere; min-width:0 }
+.desc-snippet { margin:.1rem 0 .2rem; font-size:.92rem; line-height:1.4; color:var(--ink) }

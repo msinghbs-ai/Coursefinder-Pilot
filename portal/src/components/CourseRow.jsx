@@ -1,5 +1,5 @@
 import React from 'react'
-import { RegBadge } from './ui.jsx'
+import { RegBadge, ProviderLine } from './ui.jsx'
 
 // s1222: the compact List view row, shared by Courses, Saved courses and Entry Requirements. Only values the platform holds are shown;
 // "Not recorded" stays inside Course details.
@@ -16,7 +16,7 @@ export function CourseRow({ c, level, place, length, fee, children, lead }) {
         {lead}
         <div>
           <div className="title-row"><strong className="lr-title">{c.title}</strong><RegBadge r={c.regulator} /></div>
-          <span className="muted small">{c.provider_name}</span>
+          <ProviderLine name={c.provider_name} as="span" className="muted small" />
         </div>
       </div>
       <span className="lr-cell" data-k="Level">{level || ''}</span>
