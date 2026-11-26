@@ -1,4 +1,4 @@
-// CF-247 s1283 (SS-Programme-Control "Complete job and lane monitoring UI", 26 Nov 2026 22:51 AEDT; backend s1176, Pilot #1693):
+// CF-247 s1283 (SS-Programme-Control "Complete job and lane monitoring UI", 26 Nov 2026 22:51 AEDT; backend s1176, Pilot PR 1693):
 // the PIM job, lane, rollup-target and admission-rule monitoring contract, drawn on the two existing screens. No new page, tab or dashboard.
 //   Data Delivery: <JobsSummary> (states, counts by component type, attention items, snapshot freshness) from `pim.operations`, replacing the
 //     138-row workers table. The full list opens on Scheduled jobs.

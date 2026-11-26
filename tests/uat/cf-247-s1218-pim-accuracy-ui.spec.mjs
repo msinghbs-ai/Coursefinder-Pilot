@@ -141,7 +141,7 @@ test.describe('role permissions', () => {
       await openAt(page, rank)
       const pim = page.locator('[data-dd-pim]')
       await expect(pim).toBeVisible({ timeout: 20_000 })
-      await expect(pim.locator('input, textarea, [data-pim-save], [data-pim-apply]')).toHaveCount(0)
+      await expect(pim.locator('input:not([data-pjm-search]), textarea, [data-pim-save], [data-pim-apply]')).toHaveCount(0)
       // every button is a view or navigation control, never an action on data
       const labels = await pim.locator('button:not([data-pim-cell])').allTextContents() // matrix cells are figures that open a country and domain
       for (const l of labels) expect(l).not.toMatch(/\b(save|apply|approve|delete|run now|retry now|activate)\b/i)
