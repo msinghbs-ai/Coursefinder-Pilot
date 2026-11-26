@@ -12,7 +12,8 @@ test('only the existing reads: no new diagnostic framework or record-trace funct
   expect(new Set(calls)).toEqual(new Set(['admin_pim_record_trace_v1', 'admin_pim_provider_trace_v1', 'admin_pim_operational_recovery_measure_v1', 'admin_field_coverage', 'admin_priority_search']))
   expect(rt).toContain("import Layer4Journey,{STATE}from'./Layer4Journey'")  // the existing Processing journey and diagnosis fold
   expect(rt).toContain('<Layer4Journey key={x.id} kind={l4Kind(x.field_code)} refId={x.id}/>')
-  expect(fs.readdirSync('supabase/migrations').some(f => /s1282/.test(f))).toBe(false)
+  // no backend of its own (S2-RM-Design's s1282 migration on main is the separate DR-19 cause slice)
+  expect(fs.readdirSync('supabase/migrations').some(f => /record_trace_ui|dr19_record_trace/.test(f))).toBe(false)
 })
 
 test('the seven facts are separate rows, and presence is never accuracy', () => {
@@ -31,6 +32,9 @@ test('Data Delivery: a drill in each stream and in the PIM matrix; records open 
   expect(dd).toContain('<RecordDrill label="Records behind this stream" field={s.field||\'\'} rank={rank}/>')
   expect(pim).toContain('<RecordDrill label="Records by field, hold or recovery" rank={rank}/>')
   expect(rt).toContain("readProviderTrace(prov.id,field,cls)")
+  // a button disclosure, never a second <summary> inside the stream or matrix fold; the body reads only when opened
+  expect(rt).toContain('<button type="button" className="rt-toggle" aria-expanded={open} onClick={()=>setOpen(!open)} data-rt-drill-toggle>')
+  expect(rt).toContain('{open&&<DrillBody fieldIn={field} rank={rank}/>}')
   expect(rt).toContain("<a className=\"cf-link\" href={hrefFor('courses','',{id:r.course_id})} data-rt-open-course>Open the course record</a>")
   expect(rt).toContain('<CourseFieldStatus courseId={r.course_id} field={field} open rank={rank}/>')
 })

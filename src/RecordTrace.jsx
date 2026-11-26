@@ -122,14 +122,22 @@ function ProviderSearch({value,onPick,onError}){
 }
 
 /** Increment 2: from a Data Delivery stream, field or hold, a provider's records by diagnosis class, each opening its trace. */
-export function RecordDrill({field:fieldIn='',label='Records',rank=0}){
+export function RecordDrill({field='',label='Records',rank=0}){
+  // A button, not a nested <details>: the stream and matrix folds keep exactly one summary each; the body mounts (and reads) only when opened.
+  const[open,setOpen]=useState(false)
+  return <div className="l4z-fold l4j rt-drill" data-rt-drill={field||'any'} data-rt-open={open?'true':'false'}>
+    <button type="button" className="rt-toggle" aria-expanded={open} onClick={()=>setOpen(!open)} data-rt-drill-toggle>{label}: open a provider's records</button>
+    {open&&<DrillBody fieldIn={field} rank={rank}/>}
+  </div>
+}
+
+function DrillBody({fieldIn='',rank=0}){
   const[reg,setReg]=useState([]),[field,setField]=useState(fieldIn),[prov,setProv]=useState(null),[sum,setSum]=useState(null),[cls,setCls]=useState(''),[recs,setRecs]=useState(null),[err,setErr]=useState(''),[gain,setGain]=useState(null)
   useEffect(()=>{loadRegister().then(r=>setReg((r||[]).filter(x=>!x.level||x.level==='course'))).catch(()=>setReg([]));readRecoveryMeasure().then(setGain).catch(()=>setGain(null))},[])
   useEffect(()=>{setSum(null);setCls('');setRecs(null);setErr('');if(prov&&field)readProviderTrace(prov.id,field).then(setSum).catch(e=>setErr(e.message))},[prov?.id,field])
   useEffect(()=>{setRecs(null);if(prov&&field&&cls)readProviderTrace(prov.id,field,cls).then(d=>setRecs(d.records||[])).catch(e=>setErr(e.message))},[cls])
   const g=gain||{}
-  return <details className="l4z-fold l4j rt-drill" data-rt-drill={field||'any'}>
-    <summary>{label}: open a provider's records</summary>
+  return <div className="rt-drill-body">
     <div className="rt-pick">
       <label className="rt-field-pick"><small>Field</small><select value={field} onChange={e=>setField(e.target.value)} aria-label="Field" data-rt-field-select>
         <option value="">Choose a field</option>{reg.map(r=><option key={r.field} value={r.field}>{r.label||word(r.field)}</option>)}{field&&!reg.some(r=>r.field===field)&&<option value={field}>{word(field)}</option>}</select></label>
@@ -145,7 +153,7 @@ export function RecordDrill({field:fieldIn='',label='Records',rank=0}){
       {cls&&!recs&&<p className="l4lc-ref" role="status">Reading the records…</p>}
       {recs&&<div className="rt-recs" data-rt-records>{recs.length===0?<p className="l4lc-ref">0 records in this class.</p>:recs.map(r=><DrillRecord key={r.course_id} r={r} field={field} rank={rank}/>)}</div>}
     </section>}
-  </details>
+  </div>
 }
 
 export{STATE}

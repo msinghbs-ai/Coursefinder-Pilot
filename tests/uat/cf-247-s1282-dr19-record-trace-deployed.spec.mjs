@@ -12,9 +12,10 @@ async function measured(page) {
 async function drillAndDrawer(page, testInfo, who) {
   const runtime = observeRuntime(page)
   await page.goto(OPERATIONS)
-  const drill = page.locator('[data-dd-pim] details.rt-drill').first()
+  const drill = page.locator('[data-dd-pim] [data-rt-drill]').first()
   await expect(drill, 'the PIM records drill is shown').toBeVisible({ timeout: 90_000 })
-  await drill.locator('summary').click()
+  await drill.locator('[data-rt-drill-toggle]').click()
+  await expect(drill).toHaveAttribute('data-rt-open', 'true')
   await drill.locator('[data-rt-field-select]').selectOption('description')
   await drill.locator('[data-rt-provider-search]').fill('Lincoln University')
   const hit = drill.locator('.rt-hits button').first()
