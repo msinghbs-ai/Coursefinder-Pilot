@@ -1,0 +1,28 @@
+/* s1270: the page search bar (PageSearch.jsx). One bar for every long Admin page; sticks under the top bar so it is always one tap away. Phone (<= 640 px): full width, 44 px rows. */
+.cf-page-search{position:sticky;top:var(--ps-top,0px);z-index:24;background:var(--cf-slate-75,#f8fafc);padding:6px 0 8px;margin:-6px 0 0}
+.cf-page-search .ps-box{position:relative;display:flex;align-items:center}
+.cf-page-search .ps-icon{position:absolute;left:11px;color:var(--cf-slate-500,#64748b);pointer-events:none}
+.cf-page-search .ps-input{width:100%;min-height:40px;padding:8px 38px 8px 34px;border:1px solid var(--cf-border,#cbd5e1);border-radius:var(--cf-radius-md,8px);background:var(--cf-white,#fff);font:inherit;font-size:var(--cf-fs-md,14px);color:var(--cf-slate-900,#0f172a)}
+.cf-page-search .ps-input:focus-visible{outline:none;box-shadow:var(--cf-focus-ring,0 0 0 3px rgba(99,102,241,.35));border-color:var(--cf-brand,#4f46e5)}
+.cf-page-search .ps-clear{position:absolute;right:4px;width:34px;height:34px;display:grid;place-items:center;border:0;background:transparent;color:var(--cf-slate-600,#475569);border-radius:var(--cf-radius-md,8px);cursor:pointer}
+.cf-page-search .ps-clear:hover{background:var(--cf-slate-100,#f1f5f9)}
+.cf-page-search .ps-results{position:absolute;left:0;right:0;top:calc(100% - 4px);margin:0;padding:4px;list-style:none;max-height:min(60vh,420px);overflow-y:auto;background:var(--cf-white,#fff);border:1px solid var(--cf-border,#cbd5e1);border-radius:var(--cf-radius-md,8px);box-shadow:var(--cf-shadow-lg,0 12px 32px rgba(15,23,42,.18))}
+.cf-page-search .ps-results li{margin:0}
+.cf-page-search .ps-results button{width:100%;display:flex;align-items:flex-start;gap:10px;text-align:left;padding:8px 10px;min-height:44px;border:0;background:transparent;border-radius:6px;cursor:pointer;font:inherit;color:inherit}
+.cf-page-search .ps-results li.is-on button,.cf-page-search .ps-results button:hover{background:var(--cf-slate-100,#f1f5f9)}
+.cf-page-search .ps-kind{flex:0 0 66px;font-size:var(--cf-fs-2xs,11px);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--cf-brand-ink,#3730a3);padding-top:3px}
+.cf-page-search .ps-text{min-width:0;display:grid;gap:1px}
+.cf-page-search .ps-text strong{font-size:var(--cf-fs-md,14px);overflow-wrap:anywhere}
+.cf-page-search .ps-text small{color:var(--cf-slate-600,#475569);font-size:var(--cf-fs-xs,12px);overflow-wrap:anywhere}
+.cf-page-search .ps-none{padding:12px;color:var(--cf-slate-600,#475569);font-size:var(--cf-fs-md,14px)}
+.cf-page-search .ps-msg{display:block;margin-top:4px;color:var(--cf-slate-600,#475569)}
+.cf-page-search .ps-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* the control a result led to: a clear outline and tint for a few seconds, on top of the existing focus style */
+.ps-hit{outline:3px solid var(--cf-indigo-400,#818cf8);outline-offset:3px;border-radius:6px;background:color-mix(in srgb,var(--cf-indigo-100,#e0e7ff) 55%,transparent);transition:outline-color .4s,background-color .4s}
+@media (prefers-reduced-motion:reduce){.ps-hit{transition:none}}
+@media (max-width:640px){
+  .cf-page-search .ps-input{min-height:44px;font-size:16px} /* 16 px stops the phone zooming the page when the field is focused */
+  .cf-page-search .ps-clear{width:44px;height:44px;right:0}
+  .cf-page-search .ps-kind{flex-basis:58px}
+  .cf-page-search .ps-results{max-height:55vh}
+}
