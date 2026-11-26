@@ -75,6 +75,7 @@ jobs:
   probe-cleanup:
     name: probe branch clean-up
     if: github.event_name == 'workflow_run' && github.event.workflow_run.name != 'Test evidence' && github.event.workflow_run.event == 'workflow_dispatch'
+      && (endsWith(github.event.workflow_run.head_branch, '-probe') || endsWith(github.event.workflow_run.head_branch, '-diag'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:
