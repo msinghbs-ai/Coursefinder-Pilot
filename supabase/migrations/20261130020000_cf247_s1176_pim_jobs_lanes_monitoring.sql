@@ -17,7 +17,7 @@
 --     Each row: state (active, idle, held, degraded, retired, shadow) and its reason (a job switched off by the designed idle pause, an open
 --     idle_paused flag of security.flag_jobs_v1, is idle, never held), the effective processing state of a job moved onto a
 --     dispatcher (the register row it moved to), heartbeat (last start), last end and status, last success, last failure reason, next run
---     (security.cron_next_run_v1), purpose and owner from the existing registers, and 24-hour and seven-day executions by outcome class with
+--     (security.cron_next_run_v1; null when the next run is beyond its search window, and then no stall is judged), purpose and owner from the existing registers, and 24-hour and seven-day executions by outcome class with
 --     their duration. A window the retained history does not cover is reported as partial with the time the history starts; an outcome the run
 --     does not record is "unmeasured", never 0. Findings (failing, circuit open, stalled, mostly empty, repeated protective outcome, deferred,
 --     outcome unmeasured, switched off in the last day) are evidence for the owner; nothing is changed by them.
@@ -217,7 +217,7 @@ as $f$
              when not j.active then 'held'
              when coalesce(j.n_s, 0) > 0 and (j.last_status = 'failed' or j.fail_s >= greatest(1, ceil(j.n_s * (select fail_share from st)))) then 'degraded'
              when j.last_success is null and j.last_start is not null and j.last_start > (select since from hist) then 'degraded'
-             when j.last_success is not null and j.last_success < now() - greatest(make_interval(secs => ((select stall_h from st) * 3600)::int), coalesce(j.period, interval '0') * (select stall_p from st)) then 'degraded'
+             when j.period is not null and j.last_success is not null and j.last_success < now() - greatest(make_interval(secs => ((select stall_h from st) * 3600)::int), coalesce(j.period, interval '0') * (select stall_p from st)) then 'degraded'
              when coalesce(j.n_s, 0) = 0 then 'idle'
              when j.prod_s = 0 and j.held_s = 0 and j.unm_s = 0 and j.empty_s > 0 then 'idle'
              else 'active' end state
@@ -232,7 +232,7 @@ as $f$
              when not g.runner_on then 'held'
              when g.open_until > now() then 'degraded'
              when g.last_status = 'failed' or coalesce(g.fail_s, 0) >= greatest(1, ceil(coalesce(g.n_s, 0) * (select fail_share from st))) and coalesce(g.fail_s, 0) > 0 then 'degraded'
-             when coalesce(g.last_finished_at, g.last_at) < now() - greatest(make_interval(secs => ((select stall_h from st) * 3600)::int), coalesce(g.period, interval '0') * (select stall_p from st)) then 'degraded'
+             when g.period is not null and coalesce(g.last_finished_at, g.last_at) < now() - greatest(make_interval(secs => ((select stall_h from st) * 3600)::int), coalesce(g.period, interval '0') * (select stall_p from st)) then 'degraded'
              when coalesce(g.n_s, 0) = 0 then 'idle'
              when g.prod_s = 0 and g.held_s = 0 and g.unm_s = 0 and g.empty_s > 0 then 'idle'
              else 'active' end state
