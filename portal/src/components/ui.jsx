@@ -1,4 +1,5 @@
 import React from 'react'
+import { orderMarkets } from '../lib/markets.js'
 import { usePortal } from '../lib/portal.jsx'
 
 export const Pill = ({ tone = 'grey', children, dashed }) => <span className={`tag tag-${tone}${dashed ? ' dashed' : ''}`}>{children}</span>
@@ -60,3 +61,28 @@ export function ShowMore({ shown, total, loading, onClick, noun }) {
 }
 
 export const Count = ({ n, children }) => <p className="count"><strong>{Number(n).toLocaleString('en-AU')}</strong> {children}</p>
+
+// s1222: a student-country list with the priority countries first (portal.priority_source_countries), a divider, then the rest A to Z.
+export function MarketOptions({ markets, priority }) {
+  const { pinned, rest } = orderMarkets(markets, priority)
+  return (
+    <>
+      {pinned.map(m => <option key={`p-${m.code}`} value={m.code}>{m.name}</option>)}
+      {pinned.length > 0 && rest.length > 0 && <option disabled value="__divider">──────────</option>}
+      {rest.map(m => <option key={m.code} value={m.code}>{m.name}</option>)}
+    </>
+  )
+}
+
+// s1222: Cards or List, kept for the person across screens.
+export function ViewToggle({ value, onChange }) {
+  return (
+    <div className="view-toggle" role="group" aria-label="Show results as">
+      <button type="button" className="vt-btn" aria-pressed={value !== 'list'} onClick={() => onChange('cards')}>Cards</button>
+      <button type="button" className="vt-btn" aria-pressed={value === 'list'} onClick={() => onChange('list')}>List</button>
+    </div>
+  )
+}
+
+// s1222: the national course register code (CRICOS, NZQA, MTCU) as a badge beside the course title.
+export const RegBadge = ({ r }) => (r && r.code ? <span className="reg-badge" title={`${r.label} course code`}>{r.label} {r.code}</span> : null)

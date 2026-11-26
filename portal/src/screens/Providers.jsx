@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { usePortal, usePagedList, useDebounced } from '../lib/portal.jsx'
 import { initials, stateShort } from '../lib/format.js'
-import { PageHead, StudyInBar, PillGroup, Select, LoadState, ShowMore, Count, Pill } from '../components/ui.jsx'
+import { PageHead, StudyInBar, PillGroup, Select, LoadState, ShowMore, Count, Pill, MarketOptions } from '../components/ui.jsx'
 import { ExtLink } from '../components/ExtLink.jsx'
 
 const ROUTE_WORDS = {
@@ -55,7 +55,7 @@ function ProviderCard({ p }) {
 }
 
 export default function Providers() {
-  const { studyIn, market, setMarket, markets } = usePortal()
+  const { studyIn, market, setMarket, markets, priority } = usePortal()
   const [text, setText] = useState('')
   const [type, setType] = useState('')
   const [route, setRoute] = useState('')
@@ -85,7 +85,7 @@ export default function Providers() {
           </Select>
           <Select label="Student market" value={market} onChange={setMarket}>
             <option value="">Not chosen</option>
-            {markets.map(m => <option key={m.code} value={m.code}>{m.name}</option>)}
+            <MarketOptions markets={markets} priority={priority} />
           </Select>
         </div>
       </section>

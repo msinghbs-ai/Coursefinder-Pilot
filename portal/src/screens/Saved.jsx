@@ -2,14 +2,21 @@ import React, { useEffect, useState } from 'react'
 import { useSaved } from '../lib/saved.js'
 import { basket } from '../lib/basket.js'
 import { durationText, durationInYears, money, dateText, initials, stateShort, NOT_RECORDED } from '../lib/format.js'
-import { PageHead, StudyInBar, LoadState, Pill } from '../components/ui.jsx'
+import { PageHead, StudyInBar, LoadState, Pill, ViewToggle, RegBadge } from '../components/ui.jsx'
+import { usePortal } from '../lib/portal.jsx'
+import { lengthOrBlank, primaryFeeAmount, primaryFeeNote } from '../lib/courseDetailFormat.js'
+import { CourseRow, ListHead } from '../components/CourseRow.jsx'
+import { DetailDrawer } from '../components/DetailDrawer.jsx'
 import { ExtLink } from '../components/ExtLink.jsx'
-import { CourseDetails, DetailsButton } from '../components/CourseDetails.jsx'
+import { DetailsButton } from '../components/CourseDetails.jsx'
 
 const DELIVERY = { on_campus: 'On campus', online: 'Online', blended: 'Blended', on_campus_and_online: 'On campus and online' }
 
+// s1222: the one annual tuition fee (portal.primary_fee_v1) where the list returns it, otherwise the stored fee.
+const feeOf = c => (c.primary_fee && Number(c.primary_fee.per_year) ? c.primary_fee : c.fee)
+
 function feeCells(c) {
-  const f = c.fee
+  const f = feeOf(c)
   if (!f || !Number(f.per_year)) return { year: [NOT_RECORDED, 'Ask the provider'], total: [NOT_RECORDED, null] }
   const per = money(f.per_year, f.currency)
   const years = durationInYears(c.duration_value, c.duration_unit)
@@ -23,18 +30,30 @@ function feeCells(c) {
 export default function Saved() {
   const saved = useSaved(true)
   const [picked, setPicked] = useState([])
-  const [openId, setOpenId] = useState('')
+  const [openCourse, setOpenCourse] = useState(null)
+  const { view, setView } = usePortal()
   const max = saved.compareMax || 0
   useEffect(() => { setPicked(p => p.filter(id => saved.ids.has(id))) }, [saved.items]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const chosen = saved.items.filter(i => picked.includes(i.course_id))
   const startProposal = () => { basket.addMany(chosen.length ? chosen : saved.items); location.hash = '#/proposals/new' }
   const flip = id => setPicked(p => p.includes(id) ? p.filter(x => x !== id) : p.length >= max ? p : [...p, id])
-  const fees = chosen.map(c => Number(c.fee?.per_year)).filter(n => n > 0)
+  const fees = chosen.map(c => Number(feeOf(c)?.per_year)).filter(n => n > 0)
   const lowest = fees.length > 1 ? Math.min(...fees) : null
 
+  const tick = c => (
+    <label className="check"><input type="checkbox" checked={picked.includes(c.course_id)} disabled={!picked.includes(c.course_id) && picked.length >= max} onChange={() => flip(c.course_id)} /><span className="sr">Compare {c.title}</span></label>
+  )
+  const actions = c => (
+    <>
+      <DetailsButton open={openCourse?.course_id === c.course_id} id={`drawer-${c.course_id}`} onClick={() => setOpenCourse(c)} />
+      <ExtLink className="btn" href={c.course_url}>Course page ↗</ExtLink>
+      <button type="button" className="btn" disabled={saved.busy === c.course_id} onClick={() => saved.toggle(c.course_id, false)}>Remove</button>
+    </>
+  )
+
   const rows = [
-    ['Tuition per year', c => { const [a, b] = feeCells(c).year; return <><strong>{a}</strong>{lowest && Number(c.fee?.per_year) === lowest && <Pill tone="green">Lowest per year</Pill>}{b && <small>{b}</small>}</> }],
+    ['Tuition per year', c => { const [a, b] = feeCells(c).year; return <><strong>{a}</strong>{lowest && Number(feeOf(c)?.per_year) === lowest && <Pill tone="green">Lowest per year</Pill>}{b && <small>{b}</small>}</> }],
     ['Total course cost', c => { const [a, b] = feeCells(c).total; return <><strong>{a}</strong>{b && <small>{b}</small>}</> }],
     ['Duration', c => <strong>{durationText(c.duration_value, c.duration_unit)}</strong>],
     ['Level', c => <strong>{c.level || NOT_RECORDED}</strong>],
@@ -56,29 +75,44 @@ export default function Saved() {
           {saved.items.length === 0 && (
             <div className="empty"><strong>Nothing saved yet.</strong><p className="muted">Save a course from the Courses screen and it will be listed here, ready to compare.</p><a className="btn primary" href="#/courses">Find a course</a></div>
           )}
-          <div className="stack">
-            {saved.items.map(c => (
-              <article key={c.course_id} className="card saved-row">
-                <label className="check"><input type="checkbox" checked={picked.includes(c.course_id)} disabled={!picked.includes(c.course_id) && picked.length >= max} onChange={() => flip(c.course_id)} /><span className="sr">Compare {c.title}</span></label>
-                <span className="logo-tile" aria-hidden="true">{initials(c.provider_name)}</span>
-                <div className="saved-main">
-                  <h3>{c.title}</h3>
-                  <p className="muted">{c.provider_name}{c.state_code ? ` · ${stateShort(c.state_code)}` : ''}</p>
+          {saved.items.length > 0 && <div className="count-row"><span /><ViewToggle value={view} onChange={setView} /></div>}
+          {view === 'list' ? (
+            <div className="list" role="list">
+              <ListHead />
+              {saved.items.map(c => (
+                <CourseRow key={c.course_id} c={c} level={c.level} place={[stateShort(c.state_code), c.city].filter(Boolean).join(' · ')} length={lengthOrBlank(c.duration_value, c.duration_unit)}
+                  fee={primaryFeeAmount(feeOf(c)) || ''} lead={tick(c)}>
+                  {actions(c)}
+                </CourseRow>
+              ))}
+            </div>
+          ) : (
+            <div className="card-grid">
+              {saved.items.map(c => (
+                <article key={c.course_id} className="card course saved-card">
+                  <header className="course-head">
+                    <div className="saved-row">
+                      {tick(c)}
+                      <span className="logo-tile" aria-hidden="true">{initials(c.provider_name)}</span>
+                      <div className="saved-main">
+                        <div className="title-row"><h3>{c.title}</h3><RegBadge r={c.regulator} /></div>
+                        <p className="muted">{c.provider_name}</p>
+                      </div>
+                    </div>
+                  </header>
                   <div className="tags">
                     {!c.active && <Pill tone="amber">No longer offered</Pill>}
                     {c.active && !c.published && <Pill tone="amber">Not published</Pill>}
                     {c.level && <Pill>{c.level}</Pill>}
+                    {[stateShort(c.state_code), c.city].filter(Boolean).length > 0 && <Pill>{[stateShort(c.state_code), c.city].filter(Boolean).join(' · ')}</Pill>}
+                    {lengthOrBlank(c.duration_value, c.duration_unit) && <Pill>{lengthOrBlank(c.duration_value, c.duration_unit)}</Pill>}
                   </div>
-                </div>
-                <div className="actions">
-                  <DetailsButton open={openId === c.course_id} id={`details-${c.course_id}`} onClick={() => setOpenId(o => o === c.course_id ? '' : c.course_id)} />
-                  <ExtLink className="btn" href={c.course_url}>Open course</ExtLink>
-                  <button type="button" className="btn" disabled={saved.busy === c.course_id} onClick={() => saved.toggle(c.course_id, false)}>Remove</button>
-                </div>
-                {openId === c.course_id && <CourseDetails id={`details-${c.course_id}`} courseId={c.course_id} />}
-              </article>
-            ))}
-          </div>
+                  {primaryFeeAmount(feeOf(c)) && <p className="fee-line"><strong>{primaryFeeAmount(feeOf(c))}</strong> <span className="muted small">{primaryFeeNote(feeOf(c))}</span></p>}
+                  <div className="actions">{actions(c)}</div>
+                </article>
+              ))}
+            </div>
+          )}
           {saved.items.length > 1 && <p className="muted small">Tick up to {max} courses to compare them.</p>}
           {saved.items.length > 0 && <div className="actions"><button type="button" className="btn primary" onClick={startProposal}>{chosen.length ? `Create a proposal from the ${chosen.length} ticked` : 'Create a proposal from my saved courses'}</button></div>}
           {chosen.length > 0 && (
@@ -95,6 +129,7 @@ export default function Saved() {
           )}
         </>
       )}
+      <DetailDrawer course={openCourse} onClose={() => setOpenCourse(null)} />
     </div>
   )
 }
