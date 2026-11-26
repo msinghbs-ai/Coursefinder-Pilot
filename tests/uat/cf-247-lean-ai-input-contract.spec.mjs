@@ -16,7 +16,7 @@ const page = `<html><nav>Menu Courses Fees Deadline</nav><main>${'<p>About the c
 test('lean-md (lean-md-v2 from worker v0.93.0): headings, table rows with their column headers, list items, offsets back into the text and the stored page; navigation, footer and scripts left out', () => {
   const l = leanText(page)
   expect(l.converter).toBe(LEAN_CONVERTER)
-  expect(LEAN_CONVERTER).toBe('lean-md-v2')
+  expect(LEAN_CONVERTER).toBe('lean-md-v3')
   expect(l.tables).toBe(1)
   expect(l.table_rows).toBe(2)
   expect(l.text).toContain('## Fees\nYear: 2026 | International fee: A$45,000\nYear: 2027 | International fee: A$46,500\n## Key dates\n- Applications close 30 November\n- Semester 1 starts February')

@@ -7,7 +7,7 @@ const texts = (h) => leanText(h).blocks.map((b) => b.text)
 const offsetsTrue = (h) => { const l = leanText(h); return l.blocks.every((b) => h[b.source_at] === '<' && l.text.slice(b.start, b.end).endsWith(b.text)) }
 
 test('lean-md-v2: the key-facts panel is read (an <aside>, or content outside <main>); navigation, site header, footer and scripts stay out', () => {
-  expect(LEAN_CONVERTER).toBe('lean-md-v2')
+  expect(LEAN_CONVERTER).toBe('lean-md-v3')
   const h = '<html><nav>Menu Study Apply</nav><header>Site banner</header><main>' + '<p>About the course.</p>'.repeat(200) + '</main>' +
     '<aside class="key-facts"><div><span>70</span></div><div>Guaranteed ATAR or equivalent</div><div>Bentley Perth</div></aside>' +
     '<section><div>3 years full-time</div></section><script>var atar = 99</script><footer>Contact</footer></html>'
@@ -31,6 +31,6 @@ test('numeric character references are decoded; the [B#] line format is unchange
   expect(texts('<main><p>FNS40222 &#8211; Certificate IV in Accounting &#x2019;s</p></main>')).toEqual(['FNS40222 – Certificate IV in Accounting ’s'])
   const h = '<main><h2>Entry</h2><div>70</div><div>Guaranteed ATAR or equivalent</div><ul><li>Mathematics Methods</li></ul></main>'
   const b = aerV3Blocks(leanText(h), 'courseCode: B123')
-  expect(b.input).toBe('lean-blocks-v1/lean-md-v2')
+  expect(b.input).toBe('lean-blocks-v1/lean-md-v3')
   expect(b.text.split('\n')).toEqual(['[B1 @data] courseCode: B123', `[B2 @${h.indexOf('<h2>')}] ## Entry`, `[B3 @${h.indexOf('<div>70')}] 70 Guaranteed ATAR or equivalent`, `[B4 @${h.indexOf('<li>')}] - Mathematics Methods`])
 })
