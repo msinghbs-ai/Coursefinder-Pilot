@@ -17,39 +17,27 @@ async function open(page, opts) {
 }
 
 test.describe('worker status and stalled processing', () => {
-  test('each worker shows its state, last success, last start, failures in 24 h and schedule; a never-succeeded worker is stalled and says so', async ({ page }) => {
+  test('the Processing block keeps the stalled count the backend judges by each job\'s own schedule; the 138-row worker table is gone (s1283)', async ({ page }) => {
     const { pim } = await open(page)
     const p = pim.locator('[data-pim-processing]')
     await expect(p.locator('[data-pim-stalled="1"]')).toHaveText('1')
     await expect(p.locator('[data-pim-stalled="1"]').locator('xpath=..')).toContainText('of 3 scheduled jobs')
-    const run = pim.locator('[data-pim-worker="enrich-plan-run"]')
-    await expect(run).toHaveAttribute('data-pim-worker-state', 'running')
-    await expect(run.locator('[data-label="Failed in 24 h"]')).toContainText('0')
-    await expect(run.locator('[data-label="Failed in 24 h"]')).toContainText('measured: none')
-    const idle = pim.locator('[data-pim-worker="field-gap-queue"]')
-    await expect(idle).toHaveAttribute('data-pim-worker-state', 'idle')
-    await expect(idle.locator('[data-label="Failed in 24 h"]')).toContainText('2')
-    const stalled = pim.locator('[data-pim-worker="enrich-plan-auto"]')
-    await expect(stalled).toHaveAttribute('data-pim-worker-state', 'stalled')
-    await expect(stalled.locator('[data-label="State"]')).toContainText('Stalled')
-    await expect(stalled.locator('[data-label="Last success"] [data-pim-unknown]')).toContainText('Never')
-    await expect(pim.locator('[data-pim-workers-meaning]')).toContainText('never succeeded counts as stalled')
+    await expect(pim.locator('[data-pim-workers]')).toHaveCount(0)
+    await expect(pim.locator('[data-pim-worker]')).toHaveCount(0)
   })
 
   test('with every worker on time the stalled count is a measured 0, not Not measured', async ({ page }) => {
     const { pim } = await open(page, { pim: { ...PIM, operations: OPERATIONS_HEALTHY } })
     await expect(pim.locator('[data-pim-processing] [data-pim-stalled="0"]')).toHaveText('0')
-    await expect(pim.locator('[data-pim-worker-state="stalled"]')).toHaveCount(0)
   })
 
-  test('without operations (the read before s1175) stalled processing and the worker table say Not available and show no count', async ({ page }) => {
+  test('without operations (the read before s1175) stalled processing and the jobs summary say Not available and show no count', async ({ page }) => {
     const { pim } = await open(page, { pim: PIM_NO_OPERATIONS })
     const p = pim.locator('[data-pim-processing]')
     await expect(p.locator('[data-pim-stalled]')).toHaveCount(0)
     await expect(p.locator('div').filter({ hasText: /^Stalled workers/ }).locator('[data-pim-unknown]')).toContainText('Not measured')
     await expect(pim.locator('[data-pim-workers]')).toHaveCount(0)
-    await expect(pim.locator('[data-pim-panel="matrix"]')).toContainText('Workers (scheduled jobs)')
-    await expect(pim.locator('[data-pim-panel="matrix"] [data-pim-unknown]').filter({ hasText: 'Not available' }).first()).toBeVisible()
+    await expect(pim.locator('[data-pjm-summary="none"]')).toContainText('Not available')
     await expect(pim.locator('[data-pim-consumer]')).toHaveCount(0)
     await expect(pim.locator('[data-pim-panel="matrix"]')).toContainText('The PIM snapshot carries no consumer read-back yet')
   })
@@ -168,7 +156,7 @@ test.describe('helper snapshots and no regressions', () => {
   test('no control is added: the PIM block still has only its tabs and the country and measure selectors, and the screen makes no extra request', async ({ page }) => {
     const { pim, dd } = await open(page)
     await expect(pim.locator('[data-pim-tab]')).toHaveCount(3)
-    await expect(pim.locator('input, textarea')).toHaveCount(0)
+    await expect(pim.locator('input:not([data-pjm-search]), textarea'), 'the only input is the read-only jobs search (s1283)').toHaveCount(0)
     expect(dd.calls, 'one Data Delivery read serves the whole block').toBeLessThanOrEqual(2)
   })
 })

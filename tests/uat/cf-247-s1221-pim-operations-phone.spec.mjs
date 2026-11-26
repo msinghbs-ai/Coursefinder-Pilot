@@ -1,4 +1,4 @@
-// Guards: F-OPS.17 and F-OPS.21 (SS-Programme-Control 26 Nov 2026 15:46, 412 px): the worker status, verified consumer read-back and freshness-by-country tables added by s1221 stack to labelled rows on a phone, nothing scrolls the page sideways, and every control is tap-sized (G4 @responsive, phone project only).
+// Guards: F-OPS.17 and F-OPS.21 (SS-Programme-Control 26 Nov 2026 15:46, 412 px): the verified consumer read-back and freshness-by-country tables added by s1221 stack to labelled rows on a phone, nothing scrolls the page sideways, and every control is tap-sized (G4 @responsive, phone project only).
 // These tests run on the phone project only (chromium-mobile, Pixel 7, 412 px; `@responsive`). Each first asserts it really is at phone width. Mocked admin plus pim-mock; nothing reaches a real backend.
 import { test, expect } from '@playwright/test'
 import { mockAdmin } from './support/admin-mock.mjs'
@@ -26,19 +26,6 @@ async function expectStacked(table) {
 }
 
 test.describe('PIM operations on a phone @responsive', () => {
-  test('worker table stacks to labelled rows and the stalled worker is readable at 412 px', async ({ page }) => {
-    const pim = await open(page)
-    await atPhoneWidth(page)
-    const t = pim.locator('[data-pim-workers]')
-    await t.scrollIntoViewIfNeeded()
-    await expectStacked(t)
-    const row = t.locator('[data-pim-worker="enrich-plan-auto"]')
-    for (const label of ['Worker', 'State', 'Last success', 'Last start', 'Failed in 24 h', 'Schedule']) await expect(row.locator(`[data-label="${label}"]`)).toBeVisible()
-    await expect(row.locator('[data-label="State"]')).toContainText('Stalled')
-    await expect(row.locator('[data-label="Last success"]')).toContainText('Never')
-    expect(await pageOverflow(page), 'no sideways page scroll').toBeLessThanOrEqual(0)
-  })
-
   test('consumer read-back stacks per stream and country with every figure and its split visible, and an errored stream shows its reason', async ({ page }) => {
     const pim = await open(page)
     const t = pim.locator('[data-pim-consumer]')

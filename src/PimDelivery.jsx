@@ -15,7 +15,7 @@
 // (freshness_by_country[]), and verified consumer read-back per stream and country (consumer[]; streams are different kinds of record and are never added). The request
 // register stays "Not available" (operations.requests is `not_projected` with its reason) and verified feedback stays "Not available" (no authoritative source).
 // Rules kept: a figure that is not counted is "Not measured" or "Unknown" with its reason, never 0; roll-ups are sums over pim.fields (the backend does not repeat
-// them); countries come from the rows and domains from the field register (s930, no list is typed here); the screen adds no control and no setting, so every
+// them); countries come from the rows and domains from the field register (s930, no list is typed here); the screen adds no setting (its only controls are read-only filters, search and paging over the loaded snapshot, s1283), so every
 // existing permission, backend control and the Consumer API are untouched. Detailed queue and lane work stays on Operations and Scheduled jobs (links below).
 import{RecordDrill}from'./RecordTrace' // CF-247 s1282 (DR-19 increment 2)
 import React,{useEffect,useMemo,useState}from'react'
@@ -25,6 +25,7 @@ import{hrefFor}from'./nav-map'
 import{useLookups,countryName}from'./lib/lookups'
 import{supabase}from'./lib/supabase'
 import{usePageSearchEntries}from'./PageSearch'
+import{JobsSummary}from'./PimJobsMonitor'
 
 const has=v=>v!=null&&v!==''&&Number.isFinite(Number(v))
 /** Sum over the rows that carry the figure. A row with no value is counted as missing, never as 0. */
@@ -162,7 +163,7 @@ export default function PimDelivery({pim,now,rank=0,streams=null,snapshots=null,
   const searchEntries=useMemo(()=>{
     const V=[['matrix','Delivery matrix','overall country domain coverage funnel gains throughput clearance processing workers consumer'],['requests','Requests & feedback','stakeholder requests feedback reported data issues'],['refresh','Refresh & maintenance','freshness stale source outcomes excluded gaps lifecycle']]
     const S=[['matrix','funnel','Stage funnel','queued running held failed work items canonical coverage'],['matrix','matrix','Country and domain matrix','completeness backlog gains published domain'],
-      ['matrix','processing','Processing: scheduler, worker, leases and recovery','last queue pass next scheduled run leases stalled workers heartbeat jobs'],['matrix','workers','Workers (scheduled jobs)','stalled stuck last success failed schedule heartbeat'],
+      ['matrix','processing','Processing: scheduler, worker, leases and recovery','last queue pass next scheduled run leases stalled workers heartbeat jobs'],['matrix','jobs-monitoring','Jobs, lanes, rules and rollup targets','workers scheduled jobs stalled stuck degraded held attention heartbeat last success failed schedule component state'],
       ['matrix','consumer','Verified consumer read-back','website zoho matched expected pending missing not served delivery per stream'],['matrix','consumption','AI and Firecrawl use','spend cost credits calls attempts'],['matrix','human','Needs a person','layer 4 review waiting enrich review'],
       ['requests','requests','Stakeholder requests','request register status weight coverage not projected'],['requests','issues','Reported data issues and verified feedback','counsellor reports fixed verified'],
       ['refresh','freshness','Freshness of held values','refresh window due to be verified oldest verified by field'],['refresh','fresh-country','Freshness by country','held due fresh stale country field'],
@@ -267,16 +268,8 @@ export default function PimDelivery({pim,now,rank=0,streams=null,snapshots=null,
       {jobs.length>0&&<div className="lf-frame"><table className="cf-table pim-jobs" data-pim-jobs><thead><tr><th>Scheduled job</th><th>State</th><th>Schedule</th><th>Next run</th></tr></thead><tbody>
         {jobs.map(j=><tr key={j.job} data-pim-job={j.job}><td data-label="Scheduled job">{j.job}</td><td data-label="State">{j.active?<StatusChip tone="success" label="On"/>:<StatusChip tone="warning" label="Off"/>}</td><td data-label="Schedule"><code>{j.schedule||'—'}</code></td><td data-label="Next run">{j.next_run?`${fmtDateTime(j.next_run)} (${untilText(j.next_run,now)})`:j.active?<NotMeasured reason="No next run is recorded."/>:'—'}</td></tr>)}</tbody></table></div>}
 
-      {Array.isArray(ops?.workers)?<><h5 className="sl-h4" data-pim-section="workers">Workers (scheduled jobs)</h5>
-        <p className="sl-sub" data-pim-workers-meaning>{ops.meaning} A worker that has never succeeded counts as stalled.</p>
-        {ops.workers.length?<div className="lf-frame"><table className="cf-table pim-workers" data-pim-workers><thead><tr><th>Worker</th><th>State</th><th>Last success</th><th>Last start</th><th>Failed in 24 h</th><th>Schedule</th></tr></thead><tbody>
-          {ops.workers.map(w=><tr key={w.job} data-pim-worker={w.job} data-pim-worker-state={w.stalled?'stalled':w.running?'running':'idle'}><td data-label="Worker">{w.job}</td>
-            <td data-label="State">{w.stalled?<StatusChip tone="warning" label="Stalled"/>:w.running?<StatusChip tone="info" label="Running"/>:<StatusChip tone="success" label="Idle, on time"/>}</td>
-            <td data-label="Last success">{w.last_success?<V>{fmtDateTime(w.last_success)}<small>{fmtRelative(w.last_success,'',now)}</small></V>:<NotMeasured word="Never" reason="No success on record, so it counts as stalled."/>}</td>
-            <td data-label="Last start">{w.last_start?fmtDateTime(w.last_start):<NotMeasured word="Unknown"/>}</td>
-            <td data-label="Failed in 24 h">{has(w.failed_24h)?<V>{fmtNumber(Number(w.failed_24h))}{Number(w.failed_24h)===0&&<small>measured: none</small>}</V>:<NotMeasured/>}</td>
-            <td data-label="Schedule"><code>{w.schedule||'—'}</code></td></tr>)}</tbody></table></div>:<NotMeasured word="None" reason="No active scheduled job is listed."/>}</>
-        :<><h5 className="sl-h4" data-pim-section="workers">Workers (scheduled jobs)</h5><NotMeasured word="Not available" reason="The PIM snapshot carries no worker status yet."/></>}
+      {/* s1283: the 138-row workers table is replaced by the backend-classified summary; the full list, filters and drill-down are Scheduled jobs › Automations */}
+      <JobsSummary ops={ops}/>
 
       <h5 className="sl-h4" data-pim-section="consumer">Verified consumer read-back</h5>
       <p className="sl-sub" data-pim-consumer-meaning>Matched out of expected, per stream and country, from the verified read-back of what the website and Zoho read. Each stream counts a different kind of record, so streams are never added together. Not served is expected but not offered to that consumer (for example the provider is hidden or blocked in Layer 4); it is not counted as missing.</p>

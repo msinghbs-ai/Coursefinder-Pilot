@@ -52,6 +52,17 @@ export const OPERATIONS = {
     { job: 'enrich-plan-auto', running: false, stalled: true, schedule: '41 * * * *', failed_24h: 5, last_start: '2026-11-25T13:41:00+00:00', last_success: null },
   ],
   stalled_workers: 1, expired_leases: 0,
+  // s1176 (Pilot #1693): compatible keys of security.pim_operations_v1, as the backend classifies them.
+  states: { active: 191, idle: 20, held: 13, shadow: 1, retired: 85, degraded: 2 },
+  by_component: { cron: { active: 133, held: 3, idle: 5, retired: 85 }, lane: { active: 16, held: 7, idle: 6 }, rule: { active: 12, held: 1, idle: 9 }, rollup: { active: 30, degraded: 2, held: 2, shadow: 1 } },
+  attention: [
+    { name: 'coursefinder-data-quality-overview-refresh', component: 'rollup', state: 'degraded', reason: 'stalled: no run for 3 schedule periods', findings: ['stalled', 'often_deferred', 'outcome_unmeasured'], next_run: '2026-11-26T03:00:00+00:00', heartbeat: '2026-11-25T20:00:00+00:00' },
+    { name: 'enrich-plan-auto', component: 'cron', state: 'held', reason: 'switched off by the Platform Admin', findings: [], next_run: null, heartbeat: null },
+    { name: 'logo-find', component: 'lane', state: 'held', reason: 'held: budget gate', findings: ['circuit_open'], next_run: '2026-11-26T04:00:00+00:00', heartbeat: '2026-11-26T01:00:00+00:00' },
+  ],
+  holds: [{ name: 'enrich-plan-auto', jobid: 41, reason: 'switched off by the Platform Admin', last_run: '2026-11-25T13:41:00+00:00', component: 'cron' }],
+  toolset: { ai: [{ service: 'description', h24: { attempts: 6913, not_ok: 6913, billed_usd: 1.25 }, d7: { attempts: 40000, not_ok: 40000, billed_usd: 9.5 } }], firecrawl: [{ use_case: 'central', h24: { calls: 4, failed: 1, credits: 8 }, d7: { calls: 30, failed: 2, credits: 60 } }], attribution: 'Spend is by service and use case; it is not split per component.' },
+  jobs_snapshot: { as_at: '2026-11-26T11:47:57+00:00', took_ms: 2400, error: null, failed_at: null, windows: { short_h: 24, long_d: 7 }, history: { h24_since: null, d7_since: '2026-11-21T00:00:00+00:00' }, full_read: 'public.admin_pim_jobs_v1' },
   consumer: [
     { stream: 'disc', measured_at: '2026-11-26T02:01:00+00:00', error: null, rows: [cons('AU', 1200, [1100, 20, 60, 20], [1090, 25, 65, 20]), cons('NZ', 300, [250, 10, 30, 10], [240, 12, 38, 10])] },
     { stream: 'int', measured_at: '2026-11-26T02:01:00+00:00', error: null, rows: [cons('AU', 5000, [4000, 500, 400, 100], [3900, 550, 450, 100])] },
@@ -117,4 +128,40 @@ export async function mockPim(page, { pim = PIM, register = REGISTER } = {}) {
     return r.fulfill({ json: { register } })
   })
   return { dd, reg }
+}
+
+
+// s1283: `public.admin_pim_jobs_v1` (s1176): {as_at, took_ms, error, failed_at, states, history, meaning, toolset, windows, components[]}.
+const win = (executions, o = {}) => ({ executions, productive: 0, empty: 0, held: 0, failed: 0, deferred: 0, unmeasured: 0, avg_seconds: 1.4, ...o })
+const FILLER = Array.from({ length: 30 }, (_, i) => ({
+  component: 'cron', name: `filler-job-${String(i + 1).padStart(2, '0')}`, jobid: 500 + i, state: 'active', active: true, registered: 'active', area: 'Platform', layer: 'Platform', role: 'own', findings: [],
+  purpose: 'Keeps a platform table tidy.', schedule: `${i % 60} * * * *`, period_seconds: 3600, stall_after_hours: 3, heartbeat: '2026-11-26T11:00:00+00:00', last_end: '2026-11-26T11:00:03+00:00', last_status: 'succeeded', last_success: '2026-11-26T11:00:03+00:00', next_run: '2026-11-26T12:00:00+00:00',
+  h24: win(24, { productive: 24 }), d7: win(168, { productive: 168 }) }))
+export const JOBS = {
+  as_at: '2026-11-26T11:47:57+00:00', took_ms: 2400, error: null, failed_at: null,
+  states: { active: 191, idle: 20, held: 13, shadow: 1, retired: 85, degraded: 2 },
+  history: { h24_since: null, d7_since: '2026-11-21T00:00:00+00:00' },
+  windows: { short_h: 24, long_d: 7 },
+  meaning: 'Each component carries the backend state and reason; idle by design is idle, never held.',
+  toolset: OPERATIONS.toolset,
+  components: [
+    { component: 'rollup', kind: 'A', code: 'coursefinder-data-quality-overview-refresh', name: null, state: 'degraded', effective_state: 'degraded', mode: 'live', enabled: true, reason: 'stalled: no run for 3 schedule periods', findings: ['stalled', 'often_deferred', 'outcome_unmeasured'], purpose: 'Refreshes the data-quality overview.', owner: 'S1-Build', runner: 'rollup-scheduler', runner_jobids: [201], schedule: '*/10 * * * *', period_seconds: 600, budget_ms: 60000, heartbeat: '2026-11-25T20:00:00+00:00', last_end: '2026-11-25T20:00:09+00:00', last_status: 'succeeded', last_ms: 9000, last_success: '2026-11-25T20:00:09+00:00', next_run: '2026-11-26T12:10:00+00:00', h24: win(912, { deferred: 910, unmeasured: 2 }), d7: win(6000, { deferred: 5900, unmeasured: 100 }) },
+    { component: 'cron', name: 'enrich-plan-auto', jobid: 41, state: 'held', active: false, registered: 'active', area: 'Course descriptions', layer: 'Layer 2', role: 'own', reason: 'switched off by the Platform Admin', findings: [], purpose: 'Plans description enrichment.', schedule: '41 * * * *', period_seconds: 3600, stall_after_hours: 3, heartbeat: null, last_end: '2026-11-25T13:41:30+00:00', last_status: 'succeeded', last_success: null, next_run: null, failure_reason: 'timed out', last_failed_at: '2026-11-25T13:41:30+00:00', h24: win(0), d7: win(40, { failed: 5, productive: 30, empty: 5 }) },
+    { component: 'lane', kind: 'field_lane', code: 'logo-find', name: null, state: 'held', effective_state: 'held', mode: 'live', enabled: true, reason: 'held: budget gate', findings: ['circuit_open'], purpose: 'Finds provider logos.', owner: 'S2-CF', uses_ai: true, runner: 'lane-dispatcher', runner_jobids: [301], schedule: '0 * * * *', period_seconds: 3600, heartbeat: '2026-11-26T01:00:00+00:00', last_end: '2026-11-26T01:00:30+00:00', last_status: 'succeeded', last_ms: 30000, last_success: '2026-11-26T01:00:30+00:00', next_run: '2026-11-26T12:00:00+00:00', h24: win(10, { held: 10 }), d7: win(70, { held: 20, productive: 50 }) },
+    { component: 'lane', kind: 'worker_lane', code: 'description-writer', name: null, state: 'idle', effective_state: 'idle', mode: 'live', enabled: true, reason: 'idle by design: nothing queued', findings: [], purpose: 'Writes course descriptions.', owner: 'S2-CF', h24: win(24, { empty: 24 }), d7: win(168, { empty: 168 }), heartbeat: '2026-11-26T11:30:00+00:00', last_status: 'succeeded', next_run: '2026-11-26T12:00:00+00:00' },
+    { component: 'rule', code: 'provider-english-defaults', name: null, state: 'shadow', effective_state: 'shadow', mode: 'shadow', enabled: true, reason: 'recording what is due; running nothing', findings: [], purpose: 'English defaults per provider.', heartbeat: '2026-11-26T11:00:00+00:00', last_status: 'shadow_due', next_run: '2026-11-26T12:00:00+00:00', h24: win(24), d7: win(168) },
+    ...FILLER,
+  ],
+}
+export const JOBS_NOT_COUNTED = { as_at: null, error: 'not yet counted' }
+
+/** Mock `public.admin_pim_jobs_v1`. `jobs: 'fail'` returns a 500; `jobs: JOBS_NOT_COUNTED` returns the not-counted shape. Returns {calls}. */
+export async function mockPimJobs(page, { jobs = JOBS } = {}) {
+  const c = { calls: 0 }
+  await page.route('https://example.supabase.co/rest/v1/rpc/admin_pim_jobs_v1', async (r) => {
+    c.calls += 1
+    if (jobs === 'fail') return r.fulfill({ status: 500, json: { message: 'jobs read unavailable' } })
+    return r.fulfill({ json: jobs })
+  })
+  return c
 }

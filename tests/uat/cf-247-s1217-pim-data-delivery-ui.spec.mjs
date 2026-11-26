@@ -108,7 +108,7 @@ test.describe('Autonomous PIM inside Data Delivery', () => {
     await expect(p.locator('[data-pim-leases="0"]')).toBeVisible()
     await expect(p).toContainText('taken back by the next worker claim')
     await expect(p).toContainText('Stalled workers')
-    await expect(pim.locator('[data-pim-workers]')).toBeVisible()
+    await expect(pim.locator('[data-pjm-summary]')).toBeVisible()
     for (const j of ['enrich-plan-run', 'enrich-plan-auto', 'field-gap-queue']) await expect(pim.locator(`[data-pim-job="${j}"]`)).toBeVisible()
   })
 

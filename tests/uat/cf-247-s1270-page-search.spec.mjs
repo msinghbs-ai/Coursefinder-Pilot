@@ -36,7 +36,7 @@ test.describe('matching (pure)', () => {
     expect(rank(E, 'read course pages')[0].id).toBe('b')
     expect(dedupe([{ id: '1', kind: 'section', label: 'X', path: 'P' }, { id: '2', kind: 'section', label: 'x', path: 'p' }])).toHaveLength(1)
     // a drawn heading and the entry a screen registered for it are one result: the registered one stays
-    expect(dedupe([{ id: 'pim:sec:workers', kind: 'section', label: 'Workers', path: 'A' }, { id: 'dom:section:workers:9', kind: 'section', label: 'Workers', path: 'B' }]).map((e) => e.id)).toEqual(['pim:sec:workers'])
+    expect(dedupe([{ id: 'pim:sec:jobs-monitoring', kind: 'section', label: 'Workers', path: 'A' }, { id: 'dom:section:workers:9', kind: 'section', label: 'Workers', path: 'B' }]).map((e) => e.id)).toEqual(['pim:sec:jobs-monitoring'])
   })
 })
 
@@ -54,25 +54,25 @@ test.describe('Layer 2/3 Operations, Data Delivery and the PIM block', () => {
     await openOperations(page)
     await page.locator('[data-pim-tab="refresh"]').click()                  // start on another view: the jump must switch back
     const list = await search(page, 'stalled')
-    const hit = list.locator('[data-ps-id="pim:sec:workers"]')
+    const hit = list.locator('[data-ps-id="pim:sec:jobs-monitoring"]')
     await expect(hit).toBeVisible()
     await expect(hit).toContainText('Section')
     await expect(hit).toContainText('Data Delivery › Autonomous PIM')
     await hit.locator('button').click()
     await expect(page.locator('[data-pim-view="matrix"]')).toBeVisible()
-    const target = page.locator('[data-pim-section="workers"]')
+    const target = page.locator('[data-pim-section="jobs-monitoring"]')
     await expect(target).toHaveClass(/ps-hit/)
-    await expect.poll(() => inView(page, '[data-pim-section="workers"]')).toBe(true)
+    await expect.poll(() => inView(page, '[data-pim-section="jobs-monitoring"]')).toBe(true)
     await expect(target).toBeFocused()
     await expect(page.locator('[data-page-search-msg]')).toContainText('Opened')
-    const c = await page.evaluate(() => ({ top: document.querySelector('[data-pim-section="workers"]').getBoundingClientRect().top, bar: document.querySelector('[data-page-search]').getBoundingClientRect().bottom }))
+    const c = await page.evaluate(() => ({ top: document.querySelector('[data-pim-section="jobs-monitoring"]').getBoundingClientRect().top, bar: document.querySelector('[data-page-search]').getBoundingClientRect().bottom }))
     expect(c.top, 'the heading is clear of the bar, including its status line').toBeGreaterThanOrEqual(c.bar)
     await expect(target).not.toHaveClass(/ps-hit/, { timeout: 8000 })    // the highlight fades
   })
 
   test('a synonym finds the section: "heartbeat" finds Workers, "website delivery" finds Verified consumer read-back, "stale country" finds Freshness by country', async ({ page }) => {
     await openOperations(page)
-    await expect((await search(page, 'heartbeat')).locator('[data-ps-id="pim:sec:workers"]')).toBeVisible()
+    await expect((await search(page, 'heartbeat')).locator('[data-ps-id="pim:sec:jobs-monitoring"]')).toBeVisible()
     await expect((await search(page, 'website delivery')).locator('[data-ps-id="pim:sec:consumer"]')).toBeVisible()
     await expect((await search(page, 'stale country')).locator('[data-ps-id="pim:sec:fresh-country"]')).toBeVisible()
   })
