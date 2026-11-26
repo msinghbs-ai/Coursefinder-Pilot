@@ -140,7 +140,7 @@ function PageSearch({tabs,active,onTab,pageLabel,pageKey,store,version}){
   const registered=useMemo(()=>[...store.current.values()].flat(),[store,version])
   const results=useMemo(()=>q.trim()?rank(dedupe([...registered,...tabEntries,...dom]),q,12):[],[q,registered,tabEntries,dom])
   useEffect(()=>{setIdx(0)},[q])
-  const offset=top+(wrapRef.current?.offsetHeight||56)+14
+  const offset=top+(wrapRef.current?.offsetHeight||56)+36 // 36: the bar grows by the one-line status ('Opened …') once a jump is made, so the target must clear that too
   const choose=e=>{
     cancel.current();setOpen(false);setMsg(`Opening ${e.label}.`)
     cancel.current=jumpTo(e,{active,onTab,offset,done:ok=>setMsg(ok?`Opened ${e.label}.`:`Could not find ${e.label} on this screen. It may be hidden for your role.`)})
