@@ -14,7 +14,8 @@
 --       every cron.job row, keyed by jobid (history from cron.job_run_details by jobid, so a reused job name is never mixed);
 --       every pipeline.field_execution_registry lane, pipeline.rollup_targets target and pipeline.admission_rules rule, with its runs from
 --       pipeline.coverage_lane_runs / rollup_runs / admission_rule_runs.
---     Each row: state (active, idle, held, degraded, retired, shadow) and its reason, the effective processing state of a job moved onto a
+--     Each row: state (active, idle, held, degraded, retired, shadow) and its reason (a job switched off by the designed idle pause, an open
+--     idle_paused flag of security.flag_jobs_v1, is idle, never held), the effective processing state of a job moved onto a
 --     dispatcher (the register row it moved to), heartbeat (last start), last end and status, last success, last failure reason, next run
 --     (security.cron_next_run_v1), purpose and owner from the existing registers, and 24-hour and seven-day executions by outcome class with
 --     their duration. A window the retained history does not cover is reported as partial with the time the history starts; an outcome the run
@@ -94,6 +95,11 @@ as $f$
     select c.jobid, c.jobname, c.active,
            case when c.jobname ~ '^rollup-scheduler' then 'rollup-scheduler' when c.jobname ~ '^admission-rule-runner' then 'admission-rule-runner' else 'coverage-lane-dispatch' end runner
       from cron.job c where c.jobname ~ '^(rollup-scheduler|admission-rule-runner|coverage-lane-dispatch)(-[a-z])?$'),
+  -- the designed idle pause (security.flag_jobs_v1 through flag-recheck): an open idle_paused flag means "no work in the last calls, switched on
+  -- again when work appears"; the job is idle, not held (Agent Operating Model, production architecture baseline section 5)
+  idle as materialized (
+    select x.entity_key jobname, x.flagged_at from pipeline.enrichment_flags x
+     where x.entity = 'job' and x.field = '' and x.reason_code = 'idle_paused' and x.state = 'raised'),
   reg as materialized (
     select 'lane'::text k, r.lane_code code, r.legacy_job, r.schedule, r.enabled, r.mode, r.kind sub, r.consecutive_failures, r.open_until, r.last_status, r.last_error,
            r.last_started_at, r.last_finished_at, r.last_ms, coalesce(r.budget_ms, r.expected_ms) budget_ms, r.field, r.owner, r.uses_ai, r.fill_function, r.note,
@@ -182,7 +188,7 @@ as $f$
   cj as materialized (
     select c.jobid, c.jobname, c.schedule, c.active,
            case when d.jobid is not null then 'dispatcher' when exists (select 1 from reg g where g.legacy_job = c.jobname) then 'moved' else 'own' end role,
-           cr.status reg_status, cr.purpose, cr.area, cr.layer,
+           cr.status reg_status, cr.purpose, cr.area, cr.layer, (select i.flagged_at from idle i where i.jobname = c.jobname) idle_since,
            (select jsonb_build_object('runner', g.runner, 'kind', g.k, 'code', g.code, 'mode', g.mode, 'enabled', g.enabled) from reg g where g.legacy_job = c.jobname
              order by (g.mode = 'live') desc, g.enabled desc limit 1) moved_to,
            h.first_start, h.last_start, h.last_end, h.last_status, h.last_success, h.last_failure, h.last_failed_at,
@@ -198,7 +204,8 @@ as $f$
            h.n_l, h.prod_l, h.held_l, h.empty_l, h.fail_l, h.def_l, h.unm_l, h.avg_s, h.max_s, h.avg_l, s.n1 next_run, s.period,
            exists (select 1 from disp d where d.runner = g.runner and d.active) runner_on,
            (select jsonb_agg(d.jobid order by d.jobid) from disp d where d.runner = g.runner) runner_jobids,
-           (select x.purpose from pipeline.component_register x where x.kind = 'job' and x.name = g.legacy_job) purpose
+           (select x.purpose from pipeline.component_register x where x.kind = 'job' and x.name = g.legacy_job) purpose,
+           (select i.flagged_at from idle i where i.jobname = g.legacy_job) idle_since
       from reg g left join rh h on h.k = g.k and h.code = g.code left join sch s on s.schedule = g.schedule),
   -- states and findings
   cjs as materialized (
@@ -206,6 +213,7 @@ as $f$
            greatest(make_interval(secs => ((select stall_h from st) * 3600)::int), coalesce(j.period, interval '0') * (select stall_p from st)) stall_after,
            case
              when not j.active and (j.reg_status in ('retiring', 'retired') or j.role = 'moved') then 'retired'
+             when not j.active and j.idle_since is not null then 'idle'
              when not j.active then 'held'
              when coalesce(j.n_s, 0) > 0 and (j.last_status = 'failed' or j.fail_s >= greatest(1, ceil(j.n_s * (select fail_share from st)))) then 'degraded'
              when j.last_success is null and j.last_start is not null and j.last_start > (select since from hist) then 'degraded'
@@ -219,6 +227,7 @@ as $f$
            case
              when g.mode = 'shadow' then 'shadow'
              when g.mode <> 'live' then 'held'
+             when not g.enabled and g.idle_since is not null then 'idle'
              when not g.enabled then 'held'
              when not g.runner_on then 'held'
              when g.open_until > now() then 'degraded'
@@ -235,7 +244,9 @@ as $f$
                   when 'retired' then case when j.role = 'moved' then 'switched off; runs on ' || (j.moved_to->>'runner') || ' as ' || (j.moved_to->>'code') else 'switched off; component ' || j.reg_status end
                   when 'held' then 'switched off (cron row inactive) while its component is registered ' || coalesce(j.reg_status, 'nowhere')
                   when 'degraded' then case when j.last_status = 'failed' or coalesce(j.fail_s, 0) > 0 then 'failing' else 'stalled: no success for ' || (select stall_p from st) || ' schedule periods' end
-                  when 'idle' then case when coalesce(j.n_s, 0) = 0 then 'not due in the short window' else 'ran and found nothing to do' end end,
+                  when 'idle' then case when j.idle_since is not null then 'idle pause by flag-recheck since ' || to_char(j.idle_since at time zone 'Australia/Melbourne', 'DD Mon HH24:MI') || ': no work in its last calls; switched on again when work appears'
+                                        when coalesce(j.n_s, 0) = 0 then 'not due in the short window' else 'ran and found nothing to do' end end,
+      'idle_since', j.idle_since,
       'effective_state', case when j.role = 'moved' then (select g.state from rgs g where g.k = j.moved_to->>'kind' and g.code = j.moved_to->>'code') end,
       'moved_to', j.moved_to, 'purpose', j.purpose, 'area', j.area, 'layer', j.layer, 'registered', j.reg_status,
       'heartbeat', j.last_start, 'last_end', j.last_end, 'last_status', j.last_status, 'last_success', j.last_success,
@@ -250,7 +261,7 @@ as $f$
          case when j.n_l >= (select min_runs from st) and j.prod_l = 0 and j.held_l = 0 and j.unm_l = 0 and j.empty_l >= j.n_l * (select empty_share from st) then 'mostly_empty' end,
          case when j.n_l >= (select min_runs from st) and j.prod_l = 0 and j.held_l >= (j.n_l - j.fail_l) * (select empty_share from st) and j.held_l > 0 then 'repeated_protective_outcome' end,
          case when j.active and j.n_l > 0 and j.unm_l = j.n_l then 'outcome_unmeasured' end,
-         case when not j.active and j.last_start > now() - make_interval(hours => (select short_h from st)) then 'switched_off_in_window' end,
+         case when not j.active and j.idle_since is null and j.state <> 'retired' and j.last_start > now() - make_interval(hours => (select short_h from st)) then 'switched_off_in_window' end,
          case when j.active and j.role = 'moved' then 'runs_beside_its_register_row' end], null), '{}')))
       j_row from cjs j),
   rows_reg as materialized (
@@ -262,7 +273,9 @@ as $f$
                   when 'held' then case when g.mode <> 'live' then 'register mode ' || g.mode when not g.enabled then 'switched off in the register' else 'its dispatcher is switched off' end
                   when 'degraded' then case when g.open_until > now() then 'circuit open until ' || to_char(g.open_until at time zone 'Australia/Melbourne', 'DD Mon HH24:MI') || ' after ' || g.consecutive_failures || ' failures'
                                             when g.last_status = 'failed' or coalesce(g.fail_s, 0) > 0 then 'failing' else 'stalled: no run for ' || (select stall_p from st) || ' schedule periods' end
-                  when 'idle' then case when coalesce(g.n_s, 0) = 0 then 'not due in the short window' else 'ran and found nothing to do' end end,
+                  when 'idle' then case when g.idle_since is not null then 'idle pause by flag-recheck since ' || to_char(g.idle_since at time zone 'Australia/Melbourne', 'DD Mon HH24:MI') || ': no work in its last calls; switched on again when work appears'
+                                        when coalesce(g.n_s, 0) = 0 then 'not due in the short window' else 'ran and found nothing to do' end end,
+      'idle_since', g.idle_since,
       'purpose', coalesce(g.purpose, g.note), 'field', g.field, 'owner', g.owner, 'uses_ai', g.uses_ai, 'fills', g.fill_function,
       'heartbeat', g.last_started_at, 'last_end', g.last_finished_at, 'last_status', g.last_status, 'last_success', g.hist_success,
       'failure_reason', coalesce(g.last_failure, case when g.last_status = 'failed' then left(g.last_error, 240) end), 'consecutive_failures', nullif(g.consecutive_failures, 0),
@@ -371,7 +384,8 @@ as $f$
     'attention', coalesce((select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('component', c->>'component', 'jobid', c->'jobid', 'name', coalesce(c->>'name', c->>'code'), 'state', c->>'state',
                          'reason', c->>'reason', 'heartbeat', c->'heartbeat', 'next_run', c->'next_run', 'failure_reason', left(c->>'failure_reason', 160), 'findings', c->'findings'))
                          order by array_position(array['degraded', 'held', 'shadow', 'idle', 'active'], c->>'state'), coalesce(c->>'name', c->>'code'))
-                         from comp where c->>'state' in ('degraded', 'held', 'shadow') or (c->>'state' <> 'retired' and jsonb_array_length(coalesce(c->'findings', '[]'::jsonb)) > 0)), '[]'::jsonb),
+                         from comp where c->>'state' in ('degraded', 'held', 'shadow')
+                                       or (c->>'state' <> 'retired' and exists (select 1 from jsonb_array_elements_text(coalesce(c->'findings', '[]'::jsonb)) x where x not in ('outcome_unmeasured')))), '[]'::jsonb),
     'holds', coalesce((select jsonb_agg(jsonb_build_object('component', c->>'component', 'jobid', c->'jobid', 'name', coalesce(c->>'name', c->>'code'), 'reason', c->>'reason', 'last_run', c->'heartbeat'))
                          from comp where c->>'state' = 'held'), '[]'::jsonb),
     'toolset', (select rows->'toolset' from js),

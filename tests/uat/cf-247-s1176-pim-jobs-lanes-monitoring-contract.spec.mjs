@@ -55,3 +55,9 @@ test('s1176: the full list is an admin read at the Data Delivery gate; the scree
   expect(code).toContain("'attention'")
   expect(code).not.toMatch(/'components',\s*coalesce\(\(select rows->'components' from js\)/)
 })
+
+test('s1176: a job switched off by the designed idle pause (flag-recheck) is idle, not held', () => {
+  expect(code).toContain("x.reason_code = 'idle_paused' and x.state = 'raised'")
+  expect(code).toContain("when not j.active and j.idle_since is not null then 'idle'")
+  expect(code).toContain("when not g.enabled and g.idle_since is not null then 'idle'")
+})
