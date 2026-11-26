@@ -61,5 +61,29 @@ test('no operational number or secret is written into the proposal code, and the
   const migs = fs.readdirSync('supabase/migrations').filter((f) => f >= '20261126')
   // the frozen surface is never defined, changed, granted or dropped here (G3's central guard is s57); a read-only call, such as the s1176b
   // consumer read-back sample, does not touch it
-  for (const m of migs) expect(read(path.join('supabase/migrations', m)).replace(/--.*$/gm, ''), m).not.toMatch(/\b(create(\s+or\s+replace)?\s+(function|view|table)|alter\s+(function|view|table)|drop\s+(function|view|table)|comment\s+on\s+(function|view|table|column)|(grant|revoke)\s+[\w\s,]+\s+on\s+(function|table)?)\s+(public\.)?(website_v2_|zoho_edge_)/i)
+  for (const m of migs) expect(read(path.join('supabase/migrations', m)).replace(/--.*$/gm, ''), m).not.toMatch(FROZEN_CHANGE)
+})
+
+// s1283 review of the s1202 correction (S1-RM-Design 26 Nov 2026 23:45): the correction was right to allow a read-only call, but the grant branch
+// missed `grant ... on public.<name>` (no object word) and the names covered only two of G3's families. The pattern now names every G3 family and
+// the self-test below keeps it honest in both directions: five change forms fail, a read-only call passes. G3's central guard stays `s57`.
+const G3_NAMES = '(public\\.)?(website_v2_|website_edge_|website_api_v2_|zoho_edge_|svc_website_settings_v1)|\\bapi\\.'
+const FROZEN_CHANGE = new RegExp(`\\b(create(\\s+or\\s+replace)?\\s+(function|view|table)|alter\\s+(function|view|table)|drop\\s+(function|view|table)|comment\\s+on\\s+(function|view|table|column)|(grant|revoke)\\b[^;]*?\\bon\\s+(function\\s+|table\\s+)?)\\s*(${G3_NAMES})`, 'i')
+
+test('the frozen-surface pattern rejects every change form and allows a read-only call', () => {
+  for (const bad of [
+    'create or replace function public.website_v2_courses() returns jsonb as $$ select 1 $$',
+    'alter function public.zoho_edge_x() owner to postgres',
+    'drop function public.website_edge_y()',
+    'comment on function public.website_api_v2_z() is \'x\'',
+    'grant execute on function public.website_v2_courses() to anon',
+    'grant select on public.svc_website_settings_v1 to anon',
+    'revoke all on function api.something() from public',
+  ]) expect(bad, bad).toMatch(FROZEN_CHANGE)
+  for (const ok of [
+    'select public.website_v2_courses()',
+    'select count(*) from public.website_v2_courses where true',
+    'create or replace function security.pim_consumer_sample_v1() returns jsonb as $$ select public.website_v2_courses() $$',
+    'grant execute on function security.pim_consumer_sample_v1() to service_role',
+  ]) expect(ok, ok).not.toMatch(FROZEN_CHANGE)
 })

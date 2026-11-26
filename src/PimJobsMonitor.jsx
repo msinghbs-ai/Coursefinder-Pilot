@@ -27,7 +27,8 @@ const nameOf=c=>c?.name||c?.code||(c?.jobid!=null?`Job ${c.jobid}`:'Unnamed comp
 const keyOf=c=>`${c?.component}:${c?.jobid??c?.code??c?.name}`
 const stateChip=s=><StatusChip tone={STATE_TONE[s]||'neutral'} label={word(s)||'Unknown'}/>
 const when=iso=>iso?<>{fmtDateTime(iso)}<small>{fmtRelative(iso)}</small></>:<em className="pjm-nr">Not recorded</em>
-const nextWhen=iso=>iso?<>{fmtDateTime(iso)}<small>{fmtRelative(iso)}</small></>:<em className="pjm-nr">None in the search window</em>
+const inText=iso=>{const s=Math.round((new Date(iso).getTime()-Date.now())/1000);if(!(s>-60))return 'due now';if(s<60)return 'in under a minute';if(s<3600)return `in ${Math.round(s/60)} min`;if(s<86400)return `in ${Math.round(s/3600)} h`;return `in ${Math.round(s/86400)} d`}
+const nextWhen=iso=>iso?<>{fmtDateTime(iso)}<small>{inText(iso)}</small></>:<em className="pjm-nr">None in the search window</em>
 
 /** Snapshot freshness line shared by both screens: when the jobs read was counted, how long it took, and a stale chip when the last count failed. */
 function Fresh({snap,took}){
@@ -70,7 +71,7 @@ export function JobsSummary({ops}){
         <div className="pjm-card-head"><strong>{nameOf(a)}</strong>{stateChip(a.state)}<span className="cf-badge">{typeLabel(a)}</span></div>
         {a.reason&&<p className="pjm-reason" data-pjm-reason>{a.reason}</p>}
         {(a.findings||[]).length>0&&<p className="pjm-findings">{a.findings.map(f=><span key={f} className="cf-badge">{word(f)}</span>)}</p>}
-        <p className="pjm-meta"><span>Heartbeat: {a.heartbeat?`${fmtDateTime(a.heartbeat)} (${fmtRelative(a.heartbeat)})`:'Not recorded'}</span><span>Next run: {a.next_run?`${fmtDateTime(a.next_run)} (${fmtRelative(a.next_run)})`:'none in the search window'}</span></p></li>)}</ul>
+        <p className="pjm-meta"><span>Heartbeat: {a.heartbeat?`${fmtDateTime(a.heartbeat)} (${fmtRelative(a.heartbeat)})`:'Not recorded'}</span><span>Next run: {a.next_run?`${fmtDateTime(a.next_run)} (${inText(a.next_run)})`:'none in the search window'}</span></p></li>)}</ul>
         :<p className="pjm-empty" data-pjm-attn-empty>{attention.length?'No attention item matches these filters.':'No component is degraded, held, in shadow or has a finding.'}</p>}
       {shown.length>limit&&<Pager offset={off} limit={limit} total={shown.length} onOffset={setOff} className="pjm-pager"/>}
     </>}

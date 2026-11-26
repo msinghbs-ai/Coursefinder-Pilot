@@ -26,7 +26,9 @@ import{useLookups,countryName}from'./lib/lookups'
 import{supabase}from'./lib/supabase'
 import{usePageSearchEntries}from'./PageSearch'
 import{JobsSummary}from'./PimJobsMonitor'
+import ConsumerSample from'./PimConsumerSample'
 
+const SAMPLE_TITLE={aer:'Academic entry',cdesc:'Course descriptions'} // labels for the two sampled streams; the backend returns the codes
 const has=v=>v!=null&&v!==''&&Number.isFinite(Number(v))
 /** Sum over the rows that carry the figure. A row with no value is counted as missing, never as 0. */
 const agg=(rows,k)=>{let total=0,known=0;for(const r of rows)if(has(r[k])){total+=Number(r[k]);known++}return{total,known,missing:rows.length-known}}
@@ -123,7 +125,7 @@ function Gains({rows,hours,hasConsumer}){
         <div><span>Throughput</span>{tp.known?<><strong data-pim-gain="throughput">{fmtNumber(Math.round(tp.total*100)/100)}<small> per hour</small></strong><small>{tp.total===0?'measured: none gained':'measured over the window'}{tp.missing?`; ${fmtNumber(tp.missing)} row${tp.missing===1?'':'s'} not counted`:''}</small></>:<NotMeasured/>}</div>
       </div>})}
     <div className="pim-gains" data-pim-gain-group-shared>
-      <div><span>Verified consumer delivery</span><NotMeasured reason={hasConsumer?'Not counted per field. It is measured per stream and country in Verified consumer read-back below; streams are different kinds of record and are not added. Published-provider gain is not a delivery check.':'Not counted per field. Website and Zoho read-back is shown on each stream card above where it is measured; published-provider gain is not a delivery check.'}/></div>
+      <div><span>Verified consumer delivery</span><NotMeasured reason={hasConsumer?'Not counted per field. It is measured per stream and country in Verified consumer read-back below and, for academic entry and descriptions, as a sample in Sampled delivery read-back (counted on the checked courses only); streams are different kinds of record and are not added. Published-provider gain is not a delivery check.':'Not counted per field. Website and Zoho read-back is shown on each stream card above where it is measured; published-provider gain is not a delivery check.'}/></div>
       <div><span>Estimated clearance</span>
         {!withBacklog.length?<strong data-pim-clearance="none">Nothing outstanding</strong>
           :longest?<><strong data-pim-clearance={longest.clearance_hours}>{durText(longest.clearance_hours)}</strong><small>longest measured field ({word(longest.field)}; {basisWord(longest.gain_basis)}), from its own measured rate{unmeasured>0?`. ${fmtNumber(unmeasured)} of ${fmtNumber(withBacklog.length)} fields with a backlog gained nothing in the window, so they have no estimate.`:'.'} Fields are not combined.</small></>
@@ -164,7 +166,7 @@ export default function PimDelivery({pim,now,rank=0,streams=null,snapshots=null,
     const V=[['matrix','Delivery matrix','overall country domain coverage funnel gains throughput clearance processing workers consumer'],['requests','Requests & feedback','stakeholder requests feedback reported data issues'],['refresh','Refresh & maintenance','freshness stale source outcomes excluded gaps lifecycle']]
     const S=[['matrix','funnel','Stage funnel','queued running held failed work items canonical coverage'],['matrix','matrix','Country and domain matrix','completeness backlog gains published domain'],
       ['matrix','processing','Processing: scheduler, worker, leases and recovery','last queue pass next scheduled run leases stalled workers heartbeat jobs'],['matrix','jobs-monitoring','Jobs, lanes, rules and rollup targets','workers scheduled jobs stalled stuck degraded held attention heartbeat last success failed schedule component state'],
-      ['matrix','consumer','Verified consumer read-back','website zoho matched expected pending missing not served delivery per stream'],['matrix','consumption','AI and Firecrawl use','spend cost credits calls attempts'],['matrix','human','Needs a person','layer 4 review waiting enrich review'],
+      ['matrix','consumer','Verified consumer read-back','website zoho matched expected pending missing not served delivery per stream'],['matrix','consumer-sample','Sampled delivery read-back','sample sampled coverage population verified delivery international applicability failure reasons last verification academic entry descriptions website zoho'],['matrix','consumption','AI and Firecrawl use','spend cost credits calls attempts'],['matrix','human','Needs a person','layer 4 review waiting enrich review'],
       ['requests','requests','Stakeholder requests','request register status weight coverage not projected'],['requests','issues','Reported data issues and verified feedback','counsellor reports fixed verified'],
       ['refresh','freshness','Freshness of held values','refresh window due to be verified oldest verified by field'],['refresh','fresh-country','Freshness by country','held due fresh stale country field'],
       ['refresh','sources','Source outcomes','blocked fetch failed read protected hold re-read'],['refresh','excluded','Excluded gaps','workload eligible closed to international no source revisit'],
@@ -282,6 +284,8 @@ export default function PimDelivery({pim,now,rank=0,streams=null,snapshots=null,
             <td data-label="Expected">{has(r.expected)?fmtNumber(Number(r.expected)):<NotMeasured/>}</td><td data-label="Website"><ConsumerCell r={r} c="w"/></td><td data-label="Zoho"><ConsumerCell r={r} c="z"/></td>
             <td data-label="Read"><V>{ageWord(ago)}{stale&&<StatusChip tone="warning" label="Stale"/>}</V></td></tr>)})}</tbody></table></div>
         :<NotMeasured word="Not available" reason="The PIM snapshot carries no consumer read-back yet."/>}
+      {/* s1286: the rotating sample behind the same reads (consumer_fields); counts the checked courses only, never extrapolated */}
+      <ConsumerSample ops={ops} streamTitle={id=>(Array.isArray(streams)?streams.find(x=>x.stream===id)?.title:null)||SAMPLE_TITLE[id]}/>
 
       <h5 className="sl-h4" data-pim-section="consumption">Consumption in the last {hoursWord(hours)}</h5>
       <div className="pim-proc" data-pim-consumption>

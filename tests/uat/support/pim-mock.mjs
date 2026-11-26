@@ -63,6 +63,18 @@ export const OPERATIONS = {
   holds: [{ name: 'enrich-plan-auto', jobid: 41, reason: 'switched off by the Platform Admin', last_run: '2026-11-25T13:41:00+00:00', component: 'cron' }],
   toolset: { ai: [{ service: 'description', h24: { attempts: 6913, not_ok: 6913, billed_usd: 1.25 }, d7: { attempts: 40000, not_ok: 40000, billed_usd: 9.5 } }], firecrawl: [{ use_case: 'central', h24: { calls: 4, failed: 1, credits: 8 }, d7: { calls: 30, failed: 2, credits: 60 } }], attribution: 'Spend is by service and use case; it is not split per component.' },
   jobs_snapshot: { as_at: '2026-11-26T11:47:57+00:00', took_ms: 2400, error: null, failed_at: null, windows: { short_h: 24, long_d: 7 }, history: { h24_since: null, d7_since: '2026-11-21T00:00:00+00:00' }, full_read: 'public.admin_pim_jobs_v1' },
+  consumer_fields: {
+    meaning: 'A rotating sample read back through the reads the consumers call. Every figure counts checked courses only and is never a population figure; coverage_in_window is sampled courses in the window divided by the population.',
+    streams: {
+      aer: { population: 10192, population_meaning: 'active courses at published providers with at least one active entry row for an international or all audience', sampled_in_window: 7, sampled_ever: 7, coverage_in_window: 0.0007, window_hours: 168, delivery_verified: 6, international_verified: 6, with_failure: 2, avg_seconds_per_course: 3.3, last_checked: '2026-11-26T13:03:12+00:00', oldest_check_in_window: '2026-11-26T12:30:41+00:00',
+        failures_by_reason: { zoho_not_matching: 1, website_not_matching: 1, website_serves_domestic_only_row: 1 },
+        latest_failures: [{ course: 'course:cricos:00020g:103424h', country: 'IN', failures: ['website_serves_domestic_only_row', 'zoho_serves_domestic_only_row'], checked_at: '2026-11-26T12:52:17+00:00' }],
+        checked: { website: { returned: 7, matches: 6, intl_ok: 6, populated: 7 }, zoho: { returned: 7, matches: 6, intl_ok: 6, populated: 7 }, website_v3_international: { returned: 7, matches: 7, intl_ok: 6, populated: 7 } } },
+      cdesc: { population: 16126, population_meaning: 'active courses at published providers with a course description', sampled_in_window: 7, sampled_ever: 7, coverage_in_window: 0.0004, window_hours: 168, delivery_verified: 7, international_verified: null, with_failure: 0, avg_seconds_per_course: 1.2, last_checked: '2026-11-26T13:03:22+00:00', oldest_check_in_window: '2026-11-26T12:30:44+00:00',
+        failures_by_reason: {}, latest_failures: [],
+        checked: { website: { returned: 7, matches: 7, intl_ok: 0, populated: 7 }, zoho: { returned: 7, matches: 7, intl_ok: 0, populated: 7 }, website_v3_international: null } },
+    },
+  },
   consumer: [
     { stream: 'disc', measured_at: '2026-11-26T02:01:00+00:00', error: null, rows: [cons('AU', 1200, [1100, 20, 60, 20], [1090, 25, 65, 20]), cons('NZ', 300, [250, 10, 30, 10], [240, 12, 38, 10])] },
     { stream: 'int', measured_at: '2026-11-26T02:01:00+00:00', error: null, rows: [cons('AU', 5000, [4000, 500, 400, 100], [3900, 550, 450, 100])] },

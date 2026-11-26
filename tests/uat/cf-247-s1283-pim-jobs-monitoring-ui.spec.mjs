@@ -110,6 +110,7 @@ test.describe('Scheduled jobs › Automations: job and lane monitoring', () => {
     await expect(d).toContainText('stalled: no run for 3 schedule periods')
     await expect(d).toContainText('Heartbeat')
     await expect(d).toContainText('Next run')
+    await expect(d.getByText('in 10 min'), 'a future time reads as a wait, not the date twice').toBeVisible()
     await expect(d.locator('[data-pjm-window="24 hours"] [data-pjm-outcome="deferred"]')).toHaveText('910')
     await expect(d.locator('[data-pjm-window="7 days"] [data-pjm-outcome="unmeasured"]')).toHaveText('100')
     await expect(d.locator('[data-pjm-window="24 hours"]')).toContainText('1.4 s')

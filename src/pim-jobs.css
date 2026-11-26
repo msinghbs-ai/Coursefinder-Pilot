@@ -39,7 +39,16 @@
 .pjm-tools>summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
 .pjm .pjm-pager{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
 .pjm .pjm-pager button{min-height:44px;min-width:44px}
+/* s1286: sampled consumer read-back cards */
+.pjm-cs-grid{margin:6px 0 0;display:grid;grid-template-columns:minmax(120px,26%) minmax(0,1fr);gap:6px 12px}
+.pjm-cs-grid dt{color:var(--cf-muted)}
+.pjm-cs-grid dd{margin:0;overflow-wrap:anywhere}
+.pjm-cs-grid dd small{display:block;color:var(--cf-muted);font-size:var(--cf-fs-sm)}
+.pjm-cs-latest{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+.pjm-cs-latest li{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;overflow-wrap:anywhere}
 @media (max-width:640px){
+  .pjm-cs-grid{grid-template-columns:minmax(0,1fr)}
+  .pjm-cs-grid dd{margin-bottom:6px}
   .pjm-filters label,.pjm-filters select,.pjm-filters input[type="search"]{width:100%;min-width:0}
   .pjm-filters input,.pjm-filters select,.pjm-filters .cf-btn{min-height:44px}
   .pjm-states{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -51,6 +60,9 @@
   .pjm-table td[data-label]::before{content:attr(data-label);color:var(--cf-muted);flex:0 0 34%}
   .pjm-table td[data-label=""]::before{content:none}
   .pjm-table td>*{max-width:66%}
+  .pjm-table td[data-label="State"],.pjm-table td[data-label="24 h outcomes"]{display:block}
+  .pjm-table td[data-label="State"]::before,.pjm-table td[data-label="24 h outcomes"]::before{display:block;margin-bottom:2px}
+  .pjm-table td[data-label="State"]>*,.pjm-table td[data-label="24 h outcomes"]>*{max-width:100%}
   .pjm-table td[data-primary]{display:block}
   .pjm-table td[data-primary]::before{content:none}
   .pjm-table td[data-primary]>*{max-width:100%}
