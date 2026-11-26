@@ -196,6 +196,14 @@ test.describe('Settings', () => {
     expect(reads.length).toBe(before)
   })
 
+  test('the search text does not follow a person to another page', async ({ page }) => {
+    await openSettings(page)
+    await input(page).fill('retry')
+    await page.evaluate(() => { location.hash = '#layer-2-discovery' })
+    await expect(page.locator('.cf-page-tabs button', { hasText: 'Operations' })).toBeVisible({ timeout: 20_000 })
+    await expect(input(page)).toHaveValue('')
+  })
+
   test('the Settings tab entries come from the page tabs for the role, not a typed list', async ({ page }) => {
     await openSettings(page)
     const list = await search(page, 'integrations')
