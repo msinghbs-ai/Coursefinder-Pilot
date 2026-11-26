@@ -9,7 +9,11 @@ export const LAYER4_GUIDE = [
     'Source: the official address, the date the copy was saved and the quote the value was read from.',
     'Why it is held: the plain reason, with (i) Hint: what it means, an example, and when to choose Yes or No.',
     'Decide: Yes (Approve), No (Reject), Resubmit to Review with AI, and More options for the queue\'s other choices.',
-    'Folds, closed: Progress and history, Evidence and course links, and Technical detail (the reference, the rule code and the raw reason).'] },
+    'Folds, closed: Progress and history, Processing journey and diagnosis, Evidence and course links, and Technical detail (the reference, the rule code and the raw reason).',
+    'Processing journey and diagnosis (DR-19, s1272): open the fold to see the record\'s eight stages: discovery, acquisition, extraction, normalisation and mapping, validation, canonical admission, publication, and website and Zoho verification.',
+    'The first stage that is not done is where processing stopped; every later stage reads Not reached and names that stage. Not available means the platform keeps no record for that stage, Not verified means no check has been made, and 0 is a measured zero.',
+    'The diagnosis gives the failure reason, the stored evidence, earlier attempts, the reader and model, the gate that holds it, the AI analysis when the platform has already made one, similar resolved cases with their references, the recommended recovery, its estimated cost and the data it would fill.',
+    'The authorised next action is the card\'s own decision buttons, with the role each needs. Opening the fold reads only; it starts no model and spends nothing.'] },
   { key: 'decide', title: 'Yes, No and Resubmit: what each does next', body: [
     'Yes (Approve) admits the value as read; where the queue allows it, Lock this value keeps automation from changing it.',
     'No (Reject) refuses it with a reason; Wrong course, Outdated year, Bad parse and Not offered fill the reason in one click.',

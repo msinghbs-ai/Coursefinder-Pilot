@@ -21,3 +21,15 @@
 .l4i-groups{margin:.4rem 0}
 .l4i-groups .l4i-view{display:flex;flex-wrap:wrap;gap:.3rem}
 .l4i-groups .l4i-view button{min-height:44px;max-width:100%;white-space:normal;text-align:left}
+/* CF-247 s1272 (DR-19): Processing journey and diagnosis fold. The stages wrap; nothing scrolls sideways at 412 px. */
+.l4j-stages{list-style:none;margin:.4rem 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,11rem),1fr));gap:.35rem}
+.l4j-stage{border:1px solid var(--cf-border);border-radius:6px;padding:.35rem .45rem;display:flex;flex-direction:column;gap:.15rem;min-width:0;overflow-wrap:anywhere}
+.l4j-stage.is-stop{border-color:var(--cf-warning);box-shadow:inset 3px 0 0 var(--cf-warning)}
+.l4j-stage[data-l4j-state="failed"].is-stop{border-color:var(--cf-danger);box-shadow:inset 3px 0 0 var(--cf-danger)}
+.l4j-stage-head{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem}
+.l4j-detail{color:var(--cf-muted)}
+.l4j-na{color:var(--cf-muted)}
+.l4j-sim{margin:.2rem 0 0;padding-left:1.1rem}
+.l4j-cost{display:block}
+.l4j-refresh{min-height:44px;background:none;border:0;color:var(--cf-info);cursor:pointer;padding:0 .2rem;font:inherit;text-decoration:underline}
+.l4j summary{min-height:44px;display:flex;align-items:center}
