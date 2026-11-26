@@ -17,10 +17,11 @@
 --     entry public.website_v3_course(key, country) as an international student (international applicability). The student country is the country
 --     most common in the provider's active entry-matrix rows, else across all active matrix rows (read from the data; recorded with the check).
 --     Canonical values: academic entry = active course_entry_requirements rows with audience international or all (descriptions compared as
---     normalised text; rows without a description are counted, not compared); domestic-only = audience domestic rows whose text no
---     international or all row shares. Course description = catalogue.courses.description, normalised.
+--     normalised text; rows without a description are counted, not compared); domestic-only = audience domestic rows whose text is not part of
+--     any international or all row's text. Course description = catalogue.courses.description, normalised.
 --     delivery_verified: the website and Zoho reads both returned the item and matched. intl_verified (entry only): the v3 international read
---     returned the international rows and no domestic-only row. Where v3 resolves the course from a provider matrix, its match is not compared.
+--     returned the international rows and no domestic-only row. Where v3 resolves the course other than by its own rows (a provider matrix, or
+--     contact the provider), its match is not compared and the resolution is recorded.
 --   security.pim_consumer_fields_v1()  the report: per stream, the applicable population, sampled courses (ever and in the long window), sampling
 --     coverage of the population, verification age, counts per read and outcome, failures by reason and the latest failures. It never
 --     extrapolates: the sample figures are counts of checked courses only.
@@ -104,7 +105,7 @@ as $f$
 declare
   v_n int := coalesce(p_per_stream, security.pipeline_num_v1('pim.consumer_sample_courses', 2)::int);
   c record; v_t0 timestamptz; v_cc text; v_intl text[]; v_dom text[]; v_untexted int; v_canon text;
-  w jsonb; t jsonb; rw jsonb; rt jsonb; rweb jsonb; rzoho jsonb; v_blob text; v_fail text[]; v_done int := 0; v_rule text;
+  w jsonb; t jsonb; rw jsonb; rt jsonb; rweb jsonb; rzoho jsonb; v_blob text; v_fail text[]; v_done int := 0; v_rule text; v_res jsonb := '[]'::jsonb;
 begin
   -- academic entry
   for c in
@@ -125,7 +126,7 @@ begin
     select coalesce(array_agg(distinct security.pim_norm_v1(e.description)), '{}') into v_dom
       from catalogue.course_entry_requirements e
      where e.course_id = c.id and e.status = 'active' and e.audience = 'domestic' and security.pim_norm_v1(e.description) is not null
-       and not (security.pim_norm_v1(e.description) = any (v_intl));
+       and not exists (select 1 from unnest(v_intl) i where position(security.pim_norm_v1(e.description) in i) > 0);
     v_cc := coalesce(
       (select m.country_code from catalogue.provider_entry_matrix m where m.provider_id = c.provider_id and m.status = 'active' and m.country_code is not null group by 1 order by count(*) desc, 1 limit 1),
       (select m.country_code from catalogue.provider_entry_matrix m where m.status = 'active' and m.country_code is not null group by 1 order by count(*) desc, 1 limit 1));
@@ -175,6 +176,7 @@ begin
       canonical = excluded.canonical, website = excluded.website, zoho = excluded.zoho, v3 = excluded.v3, delivery_verified = excluded.delivery_verified,
       intl_verified = excluded.intl_verified, failures = excluded.failures;
     v_done := v_done + 1;
+    v_res := v_res || jsonb_build_object('stream', 'aer', 'course', c.stable_key, 'country', v_cc, 'v3_rule', v_rule, 'failures', to_jsonb(nullif(v_fail, '{}')));
   end loop;
   -- course description
   for c in
@@ -208,8 +210,9 @@ begin
     on conflict (stream, course_id) do update set checked_at = excluded.checked_at, student_country = null, took_ms = excluded.took_ms, canonical = excluded.canonical,
       website = excluded.website, zoho = excluded.zoho, v3 = null, delivery_verified = excluded.delivery_verified, intl_verified = null, failures = excluded.failures;
     v_done := v_done + 1;
+    v_res := v_res || jsonb_build_object('stream', 'cdesc', 'course', c.stable_key, 'failures', to_jsonb(nullif(v_fail, '{}')));
   end loop;
-  return jsonb_build_object('checked', v_done);
+  return jsonb_build_object('checked', v_done, 'results', v_res);
 end $f$;
 comment on function security.pim_consumer_sample_v1(integer) is 'PIM consumer check (s1176b): reads back the courses not checked for longest, per stream, through website_v2_course, zoho_v2_course and (entry) website_v3_course as an international student, and records returned, populated, matches and international applicability in pipeline.pim_consumer_samples. Read-only towards the catalogue and the consumer API.';
 revoke all on function security.pim_consumer_sample_v1(integer) from public, anon, authenticated;
@@ -256,7 +259,7 @@ as $f$
                                      'returned', (select count(*) from s where s.stream = k.stream and s.in_window and (s.v3->>'returned')::boolean),
                                      'populated', (select count(*) from s where s.stream = k.stream and s.in_window and (s.v3->>'populated')::boolean),
                                      'matches', (select count(*) from s where s.stream = k.stream and s.in_window and (s.v3->>'matches')::boolean),
-                                     'not_compared_matrix_resolution', (select count(*) from s where s.stream = k.stream and s.in_window and (s.v3->>'returned')::boolean and s.v3->'matches' = 'null'::jsonb),
+                                     'not_compared_other_resolution', (select count(*) from s where s.stream = k.stream and s.in_window and (s.v3->>'returned')::boolean and s.v3->'matches' = 'null'::jsonb),
                                      'intl_ok', (select count(*) from s where s.stream = k.stream and s.in_window and (s.v3->>'intl_ok')::boolean)) end),
         'delivery_verified', (select count(*) from s where s.stream = k.stream and s.in_window and s.delivery_verified),
         'international_verified', case when k.stream = 'aer' then (select count(*) from s where s.stream = k.stream and s.in_window and s.intl_verified) end,
