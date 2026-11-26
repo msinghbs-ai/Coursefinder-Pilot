@@ -1,0 +1,46 @@
+// Guards: F-OPS.21 and DR-16 (SS-Programme-Control 26 Nov 2026 21:34 AEDT): PIM monitoring identifies cron jobs by jobid, covers every worker, dispatcher lane, admission rule and rollup target with its state (active, idle, held, degraded, retired, shadow), heartbeat, next run, failure reason and outcomes; counted in the background helper snapshot; the pim.operations contract only grows.
+// s1176: security.pim_outcome_class_v1, security.data_delivery_jobs_v1 (helper "jobs"), security.pim_operations_v1 replaced with compatible additions.
+import { test, expect } from '@playwright/test'
+import fs from 'node:fs'
+
+const MIG = fs.readFileSync('supabase/migrations/20261130001000_cf247_s1176_pim_jobs_lanes_monitoring.sql', 'utf8')
+const code = MIG.replace(/--.*$/gm, '')
+
+test('s1176: scheduler history is keyed by jobid, never by job name', () => {
+  expect(code).toContain('from cron.job_run_details d cross join st')
+  expect(code).toContain('group by d.jobid')
+  expect(code).toContain('left join ch h on h.jobid = c.jobid')
+  expect(code).not.toMatch(/r\.key\s*=\s*c\.jobname/)
+  expect(code).toContain("guard: cron rows not keyed by jobid")
+})
+
+test('s1176: every lane, rollup target and admission rule is a component, with its run log', () => {
+  for (const t of ['pipeline.field_execution_registry', 'pipeline.rollup_targets', 'pipeline.admission_rules',
+                   'pipeline.coverage_lane_runs', 'pipeline.rollup_runs', 'pipeline.admission_rule_runs']) expect(code).toContain(t)
+  expect(code).toContain('guard: a component is missing from the jobs helper')
+  for (const s of ["'active'", "'idle'", "'held'", "'degraded'", "'retired'", "'shadow'"]) expect(code).toContain(s)
+})
+
+test('s1176: unmeasured outcomes and partial history are never reported as zero', () => {
+  expect(code).toContain("then 'unmeasured'")
+  expect(code).toContain("'partial_since'")
+})
+
+test('s1176: counted in the existing helper snapshot path; the pim.operations keys of s1175 are kept', () => {
+  expect(code).toContain("array['cdesc_stages', 'intake', 'aer', 'pdesc', 'jobs'] loop")
+  expect(code).toContain("x.helper = 'jobs'")
+  for (const k of ["'workers'", "'stalled_workers'", "'expired_leases'", "'freshness_by_country'", "'consumer'", "'requests'", "'jobs_summary_at'",
+                   "'job'", "'schedule'", "'last_start'", "'last_success'", "'failed_24h'", "'running'", "'stalled'"]) expect(code).toContain(k)
+  expect(code).toContain("guard: security.pim_operations_v1 is not the s1175 definition")
+})
+
+test('s1176: thresholds are settings; no job, no schedule change, nothing dropped; G3, locks and cron asserted', () => {
+  for (const k of ['pim.jobs_stall_periods', 'pim.jobs_min_runs', 'pim.jobs_empty_share', 'pim.jobs_failure_share', 'pim.jobs_deferred_share'])
+    expect(code).toContain(`security.pipeline_num_v1('${k}'`)
+  expect(code).not.toMatch(/\b(create table|cron\.schedule|cron\.unschedule|cron\.alter_job|truncate|drop\s+(table|function|column|constraint|trigger)|delete\s+from)\b/i)
+  expect(code).not.toMatch(/update\s+(cron\.job|pipeline\.field_execution_registry|pipeline\.rollup_targets|pipeline\.admission_rules)\b/i)
+  expect(code).toContain('guard: the scheduler changed')
+  expect((code.match(/security\.consumer_api_check_v1\(\)/g) || []).length).toBe(2)
+  expect(MIG).toMatch(/^-- Replaces:/m)
+  expect(MIG).toMatch(/^-- Retires:/m)
+})
