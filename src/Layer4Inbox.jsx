@@ -24,6 +24,7 @@ import'./layer4-inbox.css'
 import{ReviewReadinessLine}from'./ui-v1/AerCoverageView'
 import{GroupBar,GroupList,recordNavigation}from'./Layer4Groups' // CF-247 mandate 16:32 §7: the three choices
 import{ItemLifecycle}from'./Layer4ItemLifecycle' // CF-247 decision 12:24: action lifecycle, times and acknowledgement on every card
+import Layer4Journey from'./Layer4Journey' // CF-247 s1272 (DR-19): processing journey and diagnosis fold on every card
 import{layer4DeepLinkCursor}from'./layer4-deep-link'
 import AerCourseLinks from'./AerCourseLinks' // CF-247 F-AER.08 step 3: course links of a university's entry tables
 import Layer4HoldReasons from'./Layer4HoldReasons' // CF-247 s831: why AER items are held, and the audit sample
@@ -339,6 +340,8 @@ function Item({it,k,showProvider,rank,onDone,onError,onRefresh,holdLabel='',hold
     </div>}
     {/* Z6 folds (§5.2), closed: progress and history, evidence and course links, technical detail */}
     <ItemLifecycle kind={it.kind} refId={it.ref} ack={ack} seen={seen} onSettled={()=>{setRev(v=>v+1);onRefresh?.()}}/>
+    {/* CF-247 s1272 (DR-19): where processing stopped, why, and what can be done: the card's own decisions are the authorised actions */}
+    <Layer4Journey kind={it.kind} refId={it.ref} actions={orderChoices(cdChoiceShown).map(c=>({label:c.label,need:needs(c),allowed:rank>=needs(c)&&!gated(c)}))}/>
     {aerItem&&aer&&!aer.error&&aer.provider_id&&(aer.rows||[]).some(r=>r.course)&&<details className="l4z-fold" data-l4-fold="evidence"><summary>Evidence and course links</summary><AerCourseLinks providerId={aer.provider_id} rank={rank} onDecided={()=>lazy(()=>aerRead(it.ref)).then(setAer).catch(()=>{})}/></details>}
     <details className="l4z-fold l4z-tech" data-l4-fold="technical"><summary>Technical detail</summary><p className="l4i-why"><small><span data-l4-refshow title={it.ref}>Ref {String(it.ref).slice(0,8)}</span>{holdKey?<> · rule <code data-l4-rule-key>{holdKey}</code></>:null}{it.why?<> · {it.why}</>:null}</small></p></details>
   </article>
