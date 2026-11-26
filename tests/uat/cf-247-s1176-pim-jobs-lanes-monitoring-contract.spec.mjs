@@ -1,9 +1,9 @@
-// Guards: F-OPS.21 and DR-16 (SS-Programme-Control 26 Nov 2026 21:34 AEDT): PIM monitoring identifies cron jobs by jobid, covers every worker, dispatcher lane, admission rule and rollup target with its state (active, idle, held, degraded, retired, shadow), heartbeat, next run, failure reason and outcomes; counted in the background helper snapshot; the pim.operations contract only grows.
-// s1176: security.pim_outcome_class_v1, security.data_delivery_jobs_v1 (helper "jobs"), security.pim_operations_v1 replaced with compatible additions.
+// Guards: F-OPS.21 and DR-16 (SS-Programme-Control 26 Nov 2026 21:34 AEDT): PIM monitoring identifies cron jobs by jobid, covers every worker, dispatcher lane, admission rule and rollup target with its state (active, idle, held, degraded, retired, shadow), heartbeat, next run, failure reason and outcomes; counted only in the background PIM snapshot; the pim.operations contract only grows.
+// s1176: security.pim_outcome_class_v1, security.data_delivery_jobs_v1 (read inside the background PIM snapshot), security.pim_operations_v1 replaced with compatible additions.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261130001000_cf247_s1176_pim_jobs_lanes_monitoring.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261130020000_cf247_s1176_pim_jobs_lanes_monitoring.sql', 'utf8')
 const code = MIG.replace(/--.*$/gm, '')
 
 test('s1176: scheduler history is keyed by jobid, never by job name', () => {
@@ -26,9 +26,10 @@ test('s1176: unmeasured outcomes and partial history are never reported as zero'
   expect(code).toContain("'partial_since'")
 })
 
-test('s1176: counted in the existing helper snapshot path; the pim.operations keys of s1175 are kept', () => {
-  expect(code).toContain("array['cdesc_stages', 'intake', 'aer', 'pdesc', 'jobs'] loop")
-  expect(code).toContain("x.helper = 'jobs'")
+test('s1176: counted only in the existing background PIM snapshot; the pim.operations keys of s1175 are kept', () => {
+  expect(code).toContain('select security.data_delivery_jobs_v1() j')
+  expect(code).toContain('guard: pim.operations is not in the background count')
+  expect(code).toContain('guard: the screen read counts operations live')
   for (const k of ["'workers'", "'stalled_workers'", "'expired_leases'", "'freshness_by_country'", "'consumer'", "'requests'", "'jobs_summary_at'",
                    "'job'", "'schedule'", "'last_start'", "'last_success'", "'failed_24h'", "'running'", "'stalled'"]) expect(code).toContain(k)
   expect(code).toContain("guard: security.pim_operations_v1 is not the s1175 definition")

@@ -7,8 +7,9 @@
 --   security.pim_outcome_class_v1(status, result)  one execution's outcome from the run's own recorded status and result:
 --     failed | deferred | productive (an admission, publication or hand-off counter above 0) | held (only protective counters above 0: Layer 4,
 --     held, refused, left for a person) | empty (a structured result with every counter at 0) | unmeasured (no structured result).
---   security.data_delivery_jobs_v1()  the "jobs" Data Delivery helper, counted in the background by security.data_delivery_refresh_v1 into the
---     existing pipeline.data_delivery_helper_snapshots (the s1174 path), never on a screen read. One row per component:
+--   security.data_delivery_jobs_v1()  the jobs read, counted only in the background: security.pim_operations_v1 calls it, and that is counted by
+--     security.data_delivery_refresh_v1 into the existing PIM snapshot (pipeline.data_delivery_job_runs.pim, the s1167 and s1174 snapshot path);
+--     the screen read (security.data_delivery_v1) only reads the snapshot and never counts it. One row per component:
 --       every cron.job row, keyed by jobid (history from cron.job_run_details by jobid, so a reused job name is never mixed);
 --       every pipeline.field_execution_registry lane, pipeline.rollup_targets target and pipeline.admission_rules rule, with its runs from
 --       pipeline.coverage_lane_runs / rollup_runs / admission_rule_runs.
@@ -23,11 +24,11 @@
 --   security.pim_operations_v1()  compatible additions only: workers is every active cron job (jobid added; the data-delivery counter is not a
 --     worker), with the s1175 fields unchanged and state, heartbeat, next run, failure reason and effective state added; stalled now uses the
 --     job's own schedule (pim.jobs_stall_periods periods, never less than plans.auto_stall_hours). New keys: components, states, holds, toolset,
---     jobs_snapshot. consumer, freshness_by_country, expired_leases, requests and meaning are unchanged.
+--     jobs_snapshot (its as_at, windows and retained history). consumer, freshness_by_country, expired_leases, requests and meaning are unchanged.
 -- G1: no job. G2: five settings (pim.jobs_stall_periods, pim.jobs_min_runs, pim.jobs_empty_share, pim.jobs_failure_share, pim.jobs_deferred_share)
 -- and the existing data_delivery.net_short_hours, data_delivery.net_long_hours, plans.auto_stall_hours. G3: no consumer object; 75/48 asserted
 -- before and after. Manual locks and cron count asserted unchanged. AI and spend untouched ($0). Nothing dropped.
--- Replaces: security.pim_operations_v1 (s1175); the s1174 helper list in security.data_delivery_refresh_v1 (one helper added).
+-- Replaces: security.pim_operations_v1 (s1175).
 -- Retires: nothing.
 set local lock_timeout = '5s';  -- fixed: lock wait for the function replaces
 set local statement_timeout = '120s';  -- fixed: the read-only checks
@@ -37,7 +38,6 @@ declare v jsonb := security.consumer_api_check_v1();
 begin
   if jsonb_array_length(coalesce(v->'drift', '[]'::jsonb)) <> 0 or (v->>'functions')::int <> 75 or (v->>'relations')::int <> 48 then raise exception 'guard: consumer API not at baseline: %', v; end if;
   if md5(pg_get_functiondef('security.pim_operations_v1()'::regprocedure)) <> 'e0a1ab379a7817102eabd424282bfd64' then raise exception 'guard: security.pim_operations_v1 is not the s1175 definition'; end if;
-  if md5(pg_get_functiondef('security.data_delivery_refresh_v1(boolean)'::regprocedure)) <> 'b26e7f31646dd8200a410950c3af86a6' then raise exception 'guard: security.data_delivery_refresh_v1 is not the s1175 definition'; end if;
 end $g$;
 create temp table s1176_before on commit drop as
   select (select count(*) from pipeline.manual_locks) locks, (select count(*) from cron.job where active) jobs, (select count(*) from cron.job) jobs_all;
@@ -291,19 +291,9 @@ as $f$
       'attribution', 'By service and use case only: no register links a scheduled job, lane, rule or target to an AI service or a Firecrawl use case, so spend is not split per component.'),
     'meaning', 'One row per cron job (by jobid) and per dispatcher lane, rollup target and admission rule. productive: an admission, publication or hand-off counter above 0; held: only protective counters (Layer 4, held, refused, left for a person); empty: a structured result with every counter at 0; unmeasured: the run records no structured result, so its outcome is measured downstream only, never as 0. partial_since: the retained history starts after the window start.')
 $f$;
-comment on function security.data_delivery_jobs_v1() is 'PIM (s1176): the jobs Data Delivery helper: every cron job by jobid and every dispatcher lane, rollup target and admission rule, with state, heartbeat, next run, failure reason, outcome classes (24 h and 7 d) and toolset use; counted in the background into pipeline.data_delivery_helper_snapshots.';
+comment on function security.data_delivery_jobs_v1() is 'PIM (s1176): the jobs Data Delivery helper: every cron job by jobid and every dispatcher lane, rollup target and admission rule, with state, heartbeat, next run, failure reason, outcome classes (24 h and 7 d) and toolset use; counted only in the background PIM snapshot (pim.operations).';
 revoke all on function security.data_delivery_jobs_v1() from public, anon, authenticated;
 grant execute on function security.data_delivery_jobs_v1() to service_role;
-
--- the background count takes the new helper with the other four (s1174 path)
-do $r$
-declare d text := pg_get_functiondef('security.data_delivery_refresh_v1(boolean)'::regprocedure);
-        a constant text := $a$foreach v_h in array array['cdesc_stages', 'intake', 'aer', 'pdesc'] loop$a$;
-        b constant text := $b$foreach v_h in array array['cdesc_stages', 'intake', 'aer', 'pdesc', 'jobs'] loop$b$;
-begin
-  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'guard: helper list not found exactly once'; end if;
-  execute replace(d, a, b);
-end $r$;
 
 create or replace function security.pim_operations_v1()
 returns jsonb
@@ -313,7 +303,7 @@ security definer
 set search_path = ''
 as $f$
   with st as (select security.pipeline_num_v1('pim.refresh_days', 365)::int d),
-  js as (select x.rows, x.measured_at, x.took_ms, x.error, x.failed_at from pipeline.data_delivery_helper_snapshots x where x.helper = 'jobs'),
+  js as (select j rows, (j->>'as_at')::timestamptz measured_at from (select security.data_delivery_jobs_v1() j) x),
   comp as (select c from js cross join lateral jsonb_array_elements(coalesce(js.rows->'components', '[]'::jsonb)) c),
   w as (select c from comp where c->>'component' = 'cron' and (c->>'active')::boolean and c->>'name' <> 'data-delivery'),
   f as (
@@ -328,7 +318,7 @@ as $f$
   select jsonb_build_object(
     'as_at', now(),
     'jobs_summary_at', (select measured_at from js),
-    'jobs_snapshot', jsonb_build_object('as_at', (select measured_at from js), 'took_ms', (select took_ms from js), 'error', (select error from js), 'failed_at', (select failed_at from js),
+    'jobs_snapshot', jsonb_build_object('as_at', (select measured_at from js),
                                         'windows', (select rows->'windows' from js), 'history', (select rows->'history' from js)),
     'workers', coalesce((select jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
                          'job', c->>'name', 'jobid', (c->>'jobid')::int, 'role', c->>'role', 'schedule', c->>'schedule',
@@ -350,7 +340,7 @@ as $f$
     'consumer', coalesce((select jsonb_agg(jsonb_build_object('stream', r.stream, 'rows', r.rows, 'measured_at', r.measured_at, 'error', r.error) order by r.stream)
                             from pipeline.data_delivery_readings r where r.measure = 'consumer'), '[]'::jsonb),
     'requests', jsonb_build_object('status', 'not_projected', 'reason', 'No registered database source holds the StudySearch request register; it is kept by the requirements register outside the database.'),
-    'meaning', 'Workers are every active scheduled job, by jobid, from the background jobs helper (Data Delivery helper snapshot jobs); stalled means no success within pim.jobs_stall_periods of its own schedule (never less than plans.auto_stall_hours). components adds every dispatcher lane, rollup target and admission rule, with state, outcomes and findings. Consumer figures are the existing verified read-back of what the website and Zoho read.')
+    'meaning', 'Workers are every active scheduled job, by jobid, from the jobs read (security.data_delivery_jobs_v1), counted in the background PIM snapshot; stalled means no success within pim.jobs_stall_periods of its own schedule (never less than plans.auto_stall_hours). components adds every dispatcher lane, rollup target and admission rule, with state, outcomes and findings. Consumer figures are the existing verified read-back of what the website and Zoho read.')
 $f$;
 comment on function security.pim_operations_v1() is 'PIM (s1175, s1176): every active worker by jobid, every lane, rule and target with state and effectiveness (jobs helper snapshot), freshness by country, verified consumer read-back; counted into the Data Delivery snapshot (pim.operations).';
 revoke all on function security.pim_operations_v1() from public, anon, authenticated;
@@ -364,13 +354,12 @@ begin
   if (select count(*) from pipeline.manual_locks) < b.locks then raise exception 'guard: a manual lock was removed'; end if;
   if (select count(*) from cron.job where active) <> b.jobs or (select count(*) from cron.job) <> b.jobs_all then raise exception 'guard: the scheduler changed'; end if;
   if (select count(*) from cron.job where active) > 140 then raise exception 'guard: active cron above 140'; end if;  -- fixed: protected ceiling
-  if position($p$'pdesc', 'jobs'] loop$p$ in pg_get_functiondef('security.data_delivery_refresh_v1(boolean)'::regprocedure)) = 0 then raise exception 'guard: jobs helper not in the background count'; end if;
+  if position('security.pim_operations_v1()' in pg_get_functiondef('security.data_delivery_refresh_v1(boolean)'::regprocedure)) = 0 then raise exception 'guard: pim.operations is not in the background count'; end if;
+  if position('pim_operations_v1' in pg_get_functiondef('security.data_delivery_v1()'::regprocedure)) > 0 then raise exception 'guard: the screen read counts operations live'; end if;
   j := security.data_delivery_jobs_v1();
   if jsonb_array_length(j->'components') <> (select count(*) from cron.job) + (select count(*) from pipeline.field_execution_registry) + (select count(*) from pipeline.rollup_targets) + (select count(*) from pipeline.admission_rules)
     then raise exception 'guard: a component is missing from the jobs helper'; end if;
   if (select count(distinct (c->>'jobid')) from jsonb_array_elements(j->'components') c where c->>'component' = 'cron') <> (select count(*) from cron.job) then raise exception 'guard: cron rows not keyed by jobid'; end if;
-  insert into pipeline.data_delivery_helper_snapshots as x(helper, rows, measured_at, took_ms, error, failed_at) values ('jobs', j, clock_timestamp(), null, null, null)
-    on conflict (helper) do update set rows = excluded.rows, measured_at = excluded.measured_at, took_ms = null, error = null, failed_at = null;
   o := security.pim_operations_v1();
   if jsonb_array_length(o->'workers') <> (select count(*) from cron.job where active and jobname <> 'data-delivery') then raise exception 'guard: workers are not every active job'; end if;
   if jsonb_array_length(o->'freshness_by_country') = 0 or jsonb_array_length(o->'consumer') = 0 then raise exception 'guard: operations read empty'; end if;
