@@ -8,6 +8,7 @@
 // Unknown is never 0: a measure that is not counted, not built or failed shows "Not measured" or "Unknown" with the reason. A green job that admitted nothing
 // in the window carries a visible flag that links to the reason breakdown. Times are Melbourne time, to the second where the page was read.
 import React,{useCallback,useEffect,useRef,useState}from'react'
+import{RecordDrill}from'./RecordTrace' // CF-247 s1282 (DR-19 increment 2): record-level drill-down
 import{RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{hrefFor}from'./nav-map'
@@ -345,7 +346,7 @@ export function RecognitionDelivery({rpc}){
   </section>
 }
 
-function Stream({s,now,providerFilters,open,onToggle}){
+function Stream({s,now,providerFilters,open,onToggle,rank=0}){
   const dr=s.drill||{}
   const lanes=hrefFor('layer2','operations',{lane:s.lane})
   const filtersOk=dr.needs_provider_filters?providerFilters:true
@@ -389,6 +390,8 @@ function Stream({s,now,providerFilters,open,onToggle}){
         {dr.needs_provider_filters&&!providerFilters&&<small data-dd-degraded>Provider Catalogue filters (Filled, Missing, Website and Zoho state) arrive when the Provider Catalogue columns release is live; these links appear then.</small>}
         {dr.note&&<small data-dd-drill-note>{dr.note}</small>}
       </div>
+      {/* CF-247 s1282 (DR-19 increment 2): the records behind this stream, by provider, field and diagnosis class (holds, recoveries), each opening its trace */}
+      <RecordDrill label="Records behind this stream" field={s.field||''} rank={rank}/>
       <h4 className="sl-h4">Primary jobs</h4>
       <div className="lf-frame"><table className="cf-table"><thead><tr><th>Job</th><th>Last run</th><th>Result</th><th>Next run</th><th>Runs ({hoursText(s.net_short?.window_hours)})</th></tr></thead><tbody>
         {(s.jobs?.list||[]).map(j=><tr key={j.job}><td data-label="Job">{j.job}{!j.scheduled&&<small> not scheduled</small>}</td><td data-label="Last run">{j.last_start?fmtDateTime(j.last_start):'Unknown'}</td>
@@ -442,7 +445,7 @@ export default function DataDelivery({rank=0,onError,client=null}){
     {err&&<p role="alert" className="dd-stale" data-dd-stale-banner>The last refresh failed at {stampOf(err.at)} (Melbourne): {err.message}. These are the figures read at {stampOf(d.at)}; they may be out of date.</p>}
     {(flagged.length>0||failing.length>0||unknownAdm.length>0)&&<p className="dd-summary" data-dd-summary>{flagged.length>0&&<><strong>{flagged.length}</strong> stream{flagged.length===1?'':'s'} ran green but admitted nothing in {hoursText(d.windows?.short_hours)} ({flagged.map(s=>s.title).join(', ')}). </>}{unknownAdm.length>0&&<><strong>{unknownAdm.length}</strong> ran green with what they admitted unknown ({unknownAdm.map(s=>s.title).join(', ')}). </>}{failing.length>0&&<><strong>{failing.length}</strong> with a failed run ({failing.map(s=>s.title).join(', ')}).</>}</p>}
     <div className="dd-head" aria-hidden="true"><span>Stream</span><span>Coverage</span><span>Net {hoursText(d.windows?.short_hours)}</span><span>Net {hoursText(d.windows?.long_hours)}</span><span>Website</span><span>Zoho</span><span>Queue</span><span>Holds and reasons</span><span>Speed</span><span>Last and next run</span><span>Automatic recovery</span></div>
-    <div className="dd-streams">{streams.map(s=><Stream key={s.stream} s={s} now={now} providerFilters={Boolean(d.provider_filters_available)} open={open[s.stream]??Boolean(s.stages||s.provider_ai||s.aer_sources)} onToggle={o=>setOpen(x=>({...x,[s.stream]:o}))}/>)}</div>
+    <div className="dd-streams">{streams.map(s=><Stream key={s.stream} s={s} now={now} rank={rank} providerFilters={Boolean(d.provider_filters_available)} open={open[s.stream]??Boolean(s.stages||s.provider_ai||s.aer_sources)} onToggle={o=>setOpen(x=>({...x,[s.stream]:o}))}/>)}</div>
     {/* s1217: Autonomous PIM, inside this panel: matrix, requests and refresh views from the pim snapshot in this same read */}
     <PimDelivery pim={d.pim} now={now} rank={rank} streams={d.streams} snapshots={d.snapshots} staleMinutes={d.stale_after_minutes}/>
     <RecognitionDelivery rpc={rpc}/>
