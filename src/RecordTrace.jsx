@@ -103,11 +103,12 @@ export function CourseFieldStatus({courseId,field=null,open:startOpen=false,rank
 
 /** One record in a drill list: the course title from its detail and its field trace, read when opened. */
 function DrillRecord({r,field,rank}){
-  const[title,setTitle]=useState('')
-  return <details className="rt-rec" data-rt-record={r.course_id} onToggle={e=>{if(e.currentTarget.open&&!title)api.courseDetail(r.course_id).then(d=>setTitle(d?.display_title||d?.canonical_title||'')).catch(()=>setTitle(''))}}>
+  // the trace is read only when the record is opened: a class can list many records, and each closed one reads nothing
+  const[title,setTitle]=useState(''),[opened,setOpened]=useState(false)
+  return <details className="rt-rec" data-rt-record={r.course_id} onToggle={e=>{if(!e.currentTarget.open)return;setOpened(true);if(!title)api.courseDetail(r.course_id).then(d=>setTitle(d?.display_title||d?.canonical_title||'')).catch(()=>setTitle(''))}}>
     <summary><span>{title||`Course ${String(r.course_id).slice(0,8)}`}</span> {clsChip(r.class)} <small className="l4lc-ref">{r.detail}{r.revisit_after?` · revisit after ${when(r.revisit_after)}`:''}</small></summary>
     <p><a className="cf-link" href={hrefFor('courses','',{id:r.course_id})} data-rt-open-course>Open the course record</a></p>
-    <CourseFieldStatus courseId={r.course_id} field={field} open rank={rank}/>
+    {opened&&<CourseFieldStatus courseId={r.course_id} field={field} open rank={rank}/>}
   </details>
 }
 
