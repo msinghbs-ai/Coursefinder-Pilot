@@ -1,7 +1,7 @@
 // Guards: Admin #1049 finite named NZ/CA AER Wave 1, Steps 1-2 only; official provider, source scope, G3, manual locks, cron and no CA wide settings.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const sql=fs.readFileSync('supabase/migrations/20261129032000_cf247_s3_aer_1049_nzca_source_candidates.sql','utf8')
+const sql=fs.readFileSync('supabase/migrations/20261129061000_cf247_s3_aer_1049_nzca_source_candidates.sql','utf8')
 test('source candidates only, 21 safe named NZ/CA providers, no admission or scheduling changes',()=>{
   const ids=[...sql.matchAll(/\('([0-9a-f-]{36})'::uuid,'(?:NZ|CA)','https?:\/\//g)].map(x=>x[1])
   expect(ids).toHaveLength(21)
