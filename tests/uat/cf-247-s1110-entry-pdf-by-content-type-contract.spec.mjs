@@ -44,7 +44,7 @@ test('s1110: which direct reads are fetched again as a PDF', async () => {
 })
 
 test('s1110: the worker reads such an address as a PDF directly, stores it as application/pdf and counts it as a PDF', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.52"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.53"')
   expect(IX).toContain('import { hasPdfSignature, retryAsPdf } from "./entry-pdf-sniff.ts";')
   expect(IX).toContain('ctype = r.headers.get("content-type");')
   expect(IX).toContain('return { status, http, html, finalUrl, ctype };')
