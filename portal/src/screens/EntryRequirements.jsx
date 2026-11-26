@@ -4,8 +4,8 @@ import { usePortal, useDebounced } from '../lib/portal.jsx'
 import { useSaved } from '../lib/saved.js'
 import { basket } from '../lib/basket.js'
 import { entryLine, entryForMarket, englishLine, lengthOrBlank, primaryFeeAmount, primaryFeeNote } from '../lib/courseDetailFormat.js'
-import { stateShort } from '../lib/format.js'
-import { PageHead, StudyInBar, Select, LoadState, ShowMore, Count, Pill, ViewToggle, RegBadge, MarketOptions } from '../components/ui.jsx'
+import { placeText } from '../lib/format.js'
+import { PageHead, StudyInBar, Select, LoadState, ShowMore, Count, Pill, ViewToggle, RegBadge, MarketOptions, IntlBadge } from '../components/ui.jsx'
 import { CourseRow, ListHead } from '../components/CourseRow.jsx'
 import { DetailDrawer } from '../components/DetailDrawer.jsx'
 import { ExtLink } from '../components/ExtLink.jsx'
@@ -31,7 +31,7 @@ function SaveButtons({ c, canSave, saved, busy, onToggle }) {
   )
 }
 
-const facts = c => ({ place: [c.city, stateShort(c.state_code)].filter(Boolean).join(', '), length: lengthOrBlank(c.duration_value, c.duration_unit), fee: primaryFeeAmount(c.annual_tuition_fee) })
+const facts = c => ({ place: placeText(c, ', ', true), length: lengthOrBlank(c.duration_value, c.duration_unit), fee: primaryFeeAmount(c.annual_tuition_fee) })
 
 function EntryCard({ c, market, marketName, onOpen, openId, ...save }) {
   const entry = entryForMarket(c.entry_requirements, market).map(entryLine), english = (c.english_requirements || []).map(englishLine)
@@ -44,7 +44,7 @@ function EntryCard({ c, market, marketName, onOpen, openId, ...save }) {
           <p className="muted">{c.provider_name}</p>
         </div>
       </header>
-      <div className="tags">{c.country_code && <Pill>{c.country_code}</Pill>}{c.level_name && <Pill>{c.level_name}</Pill>}{f.place && <Pill>{f.place}</Pill>}{f.length && <Pill>{f.length}</Pill>}</div>
+      <div className="tags">{c.country_code && <Pill>{c.country_code}</Pill>}{c.level_name && <Pill>{c.level_name}</Pill>}{f.place && <Pill>{f.place}</Pill>}{f.length && <Pill>{f.length}</Pill>}<IntlBadge c={c} /></div>
       {f.fee && <p className="fee-line"><strong>{f.fee}</strong> <span className="muted small">{primaryFeeNote(c.annual_tuition_fee)}</span></p>}
       {(entry.length > 0 || english.length > 0) && (
         <div className="er-grid">
@@ -139,7 +139,7 @@ export default function EntryRequirements({ access }) {
             <div className="list" role="list">
               <ListHead />
               {s.items.map(c => { const f = facts(c); return (
-                <CourseRow key={c.course_id} c={c} level={c.level_name} place={f.place} length={f.length} fee={f.fee || ''}>
+                <CourseRow key={c.course_id} c={c} level={c.level_name} place={f.place} length={f.length} fee={f.fee || ''} lead={<IntlBadge c={c} />}>
                   <DetailsButton open={openCourse?.course_id === c.course_id} id={`drawer-${c.course_id}`} onClick={() => setOpenCourse(c)} />
                   <ExtLink className="btn" href={c.official_url}>Course page ↗</ExtLink>
                   <SaveButtons c={c} {...saveFor(c)} />

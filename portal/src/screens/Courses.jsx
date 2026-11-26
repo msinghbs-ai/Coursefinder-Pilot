@@ -3,9 +3,9 @@ import { rpc } from '../lib/api.js'
 import { usePortal } from '../lib/portal.jsx'
 import { useSaved } from '../lib/saved.js'
 import { basket } from '../lib/basket.js'
-import { dateText, stateShort } from '../lib/format.js'
+import { dateText, placeText } from '../lib/format.js'
 import { lengthOrBlank, primaryFeeAmount, primaryFeeNote } from '../lib/courseDetailFormat.js'
-import { PageHead, StudyInBar, Pill, ViewToggle, RegBadge } from '../components/ui.jsx'
+import { PageHead, StudyInBar, Pill, ViewToggle, RegBadge, IntlBadge } from '../components/ui.jsx'
 import { CourseRow, ListHead } from '../components/CourseRow.jsx'
 import { DetailDrawer } from '../components/DetailDrawer.jsx'
 import { ExtLink } from '../components/ExtLink.jsx'
@@ -36,7 +36,7 @@ function normaliseRelaxations(r) {
 // annual tuition fee (portal.primary_fee_v1); the national course code sits beside the title; the Course page link sits next to
 // Course details, which opens the right-hand drawer.
 function facts(c) {
-  const place = [stateShort(c.state_code), c.city].filter(Boolean).join(' · ')
+  const place = placeText(c)  // s1275: the city, or "Multiple campuses" when no one campus can be named
   const intakes = Array.isArray(c.intakes) && c.intakes.length ? c.intakes : c.next_intake ? [c.next_intake] : []
   const intake = intakes.map(i => i.label || dateText(i.start_date, 'day')).filter(Boolean)[0] || ''
   return { place, intake, length: lengthOrBlank(c.duration_value, c.duration_unit), fee: primaryFeeAmount(c.fee) }
@@ -66,6 +66,7 @@ function CourseCard({ c, near, onOpen, openId, ...save }) {
         <div className="badges">
           {c.topic_match && <Pill tone="teal">Topic match{Number.isFinite(score) && score > 0 ? ` ${Math.round(score <= 1 ? score * 100 : score)}%` : ''}</Pill>}
           {near && c.miss_text && <Pill tone="amber">{c.miss_text}</Pill>}
+          <IntlBadge c={c} />
         </div>
       </header>
       <div className="tags">
@@ -89,7 +90,7 @@ function Results({ items, view, near, onOpen, openId, saveFor }) {
         <ListHead />
         {items.map(c => { const f = facts(c); return (
           <CourseRow key={c.course_id} c={c} level={c.level} place={f.place} length={f.length} fee={f.fee ? `${f.fee}${c.fee?.year ? ` (${c.fee.year})` : ''}` : ''}
-            lead={near && c.miss_text ? <Pill tone="amber">{c.miss_text}</Pill> : null}>
+            lead={<>{near && c.miss_text ? <Pill tone="amber">{c.miss_text}</Pill> : null}<IntlBadge c={c} /></>}>
             <DetailsButton open={openId === c.course_id} id={`drawer-${c.course_id}`} onClick={() => onOpen(c)} />
             <ExtLink className="btn" href={c.course_url}>Course page ↗</ExtLink>
             <SaveButtons c={c} {...saveFor(c)} />

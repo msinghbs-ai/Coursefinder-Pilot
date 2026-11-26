@@ -26,7 +26,8 @@ test('Course details: the entry matrix section, narrowed to the student’s coun
 // s1222 amended: a concise card shows location, length and the one annual tuition fee only when held; Not recorded is said in Course details.
 test('Entry Requirements cards: location, length (durationText) and annual tuition, Not recorded when null', () => {
   const s = read(`${SRC}/screens/EntryRequirements.jsx`)
-  expect(s).toContain("place: [c.city, stateShort(c.state_code)].filter(Boolean).join(', ')")
+  // s1275: the place comes from placeText, which uses the server's place_label (Multiple campuses (VIC)) before city and state.
+  expect(s).toContain("place: placeText(c, ', ', true)")
   expect(s).toContain('length: lengthOrBlank(c.duration_value, c.duration_unit)')
   expect(s).toContain('fee: primaryFeeAmount(c.annual_tuition_fee)')
   expect(s).not.toContain('NOT_RECORDED')

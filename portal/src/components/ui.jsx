@@ -84,5 +84,9 @@ export function ViewToggle({ value, onChange }) {
   )
 }
 
+// s1275: the platform holds no answer on whether a course takes international students (open_to_international is null). A course known to be
+// closed to them is not searched. The badge shows only when the function sent the field and it is null, never for a course that did not send it.
+export const IntlBadge = ({ c }) => (c && c.open_to_international === null ? <Pill tone="amber">Check international availability</Pill> : null)
+
 // s1222: the national course register code (CRICOS, NZQA, MTCU) as a badge beside the course title.
 export const RegBadge = ({ r }) => (r && r.code ? <span className="reg-badge" title={`${r.label} course code`}>{r.label} {r.code}</span> : null)
