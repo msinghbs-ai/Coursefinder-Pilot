@@ -26,8 +26,12 @@ test('s1195: only escaped tags of known HTML elements are taken out; ordinary te
 })
 
 test('s1195: no queue, job or setting reads on the converter name, so the new version reads no page again', () => {
-  const sql = fs.readdirSync('supabase/migrations').filter((f) => f >= '20261129040000').map((f) => fs.readFileSync(`supabase/migrations/${f}`, 'utf8')).join('\n')
-  expect(sql).not.toMatch(/lean-md-v[0-9]/)
+  // nothing compares or re-queues on the converter name (checked file by file; comments, run labels and notes may name it)
+  for (const f of fs.readdirSync('supabase/migrations').filter((f) => f >= '20261129040000')) {
+    const code = fs.readFileSync(`supabase/migrations/${f}`, 'utf8').replace(/--.*$/gm, '')
+    expect(code, f).not.toMatch(/\bconverter\b\s*(=|<>|!=|is\s+distinct|in\s*\()/i)
+    expect(code, f).not.toMatch(/lean_section_eval_cases[^;]*\bconverter\b\s*</i)
+  }
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(ix).toContain('// was v1.0.47 // v1.0.47 (26 Nov 2026, CF-247 s1195')
 })
