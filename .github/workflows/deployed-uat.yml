@@ -321,6 +321,11 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/RecordTrace\.jsx$|^tests/uat/cf-247-s1282-dr19-record-trace-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/cf-247-s1282-dr19-record-trace-deployed.spec.mjs)
           fi
+          # Reported data issues R3 (SS-Programme-Control 26 Nov 2026 22:52, s1285): the Layer 4 view and the drawer indicators run their read-only
+          # production acceptance, with the record trace spec whose drawer fold now carries the Reported and Resolved indicators
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(ReportedIssues|reportFlags)\.jsx$|^supabase/migrations/.*_cf247_s1285_reported_issues_r3_layer4_view\.sql$|^tests/uat/cf-247-s1285-reported-issues-r3-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/cf-247-s1285-reported-issues-r3-deployed.spec.mjs tests/uat/cf-247-s1282-dr19-record-trace-deployed.spec.mjs)
+          fi
           # S2-BOOST-Courses (19 Nov 2026, s728): last, so it wins over blocks that also match this workflow file
           if printf '%s\n' "$changed" | grep -qx '.github/s2-boost-live-counts-candidate'; then
             targeted=(tests/uat/cf-247-s728-pim-admin-live-counts-deployed.spec.mjs)

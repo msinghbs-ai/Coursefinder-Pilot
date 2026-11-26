@@ -51,3 +51,15 @@
 .rt-toggle{min-height:44px;border:0;background:none;padding:.25rem 0;cursor:pointer;font:inherit;font-size:var(--cf-fs-xs);color:var(--cf-slate-600);text-align:left;max-width:100%}
 .rt-toggle::before{content:'\25B8\00A0'}
 .rt-toggle[aria-expanded="true"]::before{content:'\25BE\00A0'}
+/* CF-247 s1285 (Reported data issues R3): the Layer 4 view and the drawer's Reported and Resolved indicators. Phone width: everything wraps. */
+.ri{margin:.4rem 0}
+.ri-figures{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10rem),1fr));gap:.4rem;margin:.4rem 0}
+.ri-figures div{border:1px solid var(--cf-border);border-radius:6px;padding:.3rem .45rem;min-width:0}
+.ri-figures dt{font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
+.ri-figures dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.ri-list{list-style:none;margin:.3rem 0;padding:0;display:grid;gap:.4rem}
+.ri-item{border:1px solid var(--cf-border);border-radius:6px;padding:.4rem .5rem;min-width:0;overflow-wrap:anywhere}
+.ri-head{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem}
+.ri-links{display:flex;flex-wrap:wrap;gap:.6rem}
+.ri-links a{min-height:44px;display:inline-flex;align-items:center}
+.rf-flags{display:inline-flex;flex-wrap:wrap;gap:.25rem;vertical-align:middle}

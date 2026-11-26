@@ -530,6 +530,7 @@ Tab key `inbox` · Curator and above
 
 - **Screen:** `Layer4Inbox` (Layer4Inbox.jsx)
 - **Folds:**
+  - Processing journey and diagnosis (details) — Layer4Journey.jsx
   - Why it waits (details) — Layer4HoldReasons.jsx
   - (i) Hint (details) — Layer4Inbox.jsx
   - Technical detail (details) — Layer4Inbox.jsx
@@ -542,7 +543,6 @@ Tab key `inbox` · Curator and above
   - The page's own words (details) — DescriptionEditAdmit.jsx
   - What the platform holds (details) — Layer4ItemLifecycle.jsx
   - Event history, times and steps (details) — Layer4ItemLifecycle.jsx
-  - Processing journey and diagnosis (details) — Layer4Journey.jsx
   - Course links: … (details) — AerCourseLinks.jsx
   - Technical detail (details) — Layer4Focus.jsx
   - Decide several at once (details) — Layer4StandardBulk.jsx

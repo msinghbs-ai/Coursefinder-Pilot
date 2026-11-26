@@ -15,6 +15,7 @@ import{StatusChip,Button,fmtNumber}from'./ui-kit'
 import{fmtDateTime}from'./lib/format.js'
 import{hrefFor}from'./nav-map'
 import Layer4Journey,{STATE}from'./Layer4Journey'
+import{useCourseReports,ReportFlag}from'./reportFlags' // CF-247 s1285 (R3): Reported and Resolved per field
 import'./layer4-item-lifecycle.css'
 
 const rpc=(fn,args)=>supabase.rpc(fn,args).then(({data,error})=>{if(error)throw new Error(error.message);return data})
@@ -60,10 +61,10 @@ export function Verification({f,consumer}){
 }
 
 /** One field of one course: the diagnosis, the seven facts, evidence, attempts, history and the authorised actions. */
-export function FieldTrace({f,consumer,courseId,rank=0}){
+export function FieldTrace({f,consumer,courseId,rank=0,rep=null}){
   const g=f.diagnosis||{},abs=f.absence,att=f.attempts||[],l4=f.layer4||[],hist=f.history||{}
   return <div className="rt-field" data-rt-field={f.field} data-rt-class={g.class}>
-    <p className="l4j-stop"><strong>{f.label||word(f.field)}</strong> {clsChip(g.class)} {g.detail}{g.revisit_after?<small className="l4lc-ref"> · revisit after {when(g.revisit_after)}</small>:null}</p>
+    <p className="l4j-stop"><strong>{f.label||word(f.field)}</strong> {clsChip(g.class)} <ReportFlag rep={rep} field={f.field}/> {g.detail}{g.revisit_after?<small className="l4lc-ref"> · revisit after {when(g.revisit_after)}</small>:null}</p>
     <Verification f={f} consumer={consumer}/>
     <dl className="l4lc-steps l4j-diag">
       <dt>Producer</dt><dd data-rt="producer">{f.producer?.kind==='none'?'No automatic producer':word(f.producer?.kind)||'Not recorded'}{f.producer?.description?` · ${f.producer.description}`:''}{f.producer?.planner_listed===false?' · not offered to the enrich planner':''}</dd>
@@ -84,6 +85,7 @@ export function FieldTrace({f,consumer,courseId,rank=0}){
 export function CourseFieldStatus({courseId,field=null,open:startOpen=false,rank=0}){
   const[t,setT]=useState(null),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[show,setShow]=useState('attention')
   const load=()=>{setBusy(true);setErr('');readTrace(courseId,field).then(setT).catch(e=>setErr(e.message)).finally(()=>setBusy(false))}
+  const rep=useCourseReports(courseId,rank,!!t) // s1285: the course's reports, read with the trace (Curator and above)
   useEffect(()=>{if(startOpen&&courseId)load()},[courseId,field])
   const fields=t?.fields||[],attention=fields.filter(f=>!['verified','not_applicable'].includes(f.diagnosis?.class))
   const list=field||show==='all'?fields:attention
@@ -91,9 +93,10 @@ export function CourseFieldStatus({courseId,field=null,open:startOpen=false,rank
   const body=<>{busy&&!t&&<p className="l4lc-ref" role="status">Reading the field status…</p>}
     {err&&<p className="l4lc-err" role="alert" data-rt-error>The field status could not be read: {err}</p>}
     {t&&<section className="l4lc" data-rt-course={courseId}>
+      {rep&&!rep.error&&(Number(rep.open)>0||Number(rep.resolved)>0)&&<p className="rt-counts" data-rf-course>Reported data issues: <ReportFlag rep={rep}/></p>}
       {!field&&<p className="rt-counts" data-rt-counts>{Object.entries(counts).map(([c,n])=><span key={c} className="rt-count">{clsChip(c)} {fmtNumber(n)}</span>)}</p>}
       {!field&&<div className="rt-show" role="group" aria-label="Fields shown"><button type="button" aria-pressed={show==='attention'} onClick={()=>setShow('attention')}>Needs attention ({fmtNumber(attention.length)})</button><button type="button" aria-pressed={show==='all'} onClick={()=>setShow('all')}>All fields ({fmtNumber(fields.length)})</button></div>}
-      {list.length===0?<p className="l4lc-ref">Every field holds a value or does not apply.</p>:list.map(f=><FieldTrace key={f.field} f={f} consumer={t.consumer} courseId={courseId} rank={rank}/>)}
+      {list.length===0?<p className="l4lc-ref">Every field holds a value or does not apply.</p>:list.map(f=><FieldTrace key={f.field} f={f} consumer={t.consumer} courseId={courseId} rank={rank} rep={rep}/>)}
       <p className="l4lc-ref">Read {when(t.checked_at)} · <button type="button" className="l4j-refresh" onClick={load} disabled={busy}>{busy?'Reading…':'Refresh'}</button></p>
     </section>}</>
   if(startOpen)return body
