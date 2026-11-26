@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, ChevronRight, RefreshCw, X } from 'lucide-react'
 import { fmtNumber } from './lib/format.js'
+import { PageSearchScope } from './PageSearch.jsx'
 
 export { fmtNumber, fmtDate, fmtDateTime, fmtDayMonth, fmtTime, fmtTimeSeconds, fmtMoney, fmtPercent, fmtShare, fmtRelative, fmtBytes } from './lib/format.js'
 
@@ -80,11 +81,16 @@ export function PageTabs({tabs,active,onChange,label='Page sections'}){
 }
 
 /** Page body: optional tabs, optional toolbar row, then the content. */
-export function PageLayout({tabs,active,onTab,toolbar,children,className='',label}){
-  return <div className={`cf-page${className?' '+className:''}`}>
+export function PageLayout({tabs,active,onTab,toolbar,children,className='',label,search=false,pageLabel,pageKey}){
+  const body=<div className="cf-page-body" role={tabs?.length>1?'tabpanel':undefined} aria-labelledby={tabs?.length>1&&active?`cf-tab-${active}`:undefined}>{children}</div>
+  const inner=<>
     {tabs?.length>1&&<PageTabs tabs={tabs} active={active} onChange={onTab} label={label}/>}
     {toolbar&&<div className="cf-page-toolbar">{toolbar}</div>}
-    <div className="cf-page-body" role={tabs?.length>1?'tabpanel':undefined} aria-labelledby={tabs?.length>1&&active?`cf-tab-${active}`:undefined}>{children}</div>
+    {body}
+  </>
+  // s1270: a page that opts in gets the search bar at its top (PageSearch.jsx); a screen inside registers its own entries with usePageSearchEntries
+  return <div className={`cf-page${className?' '+className:''}`}>
+    {search?<PageSearchScope tabs={tabs} active={active} onTab={onTab} pageLabel={pageLabel||label} pageKey={pageKey}>{inner}</PageSearchScope>:inner}
   </div>
 }
 

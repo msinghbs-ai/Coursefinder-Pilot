@@ -17,6 +17,7 @@ import ProviderListPicker,{ProviderNames}from'./ProviderListPicker'
 import{plainError}from'./lib/errors'
 import{hrefFor}from'./nav-map'
 import{isAiHome}from'./lib/ai-overview'
+import{usePageSearchEntries}from'./PageSearch'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const slug=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
@@ -105,6 +106,22 @@ export default function SettingsRegister({onError,onCount}){
   // a Consumer APIs setting is sent with the unlock only when the Platform Admin ticked it for that section; without it the write is refused
   const save=async(key,value,reason,unlock)=>{const{data,error}=await supabase.rpc('admin_toolsets_write',{p_action:'setting',p_args:{toolset:'pipeline',key,value,reason,...(unlock?{unlock:'consumer_api'}:{})}});if(error)throw error
     if(data&&data.ok===false)throw new Error('This Consumer APIs setting is read-only. Tick "Unlock: this is an approved change" first.');await load()}
+  // s1270: every setting and section of this register is offered to the page search (label, key, what it does, what uses it, its group), from the read already
+  // loaded here. A choice opens the group, the section's card and any closed fold around the row, scrolls to it and highlights it. No second read.
+  const searchEntries=React.useMemo(()=>{
+    if(!d)return null
+    const secs=(d.sections||[]).map(sec=>({...sec,hub:hubOf(sec),settings:(sec.settings||[]).filter(x=>!isAiHome(x))})).filter(sec=>sec.settings.length)
+    const out=[]
+    for(const sec of secs){
+      const cardSel=`[data-card="settings.register.${slug(sec.section)}"]`
+      const show=()=>{setQ('');setChangedOnly(false);setTab(sec.hub)}
+      out.push({id:`reg-section:${sec.section}`,kind:'section',label:sec.section,path:`${sec.hub}`,help:SECTION_HELP[sec.section]||'',keywords:`${sec.hub} settings group`,jump:()=>{show();return cardSel},open:[cardSel]})
+      for(const x of sec.settings)out.push({id:`reg-setting:${x.key}`,kind:'setting',label:x.label,key:x.key,path:`${sec.hub} › ${sec.section}`,help:[x.help,x.used_by&&`Used by ${x.used_by}`].filter(Boolean).join(' '),keywords:`${x.unit||''} ${x.control_class==='automatic'?'automatic software tuned':''} ${x.changed?'changed by a person':''}`,
+        jump:()=>{show();return `[data-register-setting="${x.key}"]`},open:[cardSel]})
+    }
+    return out
+  },[d])
+  usePageSearchEntries(searchEntries)
   if(!d)return <section className="m-panel" data-settings-register>{failed?<Empty text={`Settings could not be loaded: ${failed}`}/>:<Loading label="Loading settings…"/>}</section>
   const can=Boolean(d.can_manage),check=d.check||[]
   // v2.16.0 (Platform Admin 13 Nov 2026 19:23): a setting whose home is Models & services is listed and changed there only. Every other

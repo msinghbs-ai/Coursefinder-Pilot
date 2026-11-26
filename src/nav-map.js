@@ -300,6 +300,23 @@ export function refusedTab(pageKey, requested, rank) {
 
 export function allowedTabs(page, rank) { return (page?.tabs || []).filter(t => rank >= t.min) }
 // v2.15.300: a hidden tab (Layer 2/3 › Adapter builder) opens by its address (from a university row) and is drawn only while it is open
+// s1270 (SS-Programme-Control 26 Nov 2026 17:47): the pages that draw the search bar (PageSearch.jsx) at their top: the long ones, where a setting, control or
+// section was a long scroll away. Each page lists only its own tabs and what it has drawn, so a role never sees a result it cannot open.
+export const SEARCH_PAGES = ['layer2', 'environment', 'services', 'layer1', 'coverage', 'health', 'jobs', 'migration']
+// s1270: plain words a tab is also known by, for the page search (PageSearch.jsx). Kept apart from the tab list so the menu stays one line per tab.
+export const TAB_FIND = {
+  'layer2.operations': 'data delivery autonomous pim delivery matrix workers stalled consumer read back freshness requests lane funnels progress intake run validate',
+  'layer2.universities': 'providers adapters onboarding build adapter waves',
+  'layer2.enrich': 'fill gaps stalled fields standing queue provider descriptions fee reader english intakes campus duration',
+  'layer2.plan': 'plan auto schedule enrich plan run batch',
+  'layer2.sources': 'official course pages source find links',
+  'layer2.flags': 'raise release hold soft reason recheck',
+  'environment.settings': 'pipeline settings job sizes retries caps limits circuit breakers schedulers consumer apis website zoho alerts retention housekeeping',
+  'environment.integrations': 'keys outside services secrets resources services overview',
+  'environment.api': 'calls requests keys versions rotation website zoho error rate',
+  'environment.backup': 'restore rollback setting values published switch',
+}
+
 export function shownTabs(page, rank, active = '') { return allowedTabs(page, rank).filter(t => !t.hidden || t.key === active) }
 export function canOpen(pageKey, rank) { const p = PAGES[pageKey]; return Boolean(p) && rank >= p.min }
 
