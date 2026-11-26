@@ -4,7 +4,7 @@ import { usePortal, useDebounced } from '../lib/portal.jsx'
 import { useSaved } from '../lib/saved.js'
 import { basket } from '../lib/basket.js'
 import { entryLine, entryForMarket, englishLine } from '../lib/courseDetailFormat.js'
-import { NOT_RECORDED } from '../lib/format.js'
+import { NOT_RECORDED, money, durationText, stateShort } from '../lib/format.js'
 import { PageHead, StudyInBar, Select, LoadState, ShowMore, Count, Pill } from '../components/ui.jsx'
 import { ExtLink } from '../components/ExtLink.jsx'
 import { CourseDetails, DetailsButton } from '../components/CourseDetails.jsx'
@@ -34,6 +34,11 @@ function EntryCard({ c, market, marketName, canSave, saved, busy, onToggle }) {
           <div className="tags">{c.country_code && <Pill>{c.country_code}</Pill>}{c.level_name && <Pill>{c.level_name}</Pill>}</div>
         </div>
       </header>
+      <dl className="er-facts">
+        <div><dt>Location</dt><dd>{[c.city, stateShort(c.state_code)].filter(Boolean).join(', ') || NOT_RECORDED}</dd></div>
+        <div><dt>Length</dt><dd>{durationText(c.duration_value, c.duration_unit)}</dd></div>
+        <div><dt>Tuition per year (provider)</dt><dd>{(c.annual_tuition_fee && money(c.annual_tuition_fee.amount, c.annual_tuition_fee.currency)) || NOT_RECORDED}</dd></div>
+      </dl>
       <div className="er-grid">
         <Lines title="Academic entry" empty={market ? `No academic requirement recorded for ${marketName || 'this country'}` : NOT_RECORDED}>
           {entry.length > 0 && (

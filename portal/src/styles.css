@@ -199,3 +199,12 @@ a.textlink { display:inline-flex; align-items:center; min-height:44px }
   .d-grid, .er-grid { grid-template-columns:1fr } .d-facts { grid-template-columns:1fr 1fr }
   .details .btn, .details select, .er-col a { min-height:44px }
 }
+/* s1220: provider entry matrix in Course details; city, length and fee on Entry Requirements cards */
+.er-facts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.4rem .9rem; margin:.7rem 0 0 }
+.er-facts div { display:grid; gap:.1rem; min-width:0 } .er-facts dt { font-size:.75rem; color:var(--muted) } .er-facts dd { margin:0; overflow-wrap:anywhere }
+.d-matrix li { border-top:1px solid var(--line); padding-top:.5rem } .d-matrix li:first-child { border-top:0; padding-top:0 }
+@media (max-width:640px) {
+  .er-facts { grid-template-columns:1fr 1fr }
+  .details .actions .btn { min-height:44px }
+}
+
