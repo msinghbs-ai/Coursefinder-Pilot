@@ -11,7 +11,7 @@ test('s1280: the sweep gets its own scope setting and reads it; the AI fee reade
   expect(code).toContain('"private_vet", "school", "wananga"')
   expect(code).toContain("s.key = 'fid.provider_types'")
   expect(code).toContain('23f4c2946d9ee8e0cc6778f67b44e657')
-  expect(code).toContain('1685019e64b06064f6b50165d5b32a49')
+  expect(code).toContain('7efca08ef1793aef72c89de8da3d0bd5')
   expect(code).not.toMatch(/update pipeline\.platform_toolset_settings[^;]*fees\.provider_types/i)
   expect(code).toContain('fees.provider_types (the AI fee reader scope) changed')
 })

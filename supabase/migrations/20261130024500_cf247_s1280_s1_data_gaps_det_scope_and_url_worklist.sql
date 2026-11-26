@@ -15,7 +15,7 @@
 -- G1: no job added, removed or (de)activated. G2: one new setting (list) with its reason and an audit event; no number in code except the frozen list size, marked fixed.
 -- G3: no consumer object touched (checked 75/48 before and after). Locks: 7,585 unchanged (checked). Spend: none.
 -- Replaces: the provider-type scope source of security.fid_det_batch_v1 (same name; md5-guarded text edit, resulting md5 checked; was fees.provider_types, now fid.provider_types).
--- Retires: nothing. Nothing dropped or deleted. Reversal: reverse the edit (body 1685019e64b06064f6b50165d5b32a49 back to 23f4c2946d9ee8e0cc6778f67b44e657); the 23 list rows are removable by a person.
+-- Retires: nothing. Nothing dropped or deleted. Reversal: reverse the edit (body 7efca08ef1793aef72c89de8da3d0bd5 back to 23f4c2946d9ee8e0cc6778f67b44e657); the 23 list rows are removable by a person.
 set local lock_timeout = '5s';  -- fixed: lock wait for the function, setting and list writes
 set local statement_timeout = '120s';  -- fixed: one function body is replaced and 23 list rows are written
 
@@ -72,7 +72,7 @@ begin
   return p_sig || ': applied';
 end $f$;
 
-select pg_temp.edit_counted('security.fid_det_batch_v1(integer,text)', '23f4c2946d9ee8e0cc6778f67b44e657', '1685019e64b06064f6b50165d5b32a49',
+select pg_temp.edit_counted('security.fid_det_batch_v1(integer,text)', '23f4c2946d9ee8e0cc6778f67b44e657', '7efca08ef1793aef72c89de8da3d0bd5',
 array[$o1$and coalesce(t.code, 'other') in (select jsonb_array_elements_text(s.value) from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'fees.provider_types')$o1$],
 array[$n1$and coalesce(t.code, 'other') in (select jsonb_array_elements_text(s.value) from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'fid.provider_types')  -- s1280: this sweep's own scope; the AI fee reader keeps fees.provider_types$n1$],
 array[1]);
@@ -127,7 +127,7 @@ do $p$
 declare v jsonb := security.consumer_api_check_v1(); g s1280_guard%rowtype;
 begin
   select * into g from s1280_guard;
-  if md5((select prosrc from pg_proc where oid = 'security.fid_det_batch_v1(integer,text)'::regprocedure)) <> '1685019e64b06064f6b50165d5b32a49' then
+  if md5((select prosrc from pg_proc where oid = 'security.fid_det_batch_v1(integer,text)'::regprocedure)) <> '7efca08ef1793aef72c89de8da3d0bd5' then
     raise exception 'post-check: fid_det_batch_v1 is not the edited text';
   end if;
   if jsonb_array_length(coalesce(v->'drift', '[]'::jsonb)) <> 0 or (v->>'functions')::int <> 75 or (v->>'relations')::int <> 48 then
