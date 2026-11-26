@@ -12,6 +12,11 @@
 # A merge made with the workflow's GITHUB_TOKEN does not start the push-to-main workflows, so POST_MERGE=pilot starts them here:
 # Deploy on merge (with the exact before/after commits) when migrations or edge functions changed, Security gates, Deployed UAT, and
 # Release Currentness Deployed when release files changed. POST_MERGE=admin starts Security gates.
+#
+# s1285 (Keep Main Green P0, SS-Programme-Control 26 Nov 2026 23:58 AEDT): REQUIRED_CHECKS names the checks that must have passed on the exact head
+# (comma-separated; empty names none, MIN_CHECKS still applies). MAIN_UAT_WORKFLOW names the deployed UAT workflow of main: while its latest run on
+# main is running, a merge waits (one release at a time, so each merge gets its own deployed verification); while it failed, only a pull request
+# labelled MAIN_FIX_LABEL (main-green-fix) may merge, to restore main. Empty (as in coursefinder-admin) checks nothing.
 set -euo pipefail
 
 : "${REPO:?}" "${PR:?}"
@@ -24,6 +29,9 @@ POLL_SECONDS="${POLL_SECONDS:-60}"    # fixed: one poll a minute keeps several w
 POST_MERGE="${POST_MERGE:-none}"
 SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/null}"
 RERUN=""
+REQUIRED="${REQUIRED_CHECKS:-}"
+MAIN_UAT="${MAIN_UAT_WORKFLOW:-}"
+FIX_LABEL="${MAIN_FIX_LABEL:-main-green-fix}"
 
 say() { echo "$1"; echo "- $1" >> "$SUMMARY"; }
 comment() { gh api "repos/$REPO/issues/$PR/comments" -f body="$1" >/dev/null 2>&1 || true; }
@@ -62,11 +70,29 @@ while :; do
     elif [ "$(jq -r '[.[] | select(.name == "dry-run" and .conclusion == "success")] | length' <<<"$runs")" = 0 ]; then dry_ok="no successful rolled-back dry run yet"; fi
   fi
 
+  missing=""
+  if [ -n "$REQUIRED" ]; then
+    IFS=',' read -ra req <<<"$REQUIRED"
+    for n in "${req[@]}"; do
+      [ "$(jq -r --arg n "$n" '[.[] | select(.name == $n and (.conclusion | IN("success", "neutral")))] | length' <<<"$runs")" = 0 ] && missing="${missing:+$missing, }$n"
+    done
+  fi
+  main_ok=yes
+  if [ -n "$MAIN_UAT" ]; then
+    m=$(gh api "repos/$REPO/actions/workflows/$MAIN_UAT/runs?branch=main&per_page=10" \
+          --jq '[.workflow_runs[] | select(.conclusion != "cancelled" and .conclusion != "skipped")] | first | if . == null then "" else (.status + " " + (.conclusion // "none")) end')
+    case "$m" in
+      ""|"completed success") ;;
+      completed\ *) jq -e --arg l "$FIX_LABEL" '[.labels[].name] | index($l) != null' <<<"$pr" >/dev/null || main_ok="main is red (latest $MAIN_UAT on main: ${m#completed })" ;;
+      *) main_ok="the deployed check of main is still running" ;;
+    esac
+  fi
+
   if [ -n "$failed" ] || [ "$sstate" = failure ] || [ "$sstate" = error ]; then
     stop "#$PR has failing checks: ${failed:-commit status $sstate}." "Auto-merge stopped: failing checks (${failed:-commit status $sstate}). Fix and push; the next push starts the wait again." 
   fi
   if [ -z "$pending" ] && [ -z "$cancelled" ] && [ "$total" -ge "$MIN_CHECKS" ] && { [ "$sstate" = success ] || [ "$scount" = 0 ]; } \
-     && [ "$dry_ok" = yes ] && [ "$mergeable" = true ]; then
+     && [ "$dry_ok" = yes ] && [ "$mergeable" = true ] && [ -z "$missing" ] && [ "$main_ok" = yes ]; then
     break
   fi
   # a cancelled check is usually a concurrency cancel (adding a label starts a run that cancels the running one, then skips): re-run, once each,
@@ -80,7 +106,7 @@ while :; do
       if gh api -X POST "repos/$REPO/actions/runs/$id/rerun" >/dev/null 2>&1; then say "Re-ran cancelled run $id."; fi
     done
   fi
-  why="checks $total (min $MIN_CHECKS); pending: ${pending:-none}; cancelled: ${cancelled:-none}; status: $sstate/$scount; dry run: $dry_ok; mergeable: $mergeable"
+  why="checks $total (min $MIN_CHECKS); required missing: ${missing:-none}; main: $main_ok; pending: ${pending:-none}; cancelled: ${cancelled:-none}; status: $sstate/$scount; dry run: $dry_ok; mergeable: $mergeable"
   if [ "$MODE" = once ] || [ "$(date +%s)" -ge "$deadline" ]; then
     say "#$PR not merged yet ($why)."
     [ "$MODE" = wait ] && comment "Auto-merge waited ${WAIT_MINUTES} minutes and stopped: $why. Re-add the \`$LABEL\` label (or push) to wait again."

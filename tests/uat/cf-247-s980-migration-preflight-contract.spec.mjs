@@ -15,6 +15,7 @@ test('s980: no push trigger; the gate is pull requests to main that add a migrat
   expect(on).toContain("branches: [main]");
   expect(on).toContain("paths: ['supabase/migrations/*.sql']");
   expect(wf).toContain("if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'live-dry-run')");
+  expect(wf).toContain("(github.event.action != 'labeled' || github.event.label.name == 'live-dry-run')");  // s1285: another label does not re-run it
 });
 
 test('s980: the gate runs the pre-flight against main and the live head before the dry run, and fails hard', () => {

@@ -1,6 +1,8 @@
 // Guards: CF-247 s880 (Platform Admin 20 Nov 2026 17:00, chat S1-Build): a pull request labelled `automerge` merges itself on green checks
 // (and, for a migration, a passing rolled-back dry run), its branch is deleted, the push-to-main workflows are started for it, and throwaway
-// probe branches are cleaned up; CLAUDE.md tells every session to merge this way and never ask a person to merge
+// probe branches are cleaned up; CLAUDE.md tells every session to merge this way and never ask a person to merge.
+// s1285 (Keep Main Green P0, SS-Programme-Control 26 Nov 2026 23:58 AEDT): named required checks on the exact head, one release at a time, main red
+// blocks every merge but a main-green-fix; one look per finished Test evidence run instead of one per finished check suite.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -11,10 +13,12 @@ const probe = fs.readFileSync('scripts/ci/probe-branch-cleanup.sh', 'utf8')
 const deploy = fs.readFileSync('.github/workflows/deploy-on-merge.yml', 'utf8')
 const rules = fs.readFileSync('CLAUDE.md', 'utf8')
 
-test('the workflow runs on the label, new pushes, finished check suites and hand-started dry runs', () => {
+test('the workflow runs on the automerge label, new pushes, finished Test evidence runs and hand-started dry runs', () => {
   expect(wf).toContain('    types: [labeled, synchronize, reopened]')
-  expect(wf).toContain('  check_suite:\n    types: [completed]')
-  expect(wf).toContain('    workflows: ["Database migration dry run (rolled back)"]')
+  expect(wf).not.toContain('check_suite:')
+  expect(wf).toContain('    workflows: ["Database migration dry run (rolled back)", "Test evidence"]')
+  expect(wf).toContain("(github.event.action != 'labeled' || github.event.label.name == 'automerge')")
+  expect(wf).toContain("github.event.workflow_run.name == 'Test evidence' && github.event.workflow_run.event == 'pull_request'")
   expect(wf).toContain("contains(github.event.pull_request.labels.*.name, 'automerge')")
   expect(wf).toContain('github.event.pull_request.head.repo.full_name == github.repository')
   for (const p of ['contents: write', 'pull-requests: write', 'actions: write']) expect(wf).toContain(p)
@@ -30,6 +34,17 @@ test('green means every check finished well, the dry run passed for a migration,
   expect(merge).toContain('if [ "$mergeable" = false ] || [ "$mstate" = dirty ]; then')
   expect(merge).toContain('-f merge_method=squash -f sha="$head"')
   expect(merge).toContain('gh api -X DELETE "repos/$REPO/git/refs/heads/$ref"')
+})
+
+test('s1285: named checks must pass on the exact head; a running deployed check of main holds the merge; a red main admits only a main-green-fix', () => {
+  for (const n of ['build-and-smoke', 'test-evidence', 'Secret scan (ISM-2030)', 'Dependency vulnerabilities (ISM-2028, 2102, 2154)', 'Software bill of materials (ISM-1730)']) expect(wf).toContain(n)
+  expect(wf).toContain('MAIN_UAT_WORKFLOW: deployed-uat.yml')
+  expect(merge).toContain('select(.name == $n and (.conclusion | IN("success", "neutral")))')
+  expect(merge).toContain('actions/workflows/$MAIN_UAT/runs?branch=main')
+  expect(merge).toContain('main_ok="the deployed check of main is still running"')
+  expect(merge).toContain('FIX_LABEL="${MAIN_FIX_LABEL:-main-green-fix}"')
+  expect(merge).toContain('[ -z "$missing" ] && [ "$main_ok" = yes ]')
+  expect(merge).toContain('-f merge_method=squash -f sha="$head"')
 })
 
 test('after a merge the push-to-main workflows are started, Deploy on merge with the exact commits', () => {
