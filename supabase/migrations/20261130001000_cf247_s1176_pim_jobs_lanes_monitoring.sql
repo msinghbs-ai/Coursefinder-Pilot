@@ -171,7 +171,9 @@ as $f$
            cr.status reg_status, cr.purpose, cr.area, cr.layer,
            (select jsonb_build_object('runner', g.runner, 'kind', g.k, 'code', g.code, 'mode', g.mode, 'enabled', g.enabled) from reg g where g.legacy_job = c.jobname
              order by (g.mode = 'live') desc, g.enabled desc limit 1) moved_to,
-           h.*, s.n1 next_run, s.period
+           h.first_start, h.last_start, h.last_end, h.last_status, h.last_success, h.last_failure, h.last_failed_at,
+           h.n_s, h.prod_s, h.held_s, h.empty_s, h.fail_s, h.unm_s, h.n_l, h.prod_l, h.held_l, h.empty_l, h.fail_l, h.unm_l, h.avg_s, h.max_s, h.avg_l,
+           s.n1 next_run, s.period
       from cron.job c
       left join disp d on d.jobid = c.jobid
       left join pipeline.component_register cr on cr.kind = 'job' and cr.name = c.jobname
@@ -186,7 +188,7 @@ as $f$
       from reg g left join rh h on h.k = g.k and h.code = g.code left join sch s on s.schedule = g.schedule),
   -- states and findings
   cjs as (
-    select j.*, coalesce(j.last_success, null) ok_at,
+    select j.*,
            greatest(make_interval(secs => ((select stall_h from st) * 3600)::int), coalesce(j.period, interval '0') * (select stall_p from st)) stall_after,
            case
              when not j.active and (j.reg_status in ('retiring', 'retired') or j.role = 'moved') then 'retired'
@@ -258,7 +260,7 @@ as $f$
       'findings', nullif(array_remove(array[
          case when g.open_until > now() then 'circuit_open' end,
          case when coalesce(g.fail_s, 0) > 0 then 'failing' end,
-         case when g.state = 'degraded' and g.open_until is distinct from null and g.open_until <= now() and coalesce(g.fail_s, 0) = 0 then 'stalled' end,
+         case when g.state = 'degraded' and not coalesce(g.open_until > now(), false) and coalesce(g.fail_s, 0) = 0 and g.last_status is distinct from 'failed' then 'stalled' end,
          case when g.n_l >= (select min_runs from st) and g.prod_l = 0 and g.held_l = 0 and g.unm_l = 0 and g.empty_l >= (g.n_l - g.def_l) * (select empty_share from st) and g.empty_l > 0 then 'mostly_empty' end,
          case when g.n_l >= (select min_runs from st) and g.prod_l = 0 and g.held_l > 0 and g.held_l >= (g.n_l - g.fail_l - g.def_l) * (select empty_share from st) then 'repeated_protective_outcome' end,
          case when g.n_l >= (select min_runs from st) and g.def_l >= g.n_l * (select deferred_share from st) then 'often_deferred' end,
