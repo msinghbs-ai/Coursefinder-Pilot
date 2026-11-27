@@ -49,3 +49,31 @@ jobs:
             if [ "$code" != 200 ]; then jq -c '.errors' /tmp/cf.json 2>/dev/null | cut -c1-300 | sed 's/^/  - errors: /' | tee -a "$S"; fi
           done
           rm -f /tmp/cf.json
+  build-check:
+    # Builds the prepared reader image and bundles the reader Worker with a wrangler dry run on the runner. No Cloudflare token is given
+    # to this job, so it cannot deploy or push; it proves the toolchain, the image and the configuration only.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: docker info --format 'Docker {{.ServerVersion}} {{.OSType}}/{{.Architecture}}' && node --version
+      - name: Build the reader image (linux/amd64)
+        run: docker build --platform linux/amd64 -f cloudflare/reader-burst/container/Dockerfile -t reader-burst:check .
+      - name: Container smoke test (no network)
+        run: |
+          set -u
+          docker run -d --rm --network none --name rb reader-burst:check >/dev/null
+          sleep 4
+          h=$(docker exec rb deno eval --allow-net "const r = await fetch('http://127.0.0.1:8080/health'); console.log(r.status, await r.text())" 2>&1 || true)
+          echo "- health: $h" | tee -a "$GITHUB_STEP_SUMMARY"
+          docker logs rb 2>&1 | tail -5
+          docker stop rb >/dev/null
+      - name: Wrangler dry run (no token, nothing deployed)
+        working-directory: cloudflare/reader-burst
+        env:
+          CLOUDFLARE_API_TOKEN: ""
+          WRANGLER_SEND_METRICS: "false"
+        run: npx --yes wrangler@4.161.0 deploy --dry-run --outdir "$RUNNER_TEMP/rb-dist" 2>&1 | tail -20 | tee -a "$GITHUB_STEP_SUMMARY"
