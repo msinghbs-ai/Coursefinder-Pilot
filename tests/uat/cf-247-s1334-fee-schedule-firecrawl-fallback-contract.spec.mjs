@@ -12,7 +12,7 @@ test('the direct read comes first; only an HTML schedule the site refuses goes t
   expect(i).toBeGreaterThan(0); expect(k).toBeGreaterThan(i)
   expect(w).toContain('sc.format === "html" && [401, 403, 406, 429].includes(rr.status)')
   expect(w.indexOf('rpc("svc_fc_spend"')).toBeLessThan(k)
-  expect(w).toContain('log: (p) => c.rpc("svc_fc_call_log", { p })')
+  expect(w).toContain('log: async (p) => { await c.rpc("svc_fc_call_log", { p }) }')
   expect(w).toContain('proxy: "basic"')
   expect(w).not.toMatch(/proxy: "(stealth|enhanced|auto)"/)
   expect(w).toMatch(/Pardon Our Interruption\|Just a moment/)
