@@ -1,0 +1,41 @@
+# Fee schedule run (CF-247 s1327, S1-Build; Platform Admin 28 Nov 2026 06:54 scoped exception, Decision 162): runs one registered schedule
+# through the existing fee-schedule-etl worker, dry run first, then apply, optionally limited to course codes checked one by one. Started by
+# hand only.
+name: Fee schedule run
+on:
+  workflow_dispatch:
+    inputs:
+      schedule:
+        description: "Registered schedule key (for example une_2027, tafeqld_he_2027)"
+        required: true
+      mode:
+        description: "dry_run or apply"
+        required: true
+        default: dry_run
+      codes:
+        description: "Optional: CRICOS course codes, comma separated; other rows are parked"
+        required: false
+        default: ""
+concurrency:
+  group: fee-schedule-run
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run
+        env:
+          IN_SCHEDULE: ${{ inputs.schedule }}
+          IN_MODE: ${{ inputs.mode }}
+          IN_CODES: ${{ inputs.codes }}
+        run: node scripts/fee-schedule-run.mjs "$IN_SCHEDULE" "$IN_MODE" "$IN_CODES"
