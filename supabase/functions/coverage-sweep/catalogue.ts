@@ -217,7 +217,62 @@ const pickUrl = (links: string[], baseUrl: string): string | null => {
   return null;
 };
 
+// Programme-specific scholarship tables: the source names the programme and its own benefit in adjacent cells.
+// Keep this in the existing label reader. The strict heading/header/shared-eligibility shape is required;
+// an arbitrary fees table, ambiguous duplicate title, unavailable award or pending qualification is not an award.
+function programmeTableSections(html: string): LabelSection[] {
+  const main = mainOf(html).replace(/<!--[\s\S]*?-->/g, " ").replace(/<(script|style|noscript|svg|template)\b[\s\S]*?<\/\1>/gi, " ");
+  const plain = (s: string) => decodeEntities(s.replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim();
+  const heading = /<h[1-4]\b[^>]*>\s*International Scholarships\s*<\/h[1-4]>/i.exec(main);
+  const details = /<h[2-5]\b[^>]*>\s*Scholarship details per programme\s*<\/h[2-5]>/i.exec(main);
+  const disclaimer = /<h[2-5]\b[^>]*>\s*Scholarship Disclaimer\s*<\/h[2-5]>/i.exec(main);
+  if (!heading || !details || !disclaimer || heading.index >= details.index || details.index >= disclaimer.index) return [];
+  const intro = plain(main.slice(heading.index + heading[0].length, details.index));
+  const after = main.slice(disclaimer.index + disclaimer[0].length);
+  const end = after.search(/<h[1-4]\b/i);
+  const terms = plain(end < 0 ? after : after.slice(0, end));
+  // These are source assertions, not fabricated defaults. Do not split a table without common international tuition eligibility.
+  if (intro.length > 1200 || terms.length > 3000 ||
+      !/\binternational students\b/i.test(intro) || !/\btuition fees\b/i.test(intro) ||
+      !/\bnew\b.{0,80}\binternational students\b/i.test(terms) ||
+      !/\b(?:eligible|offer)\b/i.test(terms) || !/\b20\d{2}\b/.test(terms)) return [];
+  const tableRegion = main.slice(details.index + details[0].length, disclaimer.index);
+  const tables = [...tableRegion.matchAll(/<table\b[^>]*>[\s\S]*?<\/table>/gi)];
+  const rowsOf = (table: string) => [...table.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)]
+    .map(row => [...row[1].matchAll(/<(th|td)\b[^>]*>([\s\S]*?)<\/\1>/gi)].map(cell => plain(cell[2])));
+  const candidates = tables.map(t => rowsOf(t[0])).filter(rows => rows.some(r => r.length === 2 &&
+    /^programme name$/i.test(r[0]) && /^scholarship$/i.test(r[1])));
+  if (candidates.length !== 1) return [];
+  const rows = candidates[0];
+  const at = rows.findIndex(r => r.length === 2 && /^programme name$/i.test(r[0]) && /^scholarship$/i.test(r[1]));
+  const byName = new Map<string, { title: string; amount: string; count: number }>();
+  for (const r of rows.slice(at + 1)) {
+    if (r.length !== 2 || !r[0] || !r[1]) continue; // category/header rows have no monetary value
+    const title = r[0], amount = r[1];
+    if (title.length < 8 || title.length > 180 || /\bpending\b|course page coming soon|subject to approval/i.test(title)) continue;
+    if (!/^(?:NZ\s*)?\$\s*[1-9]\d{0,2}(?:,\d{3})*(?:\.\d{2})?$|^NZD\s+[1-9]\d{0,2}(?:,\d{3})*(?:\.\d{2})?$/i.test(amount)) continue;
+    const identity = headingSlug(title);
+    if (!identity) continue;
+    const old = byName.get(identity);
+    if (old) { old.count++; continue } // even equal amounts cannot establish two distinct programme identities
+    byName.set(identity, { title, amount, count: 1 });
+  }
+  const out: LabelSection[] = [], used = new Set<string>();
+  for (const r of byName.values()) {
+    if (r.count !== 1) continue;
+    const name = r.title + " - International Scholarship";
+    const key = sectionKey(name, used);
+    // Ordinal keys are ambiguous when a table is reordered. Fail closed on slug truncation collisions.
+    if (key !== (HEADING_AWARD_PREFIX + headingSlug(name).toUpperCase()).slice(0, 56).replace(/-+$/, "")) return [];
+    out.push({ key, codes: [key], name, value_text: r.amount, url: null,
+      group: "International Scholarships", intro, body: ["Programme: " + r.title, "Scholarship: " + r.amount, terms] });
+  }
+  return out.length >= 2 ? out : [];
+}
+
 export function labelSections(html: string, baseUrl: string): LabelSection[] {
+  const programmeTable = programmeTableSections(html);
+  if (programmeTable.length) return programmeTable;
   const segs = segments(mainOf(html));
   type Cand = { i: number; rank: number; name: string };
   const cands: Cand[] = [];
