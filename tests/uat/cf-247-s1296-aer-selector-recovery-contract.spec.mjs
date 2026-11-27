@@ -106,7 +106,7 @@ test('s1296: the recovery knowledge is the existing table; outcomes are recorded
 test('s1296: nothing deleted or dropped; no consumer object, job, lock or setting value changed; pre- and post-checks guard G3, locks and cron', () => {
   expect(MIG.split('\n').filter((l) => /^(drop|delete|truncate)\b/i.test(l))).toEqual([])
   expect(code).not.toMatch(/\bdelete from\b|truncate |cron\.schedule|cron\.alter_job|cron\.unschedule|website_v2_|website_edge_|zoho_edge_/i)
-  for (const s of ['guard: consumer API baseline is not 75/48', 'post-check: consumer API drift', 'post-check: manual locks changed', 'post-check: a cron job was added', 'above 140', 'post-check: the rule classifies', 'hold a row, a lock or a waiting decision']) expect(MIG).toContain(s)
+  for (const s of ['guard: consumer API baseline is not 75/48', 'post-check: consumer API drift', 'post-check: manual locks changed', 'post-check: a cron job was added', 'above 140', 'post-check: % offered courses hold a row', 'hold a row, a lock or a waiting decision']) expect(MIG).toContain(s)
   expect(MIG).toContain('-- Replaces:')
   expect(MIG).toContain('Retires: nothing.')
 })
