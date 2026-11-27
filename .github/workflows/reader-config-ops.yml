@@ -1,0 +1,48 @@
+# Reader configuration operations (CF-247 s1310, S1-Build; SS-Programme-Control 27 Nov 2026 13:39 and 13:43 AEDT; Platform Admin direction 27 Nov 2026,
+# coursefinder-admin #1293): save a draft, qualify, requalify, activate under the existing authority, pause, resume or roll back a provider's reader
+# configuration through the governed writer public.svc_reader_configs_v1, with no person at the screen and no CI per configuration. Each run is
+# logged by the writer (admin_control_events); the result is printed and kept as an artifact.
+name: Reader configuration operations
+on:
+  workflow_dispatch:
+    inputs:
+      ops:
+        description: 'JSON list of operations, for example [{"action":"list","args":{"provider_id":"…"}}] (at most 20; every change has args.reason)'
+        required: true
+      by:
+        description: "Who is acting (session or person), for the log"
+        required: true
+concurrency:
+  group: reader-config-ops
+  cancel-in-progress: false
+jobs:
+  ops:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run the operations
+        env:
+          IN_OPS: ${{ inputs.ops }}
+          IN_BY: ${{ inputs.by }}
+        run: node scripts/reader-config-ops.mjs "$IN_OPS" "$IN_BY"
+      - name: Print the result to the log
+        if: ${{ always() }}
+        run: |
+          if [ -f out/reader-config-ops.json ]; then
+            gzip -9 -c out/reader-config-ops.json | base64 -w 3000 | sed 's/^/READEROPS:/'
+          fi
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: reader-config-ops
+          path: out/
+          if-no-files-found: ignore

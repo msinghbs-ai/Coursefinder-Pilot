@@ -12,6 +12,7 @@ import{AdapterEditor,AdapterReview}from'./FirecrawlWork'
 import FeeSchedules from'./FeeSchedules'
 import ProviderPolicies from'./ProviderPolicies'
 import{plainError}from'./lib/errors'
+import ReaderConfigs from'./ReaderConfigs'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 // v2.15.232 (Platform Admin, 10 Oct 2026, Fix 5): no reason prompt. Each step writes a standard log line instead (the servers keep
@@ -419,6 +420,10 @@ export default function AdapterBuilderTab({rank,onError,initialProvider=''}){
           <AdapterEditor key={key} providerId={b.provider_id} hideReview onError={onError}/>
           <Button compact onClick={()=>{setKey(k=>k+1);load()}}>Refresh the measures</Button></>:<p className="ab-text">Needs at least one read course page (step 2.1: Add page on a course, or a course list page).</p>}
         {b.adapter&&<><h4 className="sl-h4">Validate and admit</h4><Qualify q={b.qualify}/><AdapterReview providerId={b.provider_id} can={Boolean(b.can_manage)} onError={onError}/></>}
+      </details>
+      {/* s1310 (SS-Programme-Control 27 Nov 2026 13:39): how this university's academic entry pages and scholarship listings are read, as versioned data */}
+      <details className="ab-step ab-hand" data-builder-step="5"><summary className="sl-h4"><span className="ab-num">5</span> Reader configurations (academic entry and scholarships)</summary>
+        <ReaderConfigs providerId={b.provider_id} name={b.name} onError={onError}/>
       </details>
     </>}
   </div>

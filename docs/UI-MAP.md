@@ -7,7 +7,7 @@ Every live admin route and top-level tab comes from the menu (`src/nav-map.js`);
 
 **Rule (Platform Admin 16 Nov 2026):** a PR that moves, renames or folds UI controls updates the inline screen help text and regenerates this document in the same release. Every release bump regenerates it with the test register sync, and it is mirrored to `coursefinder-admin` `docs/UI-MAP.md`. Spec `cf-247-s557-ui-map-contract` fails the build when this document and the source disagree. What each screen shows and does, in words, is in the admin `docs/platform/UI-CATALOGUE.md` and the in-app Guides.
 
-**Counts:** 22 pages · 58 tabs (a page without tabs counts as one) · 27 sub-tab or view bars · 241 folds · 46 drawers and dialogs · 39 old addresses.
+**Counts:** 22 pages · 58 tabs (a page without tabs counts as one) · 27 sub-tab or view bars · 245 folds · 46 drawers and dialogs · 39 old addresses.
 
 Roles (rank): 1 Viewer · 2 Counsellor · 3 Curator · 4 Pipeline Operator · 5 PIM Admin · 6 Platform Admin.
 
@@ -486,6 +486,7 @@ Tab key `builder` · PIM Admin and above
 - **Folds:**
   - Step 0: one-click Build (fold, `builder-step0`) — mature-main.jsx
   - Adjust by hand (details) — AdapterBuilderTab.jsx
+  - Reader configurations (academic entry and scholarships) (details) — AdapterBuilderTab.jsx
   - Adapter settings (where this university keeps each field) (details) — FirecrawlWork.jsx
   - Advanced (Platform Admin) (details) — FirecrawlWork.jsx
   - Page data paths (details) — FirecrawlWork.jsx
@@ -494,6 +495,9 @@ Tab key `builder` · PIM Admin and above
   - What it read on pages confirmed by CRICOS code (details) — FirecrawlWork.jsx
   - Visual adapter builder … · AI today US$ … of … · … of … proposals · model … (details) — FirecrawlWork.jsx
   - Proposed settings (details) — FirecrawlWork.jsx
+  - Stored sources (details) — ReaderConfigs.jsx
+  - History (details) — ReaderConfigs.jsx
+  - Versions (details) — ReaderConfigs.jsx
 
 #### Layer 2/3 Build & enrich › Course sources — `#layer-2-discovery?tab=sources`
 

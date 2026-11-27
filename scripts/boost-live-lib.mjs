@@ -11,6 +11,8 @@ async function call(query, readOnly) {
   return JSON.parse(text)
 }
 export const read = (query) => call(query, true)
+// s1310 (reader-config-ops): one governed writer call (public.svc_reader_configs_v1) per operation; the function checks, logs and refuses as the screen does
+export const op = (query) => call(query, false)
 export const lit = (s) => `'${String(s).replace(/'/g, "''")}'`
 // asks the worker for a mode and waits for its answer (pg_net keeps the response; the worker answers within its own time budget).
 // First run, 18 Nov 2026: the worker answered a replay call in 67 s but pg_net stored the answer 155 s after the request (its queue was
