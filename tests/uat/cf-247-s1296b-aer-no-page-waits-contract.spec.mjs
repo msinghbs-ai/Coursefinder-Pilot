@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const MIG = fs.readFileSync('supabase/migrations/20261130153000_cf247_s1296_aer_no_page_waits_for_a_page.sql', 'utf8')
+const MIG = fs.readFileSync('supabase/migrations/20261130163000_cf247_s1296_aer_no_page_waits_for_a_page.sql', 'utf8')
 
 test('s1296b: a not-a-read outcome of "no proven course page" waits for a bound page, from a setting, not a timer', () => {
   expect(MIG).toContain("'aer.no_page_pattern'")
