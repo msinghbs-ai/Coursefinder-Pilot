@@ -98,7 +98,9 @@ test('the worker holds anything not proven before any AI read, for every PDF (no
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   const ai = w.slice(w.indexOf('if (mode === "entry_ai") {'), w.indexOf('if (mode === "fee_ai") {'))
   expect(w).toContain('import { getDocumentProxy, getResolvedPDFJS } from "npm:unpdf@0.12.1";')
-  expect(w).toContain('let pages = await pdfPages(doc, OPS, pdfMaxPages), t = pdfTables(pages);')  // s1253: let, so a held read can be scoped to its table pages
+  // s1253: let, so a held read can be scoped to its table pages; s1335: the pages come from the qualified Cloudflare reader when the gate allows it,
+  // else from pdfPages here, and the same pdfTables proves them either way
+  expect(w).toContain('let pages = routed ? routed.filter((q: any) => Number(q?.p) >= 1 && Number(q.p) <= pdfMaxPages) : await (async () => { const doc = await getDocumentProxy(raw); const { OPS } = await getResolvedPDFJS(); return pdfPages(doc, OPS, pdfMaxPages) })(), t = pdfTables(pages);')
   expect(ai).toContain('const stored = await storedText(it.storage_path, it.mime, Number(it.pdf_max_pages) || 40, it.completeness_required !== true), page = stored.text;')
   // F-AER.08 (v0.73.0): the one exception is a page proven by alignment (pdf-grid.ts, fail closed: status ok with tables), read without the model
   expect(ai).toContain('const grid = gridAll && gridAll.status === "ok" && gridAll.tables.length > 0 ? gridAll : null;')
