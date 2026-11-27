@@ -9,7 +9,7 @@ import { fcClient } from "../coverage-sweep/firecrawl.ts";  // s1334: the one Fi
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.9.3";
+const VERSION = "fee-schedule-etl-v0.9.4";
 // v0.9.0 (s1327, Platform Admin 28 Nov 2026 06:54, scoped exception for UNE and TAFE Queensland only): a registered schedule may be an
 // official HTML page (format "html"), read as its tables by html-rows.ts htmlRows with the same row rule; it is stored as evidence as text/html.
 // UNE 2027 course fees (annual: two full-time trimesters) and the TAFE Queensland 2027 higher education table (annual indicative) are

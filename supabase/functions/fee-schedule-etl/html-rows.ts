@@ -11,11 +11,15 @@ export function htmlRows(html: string, header: RegExp, bareAmounts: boolean) {
   for (const tb of tables) {
     const trs = [...tb.matchAll(/<tr\b[\s\S]*?<\/tr>/gi)].map((m) => m[0]);
     if (!trs.length) continue;
-    const head = [...trs[0].matchAll(/<t[hd]\b[^>]*>([\s\S]*?)<\/t[hd]>/gi)].map((m) => cellText(m[1])).join(" | ");
+    const headCells = [...trs[0].matchAll(/<t[hd]\b[^>]*>([\s\S]*?)<\/t[hd]>/gi)].map((m) => cellText(m[1]));
+    const head = headCells.join(" | ");
     if (!header.test(head)) continue;
     tablesRead++;
     for (const tr of trs.slice(1)) {
       const cells = [...tr.matchAll(/<t[hd]\b[^>]*>([\s\S]*?)<\/t[hd]>/gi)].map((m) => cellText(m[1]))
+        // v0.9.4 (s1334): a page drawn by the browser (UNE through Firecrawl) writes each column's label into its cells ("CRICOS 054919F",
+        // "Fee 31,632*"); a cell that starts with its own column's header text is read without it, so both forms give the same row
+        .map((c, i) => (headCells[i] && c.length > headCells[i].length && c.startsWith(headCells[i] + " ") ? c.slice(headCells[i].length + 1).trim() : c))
         .map((c) => c.replace(/^((?:A|AU)?\$?\s?\d{1,3}(?:,\d{3})+)[*^#\u2020]+$/, "$1"))
         .map((c) => (bareAmounts && /^\d{1,3}(?:,\d{3})+$/.test(c) ? "$" + c : c));
       if (cells.length) rows.push(cells.join(" | "));
