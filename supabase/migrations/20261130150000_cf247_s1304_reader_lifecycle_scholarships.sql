@@ -56,13 +56,17 @@ values
    false, 'no configuration of the existing listing readers extracts these awards', now(), 'S2-Build s1304', 'CF-247 s1304')
 on conflict (code) do nothing;
 
-create or replace function security.reader_sch_template_v1(p_url text)
-returns text language sql immutable set search_path = '' as $function$
+create or replace function security.reader_sch_template_v1(p_url text, p_provider uuid)
+returns text language sql stable security definer set search_path = '' as $function$
   select case when p_url ~* '(faq|/tips|tips-for|/status|app_status|application-status|renewal|how-to|/apply|scholarship-application|terms-and-conditions|technical-difficulties|contact)'
-                or p_url ~* '([?&](award)?id=|/display\?|/award/[^/]+/?$|/scholarship/[^/]+/?$)' then 'not_a_listing'
-              else 'items_not_extracted' end
+                or p_url ~* '([?&](award)?id=|/display\?|/award/[^/]+/?$|/scholarship/[^/]+/?$)'
+                -- one award's own page under a listing the provider already has (Wintec …/scholarship-finder/<award>)
+                or exists (select 1 from pipeline.scholarship_listing_pages l2 where l2.provider_id = p_provider and l2.active and l2.url <> p_url
+                             and length(rtrim(l2.url, '/')) > 12 and p_url like rtrim(l2.url, '/') || '/%')
+              then 'not_a_listing' else 'items_not_extracted' end
 $function$;
-comment on function security.reader_sch_template_v1(text) is 'CF-247 s1304: the class of a scholarship listing page read with 0 items: a help, status or application page, or one award''s own page (not_a_listing), or a listing whose awards were not extracted.';
+revoke all on function security.reader_sch_template_v1(text, uuid) from public, anon, authenticated;
+comment on function security.reader_sch_template_v1(text, uuid) is 'CF-247 s1304: the class of a scholarship listing page read with 0 items: a help, status or application page, or one award''s own page (not_a_listing), or a listing whose awards were not extracted.';
 
 -- the provider's hosts as the listing reader takes them (scholarship discovery: allowed hosts and the site host)
 create or replace function security.reader_sch_hosts_v1(p_provider uuid)
@@ -79,7 +83,7 @@ declare v_code text := 'reader_config:sch_listing:link_hosts'; v_key text := 're
 begin
   -- pages that are not listings: one outcome each, for the scholarship owner
   for r in select l.id, l.url, coalesce(l.item_hash, l.read_at::text) sig from pipeline.scholarship_listing_pages l
-            where l.provider_id = p_provider and l.active and l.status = 'read' and jsonb_array_length(l.items) = 0 and security.reader_sch_template_v1(l.url) = 'not_a_listing'
+            where l.provider_id = p_provider and l.active and l.status = 'read' and jsonb_array_length(l.items) = 0 and security.reader_sch_template_v1(l.url, l.provider_id) = 'not_a_listing'
               and not exists (select 1 from pipeline.ops_remedy_outcomes o where o.knowledge_code = 'reader_config:sch_listing:not_a_listing' and o.entity = 'listing:' || l.id and o.evidence_signature = coalesce(l.item_hash, l.read_at::text)) loop
     perform security.ops_learning_record_v1(jsonb_build_object('code', 'reader_config:sch_listing:not_a_listing', 'entity', 'listing:' || r.id, 'evidence_signature', r.sig,
       'performed_by', 'platform', 'success', false, 'stage_advanced', false, 'expected', 'the scholarship owner sets the page inactive as a listing',
@@ -90,7 +94,7 @@ begin
   with c as (select l.id, l.url, (select e.storage_path from pipeline.evidence_artifacts e where e.source_url = l.url and e.storage_path is not null order by e.created_at desc limit 1) path,
                     coalesce(l.item_hash, l.read_at::text) h
                from pipeline.scholarship_listing_pages l
-              where l.provider_id = p_provider and l.active and l.status = 'read' and jsonb_array_length(l.items) = 0 and security.reader_sch_template_v1(l.url) = 'items_not_extracted')
+              where l.provider_id = p_provider and l.active and l.status = 'read' and jsonb_array_length(l.items) = 0 and security.reader_sch_template_v1(l.url, l.provider_id) = 'items_not_extracted')
   select md5(string_agg(c.id::text || ':' || c.h, ',' order by c.id)), jsonb_agg(jsonb_build_object('listing_id', c.id, 'role', 'positive', 'path', c.path) order by c.id)
     into v_sig, v_samples from (select * from c where c.path is not null order by c.id limit v_max) c;
   if v_samples is null then return jsonb_build_object('proposed', false, 'why', 'no listing page with a stored copy to qualify on', 'not_a_listing_recorded', v_n); end if;
@@ -262,9 +266,9 @@ begin
   if has_function_privilege('authenticated', 'public.svc_reader_qualify_sch_next(integer)', 'execute') or has_function_privilege('anon', 'public.svc_reader_config_sch_v1(uuid[])', 'execute') then
     raise exception 'post-check: execute privileges are not as released';
   end if;
-  if security.reader_sch_template_v1('https://x/scholarships/post_faq/having-technical-difficulties/') <> 'not_a_listing'
-     or security.reader_sch_template_v1('https://www.upei.ca/scholarships-and-awards/display?awardid=1147') <> 'not_a_listing'
-     or security.reader_sch_template_v1('https://x/study/fees-scholarships/scholarships') <> 'items_not_extracted' then
+  if security.reader_sch_template_v1('https://x/scholarships/post_faq/having-technical-difficulties/', null) <> 'not_a_listing'
+     or security.reader_sch_template_v1('https://www.upei.ca/scholarships-and-awards/display?awardid=1147', null) <> 'not_a_listing'
+     or security.reader_sch_template_v1('https://x/study/fees-scholarships/scholarships', null) <> 'items_not_extracted' then
     raise exception 'post-check: the listing classes are not read as designed';
   end if;
 end $post$;
