@@ -67,7 +67,7 @@ jobs:
           set -u
           docker run -d --rm --network none --name rb reader-burst:check >/dev/null
           sleep 4
-          h=$(docker exec rb deno eval --allow-net "const r = await fetch('http://127.0.0.1:8080/health'); console.log(r.status, await r.text())" 2>&1 || true)
+          h=$(docker exec rb deno eval "const r = await fetch('http://127.0.0.1:8080/health'); console.log(r.status, await r.text())" 2>&1 || true)
           echo "- health: $h" | tee -a "$GITHUB_STEP_SUMMARY"
           docker logs rb 2>&1 | tail -5
           docker stop rb >/dev/null
