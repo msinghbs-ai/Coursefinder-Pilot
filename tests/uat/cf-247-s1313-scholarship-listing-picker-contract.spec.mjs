@@ -22,7 +22,7 @@ test('the listing hold is rule (b) of fc_sch_held_v1 word for word: budget switc
 })
 
 test('paid scrapes stay gated: the worker reads direct first and asks svc_fc_spend, which enforces the per-university cap', () => {
-  expect(sql).toContain("position('scholarship_cap_per_uni' in pg_get_functiondef('public.svc_fc_spend(integer,text,uuid,text)'::regprocedure)) = 0")
+  expect(sql).toContain("position('scholarship_cap_per_uni' in where n.nspname = 'public' and p.proname = 'svc_fc_spend')) = 0")
   expect(worker).toContain('if (!(await useFc("sch_scrape", providerId, url, true))) return none("waiting_scraper");')
   expect(worker).toContain('if (!(await rpc("svc_fc_spend", { p_units: units, p_purpose: purpose, p_provider_id: providerId, p_url: url }))) return { ok: false, why: "credits_refused" };')
 })

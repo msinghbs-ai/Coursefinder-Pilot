@@ -31,7 +31,7 @@ begin
   if md5(pg_get_functiondef('security.fc_sch_held_v1(uuid,boolean)'::regprocedure)) <> '7c74b911a6b30e148e28bebc1ea29765' then
     raise exception 'pre-check: security.fc_sch_held_v1 is not the definition this change mirrors';
   end if;
-  if position('scholarship_cap_per_uni' in pg_get_functiondef('public.svc_fc_spend(integer,text,uuid,text)'::regprocedure)) = 0 then
+  if position('scholarship_cap_per_uni' in (select string_agg(pg_get_functiondef(p.oid), ' ') from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'svc_fc_spend')) = 0 then
     raise exception 'pre-check: svc_fc_spend no longer enforces the per-university scholarship cap';
   end if;
 end $pre$;
