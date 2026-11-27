@@ -9,7 +9,7 @@ import { fcClient } from "../coverage-sweep/firecrawl.ts";  // s1334: the one Fi
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.9.2";
+const VERSION = "fee-schedule-etl-v0.9.3";
 // v0.9.0 (s1327, Platform Admin 28 Nov 2026 06:54, scoped exception for UNE and TAFE Queensland only): a registered schedule may be an
 // official HTML page (format "html"), read as its tables by html-rows.ts htmlRows with the same row rule; it is stored as evidence as text/html.
 // UNE 2027 course fees (annual: two full-time trimesters) and the TAFE Queensland 2027 higher education table (annual indicative) are
@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
       const hb = await crypto.subtle.digest("SHA-256", b);
       const sha = [...new Uint8Array(hb)].map((x) => x.toString(16).padStart(2, "0")).join("");
       const isHtml = sc.format === "html";
-      const d = isHtml ? (() => { const h = htmlRows(new TextDecoder().decode(b), sc.header!, !!sc.bareAmounts); return { numPages: h.tablesRead, pages: [{ page: 1, rows: h.rows }] } })() : await pdfRows(b, 400);
+      const d: any = isHtml ? (() => { const h = htmlRows(new TextDecoder().decode(b), sc.header!, !!sc.bareAmounts); return { numPages: h.tablesRead, tablesFound: h.tables, pages: [{ page: 1, rows: h.rows }] } })() : await pdfRows(b, 400);
       if (isHtml && d.numPages === 0) throw Error("no table with the schedule's header was found; nothing read");
       const parsedAll = parseRows(d.pages.flatMap((p) => p.rows));
       // v0.9.0: an optional list of course codes limits the rows to those checked one by one (the rest are parked, not applied)
@@ -192,7 +192,9 @@ Deno.serve(async (req) => {
           parked, preview: { actions: preview?.actions, bound: preview?.bound }, applied, workerVersion: VERSION });
       }
       return j({ ok: true, mode, schedule: t(body.schedule), label: sc.label, url: sc.url, sha256: sha, bytes: b.length, numPages: d.numPages,
-        parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length, rejectedSample: parsed.rejected.slice(0, 8), parked, preview, workerVersion: VERSION });
+        parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length, rejectedSample: parsed.rejected.slice(0, 8), parked, preview, via,
+        // v0.9.3: what the HTML reader saw (tables on the page, tables with the schedule's header, its first rows), so a page shape it cannot read is shown, not guessed
+        html: isHtml ? { tablesFound: d.tablesFound, tablesRead: d.numPages, rows: d.pages[0].rows.length, firstRows: d.pages[0].rows.slice(0, 6).map((r: string) => String(r).slice(0, 200)) } : undefined, workerVersion: VERSION });
     }
     if (mode === "check_documents") {
       const docs: [string, string][] = [...Object.entries(SCHEDULES).map(([k, v]) => [k, v.url] as [string, string]),
