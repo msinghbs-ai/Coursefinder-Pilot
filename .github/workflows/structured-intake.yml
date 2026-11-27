@@ -2,6 +2,8 @@
 # file kept in the admin repository (docs/intake/<submitter>/<batch>.jsonl) at a named commit through the governed writer
 # public.svc_structured_intake_v1, which proves every quote on the platform's stored copies and decides through the existing writers and
 # admission rules. Started by hand; no CI per candidate or per university. The result is printed and kept as an artifact.
+# s1326 (transport only): a file collected from the submitter's pickup folder can be passed directly (content, sha256, source) as
+# drive/<submitter>/<batch>.jsonl, with no admin commit; the bytes must match the stated sha256. Same writer, checks and decisions.
 name: Structured intake
 on:
   workflow_dispatch:
@@ -11,7 +13,7 @@ on:
         required: true
         default: list
       file:
-        description: "Admin repository path, docs/intake/<submitter>/<batch>.jsonl"
+        description: "Admin repository path docs/intake/<submitter>/<batch>.jsonl, or drive/<submitter>/<batch>.jsonl with content"
         required: true
       ref:
         description: "Admin repository commit of the file (40 hex characters; submit only)"
@@ -20,6 +22,18 @@ on:
       by:
         description: "Who is acting (session or person), for the log"
         required: true
+      content:
+        description: "Direct file only: base64 of the gzip of the file's bytes"
+        required: false
+        default: ""
+      sha256:
+        description: "Direct file only: sha256 of the file's bytes (as published in the submitter's manifest)"
+        required: false
+        default: ""
+      source:
+        description: "Direct file only: drive:<file id> of the collected file"
+        required: false
+        default: ""
 concurrency:
   group: structured-intake
   cancel-in-progress: false
@@ -43,6 +57,9 @@ jobs:
           IN_FILE: ${{ inputs.file }}
           IN_REF: ${{ inputs.ref }}
           IN_BY: ${{ inputs.by }}
+          IN_CONTENT: ${{ inputs.content }}
+          IN_SHA256: ${{ inputs.sha256 }}
+          IN_SOURCE: ${{ inputs.source }}
         run: node scripts/structured-intake.mjs "$IN_ACTION" "$IN_FILE" "$IN_REF" "$IN_BY"
       - uses: actions/upload-artifact@v4
         if: ${{ always() }}

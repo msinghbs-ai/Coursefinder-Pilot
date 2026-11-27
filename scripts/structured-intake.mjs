@@ -2,25 +2,41 @@
 // candidate file is read from the admin repository at a named commit (docs/intake/<submitter>/<batch>.jsonl, one candidate a line, or a JSON
 // list) and submitted through the governed writer public.svc_structured_intake_v1; the platform proves every quote on its own stored copies and
 // decides through the existing writers and admission rules. No SQL other than that call is sent, and nothing is fetched from a university here.
+// s1326 (SS-Programme-Control 28 Nov 2026 00:01 AEDT, transport only): a file collected from the submitter's pickup folder may be passed
+// directly (content = base64 of the gzip of the file's bytes, with its sha256 and its source), as drive/<submitter>/<batch>.jsonl; the bytes
+// must match the stated sha256 or nothing is sent. The writer, its checks, keys, proofs and decisions are the same for both routes.
 import { need, op, lit, summary } from './boost-live-lib.mjs'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
+import zlib from 'node:zlib'
 
 need()
-const [action, file, ref, by] = process.argv.slice(2)
+const [action, file, ref, byIn] = process.argv.slice(2)
+const content = String(process.env.IN_CONTENT || ''), wantSha = String(process.env.IN_SHA256 || '').toLowerCase(), source = String(process.env.IN_SOURCE || '')
 if (!['submit', 'verify', 'list'].includes(action)) { console.error('::error::action is submit, verify or list'); process.exit(1) }
-if (!by || !String(by).trim()) { console.error('::error::who is acting (by) is required'); process.exit(1) }
+if (!byIn || !String(byIn).trim()) { console.error('::error::who is acting (by) is required'); process.exit(1) }
+const direct = content !== ''
+if (direct && (!/^[0-9a-f]{64}$/.test(wantSha) || !/^drive:[A-Za-z0-9_-]{10,80}$/.test(source))) { console.error('::error::a direct file needs its sha256 and its source (drive:<file id>)'); process.exit(1) }
+const by = direct ? `${String(byIn).slice(0, 60)} | ${source.slice(0, 40)} | sha256 ${wantSha.slice(0, 12)}` : byIn
 const call = async (a, args) => (await op(`select public.svc_structured_intake_v1(${lit(a)}, ${lit(JSON.stringify(args))}::jsonb, ${lit(by)}) as r`))?.[0]?.r
-const m = /^docs\/intake\/([a-z0-9][a-z0-9_-]{1,40})\/([A-Za-z0-9._-]{1,120})\.(jsonl|json)$/.exec(String(file || ''))
-if (!m) { console.error('::error::file is docs/intake/<submitter>/<batch>.jsonl in the admin repository'); process.exit(1) }
-const [, submitter, batch] = m
-const out = { action, file, ref, submitter, batch }
+const m = /^(docs\/intake|drive)\/([a-z0-9][a-z0-9_-]{1,40})\/([A-Za-z0-9._-]{1,120})\.(jsonl|json)$/.exec(String(file || ''))
+if (!m || (m[1] === 'drive') !== direct) { console.error('::error::file is docs/intake/<submitter>/<batch>.jsonl in the admin repository, or drive/<submitter>/<batch>.jsonl with content'); process.exit(1) }
+const [, , submitter, batch] = m
+const out = { action, file, ref, submitter, batch, source: direct ? source : `admin:${ref}` }
 if (action === 'submit') {
-  if (!/^[0-9a-f]{40}$/.test(String(ref || ''))) { console.error('::error::ref is the admin repository commit (40 hex characters)'); process.exit(1) }
-  const res = await fetch(`https://raw.githubusercontent.com/msinghbs-ai/coursefinder-admin/${ref}/${file}`)
-  if (!res.ok) { console.error(`::error::the file could not be read at that commit (HTTP ${res.status})`); process.exit(1) }
-  const text = await res.text()
-  out.sha256 = crypto.createHash('sha256').update(text).digest('hex')
+  let text
+  if (direct) {
+    const bytes = zlib.gunzipSync(Buffer.from(content, 'base64'), { maxOutputLength: 4 * 1024 * 1024 })  // fixed: size guard of one direct file (4 MiB)
+    out.sha256 = crypto.createHash('sha256').update(bytes).digest('hex')
+    if (out.sha256 !== wantSha) { console.error(`::error::the file's sha256 is ${out.sha256}, not the stated ${wantSha}; nothing was sent`); process.exit(1) }
+    text = bytes.toString('utf8')
+  } else {
+    if (!/^[0-9a-f]{40}$/.test(String(ref || ''))) { console.error('::error::ref is the admin repository commit (40 hex characters)'); process.exit(1) }
+    const res = await fetch(`https://raw.githubusercontent.com/msinghbs-ai/coursefinder-admin/${ref}/${file}`)
+    if (!res.ok) { console.error(`::error::the file could not be read at that commit (HTTP ${res.status})`); process.exit(1) }
+    text = await res.text()
+    out.sha256 = crypto.createHash('sha256').update(text).digest('hex')
+  }
   const items = file.endsWith('.json') ? JSON.parse(text) : text.split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l))
   out.submitted = items.length
   out.submit = await call('submit', { submitter, batch, items })
