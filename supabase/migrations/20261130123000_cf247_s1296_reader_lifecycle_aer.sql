@@ -146,16 +146,19 @@ begin
                                       from (select * from c where country is null order by url limit 2) c3) q)
     into v_sig, v_samples from c;
   if v_samples is null then return jsonb_build_object('proposed', false, 'why', 'no held page of this template'); end if;
-  -- prevention: the same template on the same stored copies already failed
-  v_chk := security.ops_learning_retry_check_v1(v_code, 'provider:' || p_provider::text, v_sig);
-  if not coalesce((v_chk->>'allowed')::boolean, true) then return jsonb_build_object('proposed', false, 'why', v_chk->>'reason', 'prevented', true); end if;
   if p_template = 'pdf_layout_unproven' then
     -- no configuration of the existing readers proves these layouts: an exact hold, recorded once per stored copy set
+    if not exists (select 1 from pipeline.ops_remedy_outcomes o where o.knowledge_code = v_code and o.entity = 'provider:' || p_provider::text and o.evidence_signature = v_sig) then
     perform security.ops_learning_record_v1(jsonb_build_object('code', v_code, 'entity', 'provider:' || p_provider::text, 'evidence_signature', v_sig, 'performed_by', 'platform',
       'success', false, 'stage_advanced', false, 'expected', 'a governed AER v2 reader release', 'observed', jsonb_build_object('held_pages', jsonb_array_length(v_samples), 'disposition', 'HELD:READER_RELEASE_REQUIRED'),
       'evidence', jsonb_build_object('source', 'security.reader_propose_v1', 'samples', v_samples)));
-    return jsonb_build_object('proposed', false, 'why', 'HELD:READER_RELEASE_REQUIRED', 'held_pages', jsonb_array_length(v_samples));
+      return jsonb_build_object('proposed', false, 'why', 'HELD:READER_RELEASE_REQUIRED', 'held_pages', jsonb_array_length(v_samples), 'recorded', true);
+    end if;
+    return jsonb_build_object('proposed', false, 'why', 'HELD:READER_RELEASE_REQUIRED', 'held_pages', jsonb_array_length(v_samples), 'recorded', false);
   end if;
+  -- prevention: the same template on the same stored copies already failed
+  v_chk := security.ops_learning_retry_check_v1(v_code, 'provider:' || p_provider::text, v_sig);
+  if not coalesce((v_chk->>'allowed')::boolean, true) then return jsonb_build_object('proposed', false, 'why', v_chk->>'reason', 'prevented', true); end if;
   if not exists (select 1 from jsonb_array_elements(v_samples) e where e->>'role' = 'positive') then
     return jsonb_build_object('proposed', false, 'why', 'no held page of this template names a country in its address');
   end if;
@@ -354,7 +357,8 @@ begin
             group by 1, 2, 3 order by count(*) desc limit 50 loop  -- fixed: candidate templates considered per run
     exit when v_n >= v_max;
     v_p := security.reader_propose_v1(r.provider_id, r.template, r.url_like);
-    if coalesce((v_p->>'proposed')::boolean, false) or v_p->>'why' = 'HELD:READER_RELEASE_REQUIRED' then v_n := v_n + 1; end if;
+    if coalesce((v_p->>'proposed')::boolean, false) or coalesce((v_p->>'recorded')::boolean, false) then v_n := v_n + 1; end if;
+    continue when not coalesce((v_p->>'proposed')::boolean, false) and not coalesce((v_p->>'recorded')::boolean, false) and v_p->>'why' = 'HELD:READER_RELEASE_REQUIRED';
     v_out := v_out || jsonb_build_array(jsonb_build_object('provider', r.provider_id, 'template', r.template, 'pages', r.n) || v_p);
   end loop;
   return jsonb_build_object('on', true, 'reused_sources', coalesce(cardinality(v_reuse), 0), 'outcomes_recorded', v_res, 'activations', v_act, 'proposals', v_out);
