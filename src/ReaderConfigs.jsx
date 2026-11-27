@@ -1,5 +1,5 @@
 // Layer 2/3 › Adapter builder › 5 Reader configurations (CF-247 s1310, SS-Programme-Control 27 Nov 2026 13:39 and 13:43 AEDT; Platform Admin direction
-// 27 Nov 2026, coursefinder-admin #1293). One provider's academic entry (AER) and scholarship reader configurations: the stored sources, each
+// 27 Nov 2026, coursefinder-admin PR 1293). One provider's academic entry (AER) and scholarship reader configurations: the stored sources, each
 // configuration's versions and what changed between them, its samples and their qualification results, the activation authority, what it read
 // and admitted, and the next requalification. A configuration is data from a closed list (registered reading.entry_* settings within their ranges,
 // an address pattern, country from the address; scholarship listing hosts of the provider's own site): no code, SQL or prompt.
