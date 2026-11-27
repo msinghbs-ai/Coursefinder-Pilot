@@ -1,0 +1,98 @@
+# Cloudflare reader deployment (CF-247 s1324, S1-Build; SS-Programme-Control 27 Nov 2026 22:36 AEDT, Decision 2; M3 runbook v1.0 §3.3 and §6).
+# Deploys only the isolated Worker studysearch-reader-burst (cloudflare/reader-burst/wrangler.jsonc), never the frontend Worker. It first
+# checks the approval's condition: the token must reach exactly one Cloudflare account, Techm, and that account must already hold the frontend
+# Worker. A fresh signing key is generated in the run, masked, given to the Worker as a secret and to the Supabase edge functions as
+# READER_BURST_SIGNING_KEY with the Worker's address as READER_BURST_URL; it is never printed or stored elsewhere. Started by hand only.
+name: Cloudflare reader deploy
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy studysearch-reader-burst" to deploy the isolated reader'
+        required: true
+concurrency:
+  group: cloudflare-reader-deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check the approval condition (token reaches Techm only)
+        id: acct
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_READER_API_TOKEN }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          set -eu
+          [ "$CONFIRM" = "deploy studysearch-reader-burst" ] || { echo "::error::Refused: confirmation text"; exit 1; }
+          [ -n "${CF_TOKEN:-}" ] || { echo "::error::CLOUDFLARE_READER_API_TOKEN is not visible"; exit 1; }
+          curl -sS -H "Authorization: Bearer ${CF_TOKEN}" 'https://api.cloudflare.com/client/v4/accounts?per_page=50' > /tmp/a.json
+          n=$(jq '.result | length' /tmp/a.json); name=$(jq -r '.result[0].name // ""' /tmp/a.json); id=$(jq -r '.result[0].id // ""' /tmp/a.json)
+          echo "- Accounts the token reaches: $n (first: $name)" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$n" != 1 ] || [ "$name" != "Techm" ]; then echo "::error::HELD:TOKEN_SCOPE: the token must reach the Techm account only (Decision 2)"; exit 1; fi
+          curl -sS -H "Authorization: Bearer ${CF_TOKEN}" "https://api.cloudflare.com/client/v4/accounts/$id/workers/scripts" | jq -e '.result[] | select(.id == "coursefinder-pilot")' >/dev/null \
+            || { echo "::error::the Techm account does not hold the frontend Worker coursefinder-pilot"; exit 1; }
+          echo "::add-mask::$id"; echo "id=$id" >> "$GITHUB_OUTPUT"; rm -f /tmp/a.json
+      - name: Deploy the isolated reader (not the frontend)
+        id: dep
+        working-directory: cloudflare/reader-burst
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_READER_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.acct.outputs.id }}
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          set -eu
+          docker info --format 'Docker {{.ServerVersion}}' | tee -a "$GITHUB_STEP_SUMMARY"
+          npx --yes wrangler@4.161.0 deploy --config wrangler.jsonc 2>&1 | tee /tmp/deploy.log | grep -vi "token" | tail -25
+          url=$(grep -oE 'https://studysearch-reader-burst\.[a-z0-9-]+\.workers\.dev' /tmp/deploy.log | head -1)
+          [ -n "$url" ] || { echo "::error::no workers.dev address in the deploy output"; exit 1; }
+          ver=$(grep -oiE 'Current Version ID: [0-9a-f-]+' /tmp/deploy.log | head -1 || true)
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "- Deployed: $url ${ver}" | tee -a "$GITHUB_STEP_SUMMARY"
+          rm -f /tmp/deploy.log
+      - name: Signing key to the Worker and to the Supabase edge functions (never printed)
+        working-directory: cloudflare/reader-burst
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_READER_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.acct.outputs.id }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          URL_OUT: ${{ steps.dep.outputs.url }}
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          set -eu
+          key=$(openssl rand -hex 32); echo "::add-mask::$key"
+          printf '%s' "$key" | npx --yes wrangler@4.161.0 secret put READER_BURST_SIGNING_KEY --config wrangler.jsonc >/dev/null 2>&1 || { echo "::error::wrangler secret put failed"; exit 1; }
+          body=$(jq -nc --arg k "$key" --arg u "$URL_OUT" '[{name:"READER_BURST_SIGNING_KEY",value:$k},{name:"READER_BURST_URL",value:$u}]')
+          code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
+                 "https://api.supabase.com/v1/projects/$REF/secrets" --data-binary @- <<<"$body")
+          unset key body
+          echo "- Supabase edge secrets READER_BURST_URL and READER_BURST_SIGNING_KEY: HTTP $code" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$code" = 200 ] || [ "$code" = 201 ] || exit 1
+      - name: Refusal before boot (no signature, wrong signature)
+        env:
+          URL_OUT: ${{ steps.dep.outputs.url }}
+        run: |
+          set -u
+          a=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$URL_OUT/process" --data-binary 'x')
+          b=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$URL_OUT/process" -H "x-ss-request-id: 00000000-0000-4000-8000-000000000000" -H "x-ss-ts: $(date +%s)" -H "x-ss-slot: reader-01" \
+              -H "x-ss-body-sha256: $(printf x | sha256sum | cut -c1-64)" -H "x-ss-signature: $(printf '0%.0s' $(seq 64))" --data-binary 'x')
+          c=$(curl -sS -o /dev/null -w '%{http_code}' "$URL_OUT/")
+          echo "- Unsigned: HTTP $a; wrong signature: HTTP $b; other route: HTTP $c (expected 401, 401, 404)" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$a" = 401 ] && [ "$b" = 401 ] && [ "$c" = 404 ]
+      - name: Container application (read back)
+        working-directory: cloudflare/reader-burst
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_READER_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.acct.outputs.id }}
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          npx --yes wrangler@4.161.0 containers list 2>&1 | grep -vi token | tail -15 | tee -a "$GITHUB_STEP_SUMMARY" || true
+          npx --yes wrangler@4.161.0 containers images list 2>&1 | grep -vi token | tail -10 | tee -a "$GITHUB_STEP_SUMMARY" || true

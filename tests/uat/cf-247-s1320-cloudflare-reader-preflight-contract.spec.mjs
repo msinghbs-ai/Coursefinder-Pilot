@@ -32,10 +32,10 @@ test('the token is never printed and the frontend Worker configuration is unchan
   expect(fe.durable_objects).toBeUndefined()
 })
 
-test('the prepared reader Worker: isolated, not reachable until approved, signature checked before any container starts', () => {
+test('the reader Worker: isolated, signature checked before any container starts', () => {
   const cfg = JSON.parse(rb('wrangler.jsonc').replace(/^\s*\/\/.*$/gm, ''))
   expect(cfg.name).toBe('studysearch-reader-burst')
-  expect(cfg.workers_dev).toBe(false)
+  expect(cfg.workers_dev).toBe(true)   // s1324: deployment approved; the signed gateway is the only route
   expect(cfg.routes).toBeUndefined()
   expect(cfg.containers[0].scheduling_policy).toBe('durable_object')
   expect(cfg.containers[0].max_instances).toBeUndefined()

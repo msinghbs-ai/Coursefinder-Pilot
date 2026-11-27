@@ -24,8 +24,8 @@ test('a quote counts only when it is printed on the stored copy: white space and
 })
 
 test('the worker proves on stored copies, reads a page with none once directly ($0, robots respected) and leaves the decision to the database', () => {
-  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v1.0.60"')
-  const m = ix.slice(ix.indexOf('if (mode === "intake_verify") {'), ix.indexOf('if (mode === "adapter_preview") {'))
+  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v1.0.61"')
+  const m = ix.slice(ix.indexOf('if (mode === "intake_verify") {'), ix.indexOf('if (mode === "burst_read") {'))
   expect(m).toContain('rpc("svc_structured_intake_v1", { p_action: "next"')
   expect(m).toContain('p_action: "record"')
   expect(m).toContain('p_action: "store"')
