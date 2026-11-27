@@ -275,9 +275,9 @@ begin
   update pipeline.layer2_source_profile_versions set validation_result = validation_result || jsonb_build_object('activated_at', now(), 'authority', k.eligibility_reason) where id = v.id;
   -- the held pages of the template are read again through the existing pipeline (route, completeness guard, matrix machine rule and Layer 4 decide)
   select array_agg(s0.id) into v_ids from pipeline.entry_matrix_sources s0
-    join lateral (select r.error from pipeline.entry_matrix_runs r where r.source_id = s0.id order by r.created_at desc limit 1) r on true
+    join lateral (select q1.error from pipeline.entry_matrix_runs q1 where q1.source_id = s0.id order by q1.created_at desc limit 1) r1 on true
    where s0.provider_id = (v.configuration->>'provider_id')::uuid and s0.url like v.configuration->>'url_like' and s0.status = 'read'
-     and security.reader_aer_template_v1(r.error) = v.configuration->>'template';
+     and security.reader_aer_template_v1(r1.error) = v.configuration->>'template';
   v_rr := security.reader_reread_v1(v_ids, 'CF-247 s1296 reader lifecycle: configuration ' || v.id || ' activated; held pages of its template read again');
   insert into pipeline.admin_control_events(area, action, target, detail, actor)
   values ('reader_lifecycle', 'activated', 'pipeline.layer2_source_profiles', jsonb_build_object('profile', v.profile_id, 'version', v.id, 'mode', v.validation_result->>'mode',
@@ -297,7 +297,7 @@ begin
   -- (a) reuse: a held page an active configuration covers, held before that configuration existed, is read again with it
   select array_agg(x.id) into v_reuse from (
     select s.id from pipeline.entry_matrix_sources s
-      join lateral (select r.error, r.result, r.updated_at from pipeline.entry_matrix_runs r where r.source_id = s.id order by r.created_at desc limit 1) lr on true
+      join lateral (select q0.error, q0.result, q0.updated_at from pipeline.entry_matrix_runs q0 where q0.source_id = s.id order by q0.created_at desc limit 1) lr on true
       join lateral (select security.reader_config_for_v1('academic_entry', s.provider_id, s.url) cfg) c on true
      where s.status = 'read' and c.cfg is not null and lr.error like 'held_unparsed%'
        and security.reader_aer_template_v1(lr.error) = c.cfg->>'template' and coalesce(lr.result#>>'{reader_config,profile_version_id}', '') = ''
