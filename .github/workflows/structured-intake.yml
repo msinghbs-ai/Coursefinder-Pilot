@@ -1,0 +1,52 @@
+# Structured intake (CF-247 s1321, S1-Build; SS-Programme-Control 27 Nov 2026 21:08 AEDT, approved scoped exception 1): submits a candidate
+# file kept in the admin repository (docs/intake/<submitter>/<batch>.jsonl) at a named commit through the governed writer
+# public.svc_structured_intake_v1, which proves every quote on the platform's stored copies and decides through the existing writers and
+# admission rules. Started by hand; no CI per candidate or per university. The result is printed and kept as an artifact.
+name: Structured intake
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "submit, verify (prove waiting candidates again) or list"
+        required: true
+        default: list
+      file:
+        description: "Admin repository path, docs/intake/<submitter>/<batch>.jsonl"
+        required: true
+      ref:
+        description: "Admin repository commit of the file (40 hex characters; submit only)"
+        required: false
+        default: ""
+      by:
+        description: "Who is acting (session or person), for the log"
+        required: true
+concurrency:
+  group: structured-intake
+  cancel-in-progress: false
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run
+        env:
+          IN_ACTION: ${{ inputs.action }}
+          IN_FILE: ${{ inputs.file }}
+          IN_REF: ${{ inputs.ref }}
+          IN_BY: ${{ inputs.by }}
+        run: node scripts/structured-intake.mjs "$IN_ACTION" "$IN_FILE" "$IN_REF" "$IN_BY"
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: structured-intake
+          path: out/
+          if-no-files-found: ignore
