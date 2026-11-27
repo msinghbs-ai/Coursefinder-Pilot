@@ -2,12 +2,17 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { getDocumentProxy } from "npm:unpdf@0.12.1";
 import { parseUqTable1, parseUqTable3Minimum } from "./elp.ts";
+import { htmlRows } from "./html-rows.ts";
 
 // CF-247 Decision 162 step 2: provider international fee schedules (one document per provider per fee year).
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.8.0";
+const VERSION = "fee-schedule-etl-v0.9.0";
+// v0.9.0 (s1327, Platform Admin 28 Nov 2026 06:54, scoped exception for UNE and TAFE Queensland only): a registered schedule may be an
+// official HTML page (format "html"), read as its tables by html-rows.ts htmlRows with the same row rule; it is stored as evidence as text/html.
+// UNE 2027 course fees (annual: two full-time trimesters) and the TAFE Queensland 2027 higher education table (annual indicative) are
+// registered; TAFE Queensland's vocational tables (whole-of-course totals) are never read.
 // v0.8.0: check_documents - fetch every registered fee schedule and English table and record its SHA-256
 // (svc_provider_document_check_record); a changed document is marked for review, nothing is applied.
 // v0.7.1: English table section headers matched in upper case only ("Higher Degree by Research ..." is a program).
@@ -28,7 +33,7 @@ const VERSION = "fee-schedule-etl-v0.8.0";
 // v0.2.0: dry_run — parse a registered schedule and compare it with the catalogue (svc_fee_schedule_preview).
 // Parser rule (all registered schedules): a row holding exactly one CRICOS course code; the fee is the first
 // whole-dollar amount after that code (the annual fee for one full-time year); the title is the first cell.
-const SCHEDULES: Record<string, { provider_cricos: string; url: string; fee_year: number; basis: string; label: string }> = {
+const SCHEDULES: Record<string, { provider_cricos: string; url: string; fee_year: number; basis: string; label: string; format?: "html"; header?: RegExp; bareAmounts?: boolean }> = {
   federation_2026_commencing: { provider_cricos: "00103D", fee_year: 2026, basis: "annual",
     url: "https://federation.edu.au/__data/assets/pdf_file/0006/630951/2026_HEd_Intl_Tuition_Fee_Schedule_Commencing.pdf",
     label: "Federation University 2026 commencing international tuition fee schedule (annual fee, 1 EFTSL)" },
@@ -47,6 +52,13 @@ const SCHEDULES: Record<string, { provider_cricos: string; url: string; fee_year
   wsu_pg_2027: { provider_cricos: "00917K", fee_year: 2027, basis: "annual",
     url: "https://www.westernsydney.edu.au/content/dam/digital/pdf/international/pg-intl-fees-2027.pdf",
     label: "Western Sydney University 2027 postgraduate international tuition fees (annual)" },
+  // s1327: HTML schedules (scoped exception, Platform Admin 28 Nov 2026 06:54)
+  une_2027: { provider_cricos: "00003G", fee_year: 2027, basis: "annual", format: "html", header: /\bCRICOS\b.*\bFee\b/i, bareAmounts: true,
+    url: "https://www.une.edu.au/international/fees-and-scholarships/course-fees-2027",
+    label: "University of New England 2027 international course fees (annual: two full-time trimesters)" },
+  tafeqld_he_2027: { provider_cricos: "03020E", fee_year: 2027, basis: "annual", format: "html", header: /Cost \(annual indicative\)/i,
+    url: "https://tafeqld.edu.au/international/courses/international-pricelist",
+    label: "TAFE Queensland 2027 international higher education fees (annual indicative)" },
 };
 const ENGLISH_TABLES: Record<string, { provider_cricos: string; table1: string; table3: string; label: string }> = {
   uq_elp: { provider_cricos: "00025B", label: "The University of Queensland ELP Admission Procedure Table 1 and Table 3",
@@ -77,7 +89,7 @@ function parseRows(rows: string[]) {
   }
   return { rows: out, rejected };
 }
-const HOSTS = ["federation.edu.au", "westernsydney.edu.au", "cdu.edu.au", "csu.edu.au", "rmit.edu.au", "swinburne.edu.au", "uow.edu.au", "uq.edu.au", "mq.edu.au", "uwa.edu.au"];
+const HOSTS = ["federation.edu.au", "westernsydney.edu.au", "cdu.edu.au", "csu.edu.au", "rmit.edu.au", "swinburne.edu.au", "uow.edu.au", "uq.edu.au", "mq.edu.au", "uwa.edu.au", "une.edu.au", "tafeqld.edu.au"];  // s1327: une, tafeqld
 const j = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json" } });
 const t = (v: unknown) => String(v ?? "").trim();
 const CRICOS = /\b\d{6}[0-9A-Z]\b/g;
@@ -139,24 +151,30 @@ Deno.serve(async (req) => {
       const b = new Uint8Array(await rr.arrayBuffer());
       const hb = await crypto.subtle.digest("SHA-256", b);
       const sha = [...new Uint8Array(hb)].map((x) => x.toString(16).padStart(2, "0")).join("");
-      const d = await pdfRows(b, 400);
-      const parsed = parseRows(d.pages.flatMap((p) => p.rows));
+      const isHtml = sc.format === "html";
+      const d = isHtml ? (() => { const h = htmlRows(new TextDecoder().decode(b), sc.header!, !!sc.bareAmounts); return { numPages: h.tablesRead, pages: [{ page: 1, rows: h.rows }] } })() : await pdfRows(b, 400);
+      if (isHtml && d.numPages === 0) throw Error("no table with the schedule's header was found; nothing read");
+      const parsedAll = parseRows(d.pages.flatMap((p) => p.rows));
+      // v0.9.0: an optional list of course codes limits the rows to those checked one by one (the rest are parked, not applied)
+      const only = Array.isArray(body.codes) ? new Set((body.codes as unknown[]).map((x) => t(x).toUpperCase()).filter((x) => CODE_CELL.test(x))) : null;
+      const parsed = only ? { rows: parsedAll.rows.filter((r) => only.has(r.course_cricos)), rejected: parsedAll.rejected } : parsedAll;
+      const parked = only ? parsedAll.rows.filter((r) => !only.has(r.course_cricos)).map((r) => r.course_cricos) : [];
       const { data: preview, error } = await c.rpc("svc_fee_schedule_preview", { p_provider_cricos: sc.provider_cricos, p_fee_year: sc.fee_year,
         p_rows: parsed.rows.map(({ raw, ...x }) => x) });
       if (error) throw Error(error.message);
       if (mode === "apply") {
-        if (parsed.rows.length < 10) throw Error("too few rows parsed; apply refused");
-        const path = `layer2/AU/fee-schedules/${sc.provider_cricos}/${sc.fee_year}/${sha}.pdf`;
-        const up = await c.storage.from("evidence").upload(path, b, { contentType: "application/pdf", upsert: true });
+        if (parsed.rows.length < (only ? 1 : 10)) throw Error("too few rows parsed; apply refused");
+        const path = `layer2/AU/fee-schedules/${sc.provider_cricos}/${sc.fee_year}/${sha}.${isHtml ? "html" : "pdf"}`;
+        const up = await c.storage.from("evidence").upload(path, b, { contentType: isHtml ? "text/html" : "application/pdf", upsert: true });
         if (up.error) throw Error("evidence upload failed: " + up.error.message);
         const { data: applied, error: ae } = await c.rpc("svc_fee_schedule_apply", { p_provider_cricos: sc.provider_cricos, p_fee_year: sc.fee_year,
           p_storage_path: path, p_url: sc.url, p_sha256: sha, p_schedule: t(body.schedule), p_rows: parsed.rows.map(({ raw, ...x }) => x) });
         if (ae) throw Error(ae.message);
         return j({ ok: true, mode, schedule: t(body.schedule), url: sc.url, sha256: sha, parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length,
-          preview: { actions: preview?.actions, bound: preview?.bound }, applied, workerVersion: VERSION });
+          parked, preview: { actions: preview?.actions, bound: preview?.bound }, applied, workerVersion: VERSION });
       }
       return j({ ok: true, mode, schedule: t(body.schedule), label: sc.label, url: sc.url, sha256: sha, bytes: b.length, numPages: d.numPages,
-        parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length, rejectedSample: parsed.rejected.slice(0, 8), preview, workerVersion: VERSION });
+        parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length, rejectedSample: parsed.rejected.slice(0, 8), parked, preview, workerVersion: VERSION });
     }
     if (mode === "check_documents") {
       const docs: [string, string][] = [...Object.entries(SCHEDULES).map(([k, v]) => [k, v.url] as [string, string]),
