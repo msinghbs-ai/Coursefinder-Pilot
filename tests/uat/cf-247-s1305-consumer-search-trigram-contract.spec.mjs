@@ -1,9 +1,9 @@
-// Guards: IQ-00615 (SS-Programme-Control 27 Nov 2026 12:08, "Consumer Search Performance", s1302): the consumer free-text search (course_title and provider_name ILIKE) is answered from trigram indexes on search.course_documents, no later migration drops them, and the fix touches no frozen function or table shape (G3 stays with s57)
+// Guards: IQ-00615 (SS-Programme-Control 27 Nov 2026 12:08, "Consumer Search Performance", s1305): the consumer free-text search (course_title and provider_name ILIKE) is answered from trigram indexes on search.course_documents, no later migration drops them, and the fix touches no frozen function or table shape (G3 stays with s57)
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { migrationNames, migrationPath } from './support/migration-files.mjs'
 
-const FILE = '20261130130000_cf247_s1302_consumer_search_trigram_indexes.sql'
+const FILE = '20261130140000_cf247_s1305_consumer_search_trigram_indexes.sql'
 const sql = fs.readFileSync(migrationPath(FILE), 'utf8')
 const stripComments = s => s.replace(/--.*$/gm, '')
 const code = stripComments(sql)

@@ -1,4 +1,4 @@
--- CF-247 s1302 (S1-API-Frontend-Delivery; SS-Programme-Control 27 Nov 2026 12:08 AEDT, IQ-00615 "Consumer Search Performance").
+-- CF-247 s1305 (S1-API-Frontend-Delivery; SS-Programme-Control 27 Nov 2026 12:08 AEDT, IQ-00615 "Consumer Search Performance").
 -- Read live 27 Nov 2026 12:30 to 13:10 AEDT:
 --   * IQ-00615 (P1, since 19 Nov, three regressions): the consumer snapshot probe security.consumer_api_snapshot_v1 skips search_master_page2 ("time budget",
 --     6000 ms) whenever the free-text search before it (search_bachelor_au) is slow. In the last 14 recorded runs search_bachelor_au took 3.4 to 7.7 s when
@@ -22,8 +22,8 @@
 -- Replaces: nothing (no function or table is replaced; an index is added beside the data). Retires: nothing.
 set local lock_timeout = '10s';  -- fixed: lock wait for the index build (it blocks writes to the table for a few seconds, reads continue)
 
-create temp table s1302_guard on commit drop as select (select count(*) from pipeline.manual_locks) locks_before;
-create temp table s1302_cron on commit drop as select jobid from cron.job;
+create temp table s1305_guard on commit drop as select (select count(*) from pipeline.manual_locks) locks_before;
+create temp table s1305_cron on commit drop as select jobid from cron.job;
 
 do $g$
 declare v jsonb := security.consumer_api_check_v1();
@@ -34,8 +34,8 @@ end $g$;
 
 create index if not exists course_documents_title_trgm_idx on search.course_documents using gin (course_title extensions.gin_trgm_ops);
 create index if not exists course_documents_provider_name_trgm_idx on search.course_documents using gin (provider_name extensions.gin_trgm_ops);
-comment on index search.course_documents_title_trgm_idx is 'CF-247 s1302 (IQ-00615): lets course_title ILIKE ''%q%'' in the consumer free-text search use an index (OR with search_tsv, code and key indexes); do not drop.';
-comment on index search.course_documents_provider_name_trgm_idx is 'CF-247 s1302 (IQ-00615): lets provider_name ILIKE ''%q%'' in the consumer free-text search use an index; do not drop.';
+comment on index search.course_documents_title_trgm_idx is 'CF-247 s1305 (IQ-00615): lets course_title ILIKE ''%q%'' in the consumer free-text search use an index (OR with search_tsv, code and key indexes); do not drop.';
+comment on index search.course_documents_provider_name_trgm_idx is 'CF-247 s1305 (IQ-00615): lets provider_name ILIKE ''%q%'' in the consumer free-text search use an index; do not drop.';
 analyze search.course_documents;
 
 -- the lesson, in the existing recovery knowledge (the closure harvest, s1294, adds the outcome when IQ-00615 closes)
@@ -48,7 +48,7 @@ values ('consumer_search:unindexed_free_text:latency', 'platform', 'Consumer fre
   'free-text search answered from indexes: warm under 150 ms and cold under 1 s on the Australian slice, the probe runs every read and the check stays green for 24 hours',
   'do not raise the probe time budget or statement timeout, drop or reorder reads, or mark a skipped read as passed: that hides the latency consumers see. Fix the read.',
   'any consumer search predicate that ORs ILIKE ''%q%'' arms or other unindexed expressions over search.course_documents; check pg_trgm indexes exist before adding a new text column to the search; read EXPLAIN with Buffers on the real predicate, not on the probe',
-  false, 'index and read-path change through a release; not an automatic remedy', now(), 'S1-API-Frontend-Delivery (s1302)', 'IQ-00615 (27 Nov 2026)')
+  false, 'index and read-path change through a release; not an automatic remedy', now(), 'S1-API-Frontend-Delivery (s1305)', 'IQ-00615 (27 Nov 2026)')
 on conflict (code) do nothing;
 
 do $c$
@@ -58,6 +58,6 @@ begin
   if (select count(*) from pg_indexes where schemaname = 'search' and tablename = 'course_documents' and indexname in ('course_documents_title_trgm_idx', 'course_documents_provider_name_trgm_idx')) <> 2 then raise exception 'post-check: the trigram indexes are not both in place'; end if;
   if exists (select 1 from pg_index i join pg_class c on c.oid = i.indexrelid where c.relname in ('course_documents_title_trgm_idx', 'course_documents_provider_name_trgm_idx') and not i.indisvalid) then raise exception 'post-check: a trigram index is not valid'; end if;
   if not exists (select 1 from pipeline.ops_remedy_knowledge where code = 'consumer_search:unindexed_free_text:latency' and not auto_eligible) then raise exception 'post-check: the lesson is not held'; end if;
-  if exists (select 1 from cron.job j where not exists (select 1 from s1302_cron b where b.jobid = j.jobid)) then raise exception 'post-check: a cron job was created'; end if;
-  if (select count(*) from pipeline.manual_locks) <> (select locks_before from s1302_guard) then raise exception 'post-check: manual locks changed'; end if;
+  if exists (select 1 from cron.job j where not exists (select 1 from s1305_cron b where b.jobid = j.jobid)) then raise exception 'post-check: a cron job was created'; end if;
+  if (select count(*) from pipeline.manual_locks) <> (select locks_before from s1305_guard) then raise exception 'post-check: manual locks changed'; end if;
 end $c$;
