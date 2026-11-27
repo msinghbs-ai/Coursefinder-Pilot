@@ -1,10 +1,10 @@
 // Guards: SS-Programme-Control 28 Nov 2026 08:39, 09:03 and 10:11 AEDT (route qualified Cloudflare reads into the existing entry reader with the smallest change; Supabase stays the validation and admission authority); Decision 2 limits (one container, compute caps) unchanged; no drop or delete by an applied migration
-// CF-247 s1335. supabase/functions/coverage-sweep/index.ts (v1.0.63 burstEntryPages, storedText), supabase/migrations/20261201033000_cf247_s1335_container_entry_route.sql
+// CF-247 s1343. supabase/functions/coverage-sweep/index.ts (v1.0.63 burstEntryPages, storedText), supabase/migrations/20261201033000_cf247_s1343_container_entry_route.sql
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const sql = fs.readFileSync('supabase/migrations/20261201033000_cf247_s1335_container_entry_route.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations/20261201033000_cf247_s1343_container_entry_route.sql', 'utf8')
 
 test('the entry reader asks the gate first, sends a signed copy, and uses only hash-matched pages; anything else reads here as before', () => {
   expect(ix).toContain('const WORKER = "coverage-sweep-worker-v1.0.63"')

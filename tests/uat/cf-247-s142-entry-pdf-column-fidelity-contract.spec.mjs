@@ -98,7 +98,7 @@ test('the worker holds anything not proven before any AI read, for every PDF (no
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   const ai = w.slice(w.indexOf('if (mode === "entry_ai") {'), w.indexOf('if (mode === "fee_ai") {'))
   expect(w).toContain('import { getDocumentProxy, getResolvedPDFJS } from "npm:unpdf@0.12.1";')
-  // s1253: let, so a held read can be scoped to its table pages; s1335: the pages come from the qualified Cloudflare reader when the gate allows it,
+  // s1253: let, so a held read can be scoped to its table pages; s1343: the pages come from the qualified Cloudflare reader when the gate allows it,
   // else from pdfPages here, and the same pdfTables proves them either way
   expect(w).toContain('let pages = routed ? routed.filter((q: any) => Number(q?.p) >= 1 && Number(q.p) <= pdfMaxPages) : await (async () => { const doc = await getDocumentProxy(raw); const { OPS } = await getResolvedPDFJS(); return pdfPages(doc, OPS, pdfMaxPages) })(), t = pdfTables(pages);')
   expect(ai).toContain('const stored = await storedText(it.storage_path, it.mime, Number(it.pdf_max_pages) || 40, it.completeness_required !== true), page = stored.text;')
