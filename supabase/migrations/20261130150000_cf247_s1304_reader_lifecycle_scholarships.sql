@@ -179,7 +179,8 @@ begin
             group by 1 order by count(*) desc limit 50 loop  -- fixed: candidate providers considered per run
     exit when v_n >= v_max;
     v_p := security.reader_sch_propose_v1(r.provider_id);
-    if coalesce((v_p->>'proposed')::boolean, false) or coalesce((v_p->>'not_a_listing_recorded')::int, 0) > 0 then v_n := v_n + 1;
+    if coalesce((v_p->>'proposed')::boolean, false) then v_n := v_n + 1; end if;  -- a not-a-listing record is cheap and does not use a proposal slot
+    if coalesce((v_p->>'proposed')::boolean, false) or coalesce((v_p->>'not_a_listing_recorded')::int, 0) > 0 then
       v_out := v_out || jsonb_build_array(jsonb_build_object('provider', r.provider_id, 'pages', r.n) || v_p); end if;
   end loop;
   return jsonb_build_object('on', true, 'activations', v_act, 'proposals', v_out);
