@@ -62,9 +62,10 @@ test('the screen: step 5 of the Adapter builder reads and writes through admin_r
   expect(ui).toContain('data-reader-requalify')
 })
 
-test('the operations workflow calls only the governed writer, lists read-only, and needs a reason', () => {
+test('the operations workflow calls only the governed writer (one call per operation) and needs a reason', () => {
   expect(ops).toContain("select public.svc_reader_configs_v1(${lit(o.action)}, ${lit(JSON.stringify(o.args || {}))}::jsonb, ${lit(by)}) as r")
-  expect(ops).toContain("await (o.action === 'list' ? read(q) : op(q))")
+  expect(ops).toContain('const rows = await op(q)')
+  expect(sql).toContain("if p_action = 'list' then")
   expect(ops).toContain("needs a reason")
   expect(wf).toContain('workflow_dispatch:')
   expect(wf).not.toMatch(/\bpush:|\bschedule:|pull_request/)
