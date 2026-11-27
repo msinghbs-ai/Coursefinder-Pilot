@@ -1,7 +1,8 @@
 -- CF-247 s1304 (S2-Build; SS-Programme-Control 27 Nov 2026 11:27 AEDT, "Complete Autonomous PIM: Institute Reader Creation, Qualification and Execution"):
 -- the s1303 reader lifecycle for scholarships, on the existing scholarship listing reader.
 -- Read live 27 Nov 2026 (rolled back, read only): 1,712 active listing pages at 265 providers; 347 read with 0 items at 99 providers (33 of them with
--- no published scholarship); 310 of the 347 have a stored copy. Two kinds: pages that are not listings (FAQ, tips, application status, renewal), and
+-- no published scholarship); 310 of the 347 have a stored copy. Two kinds: pages that are not listings (FAQ, tips, application status, renewal, one
+-- award's own page such as UPEI's display?awardid=…), and
 -- listing pages whose awards the existing readers do not extract (for example a stated total of 278 with 0 items read).
 -- What it adds (same store, knowledge and steps as s1303; no new table, job, queue or reader):
 --   1. Detection of 0-item listing pages by class: not_a_listing (recorded once per page as HELD:NOT_A_LISTING for the scholarship owner) and
@@ -57,10 +58,11 @@ on conflict (code) do nothing;
 
 create or replace function security.reader_sch_template_v1(p_url text)
 returns text language sql immutable set search_path = '' as $function$
-  select case when p_url ~* '(faq|/tips|tips-for|/status|app_status|application-status|renewal|how-to|/apply|scholarship-application|terms-and-conditions|technical-difficulties|contact)' then 'not_a_listing'
+  select case when p_url ~* '(faq|/tips|tips-for|/status|app_status|application-status|renewal|how-to|/apply|scholarship-application|terms-and-conditions|technical-difficulties|contact)'
+                or p_url ~* '([?&](award)?id=|/display\?|/award/[^/]+/?$|/scholarship/[^/]+/?$)' then 'not_a_listing'
               else 'items_not_extracted' end
 $function$;
-comment on function security.reader_sch_template_v1(text) is 'CF-247 s1304: the class of a scholarship listing page read with 0 items: a help, status or application page (not_a_listing) or a listing whose awards were not extracted.';
+comment on function security.reader_sch_template_v1(text) is 'CF-247 s1304: the class of a scholarship listing page read with 0 items: a help, status or application page, or one award''s own page (not_a_listing), or a listing whose awards were not extracted.';
 
 -- the provider's hosts as the listing reader takes them (scholarship discovery: allowed hosts and the site host)
 create or replace function security.reader_sch_hosts_v1(p_provider uuid)
@@ -261,6 +263,7 @@ begin
     raise exception 'post-check: execute privileges are not as released';
   end if;
   if security.reader_sch_template_v1('https://x/scholarships/post_faq/having-technical-difficulties/') <> 'not_a_listing'
+     or security.reader_sch_template_v1('https://www.upei.ca/scholarships-and-awards/display?awardid=1147') <> 'not_a_listing'
      or security.reader_sch_template_v1('https://x/study/fees-scholarships/scholarships') <> 'items_not_extracted' then
     raise exception 'post-check: the listing classes are not read as designed';
   end if;
