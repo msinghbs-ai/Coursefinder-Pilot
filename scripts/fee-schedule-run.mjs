@@ -18,7 +18,7 @@ let { r, res } = await callWorker(null)
 // s1334 (SS-Programme-Control 28 Nov 2026 07:44 and 09:03): the site refused the direct read. The provider is taken from its registered fee schedule source,
 // one on-demand window is opened for one Firecrawl read (CLAUDE.md: opened, reported, closed), and the run is made once more
 let od = null, cricos = null
-const fcNeed = /FIRECRAWL_NEEDS_PROVIDER (\w{5})/.exec(String(res.error || ''))
+const fcNeed = /FIRECRAWL_NEEDS_PROVIDER ([0-9]{5}[0-9A-Z])/.exec(String(res.error || ''))
 if (fcNeed) {
   cricos = fcNeed[1]
   const rows = await op(`select provider_id as pid from pipeline.sources where source_type = 'provider_fee_schedule' and metadata->>'provider_cricos' = ${lit(cricos)} and provider_id is not null limit 1`)
