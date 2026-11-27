@@ -18,9 +18,12 @@
 --      adds its hosts to the provider's hosts for listing reads (svc_reader_config_sch_v1), and the existing listing record, candidates and
 --      scholarship admission decide.
 --   5. Knowledge and prevention as s1303 (security.ops_learning_record_v1, security.ops_learning_retry_check_v1).
--- G1: no job (the existing scholarship_listing call runs the step). G2: the s1303 settings. G3: 75/48 checked. Locks and cron checked. No spend.
--- Nothing dropped or deleted.
--- Replaces: nothing.
+--   6. s1303 correction found live after its release: the entry-matrix job (security.entry_matrix_fire_v1, job 337 every 5 minutes) calls the worker
+--      only while entry-matrix work is due, so the lifecycle step and qualification samples never ran (0 entry_ai calls in 2 hours). The job now runs
+--      the academic entry lifecycle step itself and counts queued qualification samples as due work (one anchored, md5-guarded edit).
+-- G1: no job (the existing scholarship_listing call and job 337 run the steps). G2: the s1303 settings. G3: 75/48 checked. Locks and cron checked.
+-- No spend. Nothing dropped or deleted.
+-- Replaces: security.entry_matrix_fire_v1 (md5 68213bf4; two anchored additions).
 -- Retires: nothing.
 set local lock_timeout = '5s';  -- fixed: lock wait for the new objects
 
@@ -34,6 +37,9 @@ begin
     raise exception 'pre-check: consumer API baseline is not 75/48 with no drift: %', v;
   end if;
   if to_regprocedure('security.reader_lifecycle_tick_v1()') is null then raise exception 'pre-check: s1303 (20261130143000) is not applied'; end if;
+  if md5(pg_get_functiondef('security.entry_matrix_fire_v1()'::regprocedure)) <> '68213bf48d54bd0a82db117c708cd2dd' then
+    raise exception 'pre-check: security.entry_matrix_fire_v1 is not the definition this change was written against';
+  end if;
 end $pre$;
 
 insert into pipeline.ops_remedy_knowledge (code, lane, title, fingerprint_like, root_cause, remedy_code, trigger_conditions, authority, performed_by, expected_outcome,
@@ -257,6 +263,22 @@ comment on function public.svc_reader_config_sch_v1(uuid[]) is 'CF-247 s1304: th
 revoke all on function public.svc_reader_config_sch_v1(uuid[]) from public, anon, authenticated;
 grant execute on function public.svc_reader_config_sch_v1(uuid[]) to service_role;
 
+-- s1303 correction: the entry-matrix job runs the academic entry lifecycle step and counts queued qualification samples as due work
+do $edit$
+declare d text := pg_get_functiondef('security.entry_matrix_fire_v1()'::regprocedure);
+        a1 text := '  v_q := security.entry_matrix_enqueue_v1();';
+        a2 text := 'and security.entry_matrix_enabled_v1(s.provider_id));';
+begin
+  if position(a1 in d) = 0 or position(a2 in d) = 0 then raise exception 'anchor not found in entry_matrix_fire_v1'; end if;
+  d := replace(d, a1, a1 || '
+  perform security.reader_lifecycle_tick_v1();  -- s1304: the reader lifecycle step (detection, reuse, activation, outcomes) on every run');
+  d := replace(d, a2, a2 || '
+  -- s1304: queued sample pages of proposed reader configurations are due work for the worker (svc_reader_qualify_next)
+  v_due := v_due + (select count(*) from pipeline.layer2_source_profile_versions qv join pipeline.layer2_source_profiles qp on qp.id = qv.profile_id, jsonb_each(qv.validation_result->''samples'') qe
+                     where qv.validation_status = ''pending'' and qp.profile_key like ''reader:academic_entry:%'' and qe.value->>''state'' in (''queued'', ''leased''));');
+  execute d;
+end $edit$;
+
 do $post$
 declare v jsonb := security.consumer_api_check_v1();
 begin
@@ -266,6 +288,7 @@ begin
   if has_function_privilege('authenticated', 'public.svc_reader_qualify_sch_next(integer)', 'execute') or has_function_privilege('anon', 'public.svc_reader_config_sch_v1(uuid[])', 'execute') then
     raise exception 'post-check: execute privileges are not as released';
   end if;
+  if pg_get_functiondef('security.entry_matrix_fire_v1()'::regprocedure) !~ 'reader_lifecycle_tick_v1' then raise exception 'post-check: the entry-matrix job does not run the lifecycle step'; end if;
   if security.reader_sch_template_v1('https://x/scholarships/post_faq/having-technical-difficulties/', null) <> 'not_a_listing'
      or security.reader_sch_template_v1('https://www.upei.ca/scholarships-and-awards/display?awardid=1147', null) <> 'not_a_listing'
      or security.reader_sch_template_v1('https://x/study/fees-scholarships/scholarships', null) <> 'items_not_extracted' then

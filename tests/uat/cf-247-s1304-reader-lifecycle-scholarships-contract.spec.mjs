@@ -36,6 +36,12 @@ test('an active configuration only adds qualified hosts to the listing read', ()
   expect(body).toContain("select jsonb_object_agg(v.configuration->>'provider_id', v.configuration->'hosts_add')")
 })
 
+test('the entry-matrix job runs the academic entry lifecycle step and counts queued samples as due work (s1303 correction)', () => {
+  expect(body).toContain("perform security.reader_lifecycle_tick_v1();  -- s1304: the reader lifecycle step")
+  expect(body).toContain("v_due := v_due + (select count(*) from pipeline.layer2_source_profile_versions qv")
+  expect(body).toContain("<> '68213bf48d54bd0a82db117c708cd2dd' then")
+})
+
 test('learning and prevention; no new table; nothing dropped', () => {
   expect(body).not.toMatch(/create table (if not exists )?pipeline\./i)
   expect(body).toContain("'the same listing copies already failed', 'prevented', true")
