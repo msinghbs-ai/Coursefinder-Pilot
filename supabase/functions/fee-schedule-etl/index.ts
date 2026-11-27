@@ -3,12 +3,13 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { getDocumentProxy } from "npm:unpdf@0.12.1";
 import { parseUqTable1, parseUqTable3Minimum } from "./elp.ts";
 import { htmlRows } from "./html-rows.ts";
+import { fcClient } from "../coverage-sweep/firecrawl.ts";  // s1334: the one Firecrawl client (logged in pipeline.firecrawl_calls)
 
 // CF-247 Decision 162 step 2: provider international fee schedules (one document per provider per fee year).
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.9.0";
+const VERSION = "fee-schedule-etl-v0.9.1";
 // v0.9.0 (s1327, Platform Admin 28 Nov 2026 06:54, scoped exception for UNE and TAFE Queensland only): a registered schedule may be an
 // official HTML page (format "html"), read as its tables by html-rows.ts htmlRows with the same row rule; it is stored as evidence as text/html.
 // UNE 2027 course fees (annual: two full-time trimesters) and the TAFE Queensland 2027 higher education table (annual indicative) are
@@ -147,8 +148,25 @@ Deno.serve(async (req) => {
       if (!sc) throw Error("unknown schedule; registered: " + Object.keys(SCHEDULES).join(", "));
       const su = new URL(sc.url);
       const rr = await fetch(su, { redirect: "follow", headers: { "user-agent": "CourseFinder-Pilot/fee-schedule-0.2" } });
-      if (!rr.ok) throw Error(`HTTP ${rr.status}`);
-      const b = new Uint8Array(await rr.arrayBuffer());
+      // v0.9.1 (s1334, SS-Programme-Control 28 Nov 2026 07:44 and 09:03: direct read first, then the authorised Firecrawl route): an HTML schedule whose
+      // site refuses the direct read (401, 403, 406, 429) is read once through the existing Firecrawl client, only when svc_fc_spend allows it (an open
+      // on-demand request for the provider, the monthly plan limit, never a directory site); a challenge page is never accepted (no bypass)
+      let b: Uint8Array, via = "direct";
+      if (rr.ok) b = new Uint8Array(await rr.arrayBuffer());
+      else if (sc.format === "html" && [401, 403, 406, 429].includes(rr.status)) {
+        const pid = t(body.provider_id);
+        if (!/^[0-9a-f-]{36}$/i.test(pid)) throw Error(`HTTP ${rr.status}; FIRECRAWL_NEEDS_PROVIDER ${sc.provider_cricos}`);
+        const { data: fc } = await c.rpc("svc_coverage_firecrawl", {});
+        if (!fc?.secret) throw Error(`HTTP ${rr.status}; no Firecrawl key`);
+        const { data: allowed } = await c.rpc("svc_fc_spend", { p_units: 1, p_purpose: "fee_schedule_read", p_provider_id: pid, p_url: sc.url });
+        if (allowed !== true) throw Error(`HTTP ${rr.status}; Firecrawl refused by the spend gate`);
+        const fcx = fcClient({ headers: { authorization: `Bearer ${fc.secret}`, "content-type": "application/json" }, log: (p) => c.rpc("svc_fc_call_log", { p }) as unknown as Promise<unknown> });
+        const r2: any = await fcx.scrape({ proxy: "basic", url: sc.url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, timeout: 30000 },
+          { use_case: "fee_schedule_read", provider_id: pid }, { timeoutMs: 45000 });  // fixed: API time-out of one Firecrawl read
+        const html = String(r2?.html || "");
+        if (!html || /Pardon Our Interruption|Just a moment\.\.\.|cf-challenge|captcha/i.test(html)) throw Error(`HTTP ${rr.status}; Firecrawl returned no readable page (${r2?.http ?? "no answer"})`);
+        b = new TextEncoder().encode(html); via = "firecrawl";
+      } else throw Error(`HTTP ${rr.status}`);
       const hb = await crypto.subtle.digest("SHA-256", b);
       const sha = [...new Uint8Array(hb)].map((x) => x.toString(16).padStart(2, "0")).join("");
       const isHtml = sc.format === "html";
@@ -170,7 +188,7 @@ Deno.serve(async (req) => {
         const { data: applied, error: ae } = await c.rpc("svc_fee_schedule_apply", { p_provider_cricos: sc.provider_cricos, p_fee_year: sc.fee_year,
           p_storage_path: path, p_url: sc.url, p_sha256: sha, p_schedule: t(body.schedule), p_rows: parsed.rows.map(({ raw, ...x }) => x) });
         if (ae) throw Error(ae.message);
-        return j({ ok: true, mode, schedule: t(body.schedule), url: sc.url, sha256: sha, parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length,
+        return j({ ok: true, mode, schedule: t(body.schedule), url: sc.url, sha256: sha, via, parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length,
           parked, preview: { actions: preview?.actions, bound: preview?.bound }, applied, workerVersion: VERSION });
       }
       return j({ ok: true, mode, schedule: t(body.schedule), label: sc.label, url: sc.url, sha256: sha, bytes: b.length, numPages: d.numPages,

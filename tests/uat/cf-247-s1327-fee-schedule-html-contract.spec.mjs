@@ -10,7 +10,7 @@ const wf = fs.readFileSync('.github/workflows/fee-schedule-run.yml', 'utf8')
 const { htmlRows } = await import('data:text/javascript;base64,' + Buffer.from(transformSync(fs.readFileSync('supabase/functions/fee-schedule-etl/html-rows.ts', 'utf8'), { loader: 'ts', format: 'esm' }).code).toString('base64'))
 
 test('only the two scoped HTML schedules are registered, each read only from the table its header rule names', () => {
-  expect(w).toContain('const VERSION = "fee-schedule-etl-v0.9.0";')
+  expect(w).toContain('const VERSION = "fee-schedule-etl-v0.9.1";')
   expect(w.match(/format: "html"/g)).toHaveLength(2)
   expect(w).toContain('une_2027: { provider_cricos: "00003G", fee_year: 2027, basis: "annual", format: "html", header: /\\bCRICOS\\b.*\\bFee\\b/i, bareAmounts: true,')
   expect(w).toContain('tafeqld_he_2027: { provider_cricos: "03020E", fee_year: 2027, basis: "annual", format: "html", header: /Cost \\(annual indicative\\)/i,')

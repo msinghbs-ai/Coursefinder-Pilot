@@ -1,4 +1,4 @@
-// Guards: CF-247 Decision 162: Fee schedule worker is deterministic and bounded to registered schedules on university hosts
+// Guards: CF-247 Decision 162: Fee schedule worker is deterministic and bounded to registered schedules on university hosts (Firecrawl is an acquisition route only, s1334)
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
@@ -10,7 +10,9 @@ test('Fee schedule worker is deterministic and bounded to registered schedules o
   expect(w).toContain('if (!(amount >= 12000 && amount <= 150000))')
   expect(w).toContain('english for academic|general english|elicos|english language')
   expect(w).toContain('svc_pilot_consume_nonce')
-  expect(w).not.toMatch(/firecrawl|openrouter|json.*schema/i)                         // no AI extraction
+  expect(w).not.toMatch(/openrouter|json.*schema|formats:\s*\[[^\]]*"(json|extract|summary)"/i)   // no AI extraction
+  // s1334 (SS-Programme-Control 28 Nov 2026 07:44): Firecrawl only as an acquisition route (raw HTML through the one client), never as an extractor
+  for (const m of w.matchAll(/fcx\.scrape\(\{[^}]*\}/g)) expect(m[0]).toContain('formats: ["rawHtml"]')
 })
 
 test('Apply binds within the provider, never overwrites a same-year value, and keeps one current tuition',()=>{
