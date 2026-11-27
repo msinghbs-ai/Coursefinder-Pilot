@@ -3047,59 +3047,6 @@ async function handle(req: Request): Promise<Response> {
         cost_usd: out.reduce((t, x) => t + (Number(x.cost_usd) || 0), 0), spent_usd: spent, max_usd: maxUsd, openrouter: ors.summary(), ms: Date.now() - t0, worker: WORKER });
     }
     // v1.0.32 (s815): read-only. The caller (workflow aer-det-read.yml) sends stored course pages (course_id, evidence_id, storage_path); each is read from storage, turned to text and read by aer-det-reader.ts. Nothing is written here.
-    // v1.0.60 (s1321): structured candidates (pipeline.structured_intake_items) are proved on the platform's own stored copies: each submitted
-    // quote must be printed on the stored copy of the page it names (intake.ts, exact characters, white space left out). The stored copy is reused;
-    // a page with none inside the freshness period is read once directly (robots.txt respected, no Firecrawl, no model, $0) and stored as evidence.
-    // The database leases the items and decides (security.structured_intake_record_v1).
-    if (mode === "intake_verify") {
-      const lease = await rpc("svc_structured_intake_v1", { p_action: "next", p_args: {}, p_by: WORKER });
-      const items: any[] = Array.isArray(lease?.items) ? lease.items : [];
-      const copies = new Map<string, string>();
-      const fetched = new Map<string, any>();
-      const out: unknown[] = [];
-      for (const it of items) {
-        if (Date.now() - t0 > BUDGET_MS) break;  // the item stays leased and is leased again after the lease timer
-        const proofs: unknown[] = [];
-        for (const p of (Array.isArray(it.proofs) ? it.proofs : [])) {
-          if (!p.storage_path && !(Number(lease?.fetch_on) >= 1 && /^https:\/\//.test(String(p.url || "")))) { proofs.push({ i: p.i, found: false, reason: "no_stored_copy" }); continue }
-          try {
-            // no stored copy inside the freshness period: one plain read of the page (robots.txt respected, no Firecrawl, $0), once per address in
-            // this call, stored as evidence and registered by the database; later candidates on the same page reuse it
-            if (!p.storage_path) {
-              let f = fetched.get(p.url);
-              if (f === undefined) {
-                const d = await readDirect(p.url);
-                if (d.status !== "read" || !d.html) f = { error: d.status, http: d.http };
-                else {
-                  const bytes = new TextEncoder().encode(d.html), sha = await sha256(bytes), path = `layer2/intake/${it.provider_id}/${sha}.html.gz`;
-                  const up = await c.storage.from("evidence").upload(path, await gzip(bytes), { contentType: "application/gzip", upsert: true });
-                  if (up.error) f = { error: "storage: " + up.error.message, http: d.http };
-                  else f = { ...(await rpc("svc_structured_intake_v1", { p_action: "store", p_args: { item_id: it.item_id, url: p.url, final_url: d.finalUrl, storage_path: path, sha256: sha, http: d.http, mime: "text/html" }, p_by: WORKER })), storage_path: path };
-                }
-                fetched.set(p.url, f);
-              }
-              if (!f?.evidence_id) { proofs.push({ i: p.i, found: false, reason: "no_stored_copy", fetch: f?.error || "not_stored", http: f?.http ?? null }); continue }
-              p.storage_path = f.storage_path; p.evidence_id = f.evidence_id; p.mime = "text/html";
-            }
-            let page = copies.get(p.storage_path);
-            if (page === undefined) {
-              const { data, error } = await c.storage.from("evidence").download(p.storage_path); if (error || !data) throw Error(error?.message || "missing");
-              const b = new Uint8Array(await data.arrayBuffer());
-              const raw = b[0] === 0x1f && b[1] === 0x8b ? new Uint8Array(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer()) : b;
-              let text: string;
-              if (isPdfCopy(p.mime, p.storage_path)) { const doc = await getDocumentProxy(raw); text = await pdfPlainText(doc, Number(lease?.pdf_max_pages) || 40) }
-              else { const t = new TextDecoder().decode(raw); text = /<\w+[\s>]/.test(t.slice(0, 2000)) ? htmlToText(t) : t }
-              page = foldText(text); copies.set(p.storage_path, page);
-            }
-            const q = quoteOnPage(page, String(p.quote || ""), Number(lease?.min_quote_chars) || 8);
-            proofs.push({ i: p.i, evidence_id: p.evidence_id, found: q.found, reason: q.reason });
-          } catch (e) { proofs.push({ i: p.i, evidence_id: p.evidence_id, found: false, reason: "stored_copy_unreadable", error: (e instanceof Error ? e.message : String(e)).slice(0, 160) }) }
-        }
-        try { out.push(await rpc("svc_structured_intake_v1", { p_action: "record", p_args: { item_id: it.item_id, proofs, verifier: INTAKE_VERIFY }, p_by: WORKER })) }
-        catch (e) { out.push({ item_id: it.item_id, error: (e instanceof Error ? e.message : String(e)).slice(0, 200) }) }
-      }
-      return j({ ok: true, mode, verifier: INTAKE_VERIFY, leased: items.length, results: out, worker: WORKER });
-    }
     if (mode === "aer_det_read") {
       // S3-AER: opt-in v1.5 for explicitly scoped manual NZ/CA providers only.
       if (body.scoped_extractor != null && body.scoped_extractor !== AER_DET_VERSION && body.scoped_extractor !== AER_DET_SCOPED_VERSION) return j({ ok: false, mode, error: "unqualified_academic_extractor" });
@@ -4138,6 +4085,59 @@ async function handle(req: Request): Promise<Response> {
     // v0.14.1: read chosen pages with chosen Firecrawl options (Platform Admin test of read settings and university
     // adapters). Nothing is recorded on a course: only the call log and this reply.
     // v0.15.0 (Decision 253): university adapters, tried and applied on stored pages (no Firecrawl credits).
+    // v1.0.60 (s1321): structured candidates (pipeline.structured_intake_items) are proved on the platform's own stored copies: each submitted
+    // quote must be printed on the stored copy of the page it names (intake.ts, exact characters, white space left out). The stored copy is reused;
+    // a page with none inside the freshness period is read once directly (robots.txt respected, no Firecrawl, no model, $0) and stored as evidence.
+    // The database leases the items and decides (security.structured_intake_record_v1).
+    if (mode === "intake_verify") {
+      const lease = await rpc("svc_structured_intake_v1", { p_action: "next", p_args: {}, p_by: WORKER });
+      const items: any[] = Array.isArray(lease?.items) ? lease.items : [];
+      const copies = new Map<string, string>();
+      const fetched = new Map<string, any>();
+      const out: unknown[] = [];
+      for (const it of items) {
+        if (Date.now() - t0 > BUDGET_MS) break;  // the item stays leased and is leased again after the lease timer
+        const proofs: unknown[] = [];
+        for (const p of (Array.isArray(it.proofs) ? it.proofs : [])) {
+          if (!p.storage_path && !(Number(lease?.fetch_on) >= 1 && /^https:\/\//.test(String(p.url || "")))) { proofs.push({ i: p.i, found: false, reason: "no_stored_copy" }); continue }
+          try {
+            // no stored copy inside the freshness period: one plain read of the page (robots.txt respected, no Firecrawl, $0), once per address in
+            // this call, stored as evidence and registered by the database; later candidates on the same page reuse it
+            if (!p.storage_path) {
+              let f = fetched.get(p.url);
+              if (f === undefined) {
+                const d = await readDirect(p.url);
+                if (d.status !== "read" || !d.html) f = { error: d.status, http: d.http };
+                else {
+                  const bytes = new TextEncoder().encode(d.html), sha = await sha256(bytes), path = `layer2/intake/${it.provider_id}/${sha}.html.gz`;
+                  const up = await c.storage.from("evidence").upload(path, await gzip(bytes), { contentType: "application/gzip", upsert: true });
+                  if (up.error) f = { error: "storage: " + up.error.message, http: d.http };
+                  else f = { ...(await rpc("svc_structured_intake_v1", { p_action: "store", p_args: { item_id: it.item_id, url: p.url, final_url: d.finalUrl, storage_path: path, sha256: sha, http: d.http, mime: "text/html" }, p_by: WORKER })), storage_path: path };
+                }
+                fetched.set(p.url, f);
+              }
+              if (!f?.evidence_id) { proofs.push({ i: p.i, found: false, reason: "no_stored_copy", fetch: f?.error || "not_stored", http: f?.http ?? null }); continue }
+              p.storage_path = f.storage_path; p.evidence_id = f.evidence_id; p.mime = "text/html";
+            }
+            let page = copies.get(p.storage_path);
+            if (page === undefined) {
+              const { data, error } = await c.storage.from("evidence").download(p.storage_path); if (error || !data) throw Error(error?.message || "missing");
+              const b = new Uint8Array(await data.arrayBuffer());
+              const raw = b[0] === 0x1f && b[1] === 0x8b ? new Uint8Array(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer()) : b;
+              let text: string;
+              if (isPdfCopy(p.mime, p.storage_path)) { const doc = await getDocumentProxy(raw); text = await pdfPlainText(doc, Number(lease?.pdf_max_pages) || 40) }
+              else { const t = new TextDecoder().decode(raw); text = /<\w+[\s>]/.test(t.slice(0, 2000)) ? htmlToText(t) : t }
+              page = foldText(text); copies.set(p.storage_path, page);
+            }
+            const q = quoteOnPage(page, String(p.quote || ""), Number(lease?.min_quote_chars) || 8);
+            proofs.push({ i: p.i, evidence_id: p.evidence_id, found: q.found, reason: q.reason });
+          } catch (e) { proofs.push({ i: p.i, evidence_id: p.evidence_id, found: false, reason: "stored_copy_unreadable", error: (e instanceof Error ? e.message : String(e)).slice(0, 160) }) }
+        }
+        try { out.push(await rpc("svc_structured_intake_v1", { p_action: "record", p_args: { item_id: it.item_id, proofs, verifier: INTAKE_VERIFY }, p_by: WORKER })) }
+        catch (e) { out.push({ item_id: it.item_id, error: (e instanceof Error ? e.message : String(e)).slice(0, 200) }) }
+      }
+      return j({ ok: true, mode, verifier: INTAKE_VERIFY, leased: items.length, results: out, worker: WORKER });
+    }
     if (mode === "adapter_preview") {
       const n = await rpc("svc_adapter_preview_next", { p_preview_id: String(body.preview_id || "") });
       if (!n) return j({ error: "unknown preview", worker: WORKER }, 404);

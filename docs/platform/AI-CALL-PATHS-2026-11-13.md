@@ -19,7 +19,7 @@ Two edge functions call a model (searched: every `.ts` file under `supabase/func
 
 Three calls are not model calls: the balance read (`index.ts:832`, `GET /credits`, job `openrouter-balance`, every 15 minutes), the key's own limit
 (`GET /key`, the same job, worker v1.0.3; recorded in `pipeline.openrouter_key_observations` for `security.ai_route_v1` and Health) and the price list
-(`index.ts:3296`, `GET /models`, used to reserve a price for a provider description).
+(`index.ts:3243`, `GET /models`, used to reserve a price for a provider description).
 
 ## 2. Every model call in the worker
 
@@ -39,13 +39,13 @@ worker: each reader hands it out from `security.ai_route_v1(<service>)`.
 | `index.ts:2832` | `lean_qualify` (Lean AI Input 1b-3 fees and intakes qualification, v0.95.0; ships off, US$2.00 ceiling, nothing admitted) | `public.svc_lean_qualify_next_v1` | fee_reader (fees), course_other_fields (intakes) | `routed` | worker cascade |
 | `index.ts:2908` | `central_ai (calendar, sliced read)` | `public.svc_central_ai_next` | calendar_reading (kind intake_calendar) | `routed` | worker cascade |
 | `index.ts:2924` | `central_ai` | `public.svc_central_ai_next` | central_english_policy or calendar_reading, by the item's kind | `routed` | worker cascade |
-| `index.ts:3443` | `entry_ai` | `public.svc_entry_matrix_next` | entry_matrices | `routed_single` | one model |
-| `index.ts:3512` | `fee_ai` | `public.svc_fee_ai_next` | fee_reader | `routed` | worker cascade |
-| `index.ts:3663` | `provider_description` | `public.svc_provider_description_lease_v1, public.svc_provider_description_next, public.svc_provider_description_reserve_v1` | provider_description | `routed_single` | one model (a price is reserved for that model) |
-| `index.ts:3725` | `enrich_ai (course fields: ask)` | `public.svc_enrich_ai_next` | course_other_fields | `routed` | worker cascade |
-| `index.ts:3749` | `enrich_ai (description and deadline: askText)` | `public.svc_enrich_ai_next` | course_description (description), course_other_fields (deadline) | `routed` | worker cascade |
-| `index.ts:3804` | `enrich_ai (entry requirements)` | `public.svc_enrich_ai_next` | course_entry_requirements | `routed` | worker cascade |
-| `index.ts:4116` | `ai_match` | `public.svc_coverage_ai_match_next` | course_matching | `routed` | worker cascade |
+| `index.ts:3390` | `entry_ai` | `public.svc_entry_matrix_next` | entry_matrices | `routed_single` | one model |
+| `index.ts:3459` | `fee_ai` | `public.svc_fee_ai_next` | fee_reader | `routed` | worker cascade |
+| `index.ts:3610` | `provider_description` | `public.svc_provider_description_lease_v1, public.svc_provider_description_next, public.svc_provider_description_reserve_v1` | provider_description | `routed_single` | one model (a price is reserved for that model) |
+| `index.ts:3672` | `enrich_ai (course fields: ask)` | `public.svc_enrich_ai_next` | course_other_fields | `routed` | worker cascade |
+| `index.ts:3696` | `enrich_ai (description and deadline: askText)` | `public.svc_enrich_ai_next` | course_description (description), course_other_fields (deadline) | `routed` | worker cascade |
+| `index.ts:3751` | `enrich_ai (entry requirements)` | `public.svc_enrich_ai_next` | course_entry_requirements | `routed` | worker cascade |
+| `index.ts:4063` | `ai_match` | `public.svc_coverage_ai_match_next` | course_matching | `routed` | worker cascade |
 | `index.ts:4254` | `adapter_propose` | `security.adapter_builder_model_for_v1 (through public.svc_adapter_draft_get)` | adapter_builder | `routed_single` | one model |
 | `index.ts:4292` | `induction_map` | `public.svc_layer1_induction_map_route_v1` (called by edge function `layer1-ai-induction-mapper` with a one-time nonce from `public.svc_pilot_issue_nonce`) | layer1_induction_map | `routed_single` | one model; the answer is a suggestion a person reviews in the Layer 1 induction wizard (worker v1.0.7, 17 Nov 2026) |
 | `index.ts:4346` | `boost_fields_replay` | `public.svc_boost_fields_route_v1` (workflow `boost-fields-replay.yml`, on demand; the caller names stored pages of courses that already hold the field) | boost_fields_extract | `routed_single` | one model, one call per stored page, read as mode `boost_fields` reads it; the checked answers are returned for comparison with the held values and nothing is claimed, staged or admitted (worker v1.0.18, Platform Admin 18 Nov 2026 17:02 item 3) |
