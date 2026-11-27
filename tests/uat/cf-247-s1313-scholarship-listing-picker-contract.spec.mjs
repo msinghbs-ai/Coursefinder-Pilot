@@ -1,5 +1,5 @@
 // Guards: SS-Programme-Control 27 Nov 2026 16:07 AEDT (P0 Scholarship Production Picker Recovery, decision D12; SCH-FU-10, coursefinder-admin #1305): held providers keep their free direct listing reads; eligibility, visibility and every paid-scrape control stay enforced
-// CF-247 s1313. supabase/migrations/20261130180000_cf247_s1313_scholarship_listing_picker_free_first.sql
+// CF-247 s1313 and s1313b. supabase/migrations/20261130180000_cf247_s1313_scholarship_listing_picker_free_first.sql, 20261130183000_cf247_s1313b_scholarship_listing_picker_restore.sql
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
@@ -33,4 +33,12 @@ test('nothing else changes: no cap, setting, job or lock; consumer API checked; 
   expect(sql).toContain("(v->>'functions')::int <> 75 or (v->>'relations')::int <> 48")
   expect(sql).toMatch(/-- Replaces: public\.svc_scholarship_listing_next/)
   expect(sql).toMatch(/-- Retires: nothing\./)
+})
+
+test('s1313b: the picker is restored to its definition before s1313 (the eligibility rule per provider exceeded the 8 s call limit); nothing dropped', () => {
+  const r = fs.readFileSync('supabase/migrations/20261130183000_cf247_s1313b_scholarship_listing_picker_restore.sql', 'utf8')
+  expect(r).toContain("d := replace(d, a, 'and not security.fc_sch_held_v1(d.provider_id, true)),');")
+  expect(r).toContain("<> 'dc3b688512a12d5bbf3ed16eecdbd796' then")
+  expect(r).not.toMatch(/\bdrop\s+(table|function|view)\b|\bdelete\s+from\b/i)
+  expect(r).toMatch(/-- Retires: nothing\./)
 })
