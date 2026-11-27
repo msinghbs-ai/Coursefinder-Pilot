@@ -1,4 +1,5 @@
-// studysearch-reader-burst (CF-247 s1320, S1-Build, 27 Nov 2026). PREPARED, NOT DEPLOYED: HELD:DEPLOYMENT_APPROVAL.
+// studysearch-reader-burst (CF-247 s1320, S1-Build, 27 Nov 2026). Deployment approved by SS-Programme-Control 27 Nov 2026 22:36 AEDT (Decision 2),
+// subject to the token reaching Techm only; deployed only by cloudflare-reader-deploy.yml (s1324), which checks that first.
 // An isolated processing Worker beside the frontend (the root wrangler.jsonc, Worker coursefinder-pilot, is not touched).
 // M3 Cloudflare Containers runbook v1.0 §5.1: durable_object scheduling policy, a named image, a SQLite-backed Durable Object export.
 // Schema checked against wrangler 4.161.0 config-schema.json (ContainerApp.images, scheduling_policy "durable_object", RawConfig.exports).
@@ -7,7 +8,8 @@
   "name": "studysearch-reader-burst",
   "main": "src/index.ts",
   "compatibility_date": "2026-11-24",
-  "workers_dev": false,
+  // s1324: the signed gateway is the only route; an unsigned call is refused before any container starts
+  "workers_dev": true,
   "preview_urls": false,
   "containers": [{
     "class_name": "ReaderContainer",
