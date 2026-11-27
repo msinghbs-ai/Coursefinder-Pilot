@@ -9,7 +9,7 @@ import { fcClient } from "../coverage-sweep/firecrawl.ts";  // s1334: the one Fi
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.9.1";
+const VERSION = "fee-schedule-etl-v0.9.2";
 // v0.9.0 (s1327, Platform Admin 28 Nov 2026 06:54, scoped exception for UNE and TAFE Queensland only): a registered schedule may be an
 // official HTML page (format "html"), read as its tables by html-rows.ts htmlRows with the same row rule; it is stored as evidence as text/html.
 // UNE 2027 course fees (annual: two full-time trimesters) and the TAFE Queensland 2027 higher education table (annual indicative) are
@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
         if (!fc?.secret) throw Error(`HTTP ${rr.status}; no Firecrawl key`);
         const { data: allowed } = await c.rpc("svc_fc_spend", { p_units: 1, p_purpose: "fee_schedule_read", p_provider_id: pid, p_url: sc.url });
         if (allowed !== true) throw Error(`HTTP ${rr.status}; Firecrawl refused by the spend gate`);
-        const fcx = fcClient({ headers: { authorization: `Bearer ${fc.secret}`, "content-type": "application/json" }, log: (p) => c.rpc("svc_fc_call_log", { p }) as unknown as Promise<unknown> });
+        const fcx = fcClient({ headers: { authorization: `Bearer ${fc.secret}`, "content-type": "application/json" }, log: async (p) => { await c.rpc("svc_fc_call_log", { p }) } });
         const r2: any = await fcx.scrape({ proxy: "basic", url: sc.url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, timeout: 30000 },
           { use_case: "fee_schedule_read", provider_id: pid }, { timeoutMs: 45000 });  // fixed: API time-out of one Firecrawl read
         const html = String(r2?.html || "");
