@@ -29,7 +29,7 @@ if (fcNeed) {
     ({ r, res } = await callWorker(rows[0].pid))
   }
 }
-const brief = { http: r.status, schedule, mode, provider_cricos: cricos, via: res.via, on_demand: od, codes: codes.length, sha256: res.sha256, parsedRows: res.parsedRows, rejectedRows: res.rejectedRows, parked: res.parked,
+const brief = { http: r.status, schedule, mode, provider_cricos: cricos, via: res.via, html: res.html, bytes: res.bytes, rejectedSample: res.rejectedSample, on_demand: od, codes: codes.length, sha256: res.sha256, parsedRows: res.parsedRows, rejectedRows: res.rejectedRows, parked: res.parked,
   actions: res.preview?.actions ?? res.preview, applied: res.applied ? { ...res.applied, skipped_detail: undefined } : undefined, skipped_detail: res.applied?.skipped_detail, error: res.error, worker: res.workerVersion }
 if (od?.id) { try { const [{ c }] = await op(`select security.on_demand_close_v1(${lit(od.id)}::uuid) as c`); brief.on_demand_closed = c } catch (e) { brief.on_demand_closed = String(e).slice(0, 200) } }
 await summary(['Fee schedule ' + mode + ': ' + schedule, '', '```json', JSON.stringify(brief, null, 2).slice(0, 8000), '```'].join('\n'))
