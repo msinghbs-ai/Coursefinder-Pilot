@@ -1,0 +1,22 @@
+// studysearch-reader-burst (CF-247 s1320, S1-Build, 27 Nov 2026). PREPARED, NOT DEPLOYED: HELD:DEPLOYMENT_APPROVAL.
+// An isolated processing Worker beside the frontend (the root wrangler.jsonc, Worker coursefinder-pilot, is not touched).
+// M3 Cloudflare Containers runbook v1.0 §5.1: durable_object scheduling policy, a named image, a SQLite-backed Durable Object export.
+// Schema checked against wrangler 4.161.0 config-schema.json (ContainerApp.images, scheduling_policy "durable_object", RawConfig.exports).
+// No max_instances or instance_type here: the size is chosen at start (standard-3) and the slot cap is the platform's own lease rule.
+{
+  "name": "studysearch-reader-burst",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-24",
+  "workers_dev": false,
+  "preview_urls": false,
+  "containers": [{
+    "class_name": "ReaderContainer",
+    "scheduling_policy": "durable_object",
+    "images": { "reader": { "dockerfile": "./container/Dockerfile", "build_context": "../.." } }
+  }],
+  "durable_objects": { "bindings": [{ "name": "READER_CONTAINER", "class_name": "ReaderContainer" }] },
+  "exports": { "ReaderContainer": { "type": "durable-object", "storage": "sqlite" } },
+  // Values here mirror platform settings to be registered on approval (G2, toolset cloudflare_reader); the gateway never invents a slot.
+  "vars": { "READER_SLOTS": "reader-01", "IDLE_MS": "300000", "MAX_BODY_BYTES": "41943040", "MAX_PAGES": "400", "SIG_SKEW_S": "120" },
+  "observability": { "enabled": true }
+}

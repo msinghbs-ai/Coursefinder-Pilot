@@ -1,0 +1,79 @@
+# Cloudflare reader preflight (CF-247, S1-Build; SS-Programme-Control 27 Nov 2026 20:45 AEDT; M3 Cloudflare Containers runbook v1.0 §1 and §3.3).
+# Read-only: checks that the CLOUDFLARE_READER_API_TOKEN secret authenticates, which account it reaches, whether the existing frontend Worker is
+# visible, whether Containers and the Workers subscription can be read, and what the token cannot do. It deploys nothing, creates nothing,
+# changes no setting and spends nothing. The token is never printed: only HTTP status codes and non-secret fields (account IDs are shortened).
+name: Cloudflare reader preflight (read only)
+on:
+  workflow_dispatch:
+concurrency:
+  group: cloudflare-reader-preflight
+  cancel-in-progress: false
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Read-only Cloudflare checks
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_READER_API_TOKEN }}
+        run: |
+          set -u
+          S="$GITHUB_STEP_SUMMARY"
+          echo "## Cloudflare reader preflight (read only)" >> "$S"
+          if [ -z "${CF_TOKEN:-}" ]; then echo "- Secret CLOUDFLARE_READER_API_TOKEN: **not visible to this repository's workflows** (repository secret absent, or stored in an environment)" | tee -a "$S"; exit 0; fi
+          echo "- Secret CLOUDFLARE_READER_API_TOKEN: present (value not shown)" | tee -a "$S"
+          api() { curl -sS -o /tmp/cf.json -w '%{http_code}' -H "Authorization: Bearer ${CF_TOKEN}" -H 'Content-Type: application/json' "https://api.cloudflare.com/client/v4$1"; }
+          short() { printf '%s' "$1" | cut -c1-6; }
+          code=$(api /user/tokens/verify); st=$(jq -r '.result.status // empty' /tmp/cf.json 2>/dev/null); exp=$(jq -r '.result.expires_on // "none"' /tmp/cf.json 2>/dev/null)
+          echo "- User-token verify: HTTP $code status=${st:-n/a} expires=$exp" | tee -a "$S"
+          code=$(api '/accounts?per_page=50')
+          echo "- Accounts listing: HTTP $code" | tee -a "$S"
+          if [ "$code" = 200 ]; then jq -r '.result[] | "  - account \(.name) (id \(.id[0:6])…)"' /tmp/cf.json | tee -a "$S"; fi
+          ids=$(jq -r '.result[]?.id' /tmp/cf.json 2>/dev/null)
+          for a in $ids; do
+            echo "### Account $(short "$a")…" >> "$S"
+            code=$(api "/accounts/$a/tokens/verify"); st=$(jq -r '.result.status // empty' /tmp/cf.json 2>/dev/null)
+            echo "- Account-token verify: HTTP $code status=${st:-n/a}" | tee -a "$S"
+            code=$(api "/accounts/$a/workers/scripts")
+            echo "- Workers scripts (read): HTTP $code" | tee -a "$S"
+            if [ "$code" = 200 ]; then jq -r '.result[] | "  - worker \(.id)"' /tmp/cf.json | tee -a "$S"; fi
+            code=$(api "/accounts/$a/workers/account-settings")
+            echo "- Workers account settings: HTTP $code $(jq -c '.result // .errors' /tmp/cf.json 2>/dev/null | cut -c1-200)" | tee -a "$S"
+            code=$(api "/accounts/$a/subscriptions")
+            echo "- Subscriptions (needs Billing Read): HTTP $code" | tee -a "$S"
+            if [ "$code" = 200 ]; then jq -r '.result[] | "  - \(.rate_plan.id // .rate_plan.public_name // "plan") state=\(.state // "-") product=\(.product.name // .component_values[0].name // "-")"' /tmp/cf.json | tee -a "$S"; fi
+            code=$(api "/accounts/$a/containers/applications")
+            echo "- Containers applications (needs Containers Read): HTTP $code $(jq -c '[.result[]? | {name, scheduling_policy, instances}] // .errors' /tmp/cf.json 2>/dev/null | cut -c1-300)" | tee -a "$S"
+            if [ "$code" != 200 ]; then jq -c '.errors' /tmp/cf.json 2>/dev/null | cut -c1-300 | sed 's/^/  - errors: /' | tee -a "$S"; fi
+          done
+          rm -f /tmp/cf.json
+  build-check:
+    # Builds the prepared reader image and bundles the reader Worker with a wrangler dry run on the runner. No Cloudflare token is given
+    # to this job, so it cannot deploy or push; it proves the toolchain, the image and the configuration only.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: docker info --format 'Docker {{.ServerVersion}} {{.OSType}}/{{.Architecture}}' && node --version
+      - name: Build the reader image (linux/amd64)
+        run: docker build --platform linux/amd64 -f cloudflare/reader-burst/container/Dockerfile -t reader-burst:check .
+      - name: Container smoke test (no network)
+        run: |
+          set -u
+          docker run -d --rm --network none --name rb reader-burst:check >/dev/null
+          sleep 4
+          h=$(docker exec rb deno eval --allow-net "const r = await fetch('http://127.0.0.1:8080/health'); console.log(r.status, await r.text())" 2>&1 || true)
+          echo "- health: $h" | tee -a "$GITHUB_STEP_SUMMARY"
+          docker logs rb 2>&1 | tail -5
+          docker stop rb >/dev/null
+      - name: Wrangler dry run (no token, nothing deployed)
+        working-directory: cloudflare/reader-burst
+        env:
+          CLOUDFLARE_API_TOKEN: ""
+          WRANGLER_SEND_METRICS: "false"
+        run: npx --yes wrangler@4.161.0 deploy --dry-run --outdir "$RUNNER_TEMP/rb-dist" 2>&1 | tail -20 | tee -a "$GITHUB_STEP_SUMMARY"
