@@ -60,7 +60,7 @@ insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, k
 values
   ('pipeline', 'reader.lifecycle_on', 'Reader lifecycle: detect, propose, qualify and activate reader configurations',
    'When on, the entry-matrix read detects held pages by template, reuses or proposes a provider reader configuration, qualifies it on stored copies (no model, no fetch, no spend) and switches a passing configuration on within the Standing Authority Charter. Off stops new proposals and qualifications; active configurations keep working.',
-   'switch', to_jsonb(1), 0, 1, 'switch', 1561, 'Entry requirements', 'security.reader_lifecycle_tick_v1; public.svc_reader_qualify_next', 'CF-247 s1296 (SS-Programme-Control 27 Nov 2026 11:27)'),
+   'number', to_jsonb(1), 0, 1, 'switch', 1561, 'Entry requirements', 'security.reader_lifecycle_tick_v1; public.svc_reader_qualify_next', 'CF-247 s1296 (SS-Programme-Control 27 Nov 2026 11:27)'),
   ('pipeline', 'reader.qualify_min_positive', 'Reader lifecycle: pages a configuration must read before it is switched on',
    'The least number of positive sample pages (stored copies of the provider''s own template) a proposed reader configuration must pass. Every negative sample must still be held.',
    'number', to_jsonb(2), 1, 20, 'pages', 1562, 'Entry requirements', 'security.reader_qualify_decide_v1', 'CF-247 s1296'),
