@@ -1,11 +1,11 @@
 // Guards: design coursefinder-admin #1271 Phase B, SS-Programme-Control 27 Nov 2026 12:08 (s1298): stored course pages are inspected for audience and identity read only (no model, no fetch, no write), through a service-role path function limited to 20 courses and a read-only workflow.
-// CF-247 S1298. supabase/functions/coverage-sweep/audience.ts, supabase/migrations/20261130123000_cf247_s1298_audience_inspect_paths.sql, scripts/audience-inspect.mjs
+// CF-247 S1298. supabase/functions/coverage-sweep/audience.ts, supabase/migrations/20261130141500_cf247_s1298_audience_inspect_paths.sql, scripts/audience-inspect.mjs
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const mod = fs.readFileSync('supabase/functions/coverage-sweep/audience.ts', 'utf8')
 const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const sql = fs.readFileSync('supabase/migrations/20261130123000_cf247_s1298_audience_inspect_paths.sql', 'utf8')
+const sql = fs.readFileSync('supabase/migrations/20261130141500_cf247_s1298_audience_inspect_paths.sql', 'utf8')
 const wf = fs.readFileSync('.github/workflows/audience-inspect.yml', 'utf8')
 
 test('the audience signals are deterministic and read only', () => {
