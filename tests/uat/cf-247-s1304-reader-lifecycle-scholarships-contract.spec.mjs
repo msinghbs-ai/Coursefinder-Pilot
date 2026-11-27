@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const read = p => fs.readFileSync(p, 'utf8')
-const mig = read('supabase/migrations/20261130150000_cf247_s1304_reader_lifecycle_scholarships.sql')
+const mig = read('supabase/migrations/20261130160000_cf247_s1304_reader_lifecycle_scholarships.sql')
 const body = mig.replace(/^--.*$/gm, '')
 const ix = read('supabase/functions/coverage-sweep/index.ts')
 const sch = read('supabase/functions/coverage-sweep/scholarship.ts')
