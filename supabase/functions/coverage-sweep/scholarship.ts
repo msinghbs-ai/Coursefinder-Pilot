@@ -782,3 +782,31 @@ export function headingSectionHtml(html: string, code: string): string | null {
   const intro = clean(htmlToText(main.slice(0, firstAt))).slice(0, 1500);
   return `<html><head><title>${mine.name} | ${code.toUpperCase()}</title></head><body><main><h1>${mine.name}</h1>${intro ? `<p>${intro}</p>` : ""}${mine.html}</main></body></html>`;
 }
+
+// CF-247 s1304 (S2-Build, autonomous PIM reader lifecycle, scholarships): the hosts a listing page links its awards to that the listing reader does not
+// accept yet (a separate scholarships site or portal of the same provider). Only links in the page's main content whose own words name one award
+// (the reader's ITEM_WORDS and its exclusions) count; the provider's own hosts and the page's host are left out. The lifecycle qualifies a reader
+// configuration that adds them on stored copies; nothing here reads the network or writes.
+export function listingCandidateHosts(html: string, baseUrl: string, hosts: string[] = []): string[] {
+  let h = html;
+  const m = h.match(/<main[\s\S]*?<\/main>/i);
+  if (m && m[0].length > 1500) h = m[0];
+  h = h.replace(/<(nav|header|footer|aside|script|style|noscript)\b[\s\S]*?<\/\1>/gi, " ");
+  const norm = (x: string) => String(x || "").toLowerCase().replace(/^www\./, "");
+  const base = (() => { try { return new URL(baseUrl) } catch { return null } })();
+  const own = new Set([norm(base?.hostname || ""), ...hosts.map(norm)].filter(Boolean));
+  const isOwn = (x: string) => { for (const o of own) if (x === o || x.endsWith("." + o) || o.endsWith("." + x)) return true; return false };
+  const found = new Map<string, number>();
+  for (const a of h.matchAll(/<a\b[^>]*href\s*=\s*["']([^"'#][^"']*)["'][^>]*>([\s\S]{0,400}?)<\/a>/gi)) {
+    try {
+      const u = new URL(a[1].replace(/&amp;/g, "&"), baseUrl);
+      if (!/^https?:$/.test(u.protocol)) continue;
+      const x = norm(u.hostname);
+      if (!x || isOwn(x)) continue;
+      const name = clean(htmlToText(a[2]));
+      if (name.length < 8 || name.length > 140 || !ITEM_WORDS.test(name) || NOT_ITEM.test(name) || NOT_ITEM2.test(name)) continue;
+      found.set(x, (found.get(x) || 0) + 1);
+    } catch { /* skip */ }
+  }
+  return [...found.entries()].filter(([, n]) => n >= 2).map(([x]) => x).slice(0, 5);  // fixed: a host must carry at least two award links; at most five hosts
+}
