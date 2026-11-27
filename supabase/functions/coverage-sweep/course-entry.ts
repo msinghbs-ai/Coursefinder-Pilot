@@ -197,6 +197,18 @@ export function entryDocumentInstruction(r: any, _quote: string): { row: any; no
     return { row: { ...r, kind: "general_note", min_entry_score: null, min_entry_score_basis: null, document_instruction: { kind: r.kind, rule: "s1293 application instruction" } }, normalised: true };
   return { row: r, normalised: false };
 }
+// s1296 (27 Nov 2026, CF-247, S2-AER, SS-Programme-Control "Complete autonomous AER reader selection and admission"): 1,331 courses held an incomplete first read
+// (E13 drops_uncovered) and 199 of them dropped only domestic cut-off statistics ("Median 99.65", "ATAR 83 or OP 7", "Entry score range... Lowest 80.45", "2026 A levels 15.0"):
+// table cells the model joined into one quote that is not on the page, about a school-leaver route an international applicant does not use. Dropping them is right; counting them as
+// a printed requirement no row covers is not. A quote that fails the page proof, names a domestic-route or cut-off word and names no international word and no "or equivalent"
+// route (open to everyone, s1280) is dropped as domestic_route_statistic. That reason is not in entry.gate_hold_reasons, so it does not make the read incomplete; the drop
+// stays on the read with its quote. The words are the setting aer.domestic_statistic_pattern and aer.domestic_statistic_exclude (the selector reads the same words).
+export const ENTRY_DOMESTIC_STATISTIC = /\b(median|lowest|highest|cut.?off|entry score range)\b/i;
+export const ENTRY_DOMESTIC_STATISTIC_EXCLUDE = /\b(international|overseas|ielts|toefl|pte|visa|must|required?|requires|need|minimum|at least|should|eligible|apply)\b|\bor (an |any )?equivalent/i;
+export function entryDomesticStatistic(quote: string): boolean {
+  const q = String(quote || "");
+  return ENTRY_DOMESTIC_STATISTIC.test(q) && !ENTRY_DOMESTIC_STATISTIC_EXCLUDE.test(q);
+}
 export function entryAudience(audience: unknown, quote: string): { audience: string; normalised: boolean } {
   const a = String(audience || "all");
   if (a === "domestic" && ENTRY_EQUIVALENT_ROUTE.test(quote) && !ENTRY_DOMESTIC_ROUTE.test(quote)) return { audience: "all", normalised: true };
@@ -211,6 +223,8 @@ export function courseEntrySliceRows(a: any, sliceText: string, o: CourseQuoteOp
     const q = String(r?.quote || ""), proof = proveQuote(q, P, { fragments: frag, minFragment: minF });
     if (!proof.ok) {
       const s = storeQuote(q, limit);
+      // s1296: a domestic cut-off statistic is dropped under its own reason, which does not hold the read as incomplete
+      if (entryDomesticStatistic(q)) { dropped.push({ reason: "domestic_route_statistic", kind: r?.kind, quote: s.quote, ...(s.cut ? { quote_cut: s.cut } : {}) }); continue }
       dropped.push({ reason: "quote_not_on_page", kind: r?.kind, quote: s.quote, ...(proof.detail !== "quote is not on the page" ? { detail: proof.detail } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
       continue;
     }
