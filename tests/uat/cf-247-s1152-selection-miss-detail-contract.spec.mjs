@@ -31,7 +31,7 @@ test('s1152: a missed line is located by its lean block, heading, signal and the
 })
 
 test('s1152: only the recall check records it; the record function keeps every column and adds miss_detail; six cases wait for the new worker', () => {
-  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.65"')
+  expect(IX).toContain('const WORKER = "coverage-sweep-worker-v1.0.66"')
   expect(IX).toContain('if (row.gold_in_page && !row.gold_in_selection) row.miss_detail = missDetail(raw, ab.blocks, whole, sel.block_ids, gold, f);')
   expect(IX.split('missDetail(').length - 1).toBe(1)  // one call site: diagnostic only
   expect(MIG).toContain("md5(pg_get_functiondef('public.svc_lean_sections_eval_record_v1(jsonb)'::regprocedure)) <> '4c152f2eb34861faaf537117c167996a'")
