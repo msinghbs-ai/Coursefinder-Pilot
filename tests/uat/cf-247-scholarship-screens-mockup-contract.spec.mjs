@@ -134,7 +134,7 @@ test('migration 20261004000100 shaped: currency, universities, discovery, Layer 
   expect(m).not.toMatch(/set\s+publication_status\s*=\s*'published'/)
   const idx = read('supabase/functions/coverage-sweep/index.ts')
   expect(idx).toMatch(/scholarship-sweep-v0\.[4-9]\.\d/)
-  expect(idx).toContain('scholarshipFacts(pg.html, titleOf(pg.html) + " " + h1Of(pg.html), adm.name || "", it.currency || "AUD")')
+  expect(idx).toContain('scholarshipFacts(pg.html, titleOf(pg.html) + " " + h1Of(pg.html), adm.name || "", it.currency || null)')
 })
 
 test('reader v0.6.1: numeric character references in a scholarship title are decoded', async () => {

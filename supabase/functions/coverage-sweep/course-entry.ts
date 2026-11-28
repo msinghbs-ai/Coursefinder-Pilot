@@ -209,6 +209,18 @@ export function entryDomesticStatistic(quote: string): boolean {
   const q = String(quote || "");
   return ENTRY_DOMESTIC_STATISTIC.test(q) && !ENTRY_DOMESTIC_STATISTIC_EXCLUDE.test(q);
 }
+// s1354 (28 Nov 2026, CF-247, SS-Programme-Control PC-20261128-1729-DELIVERY-VERIFY P0): "All students will undertake at least 450 hours of approved work
+// experience, plus complete a report outlining the experience gained, in order to complete the requirements of the degree" (Murdoch 030196A) was read as a
+// portfolio_interview entry row and served as a selection task. A condition of finishing the course is not a condition of entry. A row whose quote says it is
+// needed to complete or graduate from the course (or is done during it) and names no entry word (entry, admission, applicants, apply, selection, before
+// starting) is dropped as completion_requirement. That reason is not in entry.gate_hold_reasons, so it does not make the read incomplete; the drop stays on
+// the read with its quote. The prompt (course-entry-v1) is unchanged; this check runs on every answer.
+export const ENTRY_COMPLETION_WORDS = /\b(in order to (complete|graduate|finish)|to (complete|satisfy|fulfil|fulfill|meet) the (requirements|degree|course|program(me)?)|requirements? (of|for) (the |this |your )?(degree|course|program(me)?|award) (completion|to be (completed|awarded))|(to|before|prior to|in order to) (graduat|be awarded|qualify for the award)|graduation requirement|requirement for graduation|as (a |an )?(compulsory |mandatory )?(part|component) of (the |this |your )(degree|course|program(me)?|studies)|during (the |this |your )(degree|course|program(me)?|studies))/i;
+export const ENTRY_ADMISSION_WORDS = /\b(entry|admission|admitted|admit|applicants?|apply|application|selection|selected|eligible|eligibility|prior to (enrol|commenc|admission|starting)|before (enrol|commenc|admission|starting|you start)|to (enrol|be considered|gain entry|be admitted))/i;
+export function entryCompletionRequirement(quote: string, description = ""): boolean {
+  const q = String(quote || "");
+  return ENTRY_COMPLETION_WORDS.test(q) && !ENTRY_ADMISSION_WORDS.test(q) && !ENTRY_ADMISSION_WORDS.test(String(description || "").replace(/\b(entry|admission) requirements?\b/gi, ""));
+}
 export function entryAudience(audience: unknown, quote: string): { audience: string; normalised: boolean } {
   const a = String(audience || "all");
   if (a === "domestic" && ENTRY_EQUIVALENT_ROUTE.test(quote) && !ENTRY_DOMESTIC_ROUTE.test(quote)) return { audience: "all", normalised: true };
@@ -228,6 +240,8 @@ export function courseEntrySliceRows(a: any, sliceText: string, o: CourseQuoteOp
       dropped.push({ reason: "quote_not_on_page", kind: r?.kind, quote: s.quote, ...(proof.detail !== "quote is not on the page" ? { detail: proof.detail } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
       continue;
     }
+    // s1354: a condition of completing the course is not an entry requirement; dropped under its own reason, which does not hold the read as incomplete
+    if (entryCompletionRequirement(q, r?.description)) { const sc = storeQuote(q, limit); dropped.push({ reason: "completion_requirement", kind: r?.kind, quote: sc.quote, ...(sc.cut ? { quote_cut: sc.cut } : {}) }); continue }
     const s = storeQuote(q, limit), aud = entryAudience(r?.audience, q), age = entryAgeNotScore(r, q), doc = entryDocumentInstruction(age.row, q);
     rows.push({ ...doc.row, audience: aud.audience, ...(aud.normalised ? { audience_normalised: { from: "domestic", rule: "s1280 equivalent route" } } : {}), quote: s.quote, description: String(r?.description || "").slice(0, 500), ...(proof.fragments > 1 ? { quote_fragments: proof.fragments } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
   }

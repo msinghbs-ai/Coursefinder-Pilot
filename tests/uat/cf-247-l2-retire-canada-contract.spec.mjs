@@ -39,7 +39,7 @@ test.describe('static contract', () => {
     expect(ex).toContain('export function siteNameMatch')
     expect(ex).toContain('"dli_number"')
     expect(ex).toMatch(/CAD: \{ re:/)
-    expect(ex).toContain('country === "CA" ? "CAD"')
+    expect(ex).toContain('c === "CA" ? "CAD"')
   })
 
   test('Layer 2 screen no longer reads the old alerts or shows the old run lists', async () => {

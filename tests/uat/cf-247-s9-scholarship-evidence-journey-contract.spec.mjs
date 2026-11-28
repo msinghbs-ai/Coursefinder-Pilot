@@ -23,7 +23,7 @@ test('site maps through the scraper; listing pages page by page; a page waiting 
 test('reader: open, close (rounds) and study start with their words; named and excluded courses; day/month order by country', () => {
   for (const s of ['export function scholarshipDates(', 'export function studyStart(', 'export function namedCourses(', 'const EXCLUDE_CUE =',
     'dates: scholarshipDates(body, new Date(), order),', 'study_start: studyStart(body),', 'named_courses: namedCourses(html, body),', 'levels_text:', 'fields_text:',
-    `const order: "dmy" | "mdy" | "none" = /^(USD)$/i.test(currency) ? "mdy" : /^(CAD)$/i.test(currency) ? "none" : "dmy";`]) expect(reader).toContain(s)
+    `const order: "dmy" | "mdy" | "none" = /^(USD)$/i.test(currency || "") ? "mdy" : /^(CAD)$/i.test(currency || "") ? "none" : "dmy";`]) expect(reader).toContain(s)
 })
 
 test('course links from evidence with proof; no link-to-all rule; exclusions honoured; unlinked can be published', () => {
