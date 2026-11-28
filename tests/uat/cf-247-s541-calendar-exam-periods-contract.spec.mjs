@@ -85,3 +85,17 @@ test('parser: orientation, intensive or assessment periods and recommencing teac
   const starts = Object.fromEntries(calendarStarts(md).periods.map((p) => [p.period, p.starts.map((s) => s.date)]))
   expect(starts).toEqual({ 'trimester 1': ['2027-02-22'], 'trimester 2': ['2027-06-21'], 'trimester 3': ['2027-10-18'] })
 })
+
+test('parser: a mixed row keeps the period start it names (orientation or intensive beside "Trimester 1 Starts"; S2-Intakes 28 Nov 2026)', async () => {
+  const { calendarStarts } = await parser()
+  const rows = [
+    ['Monday', '22 February 2027', 'Orientation Day (International) ; Trimester 1 Starts'],
+    ['Monday', '21 June 2027', 'Intensive week ends ; Trimester 2 begins'],
+    ['Monday', '4 October 2027', 'Orientation 4 October 2027 ; Trimester 3 Starts 18 October 2027'],
+    ['Monday', '19 April 2027', 'Teaching Recommences for Trimester 1 ; Block C Starts'],
+    ['Monday', '5 April 2027', 'Trimester 1 – Mid-trimester Intensive & Assessment Period Starts'],
+  ]
+  const md = '# Principal Dates 2027\n## 2027\n| Day | Date | Event |\n|---|---|---|\n' + rows.map((r) => `| ${r.join(' | ')} |`).join('\n') + '\n'
+  const starts = Object.fromEntries(calendarStarts(md).periods.map((p) => [p.period, p.starts.map((s) => s.date)]))
+  expect(starts).toEqual({ 'trimester 1': ['2027-02-22'], 'trimester 2': ['2027-06-21'], 'trimester 3': ['2027-10-18'] })
+})
