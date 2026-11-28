@@ -1,0 +1,2582 @@
+{
+ "date": "2026-11-28",
+ "total": 36052,
+ "by_country": {
+  "AU": 25703,
+  "CA": 3829,
+  "NZ": 6520
+ },
+ "Executive_Summary": [
+  [
+   "Course field readiness, 2026-11-28 (AEDT), 36,052 active courses: AU 25,703, CA 3,829, NZ 6,520"
+  ],
+  [
+   "field",
+   "admitted",
+   "admitted_pct",
+   "trying",
+   "trying_pct",
+   "possible_needs_source",
+   "possible_needs_source_pct",
+   "not_possible",
+   "not_possible_pct",
+   "empty_not_started",
+   "empty_not_started_pct"
+  ],
+  [
+   "official_url",
+   24109,
+   66.9,
+   2038,
+   5.7,
+   9558,
+   26.5,
+   347,
+   1,
+   0,
+   0
+  ],
+  [
+   "description",
+   16211,
+   45,
+   5422,
+   15,
+   8529,
+   23.7,
+   5890,
+   16.3,
+   0,
+   0
+  ],
+  [
+   "study_load",
+   29460,
+   81.7,
+   1325,
+   3.7,
+   484,
+   1.3,
+   4783,
+   13.3,
+   0,
+   0
+  ],
+  [
+   "tuition_fee",
+   27768,
+   77,
+   1527,
+   4.2,
+   4074,
+   11.3,
+   2683,
+   7.4,
+   0,
+   0
+  ],
+  [
+   "fee_basis",
+   27768,
+   77,
+   1527,
+   4.2,
+   4074,
+   11.3,
+   2683,
+   7.4,
+   0,
+   0
+  ],
+  [
+   "intake_dates",
+   3220,
+   8.9,
+   3208,
+   8.9,
+   9574,
+   26.6,
+   20050,
+   55.6,
+   0,
+   0
+  ],
+  [
+   "application_deadlines",
+   346,
+   1,
+   13759,
+   38.2,
+   9604,
+   26.6,
+   12343,
+   34.2,
+   0,
+   0
+  ],
+  [
+   "duration",
+   30064,
+   83.4,
+   2266,
+   6.3,
+   801,
+   2.2,
+   2921,
+   8.1,
+   0,
+   0
+  ],
+  [
+   "campus_locality",
+   22465,
+   62.3,
+   75,
+   0.2,
+   3159,
+   8.8,
+   4,
+   0,
+   10349,
+   28.7
+  ],
+  [
+   "aer_academic",
+   12064,
+   33.5,
+   1813,
+   5,
+   8231,
+   22.8,
+   10270,
+   28.5,
+   3674,
+   10.2
+  ],
+  [
+   "english_requirements",
+   21330,
+   59.2,
+   2226,
+   6.2,
+   7287,
+   20.2,
+   5209,
+   14.4,
+   0,
+   0
+  ],
+  [
+   "scholarships",
+   13482,
+   37.4,
+   801,
+   2.2,
+   17150,
+   47.6,
+   4619,
+   12.8,
+   0,
+   0
+  ],
+  [
+   "destination_city_stats",
+   22465,
+   62.3,
+   67,
+   0.2,
+   3169,
+   8.8,
+   2,
+   0,
+   10349,
+   28.7
+  ],
+  [
+   "career_outcomes",
+   25703,
+   71.3,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   10349,
+   28.7
+  ]
+ ],
+ "By_Provider_Action_List": [
+  [
+   "rank",
+   "provider_name",
+   "country_code",
+   "active_courses",
+   "cells_possible_needs_source",
+   "cells_trying",
+   "top_fields_needing_a_source",
+   "provider_id"
+  ],
+  [
+   1,
+   "NZIST Work-Based Learning (Competenz, Connexis, Careerforce, ServiceIQ, Primary ITO, EarnLearn)",
+   "NZ",
+   229,
+   2269,
+   0,
+   "official_url (229); description (229); tuition_fee (229)",
+   "1b8f2f2f-d3d2-455e-a9fd-5a65744352ec"
+  ],
+  [
+   2,
+   "UNSW Sydney",
+   "AU",
+   667,
+   1880,
+   526,
+   "campus_locality (591); destination_city_stats (591); intake_dates (109)",
+   "22657140-1cb0-4fa7-91df-90518ea8b35b"
+  ],
+  [
+   3,
+   "Monash University",
+   "AU",
+   584,
+   1560,
+   216,
+   "campus_locality (386); destination_city_stats (386); aer_academic (169)",
+   "543b87b8-f0dd-4bc7-80d6-76252cfaabec"
+  ],
+  [
+   4,
+   "University of British Columbia (UBC)",
+   "CA",
+   575,
+   1393,
+   553,
+   "official_url (224); description (224); tuition_fee (224)",
+   "175462f3-59ea-4370-9c80-e7a06b100137"
+  ],
+  [
+   5,
+   "The University of Newcastle (UoN), The University of Newcastle Language Centre, Sydney",
+   "AU",
+   457,
+   1094,
+   157,
+   "application_deadlines (249); official_url (247); intake_dates (247)",
+   "1822b40a-8b13-44dc-8c37-106ae31bb447"
+  ],
+  [
+   6,
+   "Macquarie University",
+   "AU",
+   380,
+   1086,
+   590,
+   "campus_locality (378); destination_city_stats (378); application_deadlines (60)",
+   "188103a5-1aba-4f99-bd3e-0416659086d3"
+  ],
+  [
+   7,
+   "University of Waikato",
+   "NZ",
+   279,
+   1045,
+   181,
+   "official_url (165); description (165); tuition_fee (165)",
+   "00e5f26c-446e-453c-a3fb-bc5239a4feec"
+  ],
+  [
+   8,
+   "Adelaide University",
+   "AU",
+   499,
+   1007,
+   1018,
+   "campus_locality (472); destination_city_stats (472); official_url (15)",
+   "de2201a1-69ee-40ff-b6aa-0e54e535e6c0"
+  ],
+  [
+   9,
+   "University of Calgary",
+   "CA",
+   179,
+   945,
+   142,
+   "official_url (142); tuition_fee (142); fee_basis (142)",
+   "ad7bb2f7-ed12-4181-b5c4-d071db14bfda"
+  ],
+  [
+   10,
+   "University of Auckland",
+   "NZ",
+   458,
+   926,
+   442,
+   "official_url (116); intake_dates (116); application_deadlines (116)",
+   "e096aba7-e1eb-4903-9a63-2bfb71e9a8b8"
+  ],
+  [
+   11,
+   "Lincoln University",
+   "NZ",
+   199,
+   869,
+   90,
+   "application_deadlines (105); official_url (104); tuition_fee (104)",
+   "248374d1-0629-41cd-a6f4-0804c422a4ff"
+  ],
+  [
+   12,
+   "The University of Queensland",
+   "AU",
+   383,
+   863,
+   69,
+   "campus_locality (367); destination_city_stats (367); official_url (25)",
+   "e55396d2-869a-46ef-9d17-841c7eab1313"
+  ],
+  [
+   13,
+   "Ara Institute of Canterbury",
+   "NZ",
+   178,
+   822,
+   160,
+   "scholarships (178); official_url (86); intake_dates (86)",
+   "87576ec2-c4b0-4a00-ab94-64422c77d545"
+  ],
+  [
+   14,
+   "Massey University",
+   "NZ",
+   265,
+   774,
+   192,
+   "official_url (99); tuition_fee (99); fee_basis (99)",
+   "229dc07d-c573-44a3-b5dc-cc423cc2c300"
+  ],
+  [
+   15,
+   "Te Wānanga o Aotearoa",
+   "NZ",
+   86,
+   744,
+   50,
+   "scholarships (86); official_url (82); tuition_fee (82)",
+   "ea0f4e14-e790-4c62-886f-3ec5bc040b4a"
+  ],
+  [
+   16,
+   "New Zealand Institute of Skills and Technology (NZIST)",
+   "NZ",
+   72,
+   716,
+   0,
+   "official_url (72); description (72); tuition_fee (72)",
+   "27349414-019b-4c0b-a38d-db92aaaf5e68"
+  ],
+  [
+   17,
+   "Federation University Australia",
+   "AU",
+   195,
+   715,
+   38,
+   "campus_locality (184); destination_city_stats (184); official_url (69)",
+   "9cc8ef21-52ec-4c18-849a-598ba1072459"
+  ],
+  [
+   18,
+   "Victoria University of Wellington",
+   "NZ",
+   273,
+   709,
+   316,
+   "official_url (103); tuition_fee (103); fee_basis (103)",
+   "34616965-b2b7-42a7-8da7-50ffbf120958"
+  ],
+  [
+   19,
+   "Universal College of Learning (UCOL)",
+   "NZ",
+   115,
+   662,
+   106,
+   "scholarships (115); official_url (70); tuition_fee (70)",
+   "adeb0bbb-5b07-4130-aaeb-ad404bf40ff7"
+  ],
+  [
+   20,
+   "Toi Ohomai Institute of Technology",
+   "NZ",
+   157,
+   644,
+   90,
+   "scholarships (157); official_url (63); intake_dates (63)",
+   "38f8ea71-2269-407c-aab6-68a5f09fc01a"
+  ],
+  [
+   21,
+   "Victoria University",
+   "AU",
+   279,
+   636,
+   82,
+   "official_url (134); intake_dates (134); application_deadlines (134)",
+   "bac82321-ded7-4e10-a71d-b18f3ae4d1c7"
+  ],
+  [
+   22,
+   "Manukau Institute of Technology and Unitec - MIT",
+   "NZ",
+   144,
+   630,
+   148,
+   "scholarships (144); official_url (63); tuition_fee (63)",
+   "becd7287-5ede-4a62-800e-b2cd15d62c33"
+  ],
+  [
+   23,
+   "Skills Group Training Limited",
+   "NZ",
+   63,
+   630,
+   0,
+   "official_url (63); description (63); tuition_fee (63)",
+   "014118a6-54ea-4f36-ba05-a363b73b7979"
+  ],
+  [
+   24,
+   "NorthTec",
+   "NZ",
+   122,
+   624,
+   165,
+   "scholarships (122); application_deadlines (64); official_url (63)",
+   "d72e0120-a3a2-4909-8ddf-bcad1ec60150"
+  ],
+  [
+   25,
+   "Nelson Marlborough Institute of Technology (NMIT)",
+   "NZ",
+   148,
+   619,
+   282,
+   "official_url (78); description (78); tuition_fee (78)",
+   "dbf22c45-062e-4c5d-92a9-aaabd8c452f7"
+  ],
+  [
+   26,
+   "Otago Polytechnic",
+   "NZ",
+   182,
+   618,
+   191,
+   "official_url (80); tuition_fee (80); fee_basis (80)",
+   "cd27693c-6c80-42f4-8b76-1ed2d94e0b45"
+  ],
+  [
+   27,
+   "New Zealand Management Academies Limited",
+   "NZ",
+   78,
+   617,
+   79,
+   "scholarships (78); tuition_fee (67); fee_basis (67)",
+   "5e1a25b3-94d3-4e9a-8cc1-98dacd3bfd62"
+  ],
+  [
+   28,
+   "Griffith University",
+   "AU",
+   298,
+   599,
+   113,
+   "campus_locality (220); destination_city_stats (220); official_url (33)",
+   "36086f5e-9fe0-4878-aa40-1897a7d8cb24"
+  ],
+  [
+   29,
+   "Whitireia and WelTec",
+   "NZ",
+   115,
+   573,
+   111,
+   "scholarships (115); tuition_fee (59); fee_basis (59)",
+   "40f9891f-c8da-45cc-aced-154e63d41cff"
+  ],
+  [
+   30,
+   "Eastern Institute of Technology",
+   "NZ",
+   189,
+   571,
+   485,
+   "official_url (72); tuition_fee (72); fee_basis (72)",
+   "ea5a3fa6-31f4-4553-9cfd-6bff49c36a6b"
+  ],
+  [
+   31,
+   "University of Technology Sydney (UTS)",
+   "AU",
+   530,
+   513,
+   230,
+   "official_url (115); intake_dates (115); application_deadlines (115)",
+   "9d22a19e-c3f7-4012-b738-17bc0b481e7f"
+  ],
+  [
+   32,
+   "University of Wollongong",
+   "AU",
+   256,
+   510,
+   83,
+   "campus_locality (255); destination_city_stats (255)",
+   "62e61a02-9fcb-4c5e-bb11-1c43bed6eee6"
+  ],
+  [
+   33,
+   "Western Institute of Technology at Taranaki (WITT)",
+   "NZ",
+   89,
+   502,
+   33,
+   "scholarships (89); official_url (47); tuition_fee (47)",
+   "fd76fddc-fc8e-496d-bf89-c466d8efeb17"
+  ],
+  [
+   34,
+   "Waikato Institute of Technology",
+   "NZ",
+   144,
+   484,
+   295,
+   "tuition_fee (67); fee_basis (67); intake_dates (67)",
+   "742eef0a-1341-46ef-a4ab-4d105c47be9b"
+  ],
+  [
+   35,
+   "Southern Institute of Technology",
+   "NZ",
+   208,
+   429,
+   327,
+   "tuition_fee (55); fee_basis (55); intake_dates (55)",
+   "e2dd4b2b-1379-46c5-abe1-e8f24e685913"
+  ],
+  [
+   36,
+   "RMIT University (RMIT)",
+   "AU",
+   508,
+   428,
+   249,
+   "official_url (100); application_deadlines (100); intake_dates (96)",
+   "8e1adb6c-e069-43db-9584-bd054255e702"
+  ],
+  [
+   37,
+   "University of Manitoba",
+   "CA",
+   88,
+   419,
+   166,
+   "tuition_fee (63); fee_basis (63); intake_dates (63)",
+   "cffa9cab-0a3b-458b-8383-483ce622c9c3"
+  ],
+  [
+   38,
+   "University of Canterbury",
+   "NZ",
+   282,
+   398,
+   210,
+   "official_url (52); aer_academic (52); english_requirements (52)",
+   "db910e88-67d1-4d2b-a65c-cea290aa0692"
+  ],
+  [
+   39,
+   "University of Otago",
+   "NZ",
+   252,
+   395,
+   272,
+   "official_url (56); tuition_fee (56); fee_basis (56)",
+   "ab12c7f8-e368-453d-9dfe-4ab8bd744829"
+  ],
+  [
+   40,
+   "University of Tasmania (UTas)",
+   "AU",
+   221,
+   380,
+   161,
+   "application_deadlines (77); official_url (76); intake_dates (76)",
+   "719403bc-6957-4d21-af69-2b3b102df578"
+  ],
+  [
+   41,
+   "Collarts",
+   "AU",
+   139,
+   377,
+   28,
+   "scholarships (139); official_url (44); description (44)",
+   "53eaf404-8f22-46ff-a208-b0e82da4284e"
+  ],
+  [
+   42,
+   "Queensland University of Technology",
+   "AU",
+   294,
+   375,
+   84,
+   "application_deadlines (84); intake_dates (83); aer_academic (83)",
+   "2c4f515c-c146-4e90-ba8a-294130aa1f40"
+  ],
+  [
+   43,
+   "Auckland University of Technology",
+   "NZ",
+   257,
+   375,
+   152,
+   "official_url (54); tuition_fee (54); fee_basis (54)",
+   "39301fa8-bff2-4389-bbcd-32d8415fae04"
+  ],
+  [
+   44,
+   "Simon Fraser University (SFU)",
+   "CA",
+   208,
+   353,
+   195,
+   "official_url (53); tuition_fee (53); fee_basis (53)",
+   "d47b6006-396a-4785-b2ae-15186c3e7709"
+  ],
+  [
+   45,
+   "Yoobee Colleges Limited",
+   "NZ",
+   52,
+   332,
+   44,
+   "scholarships (52); official_url (35); tuition_fee (35)",
+   "e503631d-05b4-44dd-b438-77c9dfc0c1e5"
+  ],
+  [
+   46,
+   "Le Cordon Bleu Australia Pty Limited",
+   "AU",
+   69,
+   318,
+   5,
+   "official_url (53); description (53); intake_dates (53)",
+   "2968fe36-b879-4b53-8318-664ed56d291a"
+  ],
+  [
+   47,
+   "Te Rūnanga-o-Tūranganui-a-Kiwa",
+   "NZ",
+   32,
+   302,
+   0,
+   "official_url (32); description (32); tuition_fee (32)",
+   "2a97c91d-9340-49fa-a437-6c76ea01edd9"
+  ],
+  [
+   48,
+   "Skills Update Limited",
+   "NZ",
+   33,
+   299,
+   0,
+   "official_url (33); tuition_fee (33); fee_basis (33)",
+   "3f48840c-8038-42a0-805e-8f7974301b23"
+  ],
+  [
+   49,
+   "University of New England",
+   "AU",
+   130,
+   296,
+   99,
+   "campus_locality (128); destination_city_stats (128); official_url (8)",
+   "fa0e0d13-838a-42ff-b6a3-9cea84bd80b2"
+  ],
+  [
+   50,
+   "Tai Poutini Polytechnic",
+   "NZ",
+   42,
+   296,
+   33,
+   "scholarships (42); official_url (31); description (31)",
+   "faa04942-5af1-418c-8214-c5aa2523c39d"
+  ],
+  [
+   51,
+   "The University of Melbourne (UniMelb)",
+   "AU",
+   442,
+   289,
+   337,
+   "application_deadlines (51); official_url (49); aer_academic (49)",
+   "de6d32b0-f91b-4dd0-a3da-a542f1aba5f2"
+  ],
+  [
+   52,
+   "Skills Active Te Mahi Ako Limited",
+   "NZ",
+   41,
+   283,
+   23,
+   "scholarships (41); official_url (30); description (30)",
+   "0ede4eef-4117-4362-8a64-131efcb31c38"
+  ],
+  [
+   53,
+   "Conestoga College",
+   "CA",
+   270,
+   277,
+   996,
+   "scholarships (270); official_url (1); description (1)",
+   "7b35d38d-08da-4aec-9110-c60e29dc0b45"
+  ],
+  [
+   54,
+   "The Open Polytechnic of New Zealand",
+   "NZ",
+   93,
+   271,
+   82,
+   "scholarships (93); tuition_fee (23); fee_basis (23)",
+   "f6b3e3a9-cc45-4770-8fb6-0d068f50732f"
+  ],
+  [
+   55,
+   "University of Northern British Columbia",
+   "CA",
+   76,
+   264,
+   80,
+   "scholarships (76); official_url (28); description (28)",
+   "0d47cf4f-7389-4d92-b7a7-8a2eba6ea1e6"
+  ],
+  [
+   56,
+   "Flinders University",
+   "AU",
+   483,
+   249,
+   374,
+   "application_deadlines (49); official_url (48); intake_dates (48)",
+   "0a42da16-8df1-4439-a929-4dfdd04b6d83"
+  ],
+  [
+   57,
+   "Melbourne College of Hair and Beauty; Melbourne College of Training & Assessment",
+   "AU",
+   32,
+   224,
+   0,
+   "official_url (32); description (32); intake_dates (32)",
+   "566d1775-00c8-49da-8029-8d8a1291fe48"
+  ],
+  [
+   58,
+   "Murdoch University",
+   "AU",
+   267,
+   211,
+   157,
+   "official_url (38); description (38); intake_dates (38)",
+   "fbe38fea-5f2c-4946-9097-1de27ea0940f"
+  ],
+  [
+   59,
+   "MITO Limited",
+   "NZ",
+   31,
+   207,
+   19,
+   "scholarships (31); official_url (22); description (22)",
+   "49852ffc-1db7-47ec-83aa-f8ff5ba1408b"
+  ],
+  [
+   60,
+   "Humber College",
+   "CA",
+   40,
+   206,
+   58,
+   "scholarships (40); official_url (27); tuition_fee (27)",
+   "570ddbbd-f07e-4060-b52d-c5322dcdaa00"
+  ],
+  [
+   61,
+   "Ama Training Group Limited",
+   "NZ",
+   20,
+   205,
+   15,
+   "official_url (20); description (20); study_load (20)",
+   "72a15f12-f3ee-40d7-8edf-af648ee10e14"
+  ],
+  [
+   62,
+   "Future Skills Academy Limited",
+   "NZ",
+   36,
+   204,
+   34,
+   "scholarships (36); official_url (21); description (21)",
+   "a1a229cc-1915-475c-9d0a-727eeb45a20b"
+  ],
+  [
+   63,
+   "Signet Institute of Australia",
+   "AU",
+   29,
+   203,
+   0,
+   "official_url (29); description (29); intake_dates (29)",
+   "fe18f1f7-a15a-4328-a5db-fd67af56ca6c"
+  ],
+  [
+   64,
+   "Deakin University (Deakin)",
+   "AU",
+   252,
+   197,
+   23,
+   "official_url (39); intake_dates (39); application_deadlines (39)",
+   "c5c5d225-3d4c-4e41-8275-78eddd261073"
+  ],
+  [
+   65,
+   "Sheridan College",
+   "CA",
+   105,
+   194,
+   78,
+   "official_url (28); tuition_fee (28); fee_basis (28)",
+   "cc24d184-d9e1-4d8a-b6e5-812b3578d7ac"
+  ],
+  [
+   66,
+   "Connexis Inc.",
+   "NZ",
+   20,
+   191,
+   7,
+   "scholarships (20); official_url (19); description (19)",
+   "0b99ef17-5251-4f65-b2ed-7b6909711df3"
+  ],
+  [
+   67,
+   "New Zealand School of Education Limited",
+   "NZ",
+   44,
+   188,
+   90,
+   "scholarships (44); tuition_fee (18); fee_basis (18)",
+   "fe2e938f-4e46-427f-ac1b-73a650b1a14d"
+  ],
+  [
+   68,
+   "People Potential Limited",
+   "NZ",
+   32,
+   187,
+   32,
+   "scholarships (32); official_url (19); description (19)",
+   "4f260fab-9cfa-4b92-855c-e72a757f359a"
+  ],
+  [
+   69,
+   "Thompson Rivers University",
+   "CA",
+   76,
+   186,
+   138,
+   "official_url (25); description (25); intake_dates (25)",
+   "7b493f26-269e-4d7e-94ae-ede842d96335"
+  ],
+  [
+   70,
+   "Academy of Interactive Technology",
+   "AU",
+   41,
+   186,
+   2,
+   "official_url (31); description (31); intake_dates (31)",
+   "8e7e04ea-33dc-4c8d-8cb6-2325448d7b57"
+  ],
+  [
+   71,
+   "Te Whare Wānanga o Awanuiārangi",
+   "NZ",
+   52,
+   180,
+   27,
+   "scholarships (52); official_url (16); tuition_fee (16)",
+   "5c067273-5f41-4da0-a16c-b2eac17f4306"
+  ],
+  [
+   72,
+   "AAPoly, AMI Education",
+   "AU",
+   36,
+   180,
+   24,
+   "scholarships (36); official_url (24); description (24)",
+   "f0c0f1dc-e628-4bb7-9943-727f32b26d50"
+  ],
+  [
+   73,
+   "Holmes Institute",
+   "AU",
+   25,
+   177,
+   0,
+   "official_url (25); description (25); intake_dates (25)",
+   "131ef262-b6e4-40a3-b8bf-7e4d6098eba8"
+  ],
+  [
+   74,
+   "Southern Cross Education Institute, North Melbourne Grammar College",
+   "AU",
+   25,
+   175,
+   0,
+   "official_url (25); description (25); intake_dates (25)",
+   "5d21e4d4-73b4-4ad6-b100-199264540e72"
+  ],
+  [
+   75,
+   "University of Canberra",
+   "AU",
+   182,
+   173,
+   154,
+   "official_url (34); application_deadlines (34); aer_academic (34)",
+   "0e1532b8-de30-4761-87fe-460684608633"
+  ],
+  [
+   76,
+   "ILSC - Australia; ILSC - Brisbane; ILSC - Sydney; ILSC Perth; ILSC Adelaide; ILSC Melbourne; Greystone College",
+   "AU",
+   24,
+   168,
+   0,
+   "official_url (24); description (24); intake_dates (24)",
+   "5d0e3147-4dcb-4152-8f21-6a2a5ce51bc6"
+  ],
+  [
+   77,
+   "Supreme Business College Pty Ltd",
+   "AU",
+   28,
+   166,
+   20,
+   "scholarships (28); official_url (23); description (23)",
+   "71362bf9-2a99-4eb1-a76f-b5382dab9130"
+  ],
+  [
+   78,
+   "Manukau Institute of Technology and Unitec - Unitec",
+   "NZ",
+   80,
+   164,
+   77,
+   "official_url (24); description (24); intake_dates (24)",
+   "66f6fcc9-15f8-46e6-b3b3-0576ab4bcce3"
+  ],
+  [
+   79,
+   "International College of Management, Sydney; Aspire English; Aspire Institute; International Sport College of Australia",
+   "AU",
+   65,
+   164,
+   16,
+   "official_url (30); description (30); intake_dates (30)",
+   "435ca964-67a5-483c-bc8f-9d5ab059c0c2"
+  ],
+  [
+   80,
+   "The University of Sydney",
+   "AU",
+   655,
+   163,
+   1249,
+   "official_url (31); intake_dates (31); application_deadlines (31)",
+   "68022bdf-43e8-44b3-ac14-e9eed9f71e83"
+  ],
+  [
+   81,
+   "Te Wānanga o Raukawa",
+   "NZ",
+   63,
+   162,
+   67,
+   "scholarships (63); official_url (11); study_load (11)",
+   "f145b8e9-36dd-4f96-b1f5-bb453ced3a45"
+  ],
+  [
+   82,
+   "The Centre of Excellence",
+   "AU",
+   24,
+   161,
+   0,
+   "official_url (24); intake_dates (24); application_deadlines (24)",
+   "f7281274-2d50-49d2-98db-a68d3467a86b"
+  ],
+  [
+   83,
+   "Australian College of Technology",
+   "AU",
+   25,
+   157,
+   3,
+   "scholarships (25); official_url (22); description (22)",
+   "e6396c9e-c655-47b5-b2a1-820f48910206"
+  ],
+  [
+   84,
+   "Canberra Institute of Technology",
+   "AU",
+   38,
+   152,
+   1,
+   "scholarships (38); official_url (19); description (19)",
+   "d02a8a1b-f4be-4d98-a857-242e66a0f354"
+  ],
+  [
+   85,
+   "The King’s University",
+   "CA",
+   28,
+   148,
+   27,
+   "scholarships (28); official_url (20); description (20)",
+   "370a325f-6c1e-4624-8a4d-57b111f4501a"
+  ],
+  [
+   86,
+   "TAFE Queensland",
+   "AU",
+   97,
+   146,
+   36,
+   "scholarships (97); description (9); intake_dates (9)",
+   "bf68c5a3-77c4-4ab8-8c84-6d99e435b1f5"
+  ],
+  [
+   87,
+   "British Columbia Institute of Technology",
+   "CA",
+   30,
+   146,
+   57,
+   "official_url (21); tuition_fee (21); fee_basis (21)",
+   "60b274ad-14cf-4343-9e1a-9779fd5466b1"
+  ],
+  [
+   88,
+   "Brisbane College of Australia ; Brisbane College of English",
+   "AU",
+   26,
+   146,
+   36,
+   "scholarships (26); official_url (20); description (20)",
+   "8cc6fece-de98-424d-8033-0fdd92cdee00"
+  ],
+  [
+   89,
+   "New Zealand Institute of Education 2007 Limited",
+   "NZ",
+   17,
+   145,
+   17,
+   "scholarships (17); official_url (16); tuition_fee (16)",
+   "dce6f5a7-c912-4a07-b9c6-7cf230a0e13b"
+  ],
+  [
+   90,
+   "Greenwich English College, Greenwich Management College",
+   "AU",
+   42,
+   144,
+   54,
+   "scholarships (42); official_url (17); description (17)",
+   "21e1cb6d-9c85-431f-b354-43b7370e5f40"
+  ],
+  [
+   91,
+   "The University of Western Australia",
+   "AU",
+   328,
+   143,
+   119,
+   "application_deadlines (33); official_url (32); intake_dates (32)",
+   "9109fe0c-9f44-4e2d-a136-eb00dec24701"
+  ],
+  [
+   92,
+   "Holmes Institute",
+   "AU",
+   20,
+   142,
+   0,
+   "official_url (20); description (20); intake_dates (20)",
+   "d3f9ed02-2cca-4370-8070-7e52f381d1ba"
+  ],
+  [
+   93,
+   "Curtin University",
+   "AU",
+   373,
+   140,
+   256,
+   "description (29); application_deadlines (29); official_url (27)",
+   "982fb12f-41ed-4358-9d1b-d7422b3089dd"
+  ],
+  [
+   94,
+   "Novus Education",
+   "AU",
+   20,
+   140,
+   0,
+   "official_url (20); description (20); intake_dates (20)",
+   "5229b225-675a-4f2f-8178-51b025d9db34"
+  ],
+  [
+   95,
+   "Cornerstone Education Limited",
+   "NZ",
+   14,
+   140,
+   0,
+   "official_url (14); description (14); tuition_fee (14)",
+   "9da966f4-4e14-4626-99f5-64de5bd57baf"
+  ],
+  [
+   96,
+   "Burman University",
+   "CA",
+   27,
+   135,
+   81,
+   "official_url (27); description (27); study_load (27)",
+   "9e46baf2-694b-4d79-889e-b956d144c930"
+  ],
+  [
+   97,
+   "Holmes Institute",
+   "AU",
+   19,
+   133,
+   0,
+   "official_url (19); description (19); intake_dates (19)",
+   "ef420a23-6e62-47d3-9ab0-fdc35ebe97a0"
+  ],
+  [
+   98,
+   "Alphacrucis College",
+   "AU",
+   81,
+   132,
+   22,
+   "scholarships (81); official_url (9); description (9)",
+   "cb666a5e-3874-45b9-9e77-588cd9f750ab"
+  ],
+  [
+   99,
+   "Murdoch College, The University of Adelaide College, Kaplan International College Adelaide",
+   "AU",
+   26,
+   130,
+   0,
+   "scholarships (26); official_url (17); description (17)",
+   "1b8db821-3b4c-4c17-a7d7-6819923352d6"
+  ],
+  [
+   100,
+   "Ringa Atawhai Matauranga Limited",
+   "NZ",
+   13,
+   130,
+   0,
+   "official_url (13); description (13); tuition_fee (13)",
+   "6abf92f5-fa1c-405f-9e07-f0f71dc5fb35"
+  ]
+ ],
+ "Dev_Display_Rules": [
+  [
+   "state",
+   "meaning",
+   "api_v3_empty_reason_code",
+   "frontend_display_rule"
+  ],
+  [
+   "ADMITTED (the value)",
+   "Read from the official source and admitted (Layer 1, a page read or a Layer 4 decision)",
+   "(none; the field has a value)",
+   "Show the value"
+  ],
+  [
+   "TRYING",
+   "A page is found and a read, re-read, Layer 3 or Layer 4 step is queued or running",
+   "pending_extraction",
+   "Hide the field, or show \"Being checked\"; never show a guess"
+  ],
+  [
+   "POSSIBLE_NEEDS_SOURCE",
+   "No course or provider page found yet, the site only, a blocked site or no reader for the field",
+   "source_unavailable",
+   "Hide the field; show \"Check with the provider\" with the provider's website link"
+  ],
+  [
+   "NOT_POSSIBLE",
+   "Read against the official source and not published there (for example a month-only intake, or not stated on the page)",
+   "not_published_by_provider (online_only_no_campus for campus fields)",
+   "Show \"Not published by the provider\" (or \"Online only\" for campus fields); do not ask again"
+  ],
+  [
+   "EMPTY_NOT_STARTED",
+   "The country's scope is not switched on yet (Canada entry requirements; destination data where the country has no approved edition)",
+   "not_listed_on_register",
+   "Hide the field and its section for that country; no message"
+  ]
+ ],
+ "sheet_tabs": {
+  "Executive_Summary": [
+   [
+    "Course field readiness, 2026-11-28 (AEDT), 36,052 active courses: AU 25,703, CA 3,829, NZ 6,520"
+   ],
+   [
+    "Active courses",
+    36052,
+    "Source: workflow course-field-readiness, branch course-readiness-snapshot, export of 2026-11-28 (AEDT)"
+   ],
+   [],
+   [
+    "Field",
+    "Admitted",
+    "Admitted %",
+    "Trying",
+    "Trying %",
+    "Possible, needs a source",
+    "Possible, needs a source %",
+    "Not possible",
+    "Not possible %",
+    "Empty, not started",
+    "Empty, not started %",
+    "Row check (equals B2)"
+   ],
+   [
+    "official_url",
+    24109,
+    "=IF($B$2=0,0,B5/$B$2)",
+    2038,
+    "=IF($B$2=0,0,D5/$B$2)",
+    9558,
+    "=IF($B$2=0,0,F5/$B$2)",
+    347,
+    "=IF($B$2=0,0,H5/$B$2)",
+    0,
+    "=IF($B$2=0,0,J5/$B$2)",
+    "=B5+D5+F5+H5+J5"
+   ],
+   [
+    "description",
+    16211,
+    "=IF($B$2=0,0,B6/$B$2)",
+    5422,
+    "=IF($B$2=0,0,D6/$B$2)",
+    8529,
+    "=IF($B$2=0,0,F6/$B$2)",
+    5890,
+    "=IF($B$2=0,0,H6/$B$2)",
+    0,
+    "=IF($B$2=0,0,J6/$B$2)",
+    "=B6+D6+F6+H6+J6"
+   ],
+   [
+    "study_load",
+    29460,
+    "=IF($B$2=0,0,B7/$B$2)",
+    1325,
+    "=IF($B$2=0,0,D7/$B$2)",
+    484,
+    "=IF($B$2=0,0,F7/$B$2)",
+    4783,
+    "=IF($B$2=0,0,H7/$B$2)",
+    0,
+    "=IF($B$2=0,0,J7/$B$2)",
+    "=B7+D7+F7+H7+J7"
+   ],
+   [
+    "tuition_fee",
+    27768,
+    "=IF($B$2=0,0,B8/$B$2)",
+    1527,
+    "=IF($B$2=0,0,D8/$B$2)",
+    4074,
+    "=IF($B$2=0,0,F8/$B$2)",
+    2683,
+    "=IF($B$2=0,0,H8/$B$2)",
+    0,
+    "=IF($B$2=0,0,J8/$B$2)",
+    "=B8+D8+F8+H8+J8"
+   ],
+   [
+    "fee_basis",
+    27768,
+    "=IF($B$2=0,0,B9/$B$2)",
+    1527,
+    "=IF($B$2=0,0,D9/$B$2)",
+    4074,
+    "=IF($B$2=0,0,F9/$B$2)",
+    2683,
+    "=IF($B$2=0,0,H9/$B$2)",
+    0,
+    "=IF($B$2=0,0,J9/$B$2)",
+    "=B9+D9+F9+H9+J9"
+   ],
+   [
+    "intake_dates",
+    3220,
+    "=IF($B$2=0,0,B10/$B$2)",
+    3208,
+    "=IF($B$2=0,0,D10/$B$2)",
+    9574,
+    "=IF($B$2=0,0,F10/$B$2)",
+    20050,
+    "=IF($B$2=0,0,H10/$B$2)",
+    0,
+    "=IF($B$2=0,0,J10/$B$2)",
+    "=B10+D10+F10+H10+J10"
+   ],
+   [
+    "application_deadlines",
+    346,
+    "=IF($B$2=0,0,B11/$B$2)",
+    13759,
+    "=IF($B$2=0,0,D11/$B$2)",
+    9604,
+    "=IF($B$2=0,0,F11/$B$2)",
+    12343,
+    "=IF($B$2=0,0,H11/$B$2)",
+    0,
+    "=IF($B$2=0,0,J11/$B$2)",
+    "=B11+D11+F11+H11+J11"
+   ],
+   [
+    "duration",
+    30064,
+    "=IF($B$2=0,0,B12/$B$2)",
+    2266,
+    "=IF($B$2=0,0,D12/$B$2)",
+    801,
+    "=IF($B$2=0,0,F12/$B$2)",
+    2921,
+    "=IF($B$2=0,0,H12/$B$2)",
+    0,
+    "=IF($B$2=0,0,J12/$B$2)",
+    "=B12+D12+F12+H12+J12"
+   ],
+   [
+    "campus_locality",
+    22465,
+    "=IF($B$2=0,0,B13/$B$2)",
+    75,
+    "=IF($B$2=0,0,D13/$B$2)",
+    3159,
+    "=IF($B$2=0,0,F13/$B$2)",
+    4,
+    "=IF($B$2=0,0,H13/$B$2)",
+    10349,
+    "=IF($B$2=0,0,J13/$B$2)",
+    "=B13+D13+F13+H13+J13"
+   ],
+   [
+    "aer_academic",
+    12064,
+    "=IF($B$2=0,0,B14/$B$2)",
+    1813,
+    "=IF($B$2=0,0,D14/$B$2)",
+    8231,
+    "=IF($B$2=0,0,F14/$B$2)",
+    10270,
+    "=IF($B$2=0,0,H14/$B$2)",
+    3674,
+    "=IF($B$2=0,0,J14/$B$2)",
+    "=B14+D14+F14+H14+J14"
+   ],
+   [
+    "english_requirements",
+    21330,
+    "=IF($B$2=0,0,B15/$B$2)",
+    2226,
+    "=IF($B$2=0,0,D15/$B$2)",
+    7287,
+    "=IF($B$2=0,0,F15/$B$2)",
+    5209,
+    "=IF($B$2=0,0,H15/$B$2)",
+    0,
+    "=IF($B$2=0,0,J15/$B$2)",
+    "=B15+D15+F15+H15+J15"
+   ],
+   [
+    "scholarships",
+    13482,
+    "=IF($B$2=0,0,B16/$B$2)",
+    801,
+    "=IF($B$2=0,0,D16/$B$2)",
+    17150,
+    "=IF($B$2=0,0,F16/$B$2)",
+    4619,
+    "=IF($B$2=0,0,H16/$B$2)",
+    0,
+    "=IF($B$2=0,0,J16/$B$2)",
+    "=B16+D16+F16+H16+J16"
+   ],
+   [
+    "destination_city_stats",
+    22465,
+    "=IF($B$2=0,0,B17/$B$2)",
+    67,
+    "=IF($B$2=0,0,D17/$B$2)",
+    3169,
+    "=IF($B$2=0,0,F17/$B$2)",
+    2,
+    "=IF($B$2=0,0,H17/$B$2)",
+    10349,
+    "=IF($B$2=0,0,J17/$B$2)",
+    "=B17+D17+F17+H17+J17"
+   ],
+   [
+    "career_outcomes",
+    25703,
+    "=IF($B$2=0,0,B18/$B$2)",
+    0,
+    "=IF($B$2=0,0,D18/$B$2)",
+    0,
+    "=IF($B$2=0,0,F18/$B$2)",
+    0,
+    "=IF($B$2=0,0,H18/$B$2)",
+    10349,
+    "=IF($B$2=0,0,J18/$B$2)",
+    "=B18+D18+F18+H18+J18"
+   ]
+  ],
+  "By_Provider_Action_List": [
+   [
+    "rank",
+    "provider_name",
+    "country_code",
+    "active_courses",
+    "cells_possible_needs_source",
+    "cells_trying",
+    "top_fields_needing_a_source",
+    "provider_id"
+   ],
+   [
+    1,
+    "NZIST Work-Based Learning (Competenz, Connexis, Careerforce, ServiceIQ, Primary ITO, EarnLearn)",
+    "NZ",
+    229,
+    2269,
+    0,
+    "official_url (229); description (229); tuition_fee (229)",
+    "1b8f2f2f-d3d2-455e-a9fd-5a65744352ec"
+   ],
+   [
+    2,
+    "UNSW Sydney",
+    "AU",
+    667,
+    1880,
+    526,
+    "campus_locality (591); destination_city_stats (591); intake_dates (109)",
+    "22657140-1cb0-4fa7-91df-90518ea8b35b"
+   ],
+   [
+    3,
+    "Monash University",
+    "AU",
+    584,
+    1560,
+    216,
+    "campus_locality (386); destination_city_stats (386); aer_academic (169)",
+    "543b87b8-f0dd-4bc7-80d6-76252cfaabec"
+   ],
+   [
+    4,
+    "University of British Columbia (UBC)",
+    "CA",
+    575,
+    1393,
+    553,
+    "official_url (224); description (224); tuition_fee (224)",
+    "175462f3-59ea-4370-9c80-e7a06b100137"
+   ],
+   [
+    5,
+    "The University of Newcastle (UoN), The University of Newcastle Language Centre, Sydney",
+    "AU",
+    457,
+    1094,
+    157,
+    "application_deadlines (249); official_url (247); intake_dates (247)",
+    "1822b40a-8b13-44dc-8c37-106ae31bb447"
+   ],
+   [
+    6,
+    "Macquarie University",
+    "AU",
+    380,
+    1086,
+    590,
+    "campus_locality (378); destination_city_stats (378); application_deadlines (60)",
+    "188103a5-1aba-4f99-bd3e-0416659086d3"
+   ],
+   [
+    7,
+    "University of Waikato",
+    "NZ",
+    279,
+    1045,
+    181,
+    "official_url (165); description (165); tuition_fee (165)",
+    "00e5f26c-446e-453c-a3fb-bc5239a4feec"
+   ],
+   [
+    8,
+    "Adelaide University",
+    "AU",
+    499,
+    1007,
+    1018,
+    "campus_locality (472); destination_city_stats (472); official_url (15)",
+    "de2201a1-69ee-40ff-b6aa-0e54e535e6c0"
+   ],
+   [
+    9,
+    "University of Calgary",
+    "CA",
+    179,
+    945,
+    142,
+    "official_url (142); tuition_fee (142); fee_basis (142)",
+    "ad7bb2f7-ed12-4181-b5c4-d071db14bfda"
+   ],
+   [
+    10,
+    "University of Auckland",
+    "NZ",
+    458,
+    926,
+    442,
+    "official_url (116); intake_dates (116); application_deadlines (116)",
+    "e096aba7-e1eb-4903-9a63-2bfb71e9a8b8"
+   ],
+   [
+    11,
+    "Lincoln University",
+    "NZ",
+    199,
+    869,
+    90,
+    "application_deadlines (105); official_url (104); tuition_fee (104)",
+    "248374d1-0629-41cd-a6f4-0804c422a4ff"
+   ],
+   [
+    12,
+    "The University of Queensland",
+    "AU",
+    383,
+    863,
+    69,
+    "campus_locality (367); destination_city_stats (367); official_url (25)",
+    "e55396d2-869a-46ef-9d17-841c7eab1313"
+   ],
+   [
+    13,
+    "Ara Institute of Canterbury",
+    "NZ",
+    178,
+    822,
+    160,
+    "scholarships (178); official_url (86); intake_dates (86)",
+    "87576ec2-c4b0-4a00-ab94-64422c77d545"
+   ],
+   [
+    14,
+    "Massey University",
+    "NZ",
+    265,
+    774,
+    192,
+    "official_url (99); tuition_fee (99); fee_basis (99)",
+    "229dc07d-c573-44a3-b5dc-cc423cc2c300"
+   ],
+   [
+    15,
+    "Te Wānanga o Aotearoa",
+    "NZ",
+    86,
+    744,
+    50,
+    "scholarships (86); official_url (82); tuition_fee (82)",
+    "ea0f4e14-e790-4c62-886f-3ec5bc040b4a"
+   ],
+   [
+    16,
+    "New Zealand Institute of Skills and Technology (NZIST)",
+    "NZ",
+    72,
+    716,
+    0,
+    "official_url (72); description (72); tuition_fee (72)",
+    "27349414-019b-4c0b-a38d-db92aaaf5e68"
+   ],
+   [
+    17,
+    "Federation University Australia",
+    "AU",
+    195,
+    715,
+    38,
+    "campus_locality (184); destination_city_stats (184); official_url (69)",
+    "9cc8ef21-52ec-4c18-849a-598ba1072459"
+   ],
+   [
+    18,
+    "Victoria University of Wellington",
+    "NZ",
+    273,
+    709,
+    316,
+    "official_url (103); tuition_fee (103); fee_basis (103)",
+    "34616965-b2b7-42a7-8da7-50ffbf120958"
+   ],
+   [
+    19,
+    "Universal College of Learning (UCOL)",
+    "NZ",
+    115,
+    662,
+    106,
+    "scholarships (115); official_url (70); tuition_fee (70)",
+    "adeb0bbb-5b07-4130-aaeb-ad404bf40ff7"
+   ],
+   [
+    20,
+    "Toi Ohomai Institute of Technology",
+    "NZ",
+    157,
+    644,
+    90,
+    "scholarships (157); official_url (63); intake_dates (63)",
+    "38f8ea71-2269-407c-aab6-68a5f09fc01a"
+   ],
+   [
+    21,
+    "Victoria University",
+    "AU",
+    279,
+    636,
+    82,
+    "official_url (134); intake_dates (134); application_deadlines (134)",
+    "bac82321-ded7-4e10-a71d-b18f3ae4d1c7"
+   ],
+   [
+    22,
+    "Manukau Institute of Technology and Unitec - MIT",
+    "NZ",
+    144,
+    630,
+    148,
+    "scholarships (144); official_url (63); tuition_fee (63)",
+    "becd7287-5ede-4a62-800e-b2cd15d62c33"
+   ],
+   [
+    23,
+    "Skills Group Training Limited",
+    "NZ",
+    63,
+    630,
+    0,
+    "official_url (63); description (63); tuition_fee (63)",
+    "014118a6-54ea-4f36-ba05-a363b73b7979"
+   ],
+   [
+    24,
+    "NorthTec",
+    "NZ",
+    122,
+    624,
+    165,
+    "scholarships (122); application_deadlines (64); official_url (63)",
+    "d72e0120-a3a2-4909-8ddf-bcad1ec60150"
+   ],
+   [
+    25,
+    "Nelson Marlborough Institute of Technology (NMIT)",
+    "NZ",
+    148,
+    619,
+    282,
+    "official_url (78); description (78); tuition_fee (78)",
+    "dbf22c45-062e-4c5d-92a9-aaabd8c452f7"
+   ],
+   [
+    26,
+    "Otago Polytechnic",
+    "NZ",
+    182,
+    618,
+    191,
+    "official_url (80); tuition_fee (80); fee_basis (80)",
+    "cd27693c-6c80-42f4-8b76-1ed2d94e0b45"
+   ],
+   [
+    27,
+    "New Zealand Management Academies Limited",
+    "NZ",
+    78,
+    617,
+    79,
+    "scholarships (78); tuition_fee (67); fee_basis (67)",
+    "5e1a25b3-94d3-4e9a-8cc1-98dacd3bfd62"
+   ],
+   [
+    28,
+    "Griffith University",
+    "AU",
+    298,
+    599,
+    113,
+    "campus_locality (220); destination_city_stats (220); official_url (33)",
+    "36086f5e-9fe0-4878-aa40-1897a7d8cb24"
+   ],
+   [
+    29,
+    "Whitireia and WelTec",
+    "NZ",
+    115,
+    573,
+    111,
+    "scholarships (115); tuition_fee (59); fee_basis (59)",
+    "40f9891f-c8da-45cc-aced-154e63d41cff"
+   ],
+   [
+    30,
+    "Eastern Institute of Technology",
+    "NZ",
+    189,
+    571,
+    485,
+    "official_url (72); tuition_fee (72); fee_basis (72)",
+    "ea5a3fa6-31f4-4553-9cfd-6bff49c36a6b"
+   ],
+   [
+    31,
+    "University of Technology Sydney (UTS)",
+    "AU",
+    530,
+    513,
+    230,
+    "official_url (115); intake_dates (115); application_deadlines (115)",
+    "9d22a19e-c3f7-4012-b738-17bc0b481e7f"
+   ],
+   [
+    32,
+    "University of Wollongong",
+    "AU",
+    256,
+    510,
+    83,
+    "campus_locality (255); destination_city_stats (255)",
+    "62e61a02-9fcb-4c5e-bb11-1c43bed6eee6"
+   ],
+   [
+    33,
+    "Western Institute of Technology at Taranaki (WITT)",
+    "NZ",
+    89,
+    502,
+    33,
+    "scholarships (89); official_url (47); tuition_fee (47)",
+    "fd76fddc-fc8e-496d-bf89-c466d8efeb17"
+   ],
+   [
+    34,
+    "Waikato Institute of Technology",
+    "NZ",
+    144,
+    484,
+    295,
+    "tuition_fee (67); fee_basis (67); intake_dates (67)",
+    "742eef0a-1341-46ef-a4ab-4d105c47be9b"
+   ],
+   [
+    35,
+    "Southern Institute of Technology",
+    "NZ",
+    208,
+    429,
+    327,
+    "tuition_fee (55); fee_basis (55); intake_dates (55)",
+    "e2dd4b2b-1379-46c5-abe1-e8f24e685913"
+   ],
+   [
+    36,
+    "RMIT University (RMIT)",
+    "AU",
+    508,
+    428,
+    249,
+    "official_url (100); application_deadlines (100); intake_dates (96)",
+    "8e1adb6c-e069-43db-9584-bd054255e702"
+   ],
+   [
+    37,
+    "University of Manitoba",
+    "CA",
+    88,
+    419,
+    166,
+    "tuition_fee (63); fee_basis (63); intake_dates (63)",
+    "cffa9cab-0a3b-458b-8383-483ce622c9c3"
+   ],
+   [
+    38,
+    "University of Canterbury",
+    "NZ",
+    282,
+    398,
+    210,
+    "official_url (52); aer_academic (52); english_requirements (52)",
+    "db910e88-67d1-4d2b-a65c-cea290aa0692"
+   ],
+   [
+    39,
+    "University of Otago",
+    "NZ",
+    252,
+    395,
+    272,
+    "official_url (56); tuition_fee (56); fee_basis (56)",
+    "ab12c7f8-e368-453d-9dfe-4ab8bd744829"
+   ],
+   [
+    40,
+    "University of Tasmania (UTas)",
+    "AU",
+    221,
+    380,
+    161,
+    "application_deadlines (77); official_url (76); intake_dates (76)",
+    "719403bc-6957-4d21-af69-2b3b102df578"
+   ],
+   [
+    41,
+    "Collarts",
+    "AU",
+    139,
+    377,
+    28,
+    "scholarships (139); official_url (44); description (44)",
+    "53eaf404-8f22-46ff-a208-b0e82da4284e"
+   ],
+   [
+    42,
+    "Queensland University of Technology",
+    "AU",
+    294,
+    375,
+    84,
+    "application_deadlines (84); intake_dates (83); aer_academic (83)",
+    "2c4f515c-c146-4e90-ba8a-294130aa1f40"
+   ],
+   [
+    43,
+    "Auckland University of Technology",
+    "NZ",
+    257,
+    375,
+    152,
+    "official_url (54); tuition_fee (54); fee_basis (54)",
+    "39301fa8-bff2-4389-bbcd-32d8415fae04"
+   ],
+   [
+    44,
+    "Simon Fraser University (SFU)",
+    "CA",
+    208,
+    353,
+    195,
+    "official_url (53); tuition_fee (53); fee_basis (53)",
+    "d47b6006-396a-4785-b2ae-15186c3e7709"
+   ],
+   [
+    45,
+    "Yoobee Colleges Limited",
+    "NZ",
+    52,
+    332,
+    44,
+    "scholarships (52); official_url (35); tuition_fee (35)",
+    "e503631d-05b4-44dd-b438-77c9dfc0c1e5"
+   ],
+   [
+    46,
+    "Le Cordon Bleu Australia Pty Limited",
+    "AU",
+    69,
+    318,
+    5,
+    "official_url (53); description (53); intake_dates (53)",
+    "2968fe36-b879-4b53-8318-664ed56d291a"
+   ],
+   [
+    47,
+    "Te Rūnanga-o-Tūranganui-a-Kiwa",
+    "NZ",
+    32,
+    302,
+    0,
+    "official_url (32); description (32); tuition_fee (32)",
+    "2a97c91d-9340-49fa-a437-6c76ea01edd9"
+   ],
+   [
+    48,
+    "Skills Update Limited",
+    "NZ",
+    33,
+    299,
+    0,
+    "official_url (33); tuition_fee (33); fee_basis (33)",
+    "3f48840c-8038-42a0-805e-8f7974301b23"
+   ],
+   [
+    49,
+    "University of New England",
+    "AU",
+    130,
+    296,
+    99,
+    "campus_locality (128); destination_city_stats (128); official_url (8)",
+    "fa0e0d13-838a-42ff-b6a3-9cea84bd80b2"
+   ],
+   [
+    50,
+    "Tai Poutini Polytechnic",
+    "NZ",
+    42,
+    296,
+    33,
+    "scholarships (42); official_url (31); description (31)",
+    "faa04942-5af1-418c-8214-c5aa2523c39d"
+   ],
+   [
+    51,
+    "The University of Melbourne (UniMelb)",
+    "AU",
+    442,
+    289,
+    337,
+    "application_deadlines (51); official_url (49); aer_academic (49)",
+    "de6d32b0-f91b-4dd0-a3da-a542f1aba5f2"
+   ],
+   [
+    52,
+    "Skills Active Te Mahi Ako Limited",
+    "NZ",
+    41,
+    283,
+    23,
+    "scholarships (41); official_url (30); description (30)",
+    "0ede4eef-4117-4362-8a64-131efcb31c38"
+   ],
+   [
+    53,
+    "Conestoga College",
+    "CA",
+    270,
+    277,
+    996,
+    "scholarships (270); official_url (1); description (1)",
+    "7b35d38d-08da-4aec-9110-c60e29dc0b45"
+   ],
+   [
+    54,
+    "The Open Polytechnic of New Zealand",
+    "NZ",
+    93,
+    271,
+    82,
+    "scholarships (93); tuition_fee (23); fee_basis (23)",
+    "f6b3e3a9-cc45-4770-8fb6-0d068f50732f"
+   ],
+   [
+    55,
+    "University of Northern British Columbia",
+    "CA",
+    76,
+    264,
+    80,
+    "scholarships (76); official_url (28); description (28)",
+    "0d47cf4f-7389-4d92-b7a7-8a2eba6ea1e6"
+   ],
+   [
+    56,
+    "Flinders University",
+    "AU",
+    483,
+    249,
+    374,
+    "application_deadlines (49); official_url (48); intake_dates (48)",
+    "0a42da16-8df1-4439-a929-4dfdd04b6d83"
+   ],
+   [
+    57,
+    "Melbourne College of Hair and Beauty; Melbourne College of Training & Assessment",
+    "AU",
+    32,
+    224,
+    0,
+    "official_url (32); description (32); intake_dates (32)",
+    "566d1775-00c8-49da-8029-8d8a1291fe48"
+   ],
+   [
+    58,
+    "Murdoch University",
+    "AU",
+    267,
+    211,
+    157,
+    "official_url (38); description (38); intake_dates (38)",
+    "fbe38fea-5f2c-4946-9097-1de27ea0940f"
+   ],
+   [
+    59,
+    "MITO Limited",
+    "NZ",
+    31,
+    207,
+    19,
+    "scholarships (31); official_url (22); description (22)",
+    "49852ffc-1db7-47ec-83aa-f8ff5ba1408b"
+   ],
+   [
+    60,
+    "Humber College",
+    "CA",
+    40,
+    206,
+    58,
+    "scholarships (40); official_url (27); tuition_fee (27)",
+    "570ddbbd-f07e-4060-b52d-c5322dcdaa00"
+   ],
+   [
+    61,
+    "Ama Training Group Limited",
+    "NZ",
+    20,
+    205,
+    15,
+    "official_url (20); description (20); study_load (20)",
+    "72a15f12-f3ee-40d7-8edf-af648ee10e14"
+   ],
+   [
+    62,
+    "Future Skills Academy Limited",
+    "NZ",
+    36,
+    204,
+    34,
+    "scholarships (36); official_url (21); description (21)",
+    "a1a229cc-1915-475c-9d0a-727eeb45a20b"
+   ],
+   [
+    63,
+    "Signet Institute of Australia",
+    "AU",
+    29,
+    203,
+    0,
+    "official_url (29); description (29); intake_dates (29)",
+    "fe18f1f7-a15a-4328-a5db-fd67af56ca6c"
+   ],
+   [
+    64,
+    "Deakin University (Deakin)",
+    "AU",
+    252,
+    197,
+    23,
+    "official_url (39); intake_dates (39); application_deadlines (39)",
+    "c5c5d225-3d4c-4e41-8275-78eddd261073"
+   ],
+   [
+    65,
+    "Sheridan College",
+    "CA",
+    105,
+    194,
+    78,
+    "official_url (28); tuition_fee (28); fee_basis (28)",
+    "cc24d184-d9e1-4d8a-b6e5-812b3578d7ac"
+   ],
+   [
+    66,
+    "Connexis Inc.",
+    "NZ",
+    20,
+    191,
+    7,
+    "scholarships (20); official_url (19); description (19)",
+    "0b99ef17-5251-4f65-b2ed-7b6909711df3"
+   ],
+   [
+    67,
+    "New Zealand School of Education Limited",
+    "NZ",
+    44,
+    188,
+    90,
+    "scholarships (44); tuition_fee (18); fee_basis (18)",
+    "fe2e938f-4e46-427f-ac1b-73a650b1a14d"
+   ],
+   [
+    68,
+    "People Potential Limited",
+    "NZ",
+    32,
+    187,
+    32,
+    "scholarships (32); official_url (19); description (19)",
+    "4f260fab-9cfa-4b92-855c-e72a757f359a"
+   ],
+   [
+    69,
+    "Thompson Rivers University",
+    "CA",
+    76,
+    186,
+    138,
+    "official_url (25); description (25); intake_dates (25)",
+    "7b493f26-269e-4d7e-94ae-ede842d96335"
+   ],
+   [
+    70,
+    "Academy of Interactive Technology",
+    "AU",
+    41,
+    186,
+    2,
+    "official_url (31); description (31); intake_dates (31)",
+    "8e7e04ea-33dc-4c8d-8cb6-2325448d7b57"
+   ],
+   [
+    71,
+    "Te Whare Wānanga o Awanuiārangi",
+    "NZ",
+    52,
+    180,
+    27,
+    "scholarships (52); official_url (16); tuition_fee (16)",
+    "5c067273-5f41-4da0-a16c-b2eac17f4306"
+   ],
+   [
+    72,
+    "AAPoly, AMI Education",
+    "AU",
+    36,
+    180,
+    24,
+    "scholarships (36); official_url (24); description (24)",
+    "f0c0f1dc-e628-4bb7-9943-727f32b26d50"
+   ],
+   [
+    73,
+    "Holmes Institute",
+    "AU",
+    25,
+    177,
+    0,
+    "official_url (25); description (25); intake_dates (25)",
+    "131ef262-b6e4-40a3-b8bf-7e4d6098eba8"
+   ],
+   [
+    74,
+    "Southern Cross Education Institute, North Melbourne Grammar College",
+    "AU",
+    25,
+    175,
+    0,
+    "official_url (25); description (25); intake_dates (25)",
+    "5d21e4d4-73b4-4ad6-b100-199264540e72"
+   ],
+   [
+    75,
+    "University of Canberra",
+    "AU",
+    182,
+    173,
+    154,
+    "official_url (34); application_deadlines (34); aer_academic (34)",
+    "0e1532b8-de30-4761-87fe-460684608633"
+   ],
+   [
+    76,
+    "ILSC - Australia; ILSC - Brisbane; ILSC - Sydney; ILSC Perth; ILSC Adelaide; ILSC Melbourne; Greystone College",
+    "AU",
+    24,
+    168,
+    0,
+    "official_url (24); description (24); intake_dates (24)",
+    "5d0e3147-4dcb-4152-8f21-6a2a5ce51bc6"
+   ],
+   [
+    77,
+    "Supreme Business College Pty Ltd",
+    "AU",
+    28,
+    166,
+    20,
+    "scholarships (28); official_url (23); description (23)",
+    "71362bf9-2a99-4eb1-a76f-b5382dab9130"
+   ],
+   [
+    78,
+    "Manukau Institute of Technology and Unitec - Unitec",
+    "NZ",
+    80,
+    164,
+    77,
+    "official_url (24); description (24); intake_dates (24)",
+    "66f6fcc9-15f8-46e6-b3b3-0576ab4bcce3"
+   ],
+   [
+    79,
+    "International College of Management, Sydney; Aspire English; Aspire Institute; International Sport College of Australia",
+    "AU",
+    65,
+    164,
+    16,
+    "official_url (30); description (30); intake_dates (30)",
+    "435ca964-67a5-483c-bc8f-9d5ab059c0c2"
+   ],
+   [
+    80,
+    "The University of Sydney",
+    "AU",
+    655,
+    163,
+    1249,
+    "official_url (31); intake_dates (31); application_deadlines (31)",
+    "68022bdf-43e8-44b3-ac14-e9eed9f71e83"
+   ],
+   [
+    81,
+    "Te Wānanga o Raukawa",
+    "NZ",
+    63,
+    162,
+    67,
+    "scholarships (63); official_url (11); study_load (11)",
+    "f145b8e9-36dd-4f96-b1f5-bb453ced3a45"
+   ],
+   [
+    82,
+    "The Centre of Excellence",
+    "AU",
+    24,
+    161,
+    0,
+    "official_url (24); intake_dates (24); application_deadlines (24)",
+    "f7281274-2d50-49d2-98db-a68d3467a86b"
+   ],
+   [
+    83,
+    "Australian College of Technology",
+    "AU",
+    25,
+    157,
+    3,
+    "scholarships (25); official_url (22); description (22)",
+    "e6396c9e-c655-47b5-b2a1-820f48910206"
+   ],
+   [
+    84,
+    "Canberra Institute of Technology",
+    "AU",
+    38,
+    152,
+    1,
+    "scholarships (38); official_url (19); description (19)",
+    "d02a8a1b-f4be-4d98-a857-242e66a0f354"
+   ],
+   [
+    85,
+    "The King’s University",
+    "CA",
+    28,
+    148,
+    27,
+    "scholarships (28); official_url (20); description (20)",
+    "370a325f-6c1e-4624-8a4d-57b111f4501a"
+   ],
+   [
+    86,
+    "TAFE Queensland",
+    "AU",
+    97,
+    146,
+    36,
+    "scholarships (97); description (9); intake_dates (9)",
+    "bf68c5a3-77c4-4ab8-8c84-6d99e435b1f5"
+   ],
+   [
+    87,
+    "British Columbia Institute of Technology",
+    "CA",
+    30,
+    146,
+    57,
+    "official_url (21); tuition_fee (21); fee_basis (21)",
+    "60b274ad-14cf-4343-9e1a-9779fd5466b1"
+   ],
+   [
+    88,
+    "Brisbane College of Australia ; Brisbane College of English",
+    "AU",
+    26,
+    146,
+    36,
+    "scholarships (26); official_url (20); description (20)",
+    "8cc6fece-de98-424d-8033-0fdd92cdee00"
+   ],
+   [
+    89,
+    "New Zealand Institute of Education 2007 Limited",
+    "NZ",
+    17,
+    145,
+    17,
+    "scholarships (17); official_url (16); tuition_fee (16)",
+    "dce6f5a7-c912-4a07-b9c6-7cf230a0e13b"
+   ],
+   [
+    90,
+    "Greenwich English College, Greenwich Management College",
+    "AU",
+    42,
+    144,
+    54,
+    "scholarships (42); official_url (17); description (17)",
+    "21e1cb6d-9c85-431f-b354-43b7370e5f40"
+   ],
+   [
+    91,
+    "The University of Western Australia",
+    "AU",
+    328,
+    143,
+    119,
+    "application_deadlines (33); official_url (32); intake_dates (32)",
+    "9109fe0c-9f44-4e2d-a136-eb00dec24701"
+   ],
+   [
+    92,
+    "Holmes Institute",
+    "AU",
+    20,
+    142,
+    0,
+    "official_url (20); description (20); intake_dates (20)",
+    "d3f9ed02-2cca-4370-8070-7e52f381d1ba"
+   ],
+   [
+    93,
+    "Curtin University",
+    "AU",
+    373,
+    140,
+    256,
+    "description (29); application_deadlines (29); official_url (27)",
+    "982fb12f-41ed-4358-9d1b-d7422b3089dd"
+   ],
+   [
+    94,
+    "Novus Education",
+    "AU",
+    20,
+    140,
+    0,
+    "official_url (20); description (20); intake_dates (20)",
+    "5229b225-675a-4f2f-8178-51b025d9db34"
+   ],
+   [
+    95,
+    "Cornerstone Education Limited",
+    "NZ",
+    14,
+    140,
+    0,
+    "official_url (14); description (14); tuition_fee (14)",
+    "9da966f4-4e14-4626-99f5-64de5bd57baf"
+   ],
+   [
+    96,
+    "Burman University",
+    "CA",
+    27,
+    135,
+    81,
+    "official_url (27); description (27); study_load (27)",
+    "9e46baf2-694b-4d79-889e-b956d144c930"
+   ],
+   [
+    97,
+    "Holmes Institute",
+    "AU",
+    19,
+    133,
+    0,
+    "official_url (19); description (19); intake_dates (19)",
+    "ef420a23-6e62-47d3-9ab0-fdc35ebe97a0"
+   ],
+   [
+    98,
+    "Alphacrucis College",
+    "AU",
+    81,
+    132,
+    22,
+    "scholarships (81); official_url (9); description (9)",
+    "cb666a5e-3874-45b9-9e77-588cd9f750ab"
+   ],
+   [
+    99,
+    "Murdoch College, The University of Adelaide College, Kaplan International College Adelaide",
+    "AU",
+    26,
+    130,
+    0,
+    "scholarships (26); official_url (17); description (17)",
+    "1b8db821-3b4c-4c17-a7d7-6819923352d6"
+   ],
+   [
+    100,
+    "Ringa Atawhai Matauranga Limited",
+    "NZ",
+    13,
+    130,
+    0,
+    "official_url (13); description (13); tuition_fee (13)",
+    "6abf92f5-fa1c-405f-9e07-f0f71dc5fb35"
+   ]
+  ],
+  "Dev_Display_Rules": [
+   [
+    "state",
+    "meaning",
+    "api_v3_empty_reason_code",
+    "frontend_display_rule"
+   ],
+   [
+    "ADMITTED (the value)",
+    "Read from the official source and admitted (Layer 1, a page read or a Layer 4 decision)",
+    "(none; the field has a value)",
+    "Show the value"
+   ],
+   [
+    "TRYING",
+    "A page is found and a read, re-read, Layer 3 or Layer 4 step is queued or running",
+    "pending_extraction",
+    "Hide the field, or show \"Being checked\"; never show a guess"
+   ],
+   [
+    "POSSIBLE_NEEDS_SOURCE",
+    "No course or provider page found yet, the site only, a blocked site or no reader for the field",
+    "source_unavailable",
+    "Hide the field; show \"Check with the provider\" with the provider's website link"
+   ],
+   [
+    "NOT_POSSIBLE",
+    "Read against the official source and not published there (for example a month-only intake, or not stated on the page)",
+    "not_published_by_provider (online_only_no_campus for campus fields)",
+    "Show \"Not published by the provider\" (or \"Online only\" for campus fields); do not ask again"
+   ],
+   [
+    "EMPTY_NOT_STARTED",
+    "The country's scope is not switched on yet (Canada entry requirements; destination data where the country has no approved edition)",
+    "not_listed_on_register",
+    "Hide the field and its section for that country; no message"
+   ]
+  ]
+ },
+ "country_files": [
+  {
+   "name": "Course_Field_Readiness_AU_Part1_2026-11-28.csv",
+   "country": "AU",
+   "rows": 6163,
+   "bytes": 2849970
+  },
+  {
+   "name": "Course_Field_Readiness_AU_Part2_2026-11-28.csv",
+   "country": "AU",
+   "rows": 6244,
+   "bytes": 2849782
+  },
+  {
+   "name": "Course_Field_Readiness_AU_Part3_2026-11-28.csv",
+   "country": "AU",
+   "rows": 6225,
+   "bytes": 2849927
+  },
+  {
+   "name": "Course_Field_Readiness_AU_Part4_2026-11-28.csv",
+   "country": "AU",
+   "rows": 6116,
+   "bytes": 2849849
+  },
+  {
+   "name": "Course_Field_Readiness_AU_Part5_2026-11-28.csv",
+   "country": "AU",
+   "rows": 955,
+   "bytes": 438702
+  },
+  {
+   "name": "Course_Field_Readiness_CA_2026-11-28.csv",
+   "country": "CA",
+   "rows": 3829,
+   "bytes": 1661263
+  },
+  {
+   "name": "Course_Field_Readiness_NZ_Part1_2026-11-28.csv",
+   "country": "NZ",
+   "rows": 6258,
+   "bytes": 2849815
+  },
+  {
+   "name": "Course_Field_Readiness_NZ_Part2_2026-11-28.csv",
+   "country": "NZ",
+   "rows": 262,
+   "bytes": 118774
+  }
+ ]
+}
