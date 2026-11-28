@@ -415,7 +415,9 @@ export function calendarStarts(md: string) {
   // calendar-dates-v1: the closing date for applications to a period (never census, enrolment, withdrawal or fee dates)
   const DEADLINE = /\b(applications?\s+(?:close|closes|closing|due|deadline)|application\s+(?:closing\s+date|deadline|due\s+date)|closing\s+date\s+for\s+applications?|last\s+day\s+to\s+apply|apply\s+by)\b/i;
   const DAY_RANGE = /\b\d{1,2}(?:st|nd|rd|th)?\s*[–—-]\s*\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]/;
-  const NOT_START = /\b(exams?|examinations?|supplementary|census|results|holidays?|break|recess|graduation|enrolment|withdraw\w*)\b/i;
+  // 28 Nov 2026 (S2-Intakes, PC-20261128-0931, UNE principal dates c914b027): only a teaching start is a commencement (decision §1). A row about
+  // orientation, an intensive or assessment period, or teaching that recommences after a break gives its month as before, but never a start date.
+  const NOT_START = /\b(exams?|examinations?|supplementary|census|results|holidays?|break|recess|graduation|enrolment|withdraw\w*|orientation|intensive|assessment|recommenc\w*)\b/i;
   const ROLLING = /\b(rolling|year[- ]round|all year|ongoing|until (?:places|positions|the (?:course|program|programme)) (?:are |is )?(?:filled|full)|no (?:fixed )?(?:closing date|deadline)|check with|contact (?:the )?(?:faculty|school|university|institute|college|admissions))\b/i;
   for (const b of blocks(md)) {
     const rows = b.kind === "table" ? b.rows.map((r) => r.join(" | ")) : [b.text];

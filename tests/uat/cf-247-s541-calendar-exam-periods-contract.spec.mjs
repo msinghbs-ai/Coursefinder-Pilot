@@ -68,3 +68,20 @@ test('qualifier: md5-guarded edit, post-checked, nothing dropped, housekeeping l
   expect(mig).toMatch(/^-- Replaces: security\.calendar_qualify_check_v1/m)
   expect(mig).toMatch(/^-- Retires: nothing\./m)
 })
+
+test('parser: orientation, intensive or assessment periods and recommencing teaching are never starts (UNE principal dates 2027, S2-Intakes 28 Nov 2026)', async () => {
+  const { calendarStarts } = await parser()
+  const rows = [
+    ['Monday', '4 January 2027', 'Teaching Recommences for Trimester 3 (2025) ; Block A Starts ; Orientation Day (International and Domestic) for Block A'],
+    ['Monday', '22 February 2027', 'Trimester 1 Starts ; Year Long Period 1 Starts ; Year Long Honours 1 Starts ; Block B Starts'],
+    ['Monday', '5 April 2027', 'Trimester 1 – Mid-trimester Intensive & Assessment Period Starts ; Block B – Intensive & Assessment Period Starts'],
+    ['Monday', '19 April 2027', 'Teaching Recommences for Trimester 1 Block C Starts ; Orientation Day (Domestic) for Block C'],
+    ['Wednesday', '16 June 2027', 'On-campus orientation (International) starts for Trimester 2, Year Long Period 2, Year Long Honours 2 and Block D'],
+    ['Monday', '21 June 2027', 'Trimester 2 Starts ; Year Long Period 2 Starts ; Year Long Honours 2 Starts ; Block D Starts'],
+    ['Monday', '16 August 2027', 'Teaching Recommences for Trimester 2 ; Block E Starts'],
+    ['Monday', '18 October 2027', 'Trimester 3 Starts ; Year Long Period 3 Starts ; Year Long Honours 3 Start'],
+  ]
+  const md = '# Principal Dates 2027\n## 2027\n| Day | Date | Event |\n|---|---|---|\n' + rows.map((r) => `| ${r.join(' | ')} |`).join('\n') + '\n'
+  const starts = Object.fromEntries(calendarStarts(md).periods.map((p) => [p.period, p.starts.map((s) => s.date)]))
+  expect(starts).toEqual({ 'trimester 1': ['2027-02-22'], 'trimester 2': ['2027-06-21'], 'trimester 3': ['2027-10-18'] })
+})
