@@ -9,9 +9,8 @@ const edges = JSON.parse(fs.readFileSync('.github/edge-functions.json', 'utf8'))
 
 test('its own API version and key, registered and not issued; signs in and logs through the public entry points', () => {
   expect(sql).toContain("values ('dot', 'v1', 'dot-intake-connector', 'DOT intake connector v1', 'private.api_keys', 'active', false, 90,")
-  expect(sql).toContain("values ('dot_intake_connector_v1', 'dot', 'v1', 'DOT (evidence agent)',")
-  expect(sql).toContain("encode(extensions.digest(encode(extensions.gen_random_bytes(32), 'hex'), 'sha256'), 'hex'), true, 60,")
-  expect(sql).toContain('[not issued]')
+  expect(sql).toContain('PASTE-20261128-s1350-dot-connector-key.sql')   // the key row and the widened check: the Platform Admin's paste file
+  expect(sql).not.toMatch(/^\s*alter table private\.api_keys/im)
   expect(sql).toContain("raise exception 'post-check: the API usage read path misses a version or key: %'")
   expect(fn).toContain('svc.rpc("api_key_auth_v1", { p_platform: "dot", p_version: "v1",')
   expect(fn).toContain('svc.rpc("api_request_log_v1", { p_platform: "dot", p_version: "v1",')

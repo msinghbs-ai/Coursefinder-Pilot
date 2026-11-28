@@ -3,18 +3,18 @@
 -- agent conversation and public GitHub repositories ... restricted permissions, expiry, revocation and audit"; SS-Programme-Control
 -- PC-20261128-DOT-AUTH-REVIEW: a private scoped tool with backend credential handling and short-lived authenticated access, reusing the endpoint/gate).
 -- The connector is the edge function dot-intake-connector (an MCP tool server, also callable as plain JSON). DOT's agent signs in to it with its
--- own key, registered like every API key (s935): API version dot v1, key dot_intake_connector_v1 in private.api_keys, NOT ISSUED here (a random
+-- own key, registered like every API key (s935): API version dot v1, key dot_intake_connector_v1 in private.api_keys, added NOT ISSUED by the paste file below (a random
 -- hash nobody holds). The Platform Admin issues it once on Settings > API usage (shown once, stored only as its SHA-256) and puts it in DOT's
 -- connector settings; it is switched off or rotated there, and every call is logged in pipeline.api_requests with this version and key.
 -- Behind the key the connector opens a short-lived session for the one DOT user (the active, unexpired dot_submitter whose expiry is bounded),
 -- calls the deployed dot-intake function with it and signs the session out again; no password is stored anywhere. The dot-intake gate, the
 -- private data-intake bucket and the existing structured intake and admission rules are unchanged.
+-- Key store: the key row and the widened platform check come by the Platform Admin's paste file (a constraint is replaced; nothing else).
 -- G1: no job. G2: no operational value in code (the key's rate is its own row). G3: not the consumer API; 75/48 checked. Nothing dropped or deleted.
 -- Replaces: nothing.
 -- Retires: nothing.
 create temp table s1350_guard on commit drop as
-select (select count(*) from cron.job where active) as cron_before, (select count(*) from pipeline.manual_locks) as locks_before,
-       (select count(*) from private.api_keys where enabled) as keys_before;
+select (select count(*) from cron.job where active) as cron_before, (select count(*) from pipeline.manual_locks) as locks_before;
 
 do $e$
 declare v jsonb := security.consumer_api_check_v1();
@@ -29,13 +29,8 @@ values ('dot', 'v1', 'dot-intake-connector', 'DOT intake connector v1', 'private
         'CF-247 s1350: DOT''s private connector to the data-intake drop-off (upload, finalise, status). Not a consumer API.')
 on conflict (platform, api_version, endpoint) do nothing;
 
-insert into private.api_keys (key_name, platform, api_version, consumer, token_sha256, enabled, rate_per_minute, note)
-values ('dot_intake_connector_v1', 'dot', 'v1', 'DOT (evidence agent)',
-        encode(extensions.digest(encode(extensions.gen_random_bytes(32), 'hex'), 'sha256'), 'hex'), true, 60,
-        'CF-247 s1350 (28 Nov 2026): DOT''s key for the dot-intake connector. [not issued] Nobody holds this key yet: rotate it on Settings > API usage to issue it (shown once).')
-on conflict (key_name) do nothing;
-insert into pipeline.api_key_events (key_name, event, note)
-values ('dot_intake_connector_v1', 'switched_on', 'CF-247 s1350: own key for dot v1 added (not issued)');
+-- The key row itself (and widening the key store's platform check to accept dot) is a constraint change, so it is the Platform Admin's paste
+-- file (admin docs/paste/PASTE-20261128-s1350-dot-connector-key.sql), run once before the key is issued on Settings > API usage.
 
 create or replace function public.svc_data_intake_identity_v1(p_producer text) returns jsonb
 language plpgsql stable security definer set search_path to ''
