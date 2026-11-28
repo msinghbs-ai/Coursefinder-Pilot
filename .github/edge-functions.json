@@ -7,6 +7,7 @@
     "aer-source-upload": true,
     "coverage-sweep": false,
     "dot-intake": true,
+    "dot-intake-connector": false,
     "evidence-link-index": false,
     "evidence-storage-dedupe": false,
     "fee-schedule-etl": false,
