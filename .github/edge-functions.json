@@ -6,7 +6,7 @@
     "admin-user-management": true,
     "aer-source-upload": true,
     "coverage-sweep": false,
-    "dot-intake": false,
+    "dot-intake": true,
     "evidence-link-index": false,
     "evidence-storage-dedupe": false,
     "fee-schedule-etl": false,
