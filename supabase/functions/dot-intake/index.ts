@@ -9,12 +9,14 @@
 //                   provider, else HELD:MANIFEST_INCOMPLETE; then the existing structured intake writer (submitter dot) takes the candidates and
 //                   its receipt is returned. Replaying a finalised package returns the same receipt and writes nothing.
 //   action=status   the package's state and receipt.
+// Every database check (identity with a bounded expiry, package open, provider in country, derived path, complete manifest, the same manifest on
+// replay) runs before anything is stored, so a refused call stores nothing; one writer per package at a time (database lock).
 // The caller can only write new objects under its own package paths through this function; it has no storage, table or listing access of its own.
 // No canonical row, evidence or activation is written here: proof on stored copies, the course binding and the admission rules decide.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION = "dot-intake-v0.2.0";
+const VERSION = "dot-intake-v0.3.0";
 const BUCKET = "data-intake";
 const MIME: Record<string, string[]> = { pdf: ["application/pdf"], html: ["text/html"], json: ["application/json"], jsonl: ["application/x-ndjson", "application/jsonl", "application/json"], txt: ["text/plain"] };
 const json = (status: number, body: Record<string, unknown>) => new Response(JSON.stringify({ ...body, version: VERSION }), { status, headers: { "content-type": "application/json" } });
@@ -68,11 +70,14 @@ Deno.serve(async (req: Request) => {
     const sourceUrl = String(form.get("source_url") || "").trim();
     if (sourceUrl && !/^https:\/\/[^\s]{4,500}$/.test(sourceUrl)) return json(400, { error: "invalid_source_url" });
     const path = `${root}files/${sha}.${ext}`;
-    // the package must still be open before the bytes are stored: a finalised package takes nothing new
-    const { data: st } = await rpc("status", ident);
-    if (st?.status && !["none", "uploading"].includes(st.status)) return json(409, { error: "package_finalised", status: st.status });
+    const args = { ...ident, sha256: sha, ext, bytes: bytes.length, mime: type, path, source_url: sourceUrl };
+    // every database check runs before the bytes are stored (identity, package open, provider in country, derived path)
+    const pre = await rpc("precheck_upload", args);
+    if (pre.error) { const f = fixedError(pre.error); return json(f.status === 422 && /finalised/.test(String(pre.error.message)) ? 409 : f.status, f.body) }
+    if (!pre.data?.ok) return json(pre.data?.held === "HELD:SWITCHED_OFF" ? 503 : 403, { error: "refused", held: pre.data?.held });
+    // a retry after a stored-but-unrecorded upload finds the same object (same path for the same bytes) and records it
     try { await store(path, MIME[ext][0]) } catch { return json(500, { error: "storage_failed" }) }
-    const { data, error } = await rpc("upload", { ...ident, sha256: sha, ext, bytes: bytes.length, mime: type, path, source_url: sourceUrl });
+    const { data, error } = await rpc("upload", args);
     if (error) { const f = fixedError(error); return json(f.status, { ...f.body, stored: path }) }
     return json(200, data);
   }
@@ -81,9 +86,14 @@ Deno.serve(async (req: Request) => {
   let manifest: any;
   try { manifest = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) } catch { return json(415, { error: "manifest_json_required" }) }
   if (!manifest || !Array.isArray(manifest.files) || !Array.isArray(manifest.items)) return json(415, { error: "manifest_files_and_items_required" });
-  const mpath = `${root}manifest-${sha}.json`;
+  const mpath = `${root}manifest-${sha}.json`, margs = { ...ident, manifest_sha256: sha, manifest_path: mpath, manifest };
+  // validated before it is stored: an incomplete manifest, another provider's candidate or a changed manifest stores nothing
+  const pre = await rpc("precheck_finalise", margs);
+  if (pre.error) { const f = fixedError(pre.error); return json(f.status === 422 ? 409 : f.status, f.body) }
+  if (!pre.data?.ok) return json(pre.data?.held === "HELD:SWITCHED_OFF" ? 503 : pre.data?.held === "HELD:MANIFEST_INCOMPLETE" ? 409 : 403, { error: "held", ...pre.data });
+  if (pre.data?.replay) return json(200, pre.data);  // the same manifest again: the same receipt, nothing written
   try { await store(mpath, "application/json") } catch { return json(500, { error: "storage_failed" }) }
-  const { data, error } = await rpc("finalise", { ...ident, manifest_sha256: sha, manifest_path: mpath, manifest });
+  const { data, error } = await rpc("finalise", margs);
   if (error) { const f = fixedError(error); return json(f.status, { ...f.body, stored: mpath }) }
   return json(data?.ok ? 200 : 409, { ...data, stored: mpath });
 });

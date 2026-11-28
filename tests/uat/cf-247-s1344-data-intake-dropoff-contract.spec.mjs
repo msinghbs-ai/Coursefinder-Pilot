@@ -1,4 +1,4 @@
-// Guards: SS-Programme-Control 28 Nov 2026 PC-20261128-DOT-STORAGE-APPROVED (private data-intake bucket, restricted expiring DOT identity, immutable package paths, READY manifest last, existing structured intake writer); CLAUDE.md "A passing qualification never switches anything on by itself", Layer 4 human decisions, no drop or delete by an applied migration, public API errors never carry a raw database message
+// Guards: SS-Programme-Control 28 Nov 2026 PC-20261128-DOT-STORAGE-APPROVED and PC-20261128-S1-BUILD-REVIEW (bounded expiry, one writer per package, no stale replay, prechecks before storage; private data-intake bucket, restricted expiring DOT identity, immutable package paths, READY manifest last, existing structured intake writer); CLAUDE.md "A passing qualification never switches anything on by itself", Layer 4 human decisions, no drop or delete by an applied migration, public API errors never carry a raw database message
 // CF-247 s1344. supabase/migrations/20261201040000_cf247_s1344_data_intake_dropoff.sql, supabase/functions/dot-intake/index.ts, .github/edge-functions.json
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -56,4 +56,18 @@ test('errors carry fixed codes; only the platform INVALID_INPUT text is passed o
   expect(fn).toContain('m.startsWith("INVALID_INPUT:")')
   expect(fn).toContain('{ error: "request_failed" }')
   expect(fn).not.toMatch(/gateErr\.message/)
+})
+
+test('review corrections: bounded expiry, one writer per package, a changed manifest never replays, nothing stored before the database checks pass', () => {
+  expect(sql).toContain("'data_intake.role_max_days'")
+  expect(sql).toContain("(ur.expires_at is null or ur.expires_at > now() + make_interval(days => v_days))")
+  expect(sql).toContain("'held', 'HELD:EXPIRY_NOT_BOUNDED'")
+  expect(sql).toContain("perform pg_advisory_xact_lock(hashtextextended('data_intake:' || v_prov::text || ':' || v_pkg, 0));")
+  expect(sql).toContain("was finalised with another manifest")
+  const up = fn.slice(fn.indexOf('if (action === "upload")'))
+  expect(up.indexOf('rpc("precheck_upload", args)')).toBeGreaterThan(0)
+  expect(up.indexOf('rpc("precheck_upload", args)')).toBeLessThan(up.indexOf('await store(path'))
+  const fin = fn.slice(fn.indexOf('// finalise: the READY manifest, last'))
+  expect(fin.indexOf('rpc("precheck_finalise", margs)')).toBeLessThan(fin.indexOf('await store(mpath'))
+  expect(sql).toContain("'candidates', jsonb_build_object('received'")
 })
