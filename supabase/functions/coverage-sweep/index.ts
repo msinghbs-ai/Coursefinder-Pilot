@@ -26,7 +26,7 @@ import { pdfGrids2 } from "./pdf-grid.ts";
 import { COURSE_ENTRY_PROMPT_VERSION, courseEntryAnswer, courseEntryInput, courseEntryMerge, courseEntryPlan, courseEntryRequest, courseEntrySliceRows, courseEntryUser } from "./course-entry.ts";
 import type { CourseSliceOutcome } from "./course-entry.ts";
 import { AER_V2_MODE, AER_V3_CONTRACT, AER_V3_EVAL_MODE, aerV2Answer, aerV2Refs, aerV2Request, aerV2Sha256, aerV2User, aerV2Verify, aerV3Blocks, aerV3Request, aerV3User, aerV3Verify, aerV3QuoteDiag } from "./aer-v2.ts";
-import { PDF_METHOD, pdfPages, pdfTables } from "./pdf.ts"; import { entryPdfExport, isPdfCopy } from "./entry-pdf-export.ts"; import { clipRunningFooter, entryTablePageScope } from "./entry-pdf-scope.ts"; import { hasPdfSignature, retryAsPdf } from "./entry-pdf-sniff.ts";
+import { PDF_METHOD, pdfPages, pdfTables } from "./pdf.ts"; import { entryPdfExport, isPdfCopy } from "./entry-pdf-export.ts"; import { clipRunningFooter, entryProvenPageRuns, entryTablePageScope } from "./entry-pdf-scope.ts"; import { hasPdfSignature, retryAsPdf } from "./entry-pdf-sniff.ts";
 import { missDetail } from "./lean-miss.ts";
 import { AER_CHUNK_CONTRACTS, AER_CHUNK_INPUT, AER_CHUNK_MODE, aerChunkRequest, aerChunkTotals, aerChunkVerifier } from "./aer-chunk-smoke.ts";
 import { entryChunkGroups, entryChunkUser, entryChunks } from "./entry-chunks.ts";
@@ -3268,6 +3268,9 @@ async function handle(req: Request): Promise<Response> {
           // s1253 (S2-AER, 26 Nov 2026): a document the whole-document read holds is read again on the pages that carry its academic entry tables (entry-pdf-scope.ts) when
           // there are such pages and they are not all of them; only a scope the same proven reader proves is used, so no read that was not held changes (Le Cordon Bleu: a numbered list on page 3 held Tables A and B)
           if (t.status !== "ok") { const sc = entryTablePageScope(pages); if (sc && (sc.first > pages[0].p || sc.last < pages[pages.length - 1].p)) { let sp = pages.filter((q) => q.p >= sc.first && q.p <= sc.last), st = pdfTables(sp); if (st.status !== "ok") { const cp = clipRunningFooter(sp); if (cp !== sp) { sp = cp; st = pdfTables(sp) } } if (st.status === "ok") { pages = sp; t = { ...st, reason: `scoped to pages ${sc.first}-${sc.last}` } } } }
+          // s1372 (S2-AER, 28 Nov 2026): an untitled prospectus or guide (no "Table X - Academic Entry Requirements" title) still held: the pages that prove an entry table
+          // alone are read together by the same proven reader; a held page next to one keeps the whole document held (entry-pdf-scope.ts entryProvenPageRuns)
+          if (t.status !== "ok") { const pr = entryProvenPageRuns(pages, pdfTables); if (pr && pr.pages.length < pages.length) { const sp = pages.filter((q) => pr.pages.includes(q.p)), st = pdfTables(sp); if (st.status === "ok") { pages = sp; t = { ...st, reason: `proven entry pages ${pr.runs.map((r) => r.first === r.last ? r.first : `${r.first}-${r.last}`).join(",")}; held pages left out: ${pr.held_left_out.join(",") || "none"}`.slice(0, 300) } } } }
           return { text: t.text, lines: Object.assign([] as EntryBandLine[], { forms: t.forms }) as EntryLineSet, manifest: { status: "none", reason: "stored copy is a PDF", heading: "", entries: [], columns: [], footnotes: [] } as EntryManifest, emptyLines: [] as string[], pdf: t, pdfPages: pages };
         }
         const t = b[0] === 0x1f && b[1] === 0x8b ? await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text() : new TextDecoder().decode(b);
