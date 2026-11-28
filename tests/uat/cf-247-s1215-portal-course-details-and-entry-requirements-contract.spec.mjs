@@ -1,4 +1,4 @@
-// Guards: Atlas brief to S1-API-Frontend-Delivery, 26 Nov 2026 12:02 AEDT (Platform Admin live UAT): an expandable Course details panel on Courses and Saved courses, every outside link opening in a new tab, and a separate Entry Requirements (AER) screen; Viewer reads, Counsellor saves and adds to a proposal; amended by s1222 (Atlas brief 26 Nov 2026 15:59 AEDT, portal UAT fixes: concise cards, drawer, pinned student countries); amended by s1355 (Platform Admin PC-20261128-CONTINUOUS-BUILD-EXECUTE and the evening country-neutral gates: a fee is shown in the currency it is held in and labelled by the course's own register, never a fixed country)
+// Guards: Atlas brief to S1-API-Frontend-Delivery, 26 Nov 2026 12:02 AEDT (Platform Admin live UAT): an expandable Course details panel on Courses and Saved courses, every outside link opening in a new tab, and a separate Entry Requirements (AER) screen; Viewer reads, Counsellor saves and adds to a proposal; amended by s1222 (Atlas brief 26 Nov 2026 15:59 AEDT, portal UAT fixes: concise cards, drawer, pinned student countries); amended by s1355 (Platform Admin PC-20261128-CONTINUOUS-BUILD-EXECUTE and the evening country-neutral gates: a fee is shown in the currency it is held in and labelled by the course's own register, never a fixed country); s1356 (Compare marks the lowest annual fee only among fees in one currency; the Study in tabs filter Saved courses, found in the signed-in production check)
 // CF-247 s1215: portal screens. The read functions (s1214, S2-Build) and the study-levels read (s1215) are guarded in their migration contracts; this spec guards the screens, the one link component and the menu.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -100,6 +100,13 @@ test('the pure formatting reads recorded values and never adds fee lines togethe
   expect(f.feeAmount({ amount: 28000, currency: 'NZD' })).toBe('NZ$28,000'); expect(f.feeAmount({ amount: 15477, currency: 'CAD' })).toBe('CA$15,477')
   expect(f.feeAmount({ amount: 21000, currency: null })).toBe('21,000'); expect(f.feeAmount({ amount: 21000 })).not.toMatch(/\$/)
   expect(f.outcomeValue({ unit: 'NZD', value: 61000 })).toBe('NZ$61,000'); expect(f.outcomeValue({ unit: 'GBP', value: 30000 })).toBe('£30,000')
+  // s1356: no ranking across currencies.
+  expect(f.lowestAnnualFee([{ per_year: 28000, currency: 'NZD' }, { per_year: 15477, currency: 'CAD' }])).toBeNull()
+  expect(f.lowestAnnualFee([{ per_year: 28000, currency: 'AUD' }, { per_year: 15477, currency: 'aud' }, { per_year: 0, currency: 'NZD' }])).toBe(15477)
+  expect(f.lowestAnnualFee([{ per_year: 28000, currency: 'AUD' }])).toBeNull(); expect(f.lowestAnnualFee([{ per_year: 1, currency: null }, { per_year: 2, currency: 'AUD' }])).toBeNull()
+  expect(read(`${SRC}/screens/Saved.jsx`)).toContain('lowestAnnualFee(chosen.map(feeOf))')
+  const sv = read(`${SRC}/screens/Saved.jsx`)
+  expect(sv).toContain("studyIn ? saved.items.filter(i => i.country_code === studyIn) : saved.items"); expect(sv).toContain('shown.filter(i => picked.includes(i.course_id))'); expect(sv).not.toMatch(/saved\.items\.map/)
   const pm = await import('../../portal/src/lib/proposals.js')
   const sheet = (cur, courses) => pm.sheetModel({ student: { budget_per_year: '40000', budget_currency: cur }, courses: courses.map(c => ({ snapshot: { fee: { per_year: 30000, currency: c } } })) }).student.budget
   expect(sheet('', ['NZD', 'NZD'])).toBe('NZ$40,000 a year'); expect(sheet('', ['NZD', 'AUD'])).toBe('40,000 a year'); expect(sheet('', [])).toBe('40,000 a year'); expect(sheet('CAD', ['AUD'])).toBe('CA$40,000 a year')
