@@ -4,6 +4,8 @@
 # admission rules. Started by hand; no CI per candidate or per university. The result is printed and kept as an artifact.
 # s1326 (transport only): a file collected from the submitter's pickup folder can be passed directly (content, sha256, source) as
 # drive/<submitter>/<batch>.jsonl, with no admin commit; the bytes must match the stated sha256. Same writer, checks and decisions.
+# s1356: a collected file is sent only under its own released name (<package>-READY_FOR_PICKUP.jsonl, no PRECHECK, PENDING, DO_NOT_SUBMIT or
+# HELD mark), and a record stating it is not READY is left out (scripts/intake-ready.mjs).
 name: Structured intake
 on:
   workflow_dispatch:
@@ -13,7 +15,7 @@ on:
         required: true
         default: list
       file:
-        description: "Admin repository path docs/intake/<submitter>/<batch>.jsonl, or drive/<submitter>/<batch>.jsonl with content"
+        description: "Admin repository path docs/intake/<submitter>/<batch>.jsonl, or drive/<submitter>/<the collected file name>.jsonl with content (it must end -READY_FOR_PICKUP)"
         required: true
       ref:
         description: "Admin repository commit of the file (40 hex characters; submit only)"

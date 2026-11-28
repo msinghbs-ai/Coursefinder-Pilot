@@ -9,6 +9,7 @@ import { need, op, lit, summary } from './boost-live-lib.mjs'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import zlib from 'node:zlib'
+import { readyBatch, readyItems } from './intake-ready.mjs'
 
 need()
 const [action, file, ref, byIn] = process.argv.slice(2)
@@ -23,6 +24,8 @@ const m = /^(docs\/intake|drive)\/([a-z0-9][a-z0-9_-]{1,40})\/([A-Za-z0-9._-]{1,
 if (!m || (m[1] === 'drive') !== direct) { console.error('::error::file is docs/intake/<submitter>/<batch>.jsonl in the admin repository, or drive/<submitter>/<batch>.jsonl with content'); process.exit(1) }
 const [, , submitter, batch] = m
 const out = { action, file, ref, submitter, batch, source: direct ? source : `admin:${ref}` }
+// s1356: a collected file is sent only when its submitter released it (READY_FOR_PICKUP, no hold mark); checked before its bytes are read
+if (direct && action === 'submit') { const rb = readyBatch(batch); if (!rb.ok) { console.error(`::error::${rb.reason}`); process.exit(1) } }
 if (action === 'submit') {
   let text
   if (direct) {
@@ -37,7 +40,10 @@ if (action === 'submit') {
     text = await res.text()
     out.sha256 = crypto.createHash('sha256').update(text).digest('hex')
   }
-  const items = file.endsWith('.json') ? JSON.parse(text) : text.split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l))
+  const all = file.endsWith('.json') ? JSON.parse(text) : text.split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l))
+  const { send: items, held } = readyItems(all)  // s1356: a record that states it is not ready is left out and counted
+  out.held_not_ready = held
+  if (!items.length) { console.error(`::error::no record in the file is ready (${held.length} held); nothing was sent`); process.exit(1) }
   out.submitted = items.length
   out.submit = await call('submit', { submitter, batch, items })
 } else if (action === 'verify') out.verify = await call('verify', {})
@@ -51,6 +57,6 @@ fs.mkdirSync('out', { recursive: true })
 fs.writeFileSync('out/structured-intake.json', JSON.stringify(out, null, 2))
 const rows = (out.list?.items || []).map((x) => `| ${x.domain} | ${x.course_code || ''} | ${x.status} | ${String(x.reason || '').slice(0, 160).replace(/\|/g, '/')} | ${x.review_item_id || ''} | ${(x.rows || []).map((r) => r.status).join(', ')} |`)
 await summary([`Structured intake ${action}: ${submitter} / ${batch}${out.sha256 ? ` (file sha256 ${out.sha256.slice(0, 12)}…)` : ''}`, '',
-  out.submit ? `Received ${out.submit.received}, duplicates ${out.submit.duplicates}, refused ${(out.submit.refused || []).length}` : '', '',
+  out.submit ? `Received ${out.submit.received}, duplicates ${out.submit.duplicates}, refused ${(out.submit.refused || []).length}, held as not ready ${(out.held_not_ready || []).length}` : '', '',
   '| Domain | Course | Status | Reason | Layer 4 item | Rows |', '|---|---|---|---|---|---|', ...rows].join('\n'))
 console.log(JSON.stringify(out.submit || out.verify || {}, null, 2))
