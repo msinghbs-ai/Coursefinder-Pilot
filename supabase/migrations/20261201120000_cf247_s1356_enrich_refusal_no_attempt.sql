@@ -87,8 +87,9 @@ begin
                        then 'deferred after an AI account refusal until ' || v_last.leased_until::text || '; attempt not counted (recovery policy ai_account_refusal)'
                        else 'attempt ' || v_last.state || coalesce(', leased until ' || v_last.leased_until::text, '') end;$n1$),
     ('security.pim_record_trace_v1(uuid,text,boolean)', 2,
-     $o2$      when v_cause in ('account_refusal', 'technical_failure') then v_cause$o2$,
-     $n2$      when v_cause in ('account_refusal', 'technical_failure', 'lease_expired') then v_cause$n2$),
+     $o2$      when v_last.id is not null and coalesce(v_last.attempts, 0) >= v_attempts and v_last.state in ('failed', 'skipped') then 'repeated_ineffective_extraction'$o2$,
+     $n2$      when v_cause = 'lease_expired' then 'lease_expired'  -- s1356: the worker did not return before the lease ran out; not an extraction result
+      when v_last.id is not null and coalesce(v_last.attempts, 0) >= v_attempts and v_last.state in ('failed', 'skipped') then 'repeated_ineffective_extraction'$n2$),
     ('security.pim_failure_cause_v1(text)', 3,
      $o3$  select case when coalesce(p_reason, '') = '' then null$o3$,
      $n3$  select case when coalesce(p_reason, '') = '' then null
