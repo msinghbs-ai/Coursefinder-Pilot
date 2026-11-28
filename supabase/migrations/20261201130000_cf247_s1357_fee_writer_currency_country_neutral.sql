@@ -1,6 +1,6 @@
--- CF-247 s1355 (S1-RM-Design; SS-Programme-Control 28 Nov 2026 PC-20261128-CONTINUOUS-BUILD-EXECUTE: "support explicit valid source
+-- CF-247 s1357 (S1-RM-Design; SS-Programme-Control 28 Nov 2026 PC-20261128-CONTINUOUS-BUILD-EXECUTE: "support explicit valid source
 -- currency, no assumed AUD, hold ambiguous source, preserve distinct components"; design record admin docs/platform/
--- 2026-11-28-s1-rm-design-country-neutral-identity-and-fee-grain-review.md, admin #1376). Database side only; the worker side is s1354 (#1762).
+-- 2026-11-28-s1-rm-design-country-neutral-identity-and-fee-grain-review.md, admin #1376). Database side only; the worker side is s1354 (#1762), the Portal formatter s1355 (#1763).
 -- Cause: seven shared fee writers assumed Australia. Three wrote currency 'AUD' as a fixed value (fee wording rules, provider rules, provider
 -- basis rules), course facts defaulted a missing currency to AUD, the adapter overwrite used a fixed NZ/CA/else-AUD map, and the Layer 4
 -- apply and the Layer 3 assumed-annual admission accepted only AUD/NZD/CAD (a GBP or EUR fee was refused, and a missing currency passed as null
@@ -40,7 +40,7 @@ as $f$
 $f$;
 
 comment on function security.fee_currency_resolve_v1(uuid, text) is
-  'CF-247 s1355 (28 Nov 2026): the currency a fee writer records. An explicit active ISO code (ref.currencies) wins; with none, the provider country''s default currency; otherwise null, and the caller holds the fee. Never AUD by default.';
+  'CF-247 s1357 (28 Nov 2026): the currency a fee writer records. An explicit active ISO code (ref.currencies) wins; with none, the provider country''s default currency; otherwise null, and the caller holds the fee. Never AUD by default.';
 
 revoke all on function security.fee_currency_resolve_v1(uuid, text) from public;
 revoke all on function security.fee_currency_resolve_v1(uuid, text) from anon, authenticated;
@@ -57,7 +57,7 @@ $o2$, ''))) / length($o2$    if exists (select 1 from pipeline.manual_locks l wh
 $o2$) <> 1 then raise exception 'pre-check: security.fee_rule_run_v1 edit 2 marker is not found exactly once'; end if;
   d := replace(d, $o2$    if exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = m.course_id and l.field = 'tuition') then n_locked := n_locked + 1; continue; end if;
 $o2$, $n2$    if exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = m.course_id and l.field = 'tuition') then n_locked := n_locked + 1; continue; end if;
-    -- s1355: currency from the evidence (an explicit A$/AUD marker) or the provider country; unknown is held, never AUD by default
+    -- s1357: currency from the evidence (an explicit A$/AUD marker) or the provider country; unknown is held, never AUD by default
     v_cur := security.fee_currency_resolve_v1(r.provider_id, case when m.matched_text ~* '(^|[^a-z])(aud([^a-z]|$)|a\s*\$)' then 'AUD' end);
     if v_cur is null then n_cur := n_cur + 1; continue; end if;
 $n2$);
@@ -85,7 +85,7 @@ begin$o1$) <> 1 then raise exception 'pre-check: security.provider_rule_admit_v1
 begin$o1$, $n1$v_source uuid; v_review uuid; v_prov uuid; v_cur text;
 begin$n1$);
   if (length(d) - length(replace(d, $o2$  select jsonb_object_agg(outcome,n) into v_summary$o2$, ''))) / length($o2$  select jsonb_object_agg(outcome,n) into v_summary$o2$) <> 1 then raise exception 'pre-check: security.provider_rule_admit_v1 edit 2 marker is not found exactly once'; end if;
-  d := replace(d, $o2$  select jsonb_object_agg(outcome,n) into v_summary$o2$, $n2$  -- s1355: an admissible amount whose currency is not known (no explicit A$/AUD marker and no provider-country currency) is held, never AUD by default
+  d := replace(d, $o2$  select jsonb_object_agg(outcome,n) into v_summary$o2$, $n2$  -- s1357: an admissible amount whose currency is not known (no explicit A$/AUD marker and no provider-country currency) is held, never AUD by default
   update _pra p set outcome = 'currency not known (held)'
   where p.outcome in ('admit','admit (fee explanation)')
     and security.fee_currency_resolve_v1((select c.provider_id from catalogue.courses c where c.id = p.course_id), case when p.matched ~* '(^|[^a-z])(aud([^a-z]|$)|a\s*\$)' then 'AUD' end) is null;
@@ -100,7 +100,7 @@ begin$n1$);
       select source_id into v_source from pipeline.evidence_artifacts where id=r.evidence_id;
       if v_code is null or v_source is null then continue; end if;$o3$, $n3$      select course_code, provider_id into v_code, v_prov from catalogue.courses where id=r.course_id;
       select source_id into v_source from pipeline.evidence_artifacts where id=r.evidence_id;
-      v_cur := security.fee_currency_resolve_v1(v_prov, case when r.matched ~* '(^|[^a-z])(aud([^a-z]|$)|a\s*\$)' then 'AUD' end);  -- s1355
+      v_cur := security.fee_currency_resolve_v1(v_prov, case when r.matched ~* '(^|[^a-z])(aud([^a-z]|$)|a\s*\$)' then 'AUD' end);  -- s1357
       if v_code is null or v_source is null or v_cur is null then continue; end if;$n3$);
   if (length(d) - length(replace(d, $o4$r.amount,'AUD',r.basis,$o4$, ''))) / length($o4$r.amount,'AUD',r.basis,$o4$) <> 1 then raise exception 'pre-check: security.provider_rule_admit_v1 edit 4 marker is not found exactly once'; end if;
   d := replace(d, $o4$r.amount,'AUD',r.basis,$o4$, $n4$r.amount,v_cur,r.basis,$n4$);
@@ -120,7 +120,7 @@ $o3$, ''))) / length($o3$    if v_basis is null then v_nomatch:=v_nomatch+1; con
 $o3$) <> 1 then raise exception 'pre-check: security.provider_basis_rule_admit_v1 edit 3 marker is not found exactly once'; end if;
   d := replace(d, $o3$    if v_basis is null then v_nomatch:=v_nomatch+1; continue; end if;
 $o3$, $n3$    if v_basis is null then v_nomatch:=v_nomatch+1; continue; end if;
-    -- s1355: currency from the evidence (an explicit A$/AUD marker) or the provider country; unknown is held, never AUD by default
+    -- s1357: currency from the evidence (an explicit A$/AUD marker) or the provider country; unknown is held, never AUD by default
     v_cur:=security.fee_currency_resolve_v1(r.provider_id, case when v_text ~* '(^|[^a-z])(aud([^a-z]|$)|a\s*\$)' then 'AUD' end);
     if v_cur is null then v_cur_unknown:=v_cur_unknown+1; continue; end if;
 $n3$);
@@ -147,7 +147,7 @@ do $e$
 declare d text := pg_get_functiondef('security.layer4_tuition_apply_impl(uuid, uuid, jsonb, text)'::regprocedure);
 begin
   if (length(d) - length(replace(d, $o1$  if v_cur not in ('AUD','NZD','CAD') then raise exception 'currency must be AUD, NZD or CAD'; end if;$o1$, ''))) / length($o1$  if v_cur not in ('AUD','NZD','CAD') then raise exception 'currency must be AUD, NZD or CAD'; end if;$o1$) <> 1 then raise exception 'pre-check: security.layer4_tuition_apply_impl edit 1 marker is not found exactly once'; end if;
-  d := replace(d, $o1$  if v_cur not in ('AUD','NZD','CAD') then raise exception 'currency must be AUD, NZD or CAD'; end if;$o1$, $n1$  -- s1355: an explicit active ISO currency code, else the provider country's currency; an unknown currency is refused (it was written as null before)
+  d := replace(d, $o1$  if v_cur not in ('AUD','NZD','CAD') then raise exception 'currency must be AUD, NZD or CAD'; end if;$o1$, $n1$  -- s1357: an explicit active ISO currency code, else the provider country's currency; an unknown currency is refused (it was written as null before)
   v_cur := security.fee_currency_resolve_v1((select c.provider_id from catalogue.courses c where c.id = v_item.entity_id), v_cur);
   if v_cur is null then raise exception 'currency must be an active ISO currency code (none was given and the provider country has no default currency)'; end if;$n1$);
   execute d;
@@ -158,7 +158,7 @@ do $e$
 declare d text := pg_get_functiondef('security.layer3_tuition_admit_assumed_annual_v1(integer)'::regprocedure);
 begin
   if (length(d) - length(replace(d, $o1$or v_cur not in ('AUD','NZD','CAD')$o1$, ''))) / length($o1$or v_cur not in ('AUD','NZD','CAD')$o1$) <> 1 then raise exception 'pre-check: security.layer3_tuition_admit_assumed_annual_v1 edit 1 marker is not found exactly once'; end if;
-  d := replace(d, $o1$or v_cur not in ('AUD','NZD','CAD')$o1$, $n1$or v_cur is null or not exists (select 1 from ref.currencies cy where cy.code = v_cur and cy.status = 'active')  /* s1355: any active ISO code; none is held */$n1$);
+  d := replace(d, $o1$or v_cur not in ('AUD','NZD','CAD')$o1$, $n1$or v_cur is null or not exists (select 1 from ref.currencies cy where cy.code = v_cur and cy.status = 'active')  /* s1357: any active ISO code; none is held */$n1$);
   execute d;
 end $e$;
 
@@ -167,7 +167,7 @@ do $e$
 declare d text := pg_get_functiondef('security.adapter_overwrite_v1(integer)'::regprocedure);
 begin
   if (length(d) - length(replace(d, $o1$    v_cur := coalesce(nullif(r.c->'fee'->>'currency', ''), case security.coverage_country(r.provider_id) when 'NZ' then 'NZD' when 'CA' then 'CAD' else 'AUD' end);$o1$, ''))) / length($o1$    v_cur := coalesce(nullif(r.c->'fee'->>'currency', ''), case security.coverage_country(r.provider_id) when 'NZ' then 'NZD' when 'CA' then 'CAD' else 'AUD' end);$o1$) <> 1 then raise exception 'pre-check: security.adapter_overwrite_v1 edit 1 marker is not found exactly once'; end if;
-  d := replace(d, $o1$    v_cur := coalesce(nullif(r.c->'fee'->>'currency', ''), case security.coverage_country(r.provider_id) when 'NZ' then 'NZD' when 'CA' then 'CAD' else 'AUD' end);$o1$, $n1$    v_cur := security.fee_currency_resolve_v1(r.provider_id, r.c->'fee'->>'currency');  -- s1355: the read currency, else the provider country's; no fixed country map, no AUD default$n1$);
+  d := replace(d, $o1$    v_cur := coalesce(nullif(r.c->'fee'->>'currency', ''), case security.coverage_country(r.provider_id) when 'NZ' then 'NZD' when 'CA' then 'CAD' else 'AUD' end);$o1$, $n1$    v_cur := security.fee_currency_resolve_v1(r.provider_id, r.c->'fee'->>'currency');  -- s1357: the read currency, else the provider country's; no fixed country map, no AUD default$n1$);
   if (length(d) - length(replace(d, $o2$    if r.c->>'fee_by' = 'adapter' and v_fee is not null and v_fee between$o2$, ''))) / length($o2$    if r.c->>'fee_by' = 'adapter' and v_fee is not null and v_fee between$o2$) <> 1 then raise exception 'pre-check: security.adapter_overwrite_v1 edit 2 marker is not found exactly once'; end if;
   d := replace(d, $o2$    if r.c->>'fee_by' = 'adapter' and v_fee is not null and v_fee between$o2$, $n2$    if r.c->>'fee_by' = 'adapter' and v_fee is not null and v_cur is not null and v_fee between$n2$);
   execute d;

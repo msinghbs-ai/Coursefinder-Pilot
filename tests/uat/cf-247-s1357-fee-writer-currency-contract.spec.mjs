@@ -1,11 +1,11 @@
-// Guards: SS-Programme-Control PC-20261128-CONTINUOUS-BUILD-EXECUTE (28 Nov 2026, S1-RM-Design): fee writers record an explicit valid source currency or the provider country's currency, never AUD by default, and hold an unknown currency (s1355).
+// Guards: SS-Programme-Control PC-20261128-CONTINUOUS-BUILD-EXECUTE (28 Nov 2026, S1-RM-Design): fee writers record an explicit valid source currency or the provider country's currency, never AUD by default, and hold an unknown currency (s1357).
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 
 const MIGRATION = path.join(
   process.cwd(),
-  "supabase/migrations/20261201120000_cf247_s1355_fee_writer_currency_country_neutral.sql",
+  "supabase/migrations/20261201130000_cf247_s1357_fee_writer_currency_country_neutral.sql",
 );
 const sql = fs.readFileSync(MIGRATION, "utf8");
 
@@ -23,7 +23,7 @@ const WRITERS = [
   "security.adapter_overwrite_v1(integer)",
 ];
 
-test.describe("s1355 fee writers: country-neutral currency", () => {
+test.describe("s1357 fee writers: country-neutral currency", () => {
   test("one resolver: explicit active ISO code wins, else the provider country's currency, else null", () => {
     expect(sql).toContain("create or replace function security.fee_currency_resolve_v1(p_provider_id uuid, p_explicit text default null)");
     expect(sql).toMatch(/cy\.code = upper\(btrim\(p_explicit\)\) and cy\.status = 'active'/);
