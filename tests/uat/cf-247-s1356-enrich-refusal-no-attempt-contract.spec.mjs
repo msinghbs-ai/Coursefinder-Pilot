@@ -1,4 +1,4 @@
-// Guards: DR-19 qualified remedy (Platform Admin 28 Nov 2026 18:10; PC-20261128-ONE-COMMAND-RUNTIME-CLOSURE): an AI account refusal does not use an enrichment attempt when the recovery policy ai_account_refusal says counts_attempt false; every other error keeps the attempt cap
+// Guards: DR-19 qualified remedy (Platform Admin 28 Nov 2026 18:10; PC-20261128-CONTINUOUS-BUILD-EXECUTE): an AI account refusal does not use an enrichment attempt when the recovery policy ai_account_refusal says counts_attempt false, every other error keeps the attempt cap; the record trace names deferred refusals and expired capped leases with their registry remedy
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
@@ -28,4 +28,15 @@ test('s1356: anchored, guarded, adds no job and drops nothing', () => {
   expect(sql).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
   expect(sql).toMatch(/^-- Replaces: /m)
   expect(sql).toMatch(/^-- Retires: nothing/m)
+})
+
+test('s1356: the trace names expired capped leases (registry remedy) and deferred refusals; the classifier reads lease_expired', () => {
+  expect(sql).toContain("v_last.state = 'leased' and v_last.leased_until <= now() and coalesce(v_last.attempts, 0) >= v_attempts")
+  expect(sql).toContain("'lease_orphaned' = any(m.treats)")
+  expect(sql).toContain('attempt not counted (recovery policy ai_account_refusal)')
+  expect(sql).toContain("when v_cause = 'lease_expired' then 'lease_expired'")
+  expect(sql).toContain("when p_reason ilike 'lease expired at the attempt cap%' then 'lease_expired'")
+  expect(sql).toContain("'security.pim_record_trace_v1(uuid,text,boolean)'")
+  expect(sql).toContain("'security.pim_failure_cause_v1(text)'")
+  expect(sql).toContain('found % times')
 })
