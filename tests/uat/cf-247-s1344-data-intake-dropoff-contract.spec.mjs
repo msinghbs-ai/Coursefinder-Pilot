@@ -26,7 +26,8 @@ test('identity is narrow and expires: an active, unexpired dot_submitter assignm
   expect(sql).toContain("raise exception 'post-check: a role was assigned'")
   expect(fn.indexOf('await rpc("gate", {})')).toBeGreaterThan(0)
   expect(fn.indexOf('req.formData()')).toBeGreaterThan(fn.indexOf('await rpc("gate", {})'))
-  expect(edges['dot-intake']).toBe(true)
+  expect(edges['dot-intake']).toBe(false)   // s1351: the function signs callers in itself (a Supabase user or a one-package capability)
+  expect(fn).toContain('.auth.getUser()')
 })
 
 test('immutable paths derived by the server; actual bytes, hash, MIME and size checked; no overwrite; a finalised package takes nothing new', () => {
