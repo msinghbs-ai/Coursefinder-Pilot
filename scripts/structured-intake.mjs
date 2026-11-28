@@ -24,7 +24,7 @@ const m = /^(docs\/intake|drive)\/([a-z0-9][a-z0-9_-]{1,40})\/([A-Za-z0-9._-]{1,
 if (!m || (m[1] === 'drive') !== direct) { console.error('::error::file is docs/intake/<submitter>/<batch>.jsonl in the admin repository, or drive/<submitter>/<batch>.jsonl with content'); process.exit(1) }
 const [, , submitter, batch] = m
 const out = { action, file, ref, submitter, batch, source: direct ? source : `admin:${ref}` }
-// s1356: a collected file is sent only when its submitter released it (READY_FOR_PICKUP, no hold mark); checked before its bytes are read
+// s1359: a collected file is sent only when its submitter released it (READY_FOR_PICKUP, no hold mark); checked before its bytes are read
 if (direct && action === 'submit') { const rb = readyBatch(batch); if (!rb.ok) { console.error(`::error::${rb.reason}`); process.exit(1) } }
 if (action === 'submit') {
   let text
@@ -41,7 +41,7 @@ if (action === 'submit') {
     out.sha256 = crypto.createHash('sha256').update(text).digest('hex')
   }
   const all = file.endsWith('.json') ? JSON.parse(text) : text.split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l))
-  const { send: items, held } = readyItems(all)  // s1356: a record that states it is not ready is left out and counted
+  const { send: items, held } = readyItems(all)  // s1359: a record that states it is not ready is left out and counted
   out.held_not_ready = held
   if (!items.length) { console.error(`::error::no record in the file is ready (${held.length} held); nothing was sent`); process.exit(1) }
   out.submitted = items.length

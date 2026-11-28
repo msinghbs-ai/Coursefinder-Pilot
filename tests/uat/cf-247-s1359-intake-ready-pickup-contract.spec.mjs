@@ -1,5 +1,5 @@
 // Guards: SS-Programme-Control PC-20261128-CONTINUOUS-BUILD-EXECUTE (READY manifest pickup enforced at run time before pickup; DOT-EVENING-INTAKE-BOUNDARY-20261128 negative)
-// CF-247 s1356. scripts/intake-ready.mjs, scripts/structured-intake.mjs, .github/workflows/structured-intake.yml. A collected file is sent only under its
+// CF-247 s1359. scripts/intake-ready.mjs, scripts/structured-intake.mjs, .github/workflows/structured-intake.yml. A collected file is sent only under its
 // released name (<package>-READY_FOR_PICKUP.jsonl, no hold mark); a record stating it is not READY is left out. The writer and admission are unchanged.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -25,7 +25,7 @@ test('a record that states its readiness is sent only when READY; records withou
 
 test('the boundary negative: identical verified bytes under a PRECHECK name stop before anything is sent', () => {
   const bytes = Buffer.from('{"domain":"aer","course_code":"107870J"}\n')
-  const run = (name) => spawnSync(process.execPath, ['scripts/structured-intake.mjs', 'submit', `drive/dot/${name}.jsonl`, '', 'spec s1356'], {
+  const run = (name) => spawnSync(process.execPath, ['scripts/structured-intake.mjs', 'submit', `drive/dot/${name}.jsonl`, '', 'spec s1359'], {
     encoding: 'utf8', env: { ...process.env, SUPABASE_ACCESS_TOKEN: 'not-a-token', REF: 'not-a-project', IN_CONTENT: zlib.gzipSync(bytes).toString('base64'),
       IN_SHA256: crypto.createHash('sha256').update(bytes).digest('hex'), IN_SOURCE: 'drive:abcdefghijklmnop' } })
   for (const name of ['PRECHECK_PENDING_DO_NOT_SUBMIT', 'DOT-UTS-107870J-AER']) {

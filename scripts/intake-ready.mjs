@@ -1,4 +1,4 @@
-// CF-247 s1356 (S1-Build; SS-Programme-Control PC-20261128-CONTINUOUS-BUILD-EXECUTE and DOT-EVENING-INTAKE-BOUNDARY-20261128): readiness of a
+// CF-247 s1359 (S1-Build; SS-Programme-Control PC-20261128-CONTINUOUS-BUILD-EXECUTE and DOT-EVENING-INTAKE-BOUNDARY-20261128): readiness of a
 // file collected from a submitter's pickup folder is enforced at run time, before anything is sent. The submitter marks a file ready by its
 // name (<package>-READY_FOR_PICKUP.jsonl); a file the submitter has not released (PRECHECK, PENDING, DO_NOT_SUBMIT, HELD, DRAFT, PARKED) is
 // refused whatever its bytes. A record that states its own readiness (state, status or readiness) is sent only when it says READY; the others
