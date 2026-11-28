@@ -54,7 +54,9 @@ create or replace function public.admin_data_intake_capability_issue_v1(p_countr
 returns jsonb language plpgsql security definer set search_path to '' as $f$
 declare v_by uuid; v_token text; v_id uuid; v_max int := security.pipeline_num_v1('data_intake.capability_max_hours', 48)::int; v_exp timestamptz;
 begin
-  if current_user = 'postgres' or coalesce(auth.role(), '') = 'service_role' then v_by := security.system_actor_id();
+  -- definer function: current_user is always the owner here, so the caller is told by the request (service role, a signed-in rank, or a direct
+  -- database session with no request user, such as the SQL editor)
+  if coalesce(auth.role(), '') = 'service_role' or (auth.uid() is null and session_user = 'postgres') then v_by := security.system_actor_id();
   elsif auth.uid() is not null and security.current_role_rank() >= 6 then v_by := auth.uid();
   else raise exception 'platform admin required' using errcode = '42501'; end if;
   if coalesce(length(btrim(p_reason)), 0) < 8 then raise exception 'INVALID_INPUT: a reason of at least 8 characters'; end if;
@@ -86,7 +88,9 @@ create or replace function public.admin_data_intake_capability_revoke_v1(p_capab
 returns jsonb language plpgsql security definer set search_path to '' as $f$
 declare v_by uuid; v_n int;
 begin
-  if current_user = 'postgres' or coalesce(auth.role(), '') = 'service_role' then v_by := security.system_actor_id();
+  -- definer function: current_user is always the owner here, so the caller is told by the request (service role, a signed-in rank, or a direct
+  -- database session with no request user, such as the SQL editor)
+  if coalesce(auth.role(), '') = 'service_role' or (auth.uid() is null and session_user = 'postgres') then v_by := security.system_actor_id();
   elsif auth.uid() is not null and security.current_role_rank() >= 6 then v_by := auth.uid();
   else raise exception 'platform admin required' using errcode = '42501'; end if;
   if coalesce(length(btrim(p_reason)), 0) < 8 then raise exception 'INVALID_INPUT: a reason of at least 8 characters'; end if;

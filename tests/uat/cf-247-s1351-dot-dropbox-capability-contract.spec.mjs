@@ -10,6 +10,7 @@ test('a 256-bit token, kept only as its SHA-256, for one package, with expiry, r
   expect(sql).toContain("v_token := 'dic_' || encode(extensions.gen_random_bytes(32), 'hex');")
   expect(sql).toContain("values (encode(extensions.digest(v_token, 'sha256'), 'hex'), upper(p_country), p_provider_id, p_package,")
   expect(sql).toContain("security.current_role_rank() >= 6")
+  expect(sql).not.toContain("if current_user = 'postgres' or")   // a definer function always runs as its owner
   expect(sql).toContain("'data_intake.capability_max_hours'")
   expect(sql).toContain("'data_intake.capability_max_bytes'")
   expect(sql).toContain("revoked_at timestamptz")
