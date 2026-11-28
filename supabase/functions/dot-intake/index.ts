@@ -1,19 +1,27 @@
-// CF-247 s1344 (S1-Build; SS-Programme-Control 28 Nov 2026 PC-20261128-DOT-STORAGE-IMPLEMENT, PC-20261128-1130-DOT-STORAGE): DOT's direct intake of
-// one structured candidate file (JSONL), prepared switched OFF (setting dot_intake.on). The caller signs in as the DOT user; the database decides
-// whether that user holds an active, unexpired dot_submitter assignment and whether the switch is on (public.svc_dot_intake_v1 gate) before
-// anything is read or stored. The file is checked here (size from dot_intake.max_bytes, the SHA-256 the caller states, UTF-8 JSON lines, each an
-// object), stored once at staging-boost/dot/<package>/<sha256>.jsonl (no overwrite; never staging-boost inbound or outbound) and submitted through
-// the existing structured intake writer (svc_dot_intake_v1 submit -> svc_structured_intake_v1, submitter dot), whose receipt is returned. A replay
-// of the same file finds the stored copy and the writer counts its candidates as duplicates. No canonical row, evidence or activation is written
-// here; the existing proof on the platform's stored copies, the course binding and the admission rules decide.
+// CF-247 s1344 (S1-Build; SS-Programme-Control 28 Nov 2026 PC-20261128-DOT-STORAGE-APPROVED): DOT's direct drop-off into the private data-intake
+// bucket (never BOOST). The caller signs in as the DOT user; the database decides first whether the switch (data_intake.on) is on and the caller
+// holds an active, unexpired dot_submitter assignment (public.svc_data_intake_v1 gate), before anything is read or stored.
+//   action=upload   one original (PDF, HTML, JSON, JSONL or text): size from data_intake.max_bytes, the SHA-256 the caller states must equal the
+//                   server's, the MIME must match the extension; stored once at dot/<country>/<provider>/<package>/files/<sha256>.<ext>
+//                   (no overwrite) and recorded. A finalised package takes no more files.
+//   action=finalise the READY manifest, written last ({files:[{sha256}], items:[structured intake candidates]}): stored at
+//                   .../manifest-<sha256>.json; every listed original must already be recorded and every candidate must name the package's
+//                   provider, else HELD:MANIFEST_INCOMPLETE; then the existing structured intake writer (submitter dot) takes the candidates and
+//                   its receipt is returned. Replaying a finalised package returns the same receipt and writes nothing.
+//   action=status   the package's state and receipt.
+// The caller can only write new objects under its own package paths through this function; it has no storage, table or listing access of its own.
+// No canonical row, evidence or activation is written here: proof on stored copies, the course binding and the admission rules decide.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION = "dot-intake-v0.1.0";
+const VERSION = "dot-intake-v0.2.0";
+const BUCKET = "data-intake";
+const MIME: Record<string, string[]> = { pdf: ["application/pdf"], html: ["text/html"], json: ["application/json"], jsonl: ["application/x-ndjson", "application/jsonl", "application/json"], txt: ["text/plain"] };
 const json = (status: number, body: Record<string, unknown>) => new Response(JSON.stringify({ ...body, version: VERSION }), { status, headers: { "content-type": "application/json" } });
 const hex = (b: ArrayBuffer) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
 const noSession = { persistSession: false, autoRefreshToken: false };
-const PKG = /^[a-z0-9][a-z0-9._-]{2,80}$/, SHA = /^[0-9a-f]{64}$/;
+const SHA = /^[0-9a-f]{64}$/, PKG = /^[a-z0-9][a-z0-9._-]{2,80}$/, UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const fixedError = (e: any) => { const m = String(e?.message || ""); return m.startsWith("INVALID_INPUT:") ? { status: 422, body: { error: "refused", reason: m.slice(0, 300) } } : { status: 500, body: { error: "request_failed" } } };
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
@@ -24,35 +32,58 @@ Deno.serve(async (req: Request) => {
   const { data: who, error: whoErr } = await createClient(url, anon, { global: { headers: { Authorization: auth } }, auth: noSession }).auth.getUser();
   if (whoErr || !who?.user?.id) return json(401, { error: "authentication_required" });
   const svc = createClient(url, service, { auth: noSession });
+  const rpc = (p_action: string, extra: Record<string, unknown>) => svc.rpc("svc_data_intake_v1", { p_action, p_args: { user_id: who.user.id, ...extra } });
   // the database decides first: the switch and an active, unexpired dot_submitter assignment
-  const { data: gate, error: gateErr } = await svc.rpc("svc_dot_intake_v1", { p_action: "gate", p_args: { user_id: who.user.id } });
+  const { data: gate, error: gateErr } = await rpc("gate", {});
   if (gateErr) return json(500, { error: "gate_failed" });
   if (!gate?.ok) return json(gate?.held === "HELD:SWITCHED_OFF" ? 503 : 403, { error: "refused", held: gate?.held ?? "HELD:GATE" });
 
   let form: FormData;
   try { form = await req.formData() } catch { return json(400, { error: "multipart_form_required" }) }
-  const pkg = String(form.get("package") || "").trim(), stated = String(form.get("sha256") || "").trim().toLowerCase(), file = form.get("file");
-  if (!PKG.test(pkg)) return json(400, { error: "invalid_package" });
+  const action = String(form.get("action") || ""), pkg = String(form.get("package") || "").trim();
+  const country = String(form.get("country") || "").trim().toUpperCase(), provider = String(form.get("provider_id") || "").trim().toLowerCase();
+  if (!["upload", "finalise", "status"].includes(action)) return json(400, { error: "invalid_action" });
+  if (!PKG.test(pkg) || !/^[A-Z]{2}$/.test(country) || !UUID.test(provider)) return json(400, { error: "invalid_package_identity" });
+  const ident = { package: pkg, country, provider_id: provider };
+  const root = `dot/${country}/${provider}/${pkg}/`;
+  if (action === "status") { const { data, error } = await rpc("status", ident); if (error) { const f = fixedError(error); return json(f.status, f.body) } return json(200, data) }
+
+  const stated = String(form.get("sha256") || "").trim().toLowerCase(), file = form.get("file");
   if (!SHA.test(stated)) return json(400, { error: "invalid_sha256" });
   if (!(file instanceof File) || file.size === 0) return json(400, { error: "file_required" });
   if (file.size > Number(gate.max_bytes || 0)) return json(413, { error: "file_too_large", max_bytes: gate.max_bytes });
   const bytes = new Uint8Array(await file.arrayBuffer());
   const sha = hex(await crypto.subtle.digest("SHA-256", bytes));
-  if (sha !== stated) return json(422, { error: "sha256_mismatch", stated, computed: sha });  // nothing stored, nothing submitted
-  let items: unknown[];
-  try {
-    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    items = text.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => JSON.parse(l));
-    if (!items.length || items.some((x) => !x || typeof x !== "object" || Array.isArray(x))) throw new Error("not objects");
-  } catch { return json(415, { error: "jsonl_objects_required" }) }
+  if (sha !== stated) return json(422, { error: "sha256_mismatch", stated, computed: sha });  // nothing stored, nothing recorded
+  const store = async (path: string, type: string) => {
+    const up = await svc.storage.from(BUCKET).upload(path, bytes, { contentType: type, upsert: false });  // never overwrite
+    if (up.error && !/exists|duplicate|409/i.test(String((up.error as any).statusCode ?? "") + " " + up.error.message)) throw new Error("storage_failed");
+    return !!up.error;
+  };
 
-  const path = `dot/${pkg}/${sha}.jsonl`;
-  const up = await svc.storage.from("staging-boost").upload(path, bytes, { contentType: "application/x-ndjson", upsert: false });
-  if (up.error && !/exists|duplicate|409/i.test(String((up.error as any).statusCode ?? "") + " " + up.error.message)) return json(500, { error: "storage_failed" });
-  const { data: out, error: subErr } = await svc.rpc("svc_dot_intake_v1", { p_action: "submit", p_args: { user_id: who.user.id, package: pkg, sha256: sha, path, items } });
-  if (subErr) {  // only the platform's own INVALID_INPUT text reaches the caller, never a raw database message
-    const m = String(subErr.message || "");
-    return json(m.startsWith("INVALID_INPUT:") ? 422 : 500, { error: m.startsWith("INVALID_INPUT:") ? "refused" : "submit_failed", reason: m.startsWith("INVALID_INPUT:") ? m.slice(0, 200) : undefined, stored: path });
+  if (action === "upload") {
+    const ext = String(form.get("ext") || (file.name.split(".").pop() || "")).toLowerCase(), type = (file.type || "").split(";")[0].trim().toLowerCase();
+    if (!MIME[ext] || !MIME[ext].includes(type)) return json(415, { error: "unsupported_type", ext, mime: type });
+    if (ext === "pdf" && new TextDecoder().decode(bytes.slice(0, 5)) !== "%PDF-") return json(415, { error: "not_a_pdf" });
+    const sourceUrl = String(form.get("source_url") || "").trim();
+    if (sourceUrl && !/^https:\/\/[^\s]{4,500}$/.test(sourceUrl)) return json(400, { error: "invalid_source_url" });
+    const path = `${root}files/${sha}.${ext}`;
+    // the package must still be open before the bytes are stored: a finalised package takes nothing new
+    const { data: st } = await rpc("status", ident);
+    if (st?.status && !["none", "uploading"].includes(st.status)) return json(409, { error: "package_finalised", status: st.status });
+    try { await store(path, MIME[ext][0]) } catch { return json(500, { error: "storage_failed" }) }
+    const { data, error } = await rpc("upload", { ...ident, sha256: sha, ext, bytes: bytes.length, mime: type, path, source_url: sourceUrl });
+    if (error) { const f = fixedError(error); return json(f.status, { ...f.body, stored: path }) }
+    return json(200, data);
   }
-  return json(200, { ok: true, package: pkg, sha256: sha, stored: path, replay: !!up.error, receipt: out?.receipt ?? null });
+
+  // finalise: the READY manifest, last
+  let manifest: any;
+  try { manifest = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) } catch { return json(415, { error: "manifest_json_required" }) }
+  if (!manifest || !Array.isArray(manifest.files) || !Array.isArray(manifest.items)) return json(415, { error: "manifest_files_and_items_required" });
+  const mpath = `${root}manifest-${sha}.json`;
+  try { await store(mpath, "application/json") } catch { return json(500, { error: "storage_failed" }) }
+  const { data, error } = await rpc("finalise", { ...ident, manifest_sha256: sha, manifest_path: mpath, manifest });
+  if (error) { const f = fixedError(error); return json(f.status, { ...f.body, stored: mpath }) }
+  return json(data?.ok ? 200 : 409, { ...data, stored: mpath });
 });
