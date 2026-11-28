@@ -28,5 +28,5 @@ test('s1362: through the slice reader the Murdoch rows come out as the page supp
   expect(dropped.map(d => d.reason)).toEqual(['completion_requirement'])
   const src = fs.readFileSync('supabase/functions/coverage-sweep/course-entry.ts', 'utf8')
   expect(src).not.toContain('entryCompletionNotEntry')
-  expect(fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')).toContain('const WORKER = "coverage-sweep-worker-v1.0.66"')
+  expect(fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')).toContain('const WORKER = "coverage-sweep-worker-v1.0.67"')
 })
