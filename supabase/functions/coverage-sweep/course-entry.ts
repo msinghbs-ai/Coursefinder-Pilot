@@ -227,6 +227,19 @@ export function entryAudience(audience: unknown, quote: string): { audience: str
   return { audience: a, normalised: false };
 }
 
+// s1362 (28 Nov 2026, CF-247, S2-AER, integrated by S1-Build; PC-20261128-CONTINUOUS-BUILD-EXECUTE semantic audience guard; Murdoch H1287 030196A): an audience label is a
+// claim about the page. "international" needs the sentence to name international, overseas or non-Australian applicants; "domestic" needs it to name a domestic route or
+// group (the s1280 words). A label the sentence does not support is "all" (the page applies the line to everyone it does not exclude). IB 27 and "ATAR of 80 (adjusted or
+// unadjusted)" on Murdoch H1287 are the fixtures: the first names no international word so it is "all"; the second names ATAR, a domestic route, so it stays domestic.
+// (S2-AER's completion check of the same branch is not taken: s1354 entryCompletionRequirement already drops that row.)
+export const ENTRY_INTERNATIONAL_WORDS = /\b(international(?!\s+baccalaureate)|overseas|non[- ]australian|outside (of )?australia|offshore|ielts|toefl|pte|student visa)\b/i;
+export function entryAudienceSupported(audience: string, quote: string, description = ""): { audience: string; normalised: boolean; from?: string } {
+  const text = `${quote} ${description}`;
+  if (audience === "international" && !ENTRY_INTERNATIONAL_WORDS.test(text)) return { audience: "all", normalised: true, from: "international" };
+  if (audience === "domestic" && !ENTRY_DOMESTIC_ROUTE.test(text)) return { audience: "all", normalised: true, from: "domestic" };
+  return { audience, normalised: false };
+}
+
 // one slice's rows: a row is kept only when its quote is on that slice (so on the page)
 export function courseEntrySliceRows(a: any, sliceText: string, o: CourseQuoteOptions = {}): { rows: any[]; dropped: any[] } {
   const P = flat(sliceText), rows: any[] = [], dropped: any[] = [];
@@ -242,8 +255,9 @@ export function courseEntrySliceRows(a: any, sliceText: string, o: CourseQuoteOp
     }
     // s1354: a condition of completing the course is not an entry requirement; dropped under its own reason, which does not hold the read as incomplete
     if (entryCompletionRequirement(q, r?.description)) { const sc = storeQuote(q, limit); dropped.push({ reason: "completion_requirement", kind: r?.kind, quote: sc.quote, ...(sc.cut ? { quote_cut: sc.cut } : {}) }); continue }
-    const s = storeQuote(q, limit), aud = entryAudience(r?.audience, q), age = entryAgeNotScore(r, q), doc = entryDocumentInstruction(age.row, q);
-    rows.push({ ...doc.row, audience: aud.audience, ...(aud.normalised ? { audience_normalised: { from: "domestic", rule: "s1280 equivalent route" } } : {}), quote: s.quote, description: String(r?.description || "").slice(0, 500), ...(proof.fragments > 1 ? { quote_fragments: proof.fragments } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
+    const s = storeQuote(q, limit), aud0 = entryAudience(r?.audience, q), age = entryAgeNotScore(r, q), doc = entryDocumentInstruction(age.row, q);
+    const sup = entryAudienceSupported(aud0.audience, q, String(r?.description || "")), aud = { audience: sup.audience, normalised: aud0.normalised || sup.normalised, from: sup.normalised ? sup.from : "domestic", rule: sup.normalised ? "s1362 audience not on the page" : "s1280 equivalent route" };
+    rows.push({ ...doc.row, audience: aud.audience, ...(aud.normalised ? { audience_normalised: { from: aud.from, rule: aud.rule } } : {}), quote: s.quote, description: String(r?.description || "").slice(0, 500), ...(proof.fragments > 1 ? { quote_fragments: proof.fragments } : {}), ...(s.cut ? { quote_cut: s.cut } : {}) });
   }
   return { rows, dropped };
 }
