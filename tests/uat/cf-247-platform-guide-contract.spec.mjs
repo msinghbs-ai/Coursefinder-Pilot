@@ -1,4 +1,4 @@
-// Guards: CF-247 platform guide: Decision 209: the Platform guide lives in the app (Help › Platform guide) and is reviewed every release.
+// Guards: CF-247 platform guide: Decision 209: the Platform guide lives in the app (Help › Platform guide) and is reviewed every release; PC-20261128-UI-DESIGN-DELIVERY-REVIEW (Platform Admin 29 Nov 2026): the guide names the released screens it was found missing (Recovery knowledge, Reported data issues, field processing status), in the words the screens use.
 // Decision 209: the Platform guide lives in the app (Help › Platform guide) and is reviewed every release.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -21,6 +21,13 @@ test('every menu page has a guide entry, and the guide is in the menu', () => {
   expect(PAGES.guide).toMatchObject({ label: 'Guides', slug: 'platform-guide' })
   expect(PAGES.guide.tabs.find(t => t.key === 'guide')).toMatchObject({ label: 'Platform guide', min: 1 })
   for (const s of Object.values(SCREENS)) { expect(s.answers).toBeTruthy(); expect(s.read.length).toBeGreaterThan(0); expect(s.act.length).toBeGreaterThan(0) }
+})
+
+test('guide parity (UI review 29 Nov 2026): Recovery knowledge, Reported data issues and field processing status are described in the screen\'s own words', () => {
+  const read = k => SCREENS[k].read.join(' ')
+  for (const w of ['Recovery knowledge', 'Patterns held', 'Repeats blocked', 'Recent automatic recoveries']) expect(read('health'), w).toContain(w)
+  for (const w of ['Reported data issues', 'Reported: asked the reporter', 'Resolved: not changed', 'Fixed, but no value is held']) expect(read('layer4'), w).toContain(w)
+  for (const w of ['Field processing status', 'Not verified', 'Not available']) expect(read('courses'), w).toContain(w)
 })
 
 test('guide words: no money figures that go stale', () => {
