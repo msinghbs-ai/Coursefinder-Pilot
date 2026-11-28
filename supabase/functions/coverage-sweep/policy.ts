@@ -417,7 +417,19 @@ export function calendarStarts(md: string) {
   const DAY_RANGE = /\b\d{1,2}(?:st|nd|rd|th)?\s*[–—-]\s*\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]/;
   // 28 Nov 2026 (S2-Intakes, PC-20261128-0931, UNE principal dates c914b027): only a teaching start is a commencement (decision §1). A row about
   // orientation, an intensive or assessment period, or teaching that recommences after a break gives its month as before, but never a start date.
-  const NOT_START = /\b(exams?|examinations?|supplementary|census|results|holidays?|break|recess|graduation|enrolment|withdraw\w*|orientation|intensive|assessment|recommenc\w*)\b/i;
+  const NOT_START = /\b(exams?|examinations?|supplementary|census|results|holidays?|break|recess|graduation|enrolment|withdraw\w*)\b/i;
+  // 28 Nov 2026 (S2-Intakes, PC-20261128-NO-ROUTINE-DATA-PR): a mixed row that also names the period's own start ("Orientation Day ; Trimester 1
+  // Starts", "Intensive week ; Semester 2 begins") keeps that start. Its date is the one printed after the start words when the row prints more
+  // than one date; when no date follows them the row gives its month only. A row with no such words stays a non-start, as above.
+  const NOT_START_EVENT = /\b(orientation|intensives?|assessment|recommenc\w*)\b/i;
+  const PERIOD_START = new RegExp(`(?:${PERIOD.source})\\s*(?:\\(\\d{4}\\))?\\s*(?:starts?|begins?|commences?)\\b|\\b(?:teaching|classes|lectures)\\s+(?:starts?|begins?|commences?)\\b`, "i");
+  const DATE_ALL = new RegExp(DATE.source, "gi");
+  const eventDate = (row: string, d: RegExpMatchArray) => {
+    if (!NOT_START_EVENT.test(row)) return d;
+    const g = row.match(PERIOD_START); if (!g) return null;
+    if ((row.match(DATE_ALL) || []).length < 2) return d;
+    return row.slice((g.index || 0) + g[0].length).match(DATE);
+  };
   const ROLLING = /\b(rolling|year[- ]round|all year|ongoing|until (?:places|positions|the (?:course|program|programme)) (?:are |is )?(?:filled|full)|no (?:fixed )?(?:closing date|deadline)|check with|contact (?:the )?(?:faculty|school|university|institute|college|admissions))\b/i;
   for (const b of blocks(md)) {
     const rows = b.kind === "table" ? b.rows.map((r) => r.join(" | ")) : [b.text];
@@ -455,7 +467,8 @@ export function calendarStarts(md: string) {
       const yr = rowYr || headYear;
       // calendar-dates-v1: a row about exams, census, results or a break gives its month as before, but never a start date
       // a day range ("18 – 20 January 2027"): the year counts, the day does not
-      const d0 = NOT_START.test(row) ? null : dated(d, yr, row);
+      const de = NOT_START.test(row) ? null : eventDate(row, d);
+      const d0 = de ? dated(de, Number(de[5] || 0) || yr, row) : null;
       const dx = d0 ? { ...d0, ...headYearQuote(rowYr, period) } : null;
       add(period, mon, yr, row, dx && DAY_RANGE.test(row) ? { ...dx, day: null, date: null } : dx);
     }
