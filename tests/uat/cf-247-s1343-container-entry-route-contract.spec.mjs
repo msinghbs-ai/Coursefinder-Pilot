@@ -7,7 +7,7 @@ const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const sql = fs.readFileSync('supabase/migrations/20261201033000_cf247_s1343_container_entry_route.sql', 'utf8')
 
 test('the entry reader asks the gate first, sends a signed copy, and uses only hash-matched pages; anything else reads here as before', () => {
-  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v1.0.65"')
+  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v1.0.66"')
   const h = ix.slice(ix.indexOf('const burstEntryPages = async'), ix.indexOf('const robots = new Map'))
   expect(h.indexOf('p_action: "gate"')).toBeLessThan(h.indexOf('await fetch('))
   expect(h).toContain('route: "entry_matrix"')

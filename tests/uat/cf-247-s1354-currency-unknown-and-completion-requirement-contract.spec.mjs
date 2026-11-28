@@ -40,7 +40,7 @@ test('the worker never substitutes AUD for a missing scholarship or adapter curr
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(ix).not.toContain('it.currency || "AUD"')
   expect(ix.split('it.currency || null)').length - 1).toBe(3)
-  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v1.0.65"')
+  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v1.0.66"')
   const ad = fs.readFileSync('supabase/functions/coverage-sweep/adapters.ts', 'utf8')
   expect(ad).toContain('pFee <= 500000 && currencyFor(course.country) ? {')
 })
