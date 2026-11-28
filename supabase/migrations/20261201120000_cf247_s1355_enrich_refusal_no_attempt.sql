@@ -1,4 +1,4 @@
--- CF-247 s1354 (S2-RM-Design; Platform Admin 28 Nov 2026 18:10 AEDT: "move from diagnostic reporting to implementation-ready changes";
+-- CF-247 s1355 (S2-RM-Design; Platform Admin 28 Nov 2026 18:10 AEDT: "move from diagnostic reporting to implementation-ready changes";
 -- DR-19 source fix for the s1277 class, under PC-20261128-ONE-COMMAND-RUNTIME-CLOSURE "qualified remedies").
 -- Cause (measured 26 to 28 Nov): an AI account refusal (OpenRouter weekly key limit, HTTP 401 unknown key) was recorded by
 -- public.svc_enrich_ai_record like any error, so it used one of the item's 3 attempts. During one outage 554 items reached the cap and stopped
@@ -18,7 +18,7 @@ set local lock_timeout = '5s';  -- fixed: lock wait for the function edit
 insert into pipeline.platform_toolset_settings (toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
  ('pipeline', 'pim.refusal_defer_minutes', 'AI account refusal: wait before reading again',
   'When the AI service refuses a call for the account (key limit or unknown key) and the recovery policy ai_account_refusal does not count the attempt, the item waits this long before the worker takes it again.',
-  'number', '60'::jsonb, 5, 1440, 'minutes', 1607, 'PIM', 'public.svc_enrich_ai_record (s1354)', 'CF-247 s1354 DR-19 account-refusal source fix')
+  'number', '60'::jsonb, 5, 1440, 'minutes', 1607, 'PIM', 'public.svc_enrich_ai_record (s1355)', 'CF-247 s1355 DR-19 account-refusal source fix')
 on conflict (toolset_key, key) do nothing;
 
 do $e$
@@ -33,7 +33,7 @@ begin
     (1, $o1$      update pipeline.field_enrich_items set state = case when attempts >= 3 then 'failed' else 'ai' end, reason = left(r->>'reason', 300) where id = i.id;$o1$,
         $n1$      if security.pim_failure_cause_v1(r->>'reason') = 'account_refusal'
          and coalesce((select not p.counts_attempt from pipeline.work_recovery_policies p where p.failure_class = 'ai_account_refusal'), false) then
-        -- s1354: an account refusal does not use an attempt; the item waits, then the existing claim takes it again
+        -- s1355: an account refusal does not use an attempt; the item waits, then the existing claim takes it again
         update pipeline.field_enrich_items set state = 'leased', attempts = greatest(attempts - 1, 0),
                leased_until = now() + make_interval(mins => security.pipeline_num_v1('pim.refusal_defer_minutes', 60)::int),
                reason = left('deferred (account refusal, attempt not counted): ' || coalesce(r->>'reason', ''), 300) where id = i.id;
@@ -43,7 +43,7 @@ begin
     (2, $o2$      update pipeline.field_enrich_items set state = case when attempts >= 3 then 'failed' else 'ai' end, reason = left(r->>'error', 300) where id = i.id;$o2$,
         $n2$      if security.pim_failure_cause_v1(r->>'error') = 'account_refusal'
          and coalesce((select not p.counts_attempt from pipeline.work_recovery_policies p where p.failure_class = 'ai_account_refusal'), false) then
-        -- s1354: an account refusal does not use an attempt; the item waits, then the existing claim takes it again
+        -- s1355: an account refusal does not use an attempt; the item waits, then the existing claim takes it again
         update pipeline.field_enrich_items set state = 'leased', attempts = greatest(attempts - 1, 0),
                leased_until = now() + make_interval(mins => security.pipeline_num_v1('pim.refusal_defer_minutes', 60)::int),
                reason = left('deferred (account refusal, attempt not counted): ' || coalesce(r->>'error', ''), 300) where id = i.id;
@@ -52,7 +52,7 @@ begin
       end if;$n2$)
   ) x(n, old, new) order by n loop
     v_def := pg_get_functiondef('public.svc_enrich_ai_record(jsonb)'::regprocedure);
-    if position(r.new in v_def) > 0 then raise notice 's1354 edit %: already applied', r.n; continue; end if;
+    if position(r.new in v_def) > 0 then raise notice 's1355 edit %: already applied', r.n; continue; end if;
     v_n := (length(v_def) - length(replace(v_def, r.old, ''))) / length(r.old);
     if v_n <> 1 then raise exception 'guard: fragment % of svc_enrich_ai_record found % times', r.n, v_n; end if;
     execute replace(v_def, r.old, r.new);
