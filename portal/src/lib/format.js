@@ -7,10 +7,12 @@ export function money(amount, currency) {
   const n = Number(amount)
   if (amount === null || amount === undefined || amount === '' || !Number.isFinite(n)) return null
   const code = String(currency || '').toUpperCase()
+  // s1355: no country's currency is assumed. A value with no stated currency shows the figure alone (never A$), so a fee is never presented in a currency the platform does not hold.
+  if (!code) return n.toLocaleString('en-AU', { maximumFractionDigits: 0 })
   try {
     // en-US so the dollar of each country is told apart (A$, NZ$, CA$).
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: code || 'AUD', maximumFractionDigits: 0 }).format(n)
-  } catch { return `${n.toLocaleString('en-AU')}${code ? ` ${code}` : ''}` }
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: code, maximumFractionDigits: 0 }).format(n)
+  } catch { return `${n.toLocaleString('en-AU')} ${code}` }
 }
 
 // Calendar facts (a year is 52 weeks or 12 months), not operational values.

@@ -180,6 +180,9 @@ export function sheetModel(p, now = new Date()) {
   const given = trim(s.given_name) || 'you'
   const who = [trim(s.given_name), trim(s.family_initial) ? `${String(trim(s.family_initial)).replace(/\.$/, '')}.` : ''].filter(Boolean).join(' ')
   const courses = (p.courses || []).map((c, n) => sheetCourse(c, n))
+  // s1355: the budget has no currency field; with none stated it takes the one currency the shortlisted fees share, and shows the figure alone when they differ or none is held (no country's currency is assumed).
+  const feeCurrencies = [...new Set((p.courses || []).map(c => String(c.snapshot?.fee?.currency || '').toUpperCase()).filter(Boolean))]
+  const budgetCurrency = trim(s.budget_currency) || (feeCurrencies.length === 1 ? feeCurrencies[0] : '')
   const steps = (p.steps || []).filter(x => x.included !== false && trim(x.title)).map((x, n) => ({
     n: n + 1, title: x.title, detail: x.detail || '', due: x.due_label || (x.due_date ? dateText(x.due_date, 'day') : ''), owner: OWNER[x.owner] || '',
   }))
@@ -195,7 +198,7 @@ export function sheetModel(p, now = new Date()) {
     student: {
       who, ref: trim(s.ref) || '', country: trim(s.source_country_name || s.source_country) || '',
       qualification: [trim(s.qualification), trim(s.result_text)].filter(Boolean).join(', '),
-      english: trim(s.english_text) || '', budget: Number(s.budget_per_year) > 0 ? `${money(s.budget_per_year, s.budget_currency)} a year` : '',
+      english: trim(s.english_text) || '', budget: Number(s.budget_per_year) > 0 ? `${money(s.budget_per_year, budgetCurrency)} a year` : '',
     },
     message: trim(p.message_to_student) || '',
     courses, steps, documents: (p.documents || []).map(trim).filter(Boolean), dates,

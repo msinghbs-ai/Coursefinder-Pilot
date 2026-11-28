@@ -64,7 +64,7 @@ function Body({ body, market, markets, priority, setMarket }) {
           <ul className="d-list"><li><span className="d-k">Tuition per year (provider){primary.year ? ` · ${primary.year}` : ''}</span><strong className="d-v">{primaryFeeAmount(primary)}</strong><span className="muted small">{primaryFeeNote(primary)}</span></li></ul>
         ) : <None what="Annual tuition fee: Not recorded" />}
         {fees.length > 0 && (
-          <details className="d-more"><summary>Other recorded fee lines ({fees.length})</summary><FeeList rows={fees} /></details>
+          <details className="d-more"><summary>Other recorded fee lines ({fees.length})</summary><FeeList rows={fees} regulator={body.regulator} /></details>
         )}
       </Section>
 
@@ -164,9 +164,9 @@ function MatrixItem({ m }) {
   )
 }
 
-function FeeList({ rows }) {
+function FeeList({ rows, regulator }) {
   return <ul className="d-list">{rows.map((f, n) => (
-    <li key={n}><span className="d-k">{feeLabel(f)}{f.year ? ` · ${f.year}` : ''}{feeAudience(f) ? ` · ${feeAudience(f)}` : ''}{f.campus ? ` · ${f.campus}` : ''}</span><strong className="d-v">{feeAmount(f)}</strong>
+    <li key={n}><span className="d-k">{feeLabel(f, regulator)}{f.year ? ` · ${f.year}` : ''}{feeAudience(f) ? ` · ${feeAudience(f)}` : ''}{f.campus ? ` · ${f.campus}` : ''}</span><strong className="d-v">{feeAmount(f)}</strong>
       {f.notes && <div className="muted small">{f.notes}</div>}</li>
   ))}</ul>
 }
