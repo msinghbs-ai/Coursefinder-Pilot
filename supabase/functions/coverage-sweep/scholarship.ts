@@ -90,8 +90,9 @@ function amountCurrency(prefix: string, suffix: string | undefined, home: string
   if (sfx) return sfx === "US" ? "USD" : sfx;
   if (/^(?:US\$|USD)/i.test(prefix)) return "USD";
   for (const [code, re] of Object.entries(CUR_HOME)) if (re.test(prefix)) return code;
-  return home;
+  return DOLLAR_HOME.test(home) ? home : "$";  // s1354: a bare "$" is the home currency only where it is a dollar (a GBP or EUR provider's "$5,000" is foreign)
 }
+const DOLLAR_HOME = /^(?:AUD|NZD|CAD|USD|SGD|HKD)$/;
 // v0.6.3 (11 Oct 2026, Curtin): a percentage that is an academic result ("a Course-Weighted Average (CWA) of 95%", "WAM of 70%",
 // "ATAR 90%") is an entry condition, not the award, so it never makes the award value ambiguous.
 const SCORE_BEFORE = /\b(?:cwa|wam|atar|gpa|average|score|scores|grade|grades|result|results|mark|marks|percentile|band|equivalent|achieved|achieve|minimum of|at least)\b[^.%]{0,45}$/i;
@@ -100,11 +101,12 @@ function isScorePct(t: string, at: number, len: number) {
   return SCORE_BEFORE.test(t.slice(Math.max(0, at - 60), at)) || SCORE_AFTER.test(t.slice(at + len, at + len + 30));
 }
 const pctsIn = (t: string) => [...t.matchAll(/(\d{1,3})\s?%/g)].filter((m) => !isScorePct(t, m.index || 0, m[0].length)).map((m) => Number(m[1]));
-export function scholarshipValue(body: string, name = "", currency = "AUD") {
-  const home = String(currency || "AUD").toUpperCase();
+// s1354: currency null means the provider's currency is not known; no amount is then read as a value (currency_unknown), never as AUD
+export function scholarshipValue(body: string, name = "", currency: string | null = "AUD") {
+  const home = currency ? String(currency).toUpperCase() : null;
   const t = body.slice(0, 6000);
   const nameAmt = [...String(name).matchAll(/\$\s?(\d{1,3}(?:,\d{3})+|\d{3,6})\b/g)].map((m) => Number(m[1].replace(/,/g, "")));
-  if (nameAmt.length === 1 && nameAmt[0] >= 500 && new RegExp(`\\$\\s?${nameAmt[0].toLocaleString("en-AU").replace(/,/g, ",?")}(?![\\d,])`).test(t))
+  if (home && nameAmt.length === 1 && nameAmt[0] >= 500 && new RegExp(`\\$\\s?${nameAmt[0].toLocaleString("en-AU").replace(/,/g, ",?")}(?![\\d,])`).test(t))
     return { type: "fixed_amount", amount: nameAmt[0], currency: home, basis: "scholarship_name", context: ctx(t, new RegExp(nameAmt[0].toLocaleString("en-AU").replace(/,/g, ",?"))) };
   // v0.4.2: full tuition only when no other percentage is stated (HonduFuturo: full tuition for PhD, 20% for coursework)
   const otherPct = pctsIn(t).filter((v) => v >= 5 && v < 100);
@@ -121,7 +123,7 @@ export function scholarshipValue(body: string, name = "", currency = "AUD") {
   for (const m of t.matchAll(/(?:A\$|AUD\s?\$?|NZ\$|NZD\s?\$?|CA\$|C\$|CAD\s?\$?|US\$|USD\s?\$?|\$)\s?(\d{1,3}(?:,\d{3})+|\d{3,6})(?:\.\d{2})?(\s?(?:USD|US|NZD|CAD|AUD|GBP|EUR))?/g)) {
     const at = m.index || 0, around = t.slice(Math.max(0, at - 90), at + 90).toLowerCase();
     // v0.4.6: an amount in another currency, or a maximum ("up to A$7,496"), is not a single value
-    if (amountCurrency(m[0], m[2], home) !== home || /\b(?:USD|US\$)\s*$/i.test(t.slice(Math.max(0, at - 8), at))) { foreign = true; continue }
+    if (!home || amountCurrency(m[0], m[2], home) !== home || /\b(?:USD|US\$)\s*$/i.test(t.slice(Math.max(0, at - 8), at))) { foreign = true; continue }
     if (/up to\s*(?:a|au)?\s*$/i.test(t.slice(Math.max(0, at - 12), at))) upTo = true;
     if (!/(scholarship|award|valued?|worth|stipend|bursary|grant|per year|per annum|each year|one-off|one off|once-off)/.test(around)) continue;
     // v0.7.3 (VU STEM Accommodation): an amount the student pays (a deposit, bond, fee or charge) is never the award; an amount
@@ -133,7 +135,7 @@ export function scholarshipValue(body: string, name = "", currency = "AUD") {
   }
   // any other percentage in the scholarship text (tiers by region, level or result) makes a single value unsafe
   const allPct = new Set<number>(pctsIn(t).filter((v) => v >= 5 && v <= 100))
-  if (foreign) return { type: "ambiguous", foreign_currency: true, percentages: [...pct], amounts: [...amt] };
+  if (foreign) return { type: "ambiguous", foreign_currency: true, ...(home ? {} : { currency_unknown: true }), percentages: [...pct], amounts: [...amt] };
   if (upTo) return { type: "ambiguous", up_to: true, percentages: [...allPct].sort((a, b) => a - b), amounts: [...amt] };
   if (pct.size === 1 && allPct.size > 1) return { type: "ambiguous", percentages: [...allPct].sort((a, b) => a - b), amounts: [...amt] };
   if (pct.size === 1 && amt.size === 0) { const p = [...pct][0]; return { type: "percentage", percentage: p, applies_to: "tuition_fee", context: ctx(t, new RegExp(`${p}\\s?%`)) } }
@@ -284,10 +286,10 @@ function ctx(t: string, re: RegExp) {
   return clean(t.slice(start, at + (endAt >= 0 ? endAt + 1 : 160)));
 }
 
-export function scholarshipFacts(html: string, titleText: string, name: string, currency = "AUD") {
+export function scholarshipFacts(html: string, titleText: string, name: string, currency: string | null = "AUD") {
   const body = mainText(html);
   // numeric dates: day first in most countries; month first for US dollar providers; unknown for Canada (both are used)
-  const order: "dmy" | "mdy" | "none" = /^(USD)$/i.test(currency) ? "mdy" : /^(CAD)$/i.test(currency) ? "none" : "dmy";
+  const order: "dmy" | "mdy" | "none" = /^(USD)$/i.test(currency || "") ? "mdy" : /^(CAD)$/i.test(currency || "") ? "none" : "dmy";
   // levels from the eligibility section when the page has one (pages mention other levels elsewhere); else the page start
   // v0.4.6: the eligibility section is a heading-like "Eligibility" / "Who is eligible" (not "eligible countries"), and
   // when it states no level the page start is used

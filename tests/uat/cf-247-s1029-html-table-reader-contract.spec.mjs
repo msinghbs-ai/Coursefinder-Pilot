@@ -111,7 +111,7 @@ test('s1041 NZ: fail closed on prose countries, unknown headings, absent row lev
 test('the worker reads a proven HTML table in its own branch and leaves every other path as it was; the lease takes stored HTML', async () => {
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(ix).toContain('import { ENTRY_HTML_TABLE_READER, entryHtmlTableCompleteness, entryHtmlTableRead } from "./entry-html-table.ts";')
-  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v1.0.63";')
+  expect(ix).toContain('const WORKER = "coverage-sweep-worker-v1.0.64";')
   expect(ix).toContain('rawHtmlOf.set(path, t);  // s1029')
   // the branch runs after the page's parse options and before any model slice; it records and returns, so a page it does not prove goes on unchanged
   const at = ix.indexOf('const htmlRead = '), parse = ix.indexOf('const parseOpts = { countryAliases:'), slices = ix.indexOf('const slices = entrySlices(page,')

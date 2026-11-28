@@ -198,8 +198,13 @@ const FEE_RE: Record<string, { re: RegExp; own: RegExp; explicit: RegExp }> = {
   NZD: { re: /(?:NZD\s*\$?|NZ\s?\$|\$)\s*(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.\d{2})?(?![\d,])/gi, own: /^NZ/i, explicit: /(?:NZD\s*|NZ\s?\$)\s*[\d,]+/i },
   CAD: { re: /(?:CAD\s*\$?|CA\s?\$|C\$|\$)\s*(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.\d{2})?(?![\d,])/gi, own: /^C/i, explicit: /(?:CAD\s*|CA\s?\$|C\$)\s*[\d,]+/i },
 }
-export function currencyFor(country: string | null | undefined): "AUD" | "NZD" | "CAD" {
-  return country === "NZ" ? "NZD" : country === "CA" ? "CAD" : "AUD"
+// s1354 (28 Nov 2026, CF-247, SS-Programme-Control PC-20261128-1729-DELIVERY-VERIFY): the fee reader knows the "$" of three countries. A provider in any
+// other country (GB, IE, US, ...) or with no country has no currency here: currencyFor gives null and fee() reads no amount (currency_unknown), so a
+// provider default (AUD) is never put on evidence in another or an unknown currency. AU, NZ and CA are read exactly as before.
+export type FeeCurrency = "AUD" | "NZD" | "CAD"
+export function currencyFor(country: string | null | undefined): FeeCurrency | null {
+  const c = String(country || "").trim().toUpperCase()
+  return c === "AU" ? "AUD" : c === "NZ" ? "NZD" : c === "CA" ? "CAD" : null
 }
 // v0.5.5: which student view the text just before an amount belongs to, from the last view marker in it.
 const VIEW_MARKERS: [RegExp, "domestic" | "international"][] = [
@@ -211,7 +216,8 @@ export function viewBefore(pre: string): "domestic" | "international" | null {
   for (const [re, v] of VIEW_MARKERS) for (const m of pre.matchAll(re)) if ((m.index ?? -1) > best) { best = m.index ?? -1; view = v }
   return view
 }
-export function fee(text: string, currency: "AUD" | "NZD" | "CAD" = "AUD") {
+export function fee(text: string, currency: FeeCurrency | null = "AUD") {
+  if (currency === null) return { value: null, safe: false, ambiguous: false, rejection_reason: "currency_unknown", candidates: [] as unknown[], currency: null }  // s1354
   const own = FEE_RE[currency], nz = Boolean(own)
   const re = own ? new RegExp(own.re.source, "gi")
                 : /(?:AUD\s*\$?|A\$|AU\s?\$|\$)\s*(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.\d{2})?(?![\d,])/gi
