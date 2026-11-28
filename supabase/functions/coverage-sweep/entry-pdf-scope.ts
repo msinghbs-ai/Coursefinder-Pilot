@@ -55,3 +55,42 @@ export function clipRunningFooter(pages: PdfPage[]): PdfPage[] {
     return { ...pg, items: pg.items.filter((i) => i.y > cut), rules: pg.rules.filter((r) => (r.o === "h" ? (r.y as number) > cut : r.b > cut)) };
   });
 }
+
+// CF-247 s1372 (S2-AER, PC-20261128-INSTITUTIONAL-PARALLEL-READINESS and PC-20261128-2251/2319, 28 Nov 2026): the pages of an untitled prospectus or guide that
+// carry its entry tables. Three stored PDFs read through the qualified container route (Newcastle International Prospectus 2027, UNSW College guide, NZSE 2027
+// prospectus) were held at their first marketing page ("columns of text with no drawn rules", "a table whose first row is not a header") before any entry table,
+// and none prints a "Table X - Academic Entry Requirements" title, so the s1253 scope finds nothing. This is again a page selection, not a reader:
+//   - a run starts at a page the same proven reader proves alone whose table header, or whose title lines, name entry, admission, qualification, score or
+//     country words (`read` is pdfTables, passed in so this module stays free of the reader's code);
+//   - the run takes the next page while that page draws horizontal rules and the reader proves the run and that page together (a continuation page without its own
+//     header is read under the run's header, exactly as in a whole-document read);
+//   - a page the reader holds alone, next to a run, could be the start or the rest of that table: then nothing is selected and the document stays held;
+//   - other held pages and pages with no table are left out and named, so the reason records exactly which pages were not read.
+// The caller uses it only after the whole-document read and the s1253 scope have both held, and only when the reader proves the selected pages together.
+const ENTRY_SIGNAL = /\b(entry|admission|academic requirements?|qualifications?|minimum|atar|gpa|grades?|scores?|country|countries|equivalen\w*)\b/i;
+
+export type EntryPageRuns = { pages: number[]; runs: { first: number; last: number }[]; left_out: number[]; held_left_out: number[] };
+type Read = (ps: PdfPage[]) => { status: string; tables: { header: string[] }[] };
+
+export function entryProvenPageRuns(pages: PdfPage[], read: Read): EntryPageRuns | null {
+  const one = pages.map((pg) => read([pg]));
+  const draws = (pg: PdfPage) => pg.rules.some((r) => r.o === "h");  // the ruled-cells reader builds its grids from horizontal rules (VU draws no vertical ones)
+  const seed = (i: number) => one[i].status === "ok" && one[i].tables.length > 0 &&
+    (one[i].tables.some((t) => ENTRY_SIGNAL.test(t.header.join(" "))) || topLines(pages[i], 3).some((l) => ENTRY_SIGNAL.test(l)));
+  const runs: { a: number; b: number }[] = [];
+  for (let i = 0; i < pages.length; i++) {
+    if (!seed(i)) continue;
+    let b = i;
+    while (b + 1 < pages.length && pages[b + 1].p === pages[b].p + 1 && draws(pages[b + 1]) && read(pages.slice(i, b + 2)).status === "ok") b++;
+    runs.push({ a: i, b }); i = b;
+  }
+  if (!runs.length) return null;
+  for (const r of runs) {
+    const before = r.a - 1, after = r.b + 1;
+    if (before >= 0 && pages[before].p === pages[r.a].p - 1 && one[before].status === "unparsed") return null;  // fail closed: a held page touches the run
+    if (after < pages.length && pages[after].p === pages[r.b].p + 1 && one[after].status === "unparsed") return null;
+  }
+  const kept = runs.flatMap((r) => pages.slice(r.a, r.b + 1).map((q) => q.p));
+  return { pages: kept, runs: runs.map((r) => ({ first: pages[r.a].p, last: pages[r.b].p })),
+           left_out: pages.filter((q) => !kept.includes(q.p)).map((q) => q.p), held_left_out: pages.filter((q, k) => !kept.includes(q.p) && one[k].status === "unparsed").map((q) => q.p) };
+}

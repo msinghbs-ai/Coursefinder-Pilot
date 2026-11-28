@@ -41,7 +41,7 @@ test('the worker applies the scope only to a held read and only when the same re
   const idx = read('supabase/functions/coverage-sweep/index.ts')
   expect(idx).toMatch(/if \(t\.status !== "ok"\) \{ const sc = entryTablePageScope\(pages\);/)
   expect(idx).toMatch(/st = pdfTables\(sp\); if \(st\.status !== "ok"\) \{ const cp = clipRunningFooter\(sp\); if \(cp !== sp\) \{ sp = cp; st = pdfTables\(sp\) \} \} if \(st\.status === "ok"\) \{ pages = sp;/)
-  expect(idx).toContain('const WORKER = "coverage-sweep-worker-v1.0.66"')
+  expect(idx).toContain('const WORKER = "coverage-sweep-worker-v1.0.67"')
   const ins = idx.slice(idx.indexOf('if (mode === "entry_inspect")'), idx.indexOf('if (mode === "entry_ai")'))
   expect(ins).toContain('slice(0, 12);  // fixed: diagnostic batch cap')
   expect(ins).toContain('slice(0, 40) : undefined;  // fixed: diagnostic bound')

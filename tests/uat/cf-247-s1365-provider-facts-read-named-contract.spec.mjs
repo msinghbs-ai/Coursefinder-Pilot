@@ -60,5 +60,6 @@ test('the shared reader keeps the on-demand Firecrawl gate, Layer 2 storage and 
   expect(r).toMatch(/layer2\/\$\{it\.country \|\| "XX"\}\/provider-facts\//)
   expect(r).toContain('rpc("svc_provider_policy_record"')
   expect(r).toContain('calendarStarts(md)')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v1\.0\.66"; \/\/ v1\.0\.66 \(28 Nov 2026, CF-247 s1365/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v1\.0\.6[6-9]"/)  // s1372 moved the worker to v1.0.67; the s1365 line stays in its history
+  expect(w).toMatch(/\/\/ v1\.0\.66 \(28 Nov 2026, CF-247 s1365/)
 })
