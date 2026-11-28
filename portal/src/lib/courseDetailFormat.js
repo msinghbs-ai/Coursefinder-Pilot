@@ -22,6 +22,13 @@ export const feeLabel = (f, regulator) => {
   if (f.fee_type === 'estimated_total_course_cost') return `Estimated total course cost${reg}`
   return sentence(f.fee_type) || 'Fee'
 }
+// s1356: "Lowest per year" compares annual fees only when every fee is in one currency; amounts in different currencies are never ranked against each other (no conversion is held).
+export function lowestAnnualFee(fees) {
+  const held = (fees || []).filter(f => f && Number(f.per_year) > 0)
+  if (held.length < 2) return null
+  const cur = new Set(held.map(f => String(f.currency || '').toUpperCase()))
+  return cur.size === 1 ? Math.min(...held.map(f => Number(f.per_year))) : null
+}
 export const feeIsAnnual = f => f.fee_type === 'provider_current_tuition' && !/total/i.test(f.basis || '')
 export const feeAmount = f => money(f.amount, f.currency) || NOT_RECORDED
 export const feeAudience = f => (f.audience === 'domestic' ? 'Domestic students' : f.audience === 'international' ? 'International students' : '')

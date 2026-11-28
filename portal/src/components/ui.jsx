@@ -19,7 +19,7 @@ export function StudyInBar() {
         {destinations.map(d => <button key={d.code} type="button" className="spill" aria-pressed={studyIn === d.code} onClick={() => setStudyIn(d.code)}>{d.name}</button>)}
         {loading && <span className="studyin-note">Loading destinations…</span>}
       </div>
-      <span className="studyin-note">Kept across Courses, Providers and Scholarships</span>
+      <span className="studyin-note">Kept across Courses, Entry Requirements, Providers, Scholarships and Saved courses</span>
     </div>
   )
 }

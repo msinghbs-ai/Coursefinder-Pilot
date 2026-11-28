@@ -4,7 +4,7 @@ import { basket } from '../lib/basket.js'
 import { durationText, durationInYears, money, dateText, initials, placeText, NOT_RECORDED } from '../lib/format.js'
 import { PageHead, StudyInBar, LoadState, Pill, ViewToggle, RegBadge, ProviderLine } from '../components/ui.jsx'
 import { usePortal } from '../lib/portal.jsx'
-import { lengthOrBlank, primaryFeeAmount, primaryFeeNote } from '../lib/courseDetailFormat.js'
+import { lengthOrBlank, primaryFeeAmount, primaryFeeNote, lowestAnnualFee } from '../lib/courseDetailFormat.js'
 import { CourseRow, ListHead } from '../components/CourseRow.jsx'
 import { DetailDrawer } from '../components/DetailDrawer.jsx'
 import { ExtLink } from '../components/ExtLink.jsx'
@@ -31,15 +31,16 @@ export default function Saved() {
   const saved = useSaved(true)
   const [picked, setPicked] = useState([])
   const [openCourse, setOpenCourse] = useState(null)
-  const { view, setView } = usePortal()
+  const { view, setView, studyIn } = usePortal()
   const max = saved.compareMax || 0
   useEffect(() => { setPicked(p => p.filter(id => saved.ids.has(id))) }, [saved.items]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const chosen = saved.items.filter(i => picked.includes(i.course_id))
-  const startProposal = () => { basket.addMany(chosen.length ? chosen : saved.items); location.hash = '#/proposals/new' }
+  // s1356: the Study in tabs apply here too (they were shown but did nothing): only the chosen destination's saved courses are listed, compared and put in a proposal.
+  const shown = studyIn ? saved.items.filter(i => i.country_code === studyIn) : saved.items
+  const chosen = shown.filter(i => picked.includes(i.course_id))
+  const startProposal = () => { basket.addMany(chosen.length ? chosen : shown); location.hash = '#/proposals/new' }
   const flip = id => setPicked(p => p.includes(id) ? p.filter(x => x !== id) : p.length >= max ? p : [...p, id])
-  const fees = chosen.map(c => Number(feeOf(c)?.per_year)).filter(n => n > 0)
-  const lowest = fees.length > 1 ? Math.min(...fees) : null
+  const lowest = lowestAnnualFee(chosen.map(feeOf))
 
   const tick = c => (
     <label className="check"><input type="checkbox" checked={picked.includes(c.course_id)} disabled={!picked.includes(c.course_id) && picked.length >= max} onChange={() => flip(c.course_id)} /><span className="sr">Compare {c.title}</span></label>
@@ -71,15 +72,16 @@ export default function Saved() {
       {saved.message && <div className="notice bad" role="alert">{saved.message} <button type="button" className="link-inline" onClick={saved.clearMessage}>Dismiss</button></div>}
       {!saved.loading && !saved.error && (
         <>
-          <p className="count"><strong>{saved.items.length}</strong> saved{saved.savedMax ? ` of up to ${saved.savedMax}` : ''}</p>
+          <p className="count"><strong>{shown.length}</strong> saved{studyIn && saved.items.length !== shown.length ? ` in this destination (${saved.items.length} in all)` : ''}{saved.savedMax ? ` of up to ${saved.savedMax}` : ''}</p>
           {saved.items.length === 0 && (
             <div className="empty"><strong>Nothing saved yet.</strong><p className="muted">Save a course from the Courses screen and it will be listed here, ready to compare.</p><a className="btn primary" href="#/courses">Find a course</a></div>
           )}
+          {saved.items.length > 0 && shown.length === 0 && <div className="empty"><strong>Nothing saved for this destination.</strong><p className="muted">Choose All to see every saved course.</p></div>}
           {saved.items.length > 0 && <div className="count-row"><span /><ViewToggle value={view} onChange={setView} /></div>}
           {view === 'list' ? (
             <div className="list" role="list">
               <ListHead />
-              {saved.items.map(c => (
+              {shown.map(c => (
                 <CourseRow key={c.course_id} c={c} level={c.level} place={placeText(c)} length={lengthOrBlank(c.duration_value, c.duration_unit)}
                   fee={primaryFeeAmount(feeOf(c)) || ''} lead={tick(c)}>
                   {actions(c)}
@@ -88,7 +90,7 @@ export default function Saved() {
             </div>
           ) : (
             <div className="card-grid">
-              {saved.items.map(c => (
+              {shown.map(c => (
                 <article key={c.course_id} className="card course saved-card">
                   <header className="course-head">
                     <div className="saved-row">
