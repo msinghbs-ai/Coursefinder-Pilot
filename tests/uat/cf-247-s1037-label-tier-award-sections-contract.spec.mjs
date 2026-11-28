@@ -80,7 +80,7 @@ test('s1037: a page with award codes is split as before, with the setting on or 
 })
 
 test('s1037: worker v1.0.39 reads the setting; migration registers it, widens the merit wording, reads the two hubs now; G2/G3/locks/cron guarded', () => {
-  expect(worker).toContain('const WORKER = "coverage-sweep-worker-v1.0.61";')
+  expect(worker).toContain('const WORKER = "coverage-sweep-worker-v1.0.63";')
   expect(worker).toContain('const labelOpts = { labels: wsNum("scholarship.label_sections_on", 0) > 0 };')
   expect(worker).toContain('awardSections(pg.html, pg.finalUrl || url, labelOpts).length === 0)')
   expect(worker).toContain('for (const a of awardSections(pg.html, base, labelOpts)) items.set(')
@@ -92,4 +92,21 @@ test('s1037: worker v1.0.39 reads the setting; migration registers it, widens th
   expect(sql).toContain('post-check: manual locks changed')
   expect(sql).toContain('post-check: active cron jobs changed')
   expect(sql.split('\n').filter((l) => !l.startsWith('--')).join('\n')).not.toMatch(/create table|cron\.(schedule|unschedule)|daily_budget_total|delete from|drop (table|function|column|index|schema|view|trigger)/i)
+})
+
+// s1333 (28 Nov 2026, S2-Build): a label naming a field of an award is part of that award. UQ College's hub (live read 28 Nov 2026 08:22 AEDT, listing 2412)
+// gave 14 "awards" named by the rows of its "Scholarship value" fee tables; the reconstruction below keeps that structure.
+test('s1333: "Scholarship value" and other award field labels are never awards; their fee-table rows are not tiers', () => {
+  const row = (w, a, b, c) => `<tr><td>${w}</td><td>$${a}</td><td>$${b}</td><td>$${c}</td></tr>`
+  const UQC = `<main><h1>UQ College scholarships</h1><p>Scholarships for international students.</p>
+    <h2>Bridging English – UQ English Language Scholarship</h2><h3>UQ English Language Scholarship</h3><p>The scholarship covers up to 20 weeks of Bridging English, a 25% tuition fee reduction.</p>
+    <h2>Integrated English – Scholarship 2026</h2><h3>Integrated English Scholarship</h3><p>Scholarship recipients will receive a 30% reduction in tuition fees and will have their enrolment fee waived.</p>
+    <p><strong>Scholarship value</strong></p><table><tr><th>Weeks</th><th>Total fees (before scholarship)</th><th>Total fees (after scholarship)</th><th>Scholarship value</th></tr>
+    ${row(15, '8,585.00', '5,985.00', '2,600.00')}${row(20, '11,360.00', '7,980.00', '3,380.00')}${row(25, '14,135.00', '9,975.00', '4,160.00')}</table>
+    <p><strong>Scholarship eligibility</strong></p><p>Hold a passport from an eligible country.</p></main>`
+  const on = awardSections(UQC, 'https://uqcollege.uq.edu.au/apply/scholarships', { labels: true })
+  expect(on.map((a) => a.name)).toEqual(['UQ English Language Scholarship', 'Integrated English Scholarship'])
+  expect(on.some((a) => /Scholarship value|\$\d/.test(a.name))).toBe(false)
+  expect(on[1].body.join(' ')).toContain('8,585.00')  // the fee table stays in the award it belongs to
+  expect(on[1].body.join(' ')).toContain('passport')
 })

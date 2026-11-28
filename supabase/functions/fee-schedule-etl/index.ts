@@ -2,12 +2,18 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { getDocumentProxy } from "npm:unpdf@0.12.1";
 import { parseUqTable1, parseUqTable3Minimum } from "./elp.ts";
+import { htmlRows } from "./html-rows.ts";
+import { fcClient } from "../coverage-sweep/firecrawl.ts";  // s1334: the one Firecrawl client (logged in pipeline.firecrawl_calls)
 
 // CF-247 Decision 162 step 2: provider international fee schedules (one document per provider per fee year).
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.8.0";
+const VERSION = "fee-schedule-etl-v0.9.4";
+// v0.9.0 (s1327, Platform Admin 28 Nov 2026 06:54, scoped exception for UNE and TAFE Queensland only): a registered schedule may be an
+// official HTML page (format "html"), read as its tables by html-rows.ts htmlRows with the same row rule; it is stored as evidence as text/html.
+// UNE 2027 course fees (annual: two full-time trimesters) and the TAFE Queensland 2027 higher education table (annual indicative) are
+// registered; TAFE Queensland's vocational tables (whole-of-course totals) are never read.
 // v0.8.0: check_documents - fetch every registered fee schedule and English table and record its SHA-256
 // (svc_provider_document_check_record); a changed document is marked for review, nothing is applied.
 // v0.7.1: English table section headers matched in upper case only ("Higher Degree by Research ..." is a program).
@@ -28,7 +34,7 @@ const VERSION = "fee-schedule-etl-v0.8.0";
 // v0.2.0: dry_run — parse a registered schedule and compare it with the catalogue (svc_fee_schedule_preview).
 // Parser rule (all registered schedules): a row holding exactly one CRICOS course code; the fee is the first
 // whole-dollar amount after that code (the annual fee for one full-time year); the title is the first cell.
-const SCHEDULES: Record<string, { provider_cricos: string; url: string; fee_year: number; basis: string; label: string }> = {
+const SCHEDULES: Record<string, { provider_cricos: string; url: string; fee_year: number; basis: string; label: string; format?: "html"; header?: RegExp; bareAmounts?: boolean }> = {
   federation_2026_commencing: { provider_cricos: "00103D", fee_year: 2026, basis: "annual",
     url: "https://federation.edu.au/__data/assets/pdf_file/0006/630951/2026_HEd_Intl_Tuition_Fee_Schedule_Commencing.pdf",
     label: "Federation University 2026 commencing international tuition fee schedule (annual fee, 1 EFTSL)" },
@@ -47,6 +53,13 @@ const SCHEDULES: Record<string, { provider_cricos: string; url: string; fee_year
   wsu_pg_2027: { provider_cricos: "00917K", fee_year: 2027, basis: "annual",
     url: "https://www.westernsydney.edu.au/content/dam/digital/pdf/international/pg-intl-fees-2027.pdf",
     label: "Western Sydney University 2027 postgraduate international tuition fees (annual)" },
+  // s1327: HTML schedules (scoped exception, Platform Admin 28 Nov 2026 06:54)
+  une_2027: { provider_cricos: "00003G", fee_year: 2027, basis: "annual", format: "html", header: /\bCRICOS\b.*\bFee\b/i, bareAmounts: true,
+    url: "https://www.une.edu.au/international/fees-and-scholarships/course-fees-2027",
+    label: "University of New England 2027 international course fees (annual: two full-time trimesters)" },
+  tafeqld_he_2027: { provider_cricos: "03020E", fee_year: 2027, basis: "annual", format: "html", header: /Cost \(annual indicative\)/i,
+    url: "https://tafeqld.edu.au/international/courses/international-pricelist",
+    label: "TAFE Queensland 2027 international higher education fees (annual indicative)" },
 };
 const ENGLISH_TABLES: Record<string, { provider_cricos: string; table1: string; table3: string; label: string }> = {
   uq_elp: { provider_cricos: "00025B", label: "The University of Queensland ELP Admission Procedure Table 1 and Table 3",
@@ -77,7 +90,7 @@ function parseRows(rows: string[]) {
   }
   return { rows: out, rejected };
 }
-const HOSTS = ["federation.edu.au", "westernsydney.edu.au", "cdu.edu.au", "csu.edu.au", "rmit.edu.au", "swinburne.edu.au", "uow.edu.au", "uq.edu.au", "mq.edu.au", "uwa.edu.au"];
+const HOSTS = ["federation.edu.au", "westernsydney.edu.au", "cdu.edu.au", "csu.edu.au", "rmit.edu.au", "swinburne.edu.au", "uow.edu.au", "uq.edu.au", "mq.edu.au", "uwa.edu.au", "une.edu.au", "tafeqld.edu.au"];  // s1327: une, tafeqld
 const j = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json" } });
 const t = (v: unknown) => String(v ?? "").trim();
 const CRICOS = /\b\d{6}[0-9A-Z]\b/g;
@@ -135,28 +148,53 @@ Deno.serve(async (req) => {
       if (!sc) throw Error("unknown schedule; registered: " + Object.keys(SCHEDULES).join(", "));
       const su = new URL(sc.url);
       const rr = await fetch(su, { redirect: "follow", headers: { "user-agent": "CourseFinder-Pilot/fee-schedule-0.2" } });
-      if (!rr.ok) throw Error(`HTTP ${rr.status}`);
-      const b = new Uint8Array(await rr.arrayBuffer());
+      // v0.9.1 (s1334, SS-Programme-Control 28 Nov 2026 07:44 and 09:03: direct read first, then the authorised Firecrawl route): an HTML schedule whose
+      // site refuses the direct read (401, 403, 406, 429) is read once through the existing Firecrawl client, only when svc_fc_spend allows it (an open
+      // on-demand request for the provider, the monthly plan limit, never a directory site); a challenge page is never accepted (no bypass)
+      let b: Uint8Array, via = "direct";
+      if (rr.ok) b = new Uint8Array(await rr.arrayBuffer());
+      else if (sc.format === "html" && [401, 403, 406, 429].includes(rr.status)) {
+        const pid = t(body.provider_id);
+        if (!/^[0-9a-f-]{36}$/i.test(pid)) throw Error(`HTTP ${rr.status}; FIRECRAWL_NEEDS_PROVIDER ${sc.provider_cricos}`);
+        const { data: fc } = await c.rpc("svc_coverage_firecrawl", {});
+        if (!fc?.secret) throw Error(`HTTP ${rr.status}; no Firecrawl key`);
+        const { data: allowed } = await c.rpc("svc_fc_spend", { p_units: 1, p_purpose: "fee_schedule_read", p_provider_id: pid, p_url: sc.url });
+        if (allowed !== true) throw Error(`HTTP ${rr.status}; Firecrawl refused by the spend gate`);
+        const fcx = fcClient({ headers: { authorization: `Bearer ${fc.secret}`, "content-type": "application/json" }, log: async (p) => { await c.rpc("svc_fc_call_log", { p }) } });
+        const r2: any = await fcx.scrape({ proxy: "basic", url: sc.url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, timeout: 30000 },
+          { use_case: "fee_schedule_read", provider_id: pid }, { timeoutMs: 45000 });  // fixed: API time-out of one Firecrawl read
+        const html = String(r2?.html || "");
+        if (!html || /Pardon Our Interruption|Just a moment\.\.\.|cf-challenge|captcha/i.test(html)) throw Error(`HTTP ${rr.status}; Firecrawl returned no readable page (${r2?.http ?? "no answer"})`);
+        b = new TextEncoder().encode(html); via = "firecrawl";
+      } else throw Error(`HTTP ${rr.status}`);
       const hb = await crypto.subtle.digest("SHA-256", b);
       const sha = [...new Uint8Array(hb)].map((x) => x.toString(16).padStart(2, "0")).join("");
-      const d = await pdfRows(b, 400);
-      const parsed = parseRows(d.pages.flatMap((p) => p.rows));
+      const isHtml = sc.format === "html";
+      const d: any = isHtml ? (() => { const h = htmlRows(new TextDecoder().decode(b), sc.header!, !!sc.bareAmounts); return { numPages: h.tablesRead, tablesFound: h.tables, pages: [{ page: 1, rows: h.rows }] } })() : await pdfRows(b, 400);
+      if (isHtml && d.numPages === 0) throw Error("no table with the schedule's header was found; nothing read");
+      const parsedAll = parseRows(d.pages.flatMap((p) => p.rows));
+      // v0.9.0: an optional list of course codes limits the rows to those checked one by one (the rest are parked, not applied)
+      const only = Array.isArray(body.codes) ? new Set((body.codes as unknown[]).map((x) => t(x).toUpperCase()).filter((x) => CODE_CELL.test(x))) : null;
+      const parsed = only ? { rows: parsedAll.rows.filter((r) => only.has(r.course_cricos)), rejected: parsedAll.rejected } : parsedAll;
+      const parked = only ? parsedAll.rows.filter((r) => !only.has(r.course_cricos)).map((r) => r.course_cricos) : [];
       const { data: preview, error } = await c.rpc("svc_fee_schedule_preview", { p_provider_cricos: sc.provider_cricos, p_fee_year: sc.fee_year,
         p_rows: parsed.rows.map(({ raw, ...x }) => x) });
       if (error) throw Error(error.message);
       if (mode === "apply") {
-        if (parsed.rows.length < 10) throw Error("too few rows parsed; apply refused");
-        const path = `layer2/AU/fee-schedules/${sc.provider_cricos}/${sc.fee_year}/${sha}.pdf`;
-        const up = await c.storage.from("evidence").upload(path, b, { contentType: "application/pdf", upsert: true });
+        if (parsed.rows.length < (only ? 1 : 10)) throw Error("too few rows parsed; apply refused");
+        const path = `layer2/AU/fee-schedules/${sc.provider_cricos}/${sc.fee_year}/${sha}.${isHtml ? "html" : "pdf"}`;
+        const up = await c.storage.from("evidence").upload(path, b, { contentType: isHtml ? "text/html" : "application/pdf", upsert: true });
         if (up.error) throw Error("evidence upload failed: " + up.error.message);
         const { data: applied, error: ae } = await c.rpc("svc_fee_schedule_apply", { p_provider_cricos: sc.provider_cricos, p_fee_year: sc.fee_year,
           p_storage_path: path, p_url: sc.url, p_sha256: sha, p_schedule: t(body.schedule), p_rows: parsed.rows.map(({ raw, ...x }) => x) });
         if (ae) throw Error(ae.message);
-        return j({ ok: true, mode, schedule: t(body.schedule), url: sc.url, sha256: sha, parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length,
-          preview: { actions: preview?.actions, bound: preview?.bound }, applied, workerVersion: VERSION });
+        return j({ ok: true, mode, schedule: t(body.schedule), url: sc.url, sha256: sha, via, parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length,
+          parked, preview: { actions: preview?.actions, bound: preview?.bound }, applied, workerVersion: VERSION });
       }
       return j({ ok: true, mode, schedule: t(body.schedule), label: sc.label, url: sc.url, sha256: sha, bytes: b.length, numPages: d.numPages,
-        parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length, rejectedSample: parsed.rejected.slice(0, 8), preview, workerVersion: VERSION });
+        parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length, rejectedSample: parsed.rejected.slice(0, 8), parked, preview, via,
+        // v0.9.3: what the HTML reader saw (tables on the page, tables with the schedule's header, its first rows), so a page shape it cannot read is shown, not guessed
+        html: isHtml ? { tablesFound: d.tablesFound, tablesRead: d.numPages, rows: d.pages[0].rows.length, firstRows: d.pages[0].rows.slice(0, 6).map((r: string) => String(r).slice(0, 200)) } : undefined, workerVersion: VERSION });
     }
     if (mode === "check_documents") {
       const docs: [string, string][] = [...Object.entries(SCHEDULES).map(([k, v]) => [k, v.url] as [string, string]),

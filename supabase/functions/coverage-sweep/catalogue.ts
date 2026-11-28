@@ -161,7 +161,7 @@ const LABEL_CTA = /^(?:apply|how to|how do|tips|find|search|view|see|read|contac
 const LABEL_VALUE = /(?:[A-Z]{0,3}\$\s?\d|\d\s?%|\b(?:AUD|NZD|USD)\b|\btuition\b|\bfees?\b|\bfull\b|\bhalf\b|\bup to\b)/;
 const LABEL_TIER = /^(?:up to\s+|a\s+|an\s+)?(?:[A-Z]{0,3}\$|(?:NZD|AUD|USD|CAD|GBP)\s?)\s?\d|^\d{1,3}(?:\.\d+)?\s?%|^automatic\b/i;
 const BLOCK_TAGS = new Set(["p", "div", "li", "ul", "ol", "tr", "td", "th", "dt", "dd", "br", "section", "article", "table", "thead", "tbody", "header", "footer", "aside", "form", "blockquote", "hr", "figure", "figcaption", "details", "summary"]);
-type Seg = { k: "h" | "b" | "t" | "s"; level: number; text: string; links: string[] };
+type Seg = { k: "h" | "b" | "t" | "s"; level: number; text: string; links: string[]; cell?: boolean };  // s1333: cell, a block inside a table
 export type LabelSection = AwardSection & { group: string; body: string[]; intro: string };
 
 const decodeEntities = (t: string) => t
@@ -173,10 +173,10 @@ const decodeEntities = (t: string) => t
 function segments(main: string): Seg[] {
   const out: Seg[] = [];
   const src = main.replace(/<!--[\s\S]*?-->/g, " ").replace(/<(script|style|noscript|svg|template)\b[\s\S]*?<\/\1>/gi, " ");
-  let buf = "", bold = 0, plain = 0, boldDepth = 0, head = 0, sum = 0, links: string[] = [];
+  let buf = "", bold = 0, plain = 0, boldDepth = 0, head = 0, sum = 0, table = 0, links: string[] = [];
   const flush = () => {
     const text = buf.replace(/\s+/g, " ").trim();
-    if (text) out.push({ k: head ? "h" : sum ? "s" : (bold > 0 && bold >= 0.9 * (bold + plain) && text.length <= 160 ? "b" : "t"), level: head, text, links });
+    if (text) out.push({ k: head ? "h" : sum ? "s" : (bold > 0 && bold >= 0.9 * (bold + plain) && text.length <= 160 ? "b" : "t"), level: head, text, links, ...(table > 0 ? { cell: true } : {}) });
     buf = ""; bold = 0; plain = 0; links = [];
   };
   for (const m of src.matchAll(/<(\/?)([a-z][a-z0-9]*)\b([^>]*)>|([^<]+)/gi)) {
@@ -191,6 +191,7 @@ function segments(main: string): Seg[] {
     if (/^h[1-6]$/.test(tag)) { flush(); head = close ? 0 : Number(tag[1]); continue }
     if (tag === "summary") { flush(); sum = close ? 0 : 1; continue }  // s1051: an expandable section's toggle (<details><summary>) names the award it holds (Charles Darwin: eight awards)
     if (tag === "strong" || tag === "b") { boldDepth = Math.max(0, boldDepth + (close ? -1 : 1)); continue }
+    if (tag === "table") { flush(); table = Math.max(0, table + (close ? -1 : 1)); continue }  // s1333: blocks inside a table are its cells
     if (tag === "a" && !close) { const h = m[3].match(/href\s*=\s*["']([^"']+)["']/i); if (h) links.push(decodeEntities(h[1])); continue }
     if (BLOCK_TAGS.has(tag)) flush();
   }
@@ -199,7 +200,11 @@ function segments(main: string): Seg[] {
 }
 
 const cleanLabel = (t: string) => t.replace(/[\s*:\u2013\u2014-]+$/g, "").replace(/\s+/g, " ").trim();
-const labelOk = (t: string) => t.length >= 6 && t.length <= 160 && LABEL_AWARD.test(t) && !LABEL_CTA.test(t) && !/\?$/.test(t) && !LABEL_GENERIC.test(cleanLabel(t));
+// s1333 (28 Nov 2026, S2-Build, SS-Programme-Control 07:22 AEDT): a label that names a field of an award ("Scholarship value", "Award amount",
+// "Scholarship details") is a part of the award above it, not an award; UQ College's "Scholarship value" fee tables were split into 14 "awards"
+// named by their fee rows ("Scholarship value - $8,585.00")
+const LABEL_FIELD = /^(?:the\s+)?(?:scholarships?|awards?|bursar(?:y|ies)|grants?|prizes?)\s+(?:values?|amounts?|details?|duration|eligibility|criteria|benefits?|inclusions?|conditions|terms|periods?|levels?|types?|outcomes?|information|overview|summary|recipients?|selection)$/i;
+const labelOk = (t: string) => t.length >= 6 && t.length <= 160 && LABEL_AWARD.test(t) && !LABEL_CTA.test(t) && !/\?$/.test(t) && !LABEL_GENERIC.test(cleanLabel(t)) && !LABEL_FIELD.test(cleanLabel(t));
 // a stable section key: "S-" and the award's name as an upper-case slug (the key scheme of the heading splitter, s1035, which the database already
 // accepts in the listing-member and admit functions); a name seen twice on one page gets "-2", "-3" ...
 function sectionKey(name: string, taken: Set<string>): string {
@@ -247,7 +252,8 @@ export function labelSections(html: string, baseUrl: string): LabelSection[] {
     let group = "";
     for (let k = c.i - 1; k >= 0; k--) if (segs[k].k === "h" && segs[k].level >= 1 && (c.rank === 7 || segs[k].level < c.rank)) { group = cleanLabel(segs[k].text); break }
     const body = segs.slice(c.i + 1, end), links = [...segs[c.i].links, ...body.flatMap((b) => b.links)];
-    const tierAt = body.map((b, i) => (b.k === "t" && LABEL_TIER.test(b.text) ? i : -1)).filter((i) => i >= 0);
+    // s1333: a tier is a block of its own; a table cell that begins with an amount is a row of a fee or value table (UQ College), not a tier
+    const tierAt = body.map((b, i) => (b.k === "t" && !b.cell && LABEL_TIER.test(b.text) ? i : -1)).filter((i) => i >= 0);
     if (tierAt.length >= 2) {
       const lead = body.slice(0, tierAt[0]);
       tierAt.forEach((at, ti) => {
