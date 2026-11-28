@@ -1,4 +1,4 @@
-// Guards: Atlas brief to S1-API-Frontend-Delivery, 26 Nov 2026 12:02 AEDT (Platform Admin live UAT): an expandable Course details panel on Courses and Saved courses, every outside link opening in a new tab, and a separate Entry Requirements (AER) screen; Viewer reads, Counsellor saves and adds to a proposal; amended by s1222 (Atlas brief 26 Nov 2026 15:59 AEDT, portal UAT fixes: concise cards, drawer, pinned student countries)
+// Guards: Atlas brief to S1-API-Frontend-Delivery, 26 Nov 2026 12:02 AEDT (Platform Admin live UAT): an expandable Course details panel on Courses and Saved courses, every outside link opening in a new tab, and a separate Entry Requirements (AER) screen; Viewer reads, Counsellor saves and adds to a proposal; amended by s1222 (Atlas brief 26 Nov 2026 15:59 AEDT, portal UAT fixes: concise cards, drawer, pinned student countries); amended by s1355 (Platform Admin PC-20261128-CONTINUOUS-BUILD-EXECUTE and the evening country-neutral gates: a fee is shown in the currency it is held in and labelled by the course's own register, never a fixed country)
 // CF-247 s1215: portal screens. The read functions (s1214, S2-Build) and the study-levels read (s1215) are guarded in their migration contracts; this spec guards the screens, the one link component and the menu.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -83,6 +83,9 @@ test('phone layout at 412px: panel and entry cards stack to one column and tap t
 })
 
 test('the pure formatting reads recorded values and never adds fee lines together', async () => {
+  const cd = read(`${SRC}/components/CourseDetails.jsx`)
+  expect(cd).toContain('<FeeList rows={fees} regulator={body.regulator} />'); expect(cd).toContain('feeLabel(f, regulator)')
+  expect(read(`${SRC}/lib/format.js`)).not.toMatch(/\|\|\s*'AUD'/)
   const f = await import('../../portal/src/lib/courseDetailFormat.js')
   expect(f.feeLabel({ fee_type: 'provider_current_tuition', basis: 'annual' })).toBe('Tuition per year (provider)')
   expect(f.feeLabel({ fee_type: 'provider_current_tuition', basis: 'total_indicative' })).toMatch(/whole course/)
@@ -90,6 +93,16 @@ test('the pure formatting reads recorded values and never adds fee lines togethe
   expect(f.feeLabel({ fee_type: 'estimated_total_course_cost' })).toMatch(/Estimated total/)
   expect(f.feeAmount({ amount: 21000, currency: 'AUD' })).toBe('A$21,000')
   expect(f.feeAmount({ amount: null, currency: 'AUD' })).toBe('Not recorded')
+  // s1355: no country is assumed. The registered-fee label names the course's own register; a missing currency shows the figure alone; an outcome unit may be any ISO currency.
+  expect(f.feeLabel({ fee_type: 'tuition' }, { label: 'CRICOS', scheme: 'cricos' })).toBe('Registered tuition for the whole course (CRICOS)')
+  expect(f.feeLabel({ fee_type: 'non_tuition' }, { label: 'NZQA' })).toBe('Non-tuition fees for the whole course (NZQA)')
+  expect(f.feeLabel({ fee_type: 'estimated_total_course_cost' }, null)).toBe('Estimated total course cost')
+  expect(f.feeAmount({ amount: 28000, currency: 'NZD' })).toBe('NZ$28,000'); expect(f.feeAmount({ amount: 15477, currency: 'CAD' })).toBe('CA$15,477')
+  expect(f.feeAmount({ amount: 21000, currency: null })).toBe('21,000'); expect(f.feeAmount({ amount: 21000 })).not.toMatch(/\$/)
+  expect(f.outcomeValue({ unit: 'NZD', value: 61000 })).toBe('NZ$61,000'); expect(f.outcomeValue({ unit: 'GBP', value: 30000 })).toBe('£30,000')
+  const pm = await import('../../portal/src/lib/proposals.js')
+  const sheet = (cur, courses) => pm.sheetModel({ student: { budget_per_year: '40000', budget_currency: cur }, courses: courses.map(c => ({ snapshot: { fee: { per_year: 30000, currency: c } } })) }).student.budget
+  expect(sheet('', ['NZD', 'NZD'])).toBe('NZ$40,000 a year'); expect(sheet('', ['NZD', 'AUD'])).toBe('40,000 a year'); expect(sheet('', [])).toBe('40,000 a year'); expect(sheet('CAD', ['AUD'])).toBe('CA$40,000 a year')
   const e = f.entryLine({ kind: 'minimum_grade', description: 'ATAR 70', min_grade: '70', country_code: null })
   expect(e.main).toBe('ATAR 70'); expect(e.grade).toBe(''); expect(e.kind).toBe('Minimum grade')
   expect(f.entryLine({ kind: 'prior_qualification', description: 'Bachelor degree', min_value: 4.5, grade_scale: '7-point' }).grade).toBe('4.5 (7-point)')

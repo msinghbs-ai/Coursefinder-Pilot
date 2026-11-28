@@ -13,11 +13,13 @@ export const ENTRY_KIND = {
 const words = s => String(s || '').replace(/[_-]+/g, ' ').trim()
 const sentence = s => { const t = words(s); return t ? t.charAt(0).toUpperCase() + t.slice(1) : '' }
 
-export const feeLabel = f => {
+// s1355: a registered fee is labelled with the course's own register (CRICOS, NZQA, MTCU ... from `regulator.label`), never a fixed one. With no register the label says "registered" only.
+export const feeLabel = (f, regulator) => {
+  const reg = regulator && regulator.label ? ` (${regulator.label})` : ''
   if (f.fee_type === 'provider_current_tuition') return /total/i.test(f.basis || '') ? 'Tuition for the whole course (provider, indicative)' : 'Tuition per year (provider)'
-  if (f.fee_type === 'tuition') return 'Registered tuition for the whole course (CRICOS)'
-  if (f.fee_type === 'non_tuition') return 'Non-tuition fees for the whole course (CRICOS)'
-  if (f.fee_type === 'estimated_total_course_cost') return 'Estimated total course cost (CRICOS)'
+  if (f.fee_type === 'tuition') return `Registered tuition for the whole course${reg}`
+  if (f.fee_type === 'non_tuition') return `Non-tuition fees for the whole course${reg}`
+  if (f.fee_type === 'estimated_total_course_cost') return `Estimated total course cost${reg}`
   return sentence(f.fee_type) || 'Fee'
 }
 export const feeIsAnnual = f => f.fee_type === 'provider_current_tuition' && !/total/i.test(f.basis || '')
@@ -42,7 +44,7 @@ export function englishLine(e) {
 export function outcomeValue(o) {
   const n = o.value === null || o.value === undefined || o.value === '' ? NaN : Number(o.value)
   if (!Number.isFinite(n)) return NOT_RECORDED
-  if (o.unit === 'AUD') return money(n, 'AUD')
+  if (/^[A-Z]{3}$/.test(String(o.unit || ''))) return money(n, o.unit) // s1355: any ISO currency unit (AUD, NZD, CAD, GBP ...), not AUD only
   if (o.unit === 'percent') return `${Math.round(n * 10) / 10}%`
   return String(n)
 }
